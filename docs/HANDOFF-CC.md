@@ -17,13 +17,11 @@ You are a **cold agent** unless the human says you are continuing a prior sessio
 **Current mission: U2 Timelock lane (G3)** — wire → PENDING → approve/cancel, SSE, `releaseTime` read from
 chain. Do not start U3–U7.
 
-> **U1 met 2026-09-06.** K2, K5 and K8 all PASS; Lane A moves demo USDC on Remote EVM 1337 with the player's
-> Privy session signer and no browser in the loop. Read
-> [`docs/progress/2026-09-06-u1-signing-lane.md`](./progress/2026-09-06-u1-signing-lane.md) before anything
-> else — it carries the findings that will otherwise cost you an afternoon (role permissions on the execution
-> selector, `deadline` being a duration, the 99.2 %-of-a-block clone, Privy's BigInt/JSON and wallet-ownership
-> rules). One human step is still outstanding: completing an email-OTP login in the overlay to see the single
-> consent modal end to end.
+> **U1 met 2026-09-06.** K2, K5 and K8 PASS; Lane A green on Remote EVM 1337. **Human overlay path
+> also verified** (email OTP → consent → provision → Pay, 500→487.5 dUSDC, no second modal). Read
+> [`docs/progress/2026-09-06-u1-signing-lane.md`](./progress/2026-09-06-u1-signing-lane.md) and
+> [`docs/progress/2026-09-06-u1-human-path.md`](./progress/2026-09-06-u1-human-path.md) before coding.
+> Pasteable kickoff: [`docs/KICKOFF-U2.md`](./KICKOFF-U2.md).
 
 ---
 
@@ -50,18 +48,19 @@ Not: a wallet UI, DeFi protocol, Bloxchain fork, mainnet, Tactical-AI, GameLab m
 ## 2. Read order (before code)
 
 1. **This file**
-2. [`docs/DEV-LOOP.md`](./DEV-LOOP.md) — U1 row
-3. [`docs/REMOTE-EVM.md`](./REMOTE-EVM.md) — **do not wipe**; ~20M gas
-4. [`docs/PRIVY.md`](./PRIVY.md)
-5. [`docs/BLOXCHAIN-INTEGRATION.md`](./BLOXCHAIN-INTEGRATION.md) — SDK-only; CopyBlox provision
-6. [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) §1–3, §5–6
-7. [`docs/SECURITY-AND-KEYS.md`](./SECURITY-AND-KEYS.md)
-8. [`docs/REFLECTION.md`](./REFLECTION.md) — kill log + principal decisions
-9. [`docs/progress/2026-09-06-u0-foundation.md`](./progress/2026-09-06-u0-foundation.md) — what already works
-10. GameLab [ENG-2026-0004](https://github.com/D9-Studio/GameLab/blob/main/work/ENG-2026-0004-privy-typed-data-signer/README.md)
-11. Craft lessons (already filed — do not re-author):  
+2. [`docs/KICKOFF-U2.md`](./KICKOFF-U2.md) — pasteable cold kickoff
+3. [`docs/DEV-LOOP.md`](./DEV-LOOP.md) — U2 row
+4. [`docs/REMOTE-EVM.md`](./REMOTE-EVM.md) — **do not wipe**; gasLimit **16,777,216**
+5. [`docs/BLOXCHAIN-INTEGRATION.md`](./BLOXCHAIN-INTEGRATION.md) §6–7 — Lane B + roles
+6. [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) §1–3, §5–6 (esp. §3.3 Lane B options)
+7. [`docs/PRIVY.md`](./PRIVY.md) — session signer; optional `eth_sendTransaction` policy for V6
+8. [`docs/SECURITY-AND-KEYS.md`](./SECURITY-AND-KEYS.md)
+9. [`docs/REFLECTION.md`](./REFLECTION.md) — kill log + principal decisions
+10. [`docs/progress/2026-09-06-u1-signing-lane.md`](./progress/2026-09-06-u1-signing-lane.md)
+11. [`docs/progress/2026-09-06-u1-human-path.md`](./progress/2026-09-06-u1-human-path.md)
+12. Craft lessons (do not re-author):  
     https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/sdk-runtime-factory-clones.md  
-    https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/verify-published-package-artifacts.md
+    https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/delegated-signing-consent-belongs-to-the-key-owner.md
 
 GitHub mirrors under `https://github.com/JaCoderX/Branch-Zero/blob/main/docs/…`.
 
@@ -99,6 +98,7 @@ EIP-712 domain name from SDK: **`Bloxchain`** (`META_TX_DOMAIN`).
 - Privy session signer adapter + per-player policy (K2, K5); React overlay with login, one consent, revoke
 - Lane A green: `requestAndApproveExecution` moving demo USDC
 - `npm -w apps/teller-desk run killtests -- --fresh` re-runs K2 / K5 / Lane A
+- Human overlay path verified (OTP → Pay); overlay `refreshSession` after provision (Pay no longer hidden)
 
 ---
 
@@ -123,46 +123,59 @@ Kept as the record of what G2 required and how it was answered. The next mission
 ### Definition of Done (G2) — all met
 
 - [x] Privy env filled locally (`PRIVY_APP_ID`, `PRIVY_APP_SECRET`, `PRIVY_AUTHORIZATION_KEY`, `PRIVY_SIGNER_ID`, `VITE_PRIVY_APP_ID`, `VITE_PRIVY_SIGNER_ID`). `PRIVY_POLICY_ID` turned out to be unnecessary: policies are minted **per player** via the API.
-- [x] Login + embedded wallet in the React overlay; session signer delegated once at Account Opening (`apps/web/src/overlay/useBranchZeroWallet.ts`). *Caveat: the modal was verified to open over the Godot canvas; completing the email OTP needs a human — see the progress note's "Blockers".*
+- [x] Login + embedded wallet in the React overlay; session signer delegated once at Account Opening. **Human OTP path verified 2026-09-06 evening.**
 - [x] Teller Desk requests `eth_signTypedData_v4` for a Bloxchain meta-tx; **recover == owner** — **K2 PASS**
 - [x] Policy denies out-of-scope typed data — **K5 PASS** (`verifyingContract` + `chainId`; `domain.name` is not a matchable field, documented)
 - [x] Lane A: unsigned meta-tx via SDK → session-signer signature → `requestAndApproveExecution` from the broadcaster, moving demo USDC on 1337
-- [x] After delegation: no second wallet modal — the signature is obtained server-side with no browser in the loop at all
-- [x] `docs/REFLECTION.md` kill log (K2, K5, K8) + `docs/progress/2026-09-06-u1-signing-lane.md`
+- [x] After delegation: no second wallet modal — server-side session signer
+- [x] `docs/REFLECTION.md` kill log (K2, K5, K8) + U1 progress notes
 - [x] ENG-2026-0004 `findings.md` and `handoff.md` filled
-
-### Suggested sequence
-
-1. Confirm Remote EVM up; **do not wipe**.
-2. Confirm Privy dashboard: origins include `http://localhost:5173`; embedded wallet on login; server-side access + auth key; policy (domain `Bloxchain` / verifyingContract or method-only).
-3. Wire overlay + Teller Desk session + signer adapter.
-4. K2 against fixture AccountBlox (or CopyBlox clone).
-5. Guard whitelist for transfer target if not already set; Lane A smoke.
-6. Log kill tests. Stop.
 
 ---
 
-## 5b. Next mission — U2 Timelock lane (G3)
+## 5b. Mission U2 — Timelock lane (G3)
 
-Scope and gate are already defined; do not re-derive them:
+### Freedom envelope
 
-- [`docs/DEV-LOOP.md`](./DEV-LOOP.md) §3 — U2 row
-- [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) §3.3 — Lane B sequence and the three request options (option 1,
-  owner sends via session-signer `eth_sendTransaction`, is marked preferred; V6 is still unverified)
-- [`docs/BLOXCHAIN-INTEGRATION.md`](./BLOXCHAIN-INTEGRATION.md) §6 — request / countdown / approve / cancel
+- Lane B request path: prefer **option 1** (owner `eth_sendTransaction` via session signer for `executeWithTimeLock`) if Privy policy can scope it (V6); else **option 2** (REQUESTER role) or document fallback
+- Overlay UX for wire / approve / cancel (still HTML overlay — greybox is U3)
+- Whether manager approve uses `MANAGER_PK` direct call or owner meta-tx approve
+- Headless script vs overlay-first for the countdown proof
 
-What U1 leaves you: a working signing lane, a provisioner, SSE stage events, and `/wire` `/approve` `/cancel`
-answering `501 { plannedUnit: 'U2' }` so the routes already exist to fill in. Expect the U1 finding about role
-permissions to repeat: `executeWithTimeLock` will need `EXECUTE_TIME_DELAY_REQUEST` on the transfer selector,
-and the approve/cancel meta handlers their own grants — extend the role config batch in
-`apps/teller-desk/src/lanes/provision.ts` rather than adding a second one.
+### Out of scope
 
-## 6. After U1
+- Greybox zones / NPCs / ledger board (U3)
+- ENS, Arc, Uniswap
+- Full BRANCH_MANAGER product polish beyond what G3 needs for approve
+- Wiping Remote EVM; reintroducing contracts compile
+
+### Definition of Done (G3)
+
+- [ ] `/wire` creates a PENDING time-locked execution (demo token transfer); record readable via SDK
+- [ ] Countdown / vault clock uses **`releaseTime` from chain** (`getTransaction` / equivalent), not a local timer
+- [ ] `/approve` completes after release (owner meta-tx and/or manager path — document which)
+- [ ] `/cancel` works before completion
+- [ ] SSE stages cover wire → pending → approve/cancel → mined/failed; overlay refreshes session/passbook
+- [ ] Provisioning grants any missing role permissions for time-delay / approve / cancel selectors (extend `provision.ts`)
+- [ ] After Account Opening: **no second wallet modal** for the happy path (or V6/K2-style fallback chosen + logged)
+- [ ] `docs/REFLECTION.md` + `docs/progress/` note for U2; HANDOFF advanced to U3 when G3 met
+
+### Suggested sequence
+
+1. Confirm Remote EVM up; do not wipe; confirm CopyBlox + dUSDC still in `infra/deployments/remote-evm.json`.
+2. Choose Lane B request option (1 vs 2); extend Privy policy only if option 1.
+3. Extend role config batch; implement `/wire`, `/approve`, `/cancel`.
+4. Prove PENDING + `releaseTime`; warp or wait on 1337 (`TIMELOCK_SEC`, default 120).
+5. Approve + cancel smokes; overlay buttons; progress note; stop.
+
+---
+
+## 6. After U2
 
 | Next | Gate |
 |------|------|
-| U2 Timelock lane | G3 |
 | U3 Greybox | G4 |
+| U4 MVP freeze | G5 |
 
 Cut order unchanged: Uniswap → Manager → Arc → ENS EAC → ENS mint. **Never cut Privy or Lane B.**
 
@@ -170,9 +183,9 @@ Cut order unchanged: Uniswap → Manager → Arc → ENS EAC → ENS mint. **Nev
 
 ## 7. Stop conditions
 
-- Need custom Solidity or path-dep on Bloxchain-protocol for runtime
+- Need custom Solidity or path-dep on Bloxchain-protocol for **runtime** (bootstrap artifacts OK)
 - Would wipe Remote EVM or re-add contracts compile as default
-- Scope drifts to greybox/ENS/Arc
-- K2 fails and PLAN fallback not chosen
+- Scope drifts to greybox/ENS/Arc/Uniswap
+- Lane B blocked and PLAN fallback not chosen
 
-Leave: commands, file pointers, kill-test log, next agent can resume from G2 checklist.
+Leave: commands, file pointers, kill-test log, next agent can resume from G3 checklist.

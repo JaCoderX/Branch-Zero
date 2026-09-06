@@ -83,12 +83,27 @@ export function App({ engineState }: { engineState: string }) {
     };
   }, [w.session?.owner]);
 
+  // Drop stale passbook when Privy auth ends (Sign out used to leave 500 dUSDC on screen).
+  useEffect(() => {
+    if (!w.authenticated) {
+      setPassbook(undefined);
+      setStage('');
+    }
+  }, [w.authenticated]);
+
   const run = async (label: string, fn: () => Promise<unknown>) => {
     w.setError(undefined);
     setStage(label);
     try {
       await fn();
-      setPassbook(await w.call('/status'));
+      // Provision / pay mutate desk state; /session is the source of account + policyPinned for the UI.
+      await w.refreshSession();
+      const status = await w.call<{ balance?: string; symbol?: string; pending?: number; account?: string | null }>('/status');
+      if (status.account) {
+        setPassbook({ balance: status.balance ?? '0', symbol: status.symbol ?? 'dUSDC', pending: status.pending ?? 0 });
+      } else {
+        setPassbook(undefined);
+      }
     } catch (e) {
       w.setError((e as Error).message);
     } finally {

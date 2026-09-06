@@ -7,7 +7,7 @@
  * quorum, and a server-side wallet update is rejected with 401 — so this consent is a real control, not
  * a courtesy dialog. After it, every Bloxchain slip is signed server-side and the player sees no modal.
  */
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useCreateWallet, useLogin, useLogout, usePrivy, useSessionSigners, useWallets } from '@privy-io/react-auth';
 import type { SigningMode } from '@branch-zero/shared';
 
@@ -49,7 +49,7 @@ export function useBranchZeroWallet() {
         headers: {
           'content-type': 'application/json',
           authorization: `Bearer ${token}`,
-          'x-bz-owner': owner ?? embedded?.address ?? '',
+          'x-bz-owner': owner ?? embedded?.address ?? session?.owner ?? '',
         },
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       });
@@ -57,7 +57,7 @@ export function useBranchZeroWallet() {
       if (!res.ok) throw new Error(json?.error ?? `${path} failed (${res.status})`);
       return json as T;
     },
-    [getAccessToken, embedded?.address],
+    [getAccessToken, embedded?.address, session?.owner],
   );
 
   /** The app creates embedded wallets on demand rather than on login, so make sure one exists. */
@@ -66,6 +66,14 @@ export function useBranchZeroWallet() {
     const created = await createWallet();
     return created.address;
   }, [embedded?.address, createWallet]);
+
+  /** Re-read /session so account / policyPinned / delegated stay in sync after provision and consent. */
+  const refreshSession = useCallback(async (): Promise<Session> => {
+    const owner = session?.owner ?? embedded?.address ?? (await ensureWallet());
+    const s = await call<Session>('/session', {}, owner);
+    setSession(s);
+    return s;
+  }, [session?.owner, embedded?.address, ensureWallet, call]);
 
   /** Sign in, make sure there is a wallet, and open a Teller Desk session (which mints the policy). */
   const openSession = useCallback(async (): Promise<Session> => {
@@ -110,6 +118,22 @@ export function useBranchZeroWallet() {
     }
   }, [session?.owner, embedded?.address, removeSessionSigners, call]);
 
+  /** Clear local desk state; Privy's logout alone leaves a stale session and hides Start / Pay. */
+  const signOut = useCallback(async () => {
+    setSession(undefined);
+    setError(undefined);
+    setBusy(undefined);
+    await logout();
+  }, [logout]);
+
+  useEffect(() => {
+    if (!authenticated) {
+      setSession(undefined);
+      setError(undefined);
+      setBusy(undefined);
+    }
+  }, [authenticated]);
+
   return {
     ready,
     authenticated,
@@ -119,8 +143,9 @@ export function useBranchZeroWallet() {
     error,
     setError,
     login,
-    logout,
+    logout: signOut,
     openSession,
+    refreshSession,
     delegate,
     revoke,
     call,
