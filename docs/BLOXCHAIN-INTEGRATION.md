@@ -240,6 +240,18 @@ Nonce handling: `createMetaTxParams` on-chain returns the current `getSignerNonc
 2. **Runtime `REQUESTER` role** for a Teller Desk wallet with only `EXECUTE_TIME_DELAY_REQUEST` on `EXECUTE_WITH_TIMELOCK_SELECTOR` (role config batch below). Teller can request, never approve. Narrative: "the teller files the wire for you".
 3. **Client-side pop-up** for wires only.
 
+> **Chosen 2026-09-06 (U2): option 1, with `eth_signTransaction`.** Privy signs the owner's transaction inside
+> the enclave and the Teller Desk broadcasts the raw bytes, so Privy never needs to reach Remote EVM and viem
+> keeps control of nonce and gas. Rules are per player, scoped to `to == the player's account` and
+> `chain_id`, and — where the policy engine accepts calldata conditions — to the three function selectors
+> individually (`ethereum_calldata` with an ABI; `field` is `function` or `function.param`). The
+> to-only shape is the recorded fallback; `player.txPolicyMode` says which one a given player got.
+> Implementation: `createTxRules` / `pinTxRulesToAccount` in `apps/teller-desk/src/privy.ts`, and the
+> `signTransaction` half of the viem custom account in `signing/privySigner.ts`. The owner's wallet is topped
+> up to `OWNER_GAS_ETH` at Account Opening.
+>
+> **Why the owner, and not a broadcaster meta-tx, for approve:** see § 6.3.
+
 ```ts
 await gc.executeWithTimeLock(USDC, 0n, EngineBlox.ERC20_TRANSFER_SELECTOR, params, 200_000n,
                              keccak256(toBytes('ERC20_TRANSFER')), { from: requesterAddr });
@@ -278,6 +290,22 @@ await gc.cancelTimeLockExecution(txId, { from: managerAddr });
 ```
 
 Approval before `releaseTime` reverts — the Vault Keeper's line "Still cooling" is the decoded error, not a client-side guess (though the UI also greys the button).
+
+> **U2 finding — the meta-tx approve path does not enforce the timelock.** `EngineBlox._txApprovalWithMetaTx`
+> documents it as deliberate ("hybrid synergy": the direct path enforces `releaseTime`, the delegated meta-tx
+> path is time-flexible). So `approveTimeLockExecutionWithMetaTx` would let the session signer release a wire
+> **early**, and the vault clock would be decoration. Branch Zero therefore uses the **direct**
+> `approveTimeLockExecution` for both the owner and the manager, and provisioning deliberately grants **no**
+> `SIGN_META_APPROVE` / `EXECUTE_META_APPROVE` on the ERC-20 transfer selector — with no role holding that
+> action, the only way out of the vault is the path the contract time-checks. That is the whole reason
+> Lane B option 1 is required rather than merely preferred.
+>
+> Permissions are checked on **both** the execution selector (`transfer`) and the handler selector
+> (`executeWithTimeLock` / `approveTimeLockExecution` / `cancelTimeLockExecution`) — `initialize` grants OWNER
+> the handler half, so U2 provisioning adds the execution half: OWNER gets `EXECUTE_TIME_DELAY_REQUEST`,
+> `EXECUTE_TIME_DELAY_APPROVE` and `EXECUTE_TIME_DELAY_CANCEL` on `transfer` alongside U1's
+> `SIGN_META_REQUEST_AND_APPROVE`. `BRANCH_MANAGER` gets approve/cancel on the transfer selector *and* on the
+> two handler selectors, because the handler half is granted only to OWNER by default.
 
 ---
 
@@ -371,9 +399,9 @@ No custom Solidity means we cannot break these; the only project-side risks are 
 | V3 | Default schema for `transfer(address,uint256)` present after `initialize` — **2026-09-06: YES.** `getFunctionSchema(0xa9059cbb)` → operation `ERC20_TRANSFER`, `supportedActionsBitmap` 511 (all nine actions), `isProtected` true. Schema present ≠ permission granted: see V4 |
 | V4 | Only whitelist needed for Lane A (no extra role permission on execution selector) — **2026-09-06: NO.** `initialize` registers the `transfer` schema (`supportedActionsBitmap` 511) and the guard batch whitelists the token, but `getActiveRolePermissions` shows **no role holds any action on `0xa9059cbb`**. `requestAndApproveExecution` checks the *execution* selector → `NoPermission(caller)`. Provisioning now adds a role config batch: OWNER `SIGN_META_REQUEST_AND_APPROVE`, BROADCASTER `EXECUTE_META_REQUEST_AND_APPROVE`, `handlerForSelectors: [REQUEST_AND_APPROVE_EXECUTION_SELECTOR]` |
 | V5 | How to read `txId` after `requestAndApproveExecution` — **2026-09-06: answered without decoding logs.** The record just created is the highest id in `getTransactionHistory(1, n)`; reading it back also confirms it reached COMPLETED. Must be read with a sender (see V10) |
-| V6 | `eth_sendTransaction` via Privy session signer for `executeWithTimeLock` (Lane B option 1) |
-| V7 | Role config batch ordering + `handlerForSelectors` rules for `BRANCH_MANAGER` |
+| V6 | `eth_sendTransaction` via Privy session signer for `executeWithTimeLock` (Lane B option 1) — **2026-09-06: YES, via `eth_signTransaction`.** Privy signs the owner's transaction in the enclave; the Teller Desk broadcasts it, so Privy needs no RPC access to chain 1337 and viem owns nonce/gas. Policy rules pin `to` = the player's account and `chain_id`; calldata conditions scope the three selectors where the engine accepts them, otherwise to-only is recorded as the fallback (`player.txPolicyMode`) |
+| V7 | Role config batch ordering + `handlerForSelectors` rules for `BRANCH_MANAGER` — **2026-09-06: answered.** `CREATE_ROLE` must precede `ADD_WALLET` / `ADD_FUNCTION_TO_ROLE` for that role, which `syncRolePermissions` guarantees by construction. `addFunctionToRole` reverts `ResourceAlreadyExists` on a second grant for the same (role, selector), so changing a grant is REMOVE then ADD in one batch — allowed here because the `transfer` schema is `isGrantRevocable`. `handlerForSelectors` on a role grant is only validated when the *schema* sets `enforceHandlerRelations` (the transfer schema does not); at call time only `hasActionPermission` on both selectors is checked. Wallet add/revoke is refused on protected roles, so `BRANCH_MANAGER` must be a runtime role — the manager can never be added to OWNER |
 | V8 | Exact custom error names exported in `ERROR_SIGNATURES` for the `errors.json` mapping |
 | V9 | Arc Testnet: deployment + `initialize` succeed; `generateUnsignedMetaTransactionForNew` returns a non-zero digest (K3) |
 | V10 | Registry views are permissioned — **2026-09-06:** the SDK sends `walletClient.account` as the `eth_call` sender, so a wrapper constructed with `undefined` as the wallet client gets `NoPermission(0x0)`. Build readers with the broadcaster's (or owner's) wallet client |
-| V11 | `createMetaTxParams(..., deadline, ...)` — **2026-09-06:** `deadline` is a **duration**; the contract returns `block.timestamp + deadline`. Pass `600n`, not `now + 600` |
+| V11 | `createMetaTxParams(..., deadline, ...)` — **2026-09-06:** `deadline` is a **duration**; the contract returns `block.timestamp + deadline`. Pass `600n`, not `now + 600`. **Amended in U2:** that view reads the *latest* block, and Remote EVM only mines on demand, so after an idle spell the deadline is already in the past and the mined transaction reverts while `eth_call` still passes. Pass `(now − latestBlockTimestamp) + TTL` — `metaTxDuration()` in `apps/teller-desk/src/chain.ts`. See [REMOTE-EVM.md](./REMOTE-EVM.md) § 1a |

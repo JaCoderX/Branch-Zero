@@ -1,5 +1,5 @@
 import { PrivyClient, isEmbeddedWalletLinkedAccount, type User } from '@privy-io/node';
-import { getAddress, type Address } from 'viem';
+import { getAddress, parseAbi, type Address } from 'viem';
 import { config } from './config.ts';
 
 export const privy = new PrivyClient({ appId: config.privy.appId, appSecret: config.privy.appSecret });
@@ -119,4 +119,116 @@ export async function pinPolicyToAccount(policy: PlayerPolicy, account: Address,
       { field_source: 'ethereum_typed_data_domain', field: 'chainId', operator: 'eq', value: String(chainId) },
     ],
   });
+}
+
+// ============ U2 — owner transactions (V6) ============
+
+/**
+ * V6 — may the session signer send the owner's *own* transactions, and can the policy scope them?
+ *
+ * Lane B option 1 has the player's embedded wallet call `executeWithTimeLock`, `approveTimeLockExecution`
+ * and `cancelTimeLockExecution` directly, so the request and the approval genuinely come from OWNER and
+ * the contract's `releaseTime` check applies (the meta-tx approve path deliberately skips it — see
+ * `EngineBlox._txApprovalWithMetaTx`). Privy signs the transaction (`eth_signTransaction`); the Teller
+ * Desk broadcasts it. Privy's policy engine sees the transaction object (`to`, `chain_id`) and, with an
+ * ABI, the decoded calldata (`function.param`).
+ *
+ * Two scoping modes, tried in order and recorded on the player:
+ *   - `calldata`: three rules, one per function, each pinned to `to` = the player's account, `chain_id`,
+ *     and a decoded calldata field that only exists if the selector matches (`executeWithTimeLock.target`
+ *     must be the demo token; `approve…/cancel….txId` must be a record id). Nothing else is signable.
+ *   - `to-only`: one rule pinned to `to` + `chain_id`, if Privy rejects the calldata conditions. Still
+ *     bounded to the player's own account contract, whose own RBAC decides what the owner may do.
+ * Like the typed-data rule, `to` cannot be pinned until the account exists, so rules are created at
+ * `/session` scoped to the chain (and calldata) and tightened at `/provision`.
+ */
+export type TxPolicyMode = 'calldata' | 'to-only';
+
+/** The three owner-callable functions, transcribed from the SDK's GuardController ABI for Privy's decoder. */
+const OWNER_TX_ABI = parseAbi([
+  'function executeWithTimeLock(address target, uint256 value, bytes4 functionSelector, bytes params, uint256 gasLimit, bytes32 operationType) returns (uint256)',
+  'function approveTimeLockExecution(uint256 txId) returns (uint256)',
+  'function cancelTimeLockExecution(uint256 txId) returns (uint256)',
+]);
+
+const TX_RULE_TO_ONLY = 'Owner tx to own account';
+const TX_RULES_CALLDATA = ['Owner: file a wire', 'Owner: release a wire', 'Owner: recall a wire'] as const;
+
+function txRuleSpecs(mode: TxPolicyMode, chainId: number, token: Address, account?: Address) {
+  const base = [
+    { field_source: 'ethereum_transaction', field: 'chain_id', operator: 'eq', value: String(chainId) },
+    ...(account ? [{ field_source: 'ethereum_transaction', field: 'to', operator: 'eq', value: account }] : []),
+  ];
+  if (mode === 'to-only') {
+    return [{ name: TX_RULE_TO_ONLY, method: 'eth_signTransaction', action: 'ALLOW', conditions: base }];
+  }
+  const calldata = (field: string, operator: string, value: string) => ({
+    field_source: 'ethereum_calldata',
+    abi: OWNER_TX_ABI,
+    field,
+    operator,
+    value,
+  });
+  return [
+    { name: TX_RULES_CALLDATA[0], method: 'eth_signTransaction', action: 'ALLOW', conditions: [...base, calldata('executeWithTimeLock.target', 'eq', token)] },
+    { name: TX_RULES_CALLDATA[1], method: 'eth_signTransaction', action: 'ALLOW', conditions: [...base, calldata('approveTimeLockExecution.txId', 'gt', '0')] },
+    { name: TX_RULES_CALLDATA[2], method: 'eth_signTransaction', action: 'ALLOW', conditions: [...base, calldata('cancelTimeLockExecution.txId', 'gt', '0')] },
+  ];
+}
+
+export interface TxRules {
+  ruleIds: string[];
+  mode: TxPolicyMode;
+}
+
+/** Add the `eth_signTransaction` rules to a player's policy. Calldata-scoped if Privy accepts it. */
+export async function createTxRules(policyId: string, chainId: number, token: Address, account?: Address): Promise<TxRules & { fallbackReason?: string }> {
+  const attempt = async (mode: TxPolicyMode) => {
+    const ids: string[] = [];
+    for (const rule of txRuleSpecs(mode, chainId, token, account)) {
+      const res = await privy.policies().createRule(policyId, { authorization_context: authorizationContext, ...rule } as never);
+      ids.push((res as { id: string }).id);
+    }
+    return ids;
+  };
+  try {
+    return { ruleIds: await attempt('calldata'), mode: 'calldata' };
+  } catch (e) {
+    const reason = (e as Error).message.slice(0, 300);
+    return { ruleIds: await attempt('to-only'), mode: 'to-only', fallbackReason: reason };
+  }
+}
+
+/** Tighten the owner-transaction rules to the player's account once it exists. */
+export async function pinTxRulesToAccount(policyId: string, rules: TxRules, account: Address, chainId: number, token: Address): Promise<void> {
+  const specs = txRuleSpecs(rules.mode, chainId, token, account);
+  if (specs.length !== rules.ruleIds.length) throw new Error(`tx rule count mismatch: ${rules.ruleIds.length} ids for ${specs.length} specs`);
+  for (let i = 0; i < specs.length; i++) {
+    await privy.policies().updateRule(rules.ruleIds[i], { policy_id: policyId, authorization_context: authorizationContext, ...specs[i] } as never);
+  }
+}
+
+/**
+ * Recover a player's policy handles from Privy after a Teller Desk restart or a code upgrade: the wallet
+ * record names the policy the player consented to, and the policy lists its rules by name.
+ */
+export async function recoverPolicy(walletId: string): Promise<{ policyId?: string; ruleId?: string; txRules?: TxRules } | undefined> {
+  const wallet = (await privy.wallets().get(walletId)) as {
+    policy_ids?: string[];
+    additional_signers?: Array<{ signer_id?: string; override_policy_ids?: string[] }>;
+  };
+  const policyId =
+    wallet.additional_signers?.find((s) => s.signer_id === config.privy.signerId)?.override_policy_ids?.[0] ?? wallet.policy_ids?.[0];
+  if (!policyId) return undefined;
+  const policy = (await privy.policies().get(policyId)) as { rules?: Array<{ id: string; name: string }> };
+  const rules = policy.rules ?? [];
+  const ruleId = rules.find((r) => r.name === RULE_NAME)?.id;
+  const calldata = TX_RULES_CALLDATA.map((n) => rules.find((r) => r.name === n)?.id);
+  const toOnly = rules.find((r) => r.name === TX_RULE_TO_ONLY)?.id;
+  const txRules: TxRules | undefined = calldata.every(Boolean)
+    ? { ruleIds: calldata as string[], mode: 'calldata' }
+    : toOnly
+      ? { ruleIds: [toOnly], mode: 'to-only' }
+      : undefined;
+  return { policyId, ruleId, txRules };
 }

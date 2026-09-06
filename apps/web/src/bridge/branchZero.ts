@@ -7,6 +7,7 @@
  *
  * U0 methods: echo (K1), chainInfo, accountInfo.
  * U1 methods: login, logout, addSessionSigner, removeSessionSigner, provision, getPassbook, pay.
+ * U2 methods: wire, approve, cancel, listPending (the vault — Lane B).
  *
  * Everything that needs a Privy identity is delegated to the React overlay through a small adapter it
  * registers at mount: the bridge itself holds no token and no key, and a method that needs one before the
@@ -17,7 +18,7 @@ import { SecureOwnable } from '@bloxchain/sdk';
 import { remoteEvmWithRpc, type BranchZeroBridge, type BridgeError, type BridgeMessage, type BridgeResponse, type StageEvent } from '@branch-zero/shared';
 import deployments from '../../../../infra/deployments/remote-evm.json';
 
-export const BRIDGE_VERSION = 'u1.0';
+export const BRIDGE_VERSION = 'u2.0';
 
 type Handler = (args: Record<string, unknown>) => Promise<unknown>;
 type Listener = (m: BridgeMessage | { type: 'request'; id: string; method: string; args: Record<string, unknown> }) => void;
@@ -127,6 +128,26 @@ const handlers: Record<string, Handler> = {
     if (!/^0x[0-9a-fA-F]{40}$/.test(to)) throw bridgeError('BAD_ARGS', `not an address: ${to}`, 'That payee is not on your approved list.');
     if (!/^\d+(\.\d+)?$/.test(amount)) throw bridgeError('BAD_ARGS', `not an amount: ${amount}`, 'That is not an amount the counter can take.');
     return requireAdapter().call('/pay', { to, amount, memo: args.memo });
+  },
+
+  // --- U2: the vault (Lane B) ---
+  async wire(args) {
+    const to = typeof args.to === 'string' ? args.to : '';
+    const amount = typeof args.amount === 'string' ? args.amount : String(args.amount ?? '');
+    if (!/^0x[0-9a-fA-F]{40}$/.test(to)) throw bridgeError('BAD_ARGS', `not an address: ${to}`, 'That payee is not on your approved list.');
+    if (!/^\d+(\.\d+)?$/.test(amount)) throw bridgeError('BAD_ARGS', `not an amount: ${amount}`, 'That is not an amount the vault can take.');
+    // Returns { txId, releaseTime, chainNow, serverNow, hash } — releaseTime is read from the chain record.
+    return requireAdapter().call('/wire', { to, amount, memo: args.memo });
+  },
+  async approve(args) {
+    return requireAdapter().call('/approve', { txId: String(args.txId ?? ''), as: args.as === 'manager' ? 'manager' : 'owner' });
+  },
+  async cancel(args) {
+    return requireAdapter().call('/cancel', { txId: String(args.txId ?? ''), as: args.as === 'manager' ? 'manager' : 'owner' });
+  },
+  async listPending() {
+    const status = await requireAdapter().call<{ wires?: unknown[]; serverNow?: string }>('/status');
+    return { items: status.wires ?? [], serverNow: status.serverNow };
   },
 };
 

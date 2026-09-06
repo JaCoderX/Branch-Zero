@@ -14,13 +14,16 @@ import {
   TxAction,
 } from '@bloxchain/sdk';
 import { erc20Abi } from '@branch-zero/shared';
-import { broadcaster, broadcasterAddress, chain, publicClient } from '../chain.ts';
+import { broadcaster, broadcasterAddress, chain, metaTxDuration, publicClient } from '../chain.ts';
 import { deployments } from '../config.ts';
 import { signMetaTx, type AuditSink } from '../signing/privySigner.ts';
 import { emitStage, type Player } from '../store.ts';
 
-/** Meta-transaction validity window, in seconds. The contract adds it to `block.timestamp`. */
-export const META_TX_TTL_SEC = 600n;
+/**
+ * Meta-transaction validity window. Re-exported for the kill tests; `metaTxDuration()` is what the lanes
+ * actually pass, because the contract adds the duration to a possibly-stale block timestamp (see chain.ts).
+ */
+export { META_TX_TTL_SEC } from '../chain.ts';
 
 /** Operation type registered by the default guard schema for ERC-20 transfers. */
 const ERC20_TRANSFER_OPERATION = keccak256(toBytes('ERC20_TRANSFER'));
@@ -53,7 +56,7 @@ export async function pay(player: Player, to: Address, amount: string, jobId: st
     account,
     GC_SEL.REQUEST_AND_APPROVE_EXECUTION_SELECTOR,
     TxAction.SIGN_META_REQUEST_AND_APPROVE,
-    META_TX_TTL_SEC,
+    await metaTxDuration(),
     0n,
     player.ownerAddress,
   );

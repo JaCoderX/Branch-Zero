@@ -20,6 +20,7 @@ Infra lives in **particle-tool-box**, not this repo. Do not vendor Nethermind he
 | RPC (office) | Tailscale Serve HTTPS or `http://<hostname>.<tailnet>.ts.net:8545` — hostname stays in local env, never committed |
 | Gas limit | **Live block `gasLimit` = 16,777,216** (0x1000000), measured 2026-09-06 in U1 — the earlier "≈20M" was optimistic; treat 16.7M as the rule. Do **not** wipe volumes to chase a higher genesis number. Design all txs under this ceiling. |
 | Instant finality | NethDev mining enabled — vault clock must still be **policy** (`releaseTime`), not "waiting for a block" |
+| Block clock | **Mines on demand only.** Between transactions the latest block's `timestamp` is frozen while wall-clock time runs on. Anything a contract *view* derives from `block.timestamp` is therefore stale — see § 1a. |
 
 ---
 
@@ -59,6 +60,28 @@ Expect `"result":"0x539"`.
 > Anything that grows `initialize` (more schemas, more roles) breaks provisioning outright.
 
 ~~Wipe~~ — **forbidden for Branch Zero development** unless the principal explicitly orders a new chain. If a wipe ever happens, every address changes and `infra/deployments/remote-evm.json` must be regenerated.
+### 1a. The frozen block clock (U2, 2026-09-06)
+
+NethDev mines a block only when a transaction arrives. So `eth_call` — and every contract **view** — runs
+against the last mined block, whose timestamp can be minutes or hours behind wall time, while a transaction
+you send *now* is mined with the current time.
+
+That asymmetry broke meta-transactions after an idle period. `createMetaTxParams(..., duration, ...)` is a
+view returning `block.timestamp + duration`; sit idle for longer than the duration and every meta-tx is born
+already expired. The symptom is confusing on purpose: `eth_call` **succeeds** (it replays against the stale
+block) and the mined transaction **reverts** with unhelpful data, so pre-flight simulation says the call is
+fine right up until it is not.
+
+Rules that follow:
+
+- Meta-tx durations are computed as `(now − latestBlockTimestamp) + TTL` — `metaTxDuration()` in
+  `apps/teller-desk/src/chain.ts`. Never pass a bare TTL.
+- The vault countdown ticks against **wall time**, not `chainNow`, because `releaseTime` will be compared to
+  the timestamp of the block that mines the approval. `chainNow` is still reported for honesty.
+- A pre-flight `eth_call` that passes is not proof a transaction will succeed on this chain.
+
+Public testnets mine on a schedule and do not have this asymmetry; the drift correction is harmless there.
+
 ---
 
 ## 2. Dev accounts (lab only)

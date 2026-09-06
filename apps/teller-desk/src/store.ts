@@ -1,12 +1,19 @@
 import { randomUUID } from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
 import type { Address, Hex } from 'viem';
 import type { JobStage, SigningMode, StageEvent } from '@branch-zero/shared';
+import { REPO_ROOT } from './config.ts';
 
 /**
- * U1 keeps the player index in memory. The chain is the source of truth for every balance, status and
- * release time; this map only remembers which Privy user owns which account so a reconnect does not
- * re-provision. ARCHITECTURE §2.3 puts SQLite here — that lands with the watcher in U2, when there is
- * asynchronous state worth surviving a restart.
+ * The player index: which Privy user owns which account, plus the Privy policy handles we need to keep
+ * tightening. The chain stays the source of truth for every balance, status and release time.
+ *
+ * U2 persists this map to a small JSON file (`apps/teller-desk/.data/players.json`, git-ignored, no
+ * secrets). U1 kept it in memory, which meant a Teller Desk restart forgot every account and the next
+ * "Open my account" cloned a fresh one (16.2 M gas, and the old balance stranded). With a vault clock
+ * running for minutes, losing the index mid-wire is not acceptable. ARCHITECTURE §2.3 names SQLite for
+ * this; a JSON file is the same durability at hackathon scale and one less dependency.
  */
 export interface Player {
   privyUserId: string;
@@ -14,12 +21,24 @@ export interface Player {
   walletId: string;
   account?: Address;
   policyId?: string;
+  /** Rule allowing `eth_signTypedData_v4` for Bloxchain meta-transactions (U1, K5). */
   policyRuleId?: string;
-  /** Set once the policy rule names this player's account (K5 fully pinned). */
+  /** Set once the typed-data rule names this player's account (K5 fully pinned). */
   policyPinned?: boolean;
+  /**
+   * Rules allowing `eth_signTransaction` for the owner's own direct calls (U2, V6): `executeWithTimeLock`,
+   * `approveTimeLockExecution`, `cancelTimeLockExecution` on the player's account only.
+   */
+  txRuleIds?: string[];
+  /** How far the `eth_signTransaction` rules could be scoped — see privy.ts `TX_POLICY_MODES`. */
+  txPolicyMode?: 'calldata' | 'to-only';
+  /** Set once the `eth_signTransaction` rules name this player's account. */
+  txPolicyPinned?: boolean;
   signingMode: SigningMode;
   /** Set once the guard batch has whitelisted the demo token for `transfer`. */
   configured?: boolean;
+  /** Version of the role-permission set applied to this account (provision.ts `ROLE_SET_VERSION`). */
+  roleSet?: number;
   createdAt: number;
 }
 
@@ -32,17 +51,54 @@ export interface Receipt {
   payee?: Address;
   amount?: string;
   reason?: string;
+  releaseTime?: string;
   updatedAt: number;
 }
+
+const DATA_DIR = path.join(REPO_ROOT, 'apps', 'teller-desk', '.data');
+const PLAYERS_FILE = path.join(DATA_DIR, 'players.json');
 
 const players = new Map<string, Player>();
 const receipts = new Map<string, Receipt[]>();
 const listeners = new Map<string, Set<(e: StageEvent) => void>>();
 
+function load(): void {
+  try {
+    const raw = JSON.parse(fs.readFileSync(PLAYERS_FILE, 'utf8')) as Player[];
+    for (const p of raw) players.set(p.privyUserId, p);
+  } catch {
+    /* first run */
+  }
+}
+let flushTimer: NodeJS.Timeout | undefined;
+function flush(): void {
+  if (flushTimer) return;
+  flushTimer = setTimeout(() => {
+    flushTimer = undefined;
+    try {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+      // Merge with what is on disk: the dev server and the kill-test scripts share this file, and each
+      // process only knows its own players. In-memory entries win for the ids this process has touched.
+      const merged = new Map<string, Player>();
+      try {
+        for (const p of JSON.parse(fs.readFileSync(PLAYERS_FILE, 'utf8')) as Player[]) merged.set(p.privyUserId, p);
+      } catch {
+        /* no file yet */
+      }
+      for (const [id, p] of players) merged.set(id, p);
+      fs.writeFileSync(PLAYERS_FILE, JSON.stringify([...merged.values()], null, 2));
+    } catch (e) {
+      console.error('player index not persisted:', (e as Error).message);
+    }
+  }, 50);
+}
+load();
+
 export function upsertPlayer(p: Omit<Player, 'createdAt'>): Player {
   const existing = players.get(p.privyUserId);
   const next: Player = { ...existing, ...p, createdAt: existing?.createdAt ?? Date.now() };
   players.set(p.privyUserId, next);
+  flush();
   return next;
 }
 
@@ -55,6 +111,7 @@ export function patchPlayer(privyUserId: string, patch: Partial<Player>): Player
   if (!p) throw new Error(`unknown player ${privyUserId}`);
   const next = { ...p, ...patch };
   players.set(privyUserId, next);
+  flush();
   return next;
 }
 
@@ -66,12 +123,14 @@ export function newJobId(): string {
 export function emitStage(privyUserId: string, e: StageEvent): void {
   const list = receipts.get(privyUserId) ?? [];
   const idx = list.findIndex((r) => r.jobId === e.jobId);
+  const prev = idx >= 0 ? list[idx] : { jobId: e.jobId, lane: e.lane };
   const receipt: Receipt = {
-    ...(idx >= 0 ? list[idx] : { jobId: e.jobId, lane: e.lane }),
+    ...prev,
     stage: e.stage,
-    hash: e.hash as Hex | undefined,
-    txId: e.txId,
+    hash: (e.hash as Hex | undefined) ?? (prev as Receipt).hash,
+    txId: e.txId ?? (prev as Receipt).txId,
     reason: e.reason,
+    releaseTime: e.releaseTime ?? (prev as Receipt).releaseTime,
     updatedAt: Date.now(),
   };
   if (idx >= 0) list[idx] = receipt;
@@ -91,9 +150,14 @@ export function subscribe(privyUserId: string, cb: (e: StageEvent) => void): () 
   return () => set.delete(cb);
 }
 
+export function hasSubscribers(privyUserId: string): boolean {
+  return (listeners.get(privyUserId)?.size ?? 0) > 0;
+}
+
 /**
  * One meta-transaction at a time per player: `createMetaTxParams` reads the current signer nonce from
- * the contract, so two concurrent signatures would share a nonce and the second would revert.
+ * the contract, so two concurrent signatures would share a nonce and the second would revert. The same
+ * holds for the owner's direct transactions (U2): one account nonce, one in-flight tx.
  */
 const queues = new Map<string, Promise<unknown>>();
 export function serialize<T>(key: string, fn: () => Promise<T>): Promise<T> {

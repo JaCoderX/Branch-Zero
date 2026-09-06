@@ -6,22 +6,24 @@ created: 2026-09-06
 updated: 2026-09-06
 product: Branch-Zero
 objective: OBJ-2026-0004
-first_mission: U2 Timelock lane (G3)
-prior_mission: U1 Signing lane (G2) — met 2026-09-06
+first_mission: U3 Bank shell (G4)
+prior_mission: U2 Timelock lane (G3) — met 2026-09-06
 ---
 
 # Handoff — Claude Code (Fable 5.1)
 
 You are a **cold agent** unless the human says you are continuing a prior session. Prefer reading this file over chat memory. You have **freedom on how**. You do **not** have freedom on constraints, scope, or protocol semantics.
 
-**Current mission: U2 Timelock lane (G3)** — wire → PENDING → approve/cancel, SSE, `releaseTime` read from
-chain. Do not start U3–U7.
+**Current mission: U3 Bank shell (G4)** — greybox zones, NPCs wired to the bridge, ledger board. Do not
+start U4–U7.
 
-> **U1 met 2026-09-06.** K2, K5 and K8 PASS; Lane A green on Remote EVM 1337. **Human overlay path
-> also verified** (email OTP → consent → provision → Pay, 500→487.5 dUSDC, no second modal). Read
-> [`docs/progress/2026-09-06-u1-signing-lane.md`](./progress/2026-09-06-u1-signing-lane.md) and
-> [`docs/progress/2026-09-06-u1-human-path.md`](./progress/2026-09-06-u1-human-path.md) before coding.
-> Pasteable kickoff: [`docs/KICKOFF-U2.md`](./KICKOFF-U2.md).
+> **U2 met 2026-09-06.** V6 PASS both ways (the owner's own transactions are signed by the Privy session
+> signer and denied for any other account); Lane B green on Remote EVM 1337 — wire → PENDING → approve /
+> cancel, with the countdown read from the record's `releaseTime`. Read
+> [`docs/progress/2026-09-06-u2-timelock-lane.md`](./progress/2026-09-06-u2-timelock-lane.md) **first**: it
+> carries two findings that will otherwise cost you an afternoon (the meta-tx approve path does not enforce
+> the timelock; Remote EVM's block clock is frozen between transactions, so a passing `eth_call` proves
+> nothing). U1 before it: K2/K5/K8 PASS, Lane A green, human OTP path verified.
 
 ---
 
@@ -48,17 +50,18 @@ Not: a wallet UI, DeFi protocol, Bloxchain fork, mainnet, Tactical-AI, GameLab m
 ## 2. Read order (before code)
 
 1. **This file**
-2. [`docs/KICKOFF-U2.md`](./KICKOFF-U2.md) — pasteable cold kickoff
-3. [`docs/DEV-LOOP.md`](./DEV-LOOP.md) — U2 row
-4. [`docs/REMOTE-EVM.md`](./REMOTE-EVM.md) — **do not wipe**; gasLimit **16,777,216**
-5. [`docs/BLOXCHAIN-INTEGRATION.md`](./BLOXCHAIN-INTEGRATION.md) §6–7 — Lane B + roles
-6. [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) §1–3, §5–6 (esp. §3.3 Lane B options)
-7. [`docs/PRIVY.md`](./PRIVY.md) — session signer; optional `eth_sendTransaction` policy for V6
-8. [`docs/SECURITY-AND-KEYS.md`](./SECURITY-AND-KEYS.md)
-9. [`docs/REFLECTION.md`](./REFLECTION.md) — kill log + principal decisions
-10. [`docs/progress/2026-09-06-u1-signing-lane.md`](./progress/2026-09-06-u1-signing-lane.md)
-11. [`docs/progress/2026-09-06-u1-human-path.md`](./progress/2026-09-06-u1-human-path.md)
-12. Craft lessons (do not re-author):  
+2. [`docs/DEV-LOOP.md`](./DEV-LOOP.md) — U3 row
+3. [`docs/progress/2026-09-06-u2-timelock-lane.md`](./progress/2026-09-06-u2-timelock-lane.md) — newest findings
+4. [`docs/REMOTE-EVM.md`](./REMOTE-EVM.md) — **do not wipe**; gasLimit **16,777,216**; § 1a frozen block clock
+5. [`docs/GAME-DESIGN.md`](./GAME-DESIGN.md) + [`docs/WORLD-3D-ENVIRONMENT.md`](./WORLD-3D-ENVIRONMENT.md) — zones, NPCs, the ledger board
+6. [`docs/GODOT.md`](./GODOT.md) §4–5 — bridge method table (now `u2.0`) and the background-tab rules
+7. [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) §1–3, §5–6 (§3.3 is Lane B as built)
+8. [`docs/BLOXCHAIN-INTEGRATION.md`](./BLOXCHAIN-INTEGRATION.md) §6–7 — Lane B + roles
+9. [`docs/PRIVY.md`](./PRIVY.md) — session signer and the two policy shapes
+10. [`docs/SECURITY-AND-KEYS.md`](./SECURITY-AND-KEYS.md)
+11. [`docs/REFLECTION.md`](./REFLECTION.md) — kill log + principal decisions
+12. [`docs/progress/2026-09-06-u1-signing-lane.md`](./progress/2026-09-06-u1-signing-lane.md) and [`…u1-human-path.md`](./progress/2026-09-06-u1-human-path.md)
+13. Craft lessons (do not re-author):  
     https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/sdk-runtime-factory-clones.md  
     https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/delegated-signing-consent-belongs-to-the-key-owner.md
 
@@ -102,6 +105,19 @@ EIP-712 domain name from SDK: **`Bloxchain`** (`META_TX_DOMAIN`).
 
 ---
 
+## 4c. U2 already done (do not redo)
+
+- Lane B: `/wire` `/approve` `/cancel` on the Teller Desk; SSE stages `pending` / `released` / `mined` /
+  `cancelled`; a per-record watcher that re-arms on SSE connect and on restart
+- Owner transactions via the Privy session signer (`eth_signTransaction`), policy-scoped per player to
+  `to` = their account + `chain_id`, calldata-scoped to the three vault selectors where the engine accepts it
+- Provisioning is a chain-reconciling, versioned upgrade (`ROLE_SET_VERSION`): guard whitelist, role grants
+  for OWNER / BROADCASTER / `BRANCH_MANAGER`, opening balance, owner gas top-up
+- Player index persisted to `apps/teller-desk/.data/players.json`; accounts also recoverable from
+  `CopyBlox.BloxCloned` logs
+- `npm -w apps/teller-desk run killtests:u2 -- --fresh` re-runs V6 + Lane B
+- Bridge is `u2.0`: `wire`, `approve`, `cancel`, `listPending` added
+
 ## 5. Mission U1 — Signing lane (G2) — **MET 2026-09-06**
 
 Kept as the record of what G2 required and how it was answered. The next mission is §5b.
@@ -133,7 +149,9 @@ Kept as the record of what G2 required and how it was answered. The next mission
 
 ---
 
-## 5b. Mission U2 — Timelock lane (G3)
+## 5b. Mission U2 — Timelock lane (G3) — **MET 2026-09-06**
+
+Kept as the record of what G3 required. The next mission is §5c.
 
 ### Freedom envelope
 
@@ -149,33 +167,63 @@ Kept as the record of what G2 required and how it was answered. The next mission
 - Full BRANCH_MANAGER product polish beyond what G3 needs for approve
 - Wiping Remote EVM; reintroducing contracts compile
 
-### Definition of Done (G3)
+### Definition of Done (G3) — all met
 
-- [ ] `/wire` creates a PENDING time-locked execution (demo token transfer); record readable via SDK
-- [ ] Countdown / vault clock uses **`releaseTime` from chain** (`getTransaction` / equivalent), not a local timer
-- [ ] `/approve` completes after release (owner meta-tx and/or manager path — document which)
-- [ ] `/cancel` works before completion
-- [ ] SSE stages cover wire → pending → approve/cancel → mined/failed; overlay refreshes session/passbook
-- [ ] Provisioning grants any missing role permissions for time-delay / approve / cancel selectors (extend `provision.ts`)
-- [ ] After Account Opening: **no second wallet modal** for the happy path (or V6/K2-style fallback chosen + logged)
-- [ ] `docs/REFLECTION.md` + `docs/progress/` note for U2; HANDOFF advanced to U3 when G3 met
-
-### Suggested sequence
-
-1. Confirm Remote EVM up; do not wipe; confirm CopyBlox + dUSDC still in `infra/deployments/remote-evm.json`.
-2. Choose Lane B request option (1 vs 2); extend Privy policy only if option 1.
-3. Extend role config batch; implement `/wire`, `/approve`, `/cancel`.
-4. Prove PENDING + `releaseTime`; warp or wait on 1337 (`TIMELOCK_SEC`, default 120).
-5. Approve + cancel smokes; overlay buttons; progress note; stop.
+- [x] `/wire` creates a PENDING time-locked execution (demo token transfer); record readable via SDK
+- [x] Countdown / vault clock uses **`releaseTime` from chain** (`getTransaction`), not a local timer
+- [x] `/approve` completes after release — **owner direct call** (and the manager's runtime role); the owner
+      meta-tx approve was rejected on purpose because it skips `releaseTime` (see the progress note)
+- [x] `/cancel` works before completion
+- [x] SSE stages cover wire → pending → released → approve/cancel → mined/failed; overlay refreshes session and passbook
+- [x] Provisioning grants the missing time-delay permissions on the transfer selector and the two handler selectors
+- [x] After Account Opening: no second wallet modal — the owner's own transactions are signed by the session signer (V6)
+- [x] `docs/REFLECTION.md` + `docs/progress/2026-09-06-u2-timelock-lane.md`; HANDOFF advanced to U3
 
 ---
 
-## 6. After U2
+## 5c. Mission U3 — Bank shell (G4)
+
+Make the bank walkable and make the desks the operations. Everything the lanes need already exists behind
+`window.BranchZero` (`u2.0`); U3 is Godot work plus the NPC lines, not new chain work.
+
+### Freedom envelope
+
+- Greybox geometry and layout, within [`WORLD-3D-ENVIRONMENT.md`](./WORLD-3D-ENVIRONMENT.md)'s budget
+- How NPC dialogue is authored (resource files vs scenes) and how zones trigger
+- Whether the ledger board polls `listPending` or listens only to bridge `stage` events (prefer events, reconcile on focus)
+- Whether the HTML overlay stays visible in dev (keep a debug toggle; it is the only thing that shows bridge traffic)
+
+### Out of scope
+
+- ENS, Arc, Uniswap; art passes; audio beyond placeholder
+- Changing lane semantics, role grants, or the Privy policy shapes
+- Wiping Remote EVM; reintroducing the contracts compile
+
+### Definition of Done (G4)
+
+- [ ] Walkable greybox: Account Opening, Counter, Vault antechamber, Manager's office ([`GAME-DESIGN.md`](./GAME-DESIGN.md) §zones)
+- [ ] NPCs at each desk drive the real calls through `Chain.call_async` — login/provision, pay, wire, approve/cancel
+- [ ] Vault door clock renders the chain's `releaseTime`, counting against the desk clock (`serverNow`), never `chainNow`
+- [ ] Ledger board shows pending records and the last few receipts; reconciles with `listPending` on tab focus
+- [ ] Every error code in [`NPCS.md`](./NPCS.md) §5 has a line; `BeforeReleaseTime` says "still cooling"
+- [ ] No `JavaScriptBridge.eval`, no keys in Godot, threads still off; first load still budgeted
+- [ ] Progress note + REFLECTION update; HANDOFF advanced to U4
+
+### Suggested sequence
+
+1. Confirm the desk is up (`/healthz` says `U2`) and `npm run export:web` still produces a working canvas.
+2. Greybox the four zones and the walk loop; keep the HTML overlay as the debug panel.
+3. Wire one desk end to end (Account Opening), then the counter, then the vault.
+4. Ledger board + NPC error lines; capture 30 seconds; write the note.
+
+---
+
+## 6. After U3
 
 | Next | Gate |
 |------|------|
-| U3 Greybox | G4 |
 | U4 MVP freeze | G5 |
+| U5 ENS | G6 |
 
 Cut order unchanged: Uniswap → Manager → Arc → ENS EAC → ENS mint. **Never cut Privy or Lane B.**
 

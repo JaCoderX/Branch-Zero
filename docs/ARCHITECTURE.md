@@ -184,6 +184,48 @@ Cancellation mirrors approval with `cancelTimeLockExecutionWithMetaTx` / `cancel
 2. Grant a `REQUESTER` runtime role to a Teller Desk wallet so the Teller can request but never approve/cancel (separation of duties still real).
 3. Client-side pop-up for wires only (narratively acceptable: "big wires you sign yourself").
 
+> **Decided 2026-09-06 (U2, V6): option 1** — and it turned out to be the only option that keeps the vault
+> clock honest, not merely the prettiest. `EngineBlox._txApprovalWithMetaTx` deliberately does **not** check
+> `releaseTime`, so an owner meta-tx approve would release a wire early; only the direct
+> `approveTimeLockExecution` is time-checked. Both the request and the approval therefore come from OWNER,
+> and provisioning grants no meta-approve action on the transfer selector at all.
+>
+> The mechanism is `eth_signTransaction`, not `eth_sendTransaction`: Privy signs inside the enclave and the
+> **Teller Desk broadcasts the raw bytes**, so Privy never needs RPC access to a private chain and viem keeps
+> ownership of nonce and gas. The player's embedded wallet is topped up to `OWNER_GAS_ETH` at Account
+> Opening; the Branch Manager (T3) is the alternative approver via a runtime role, and neither party can
+> start a wire the owner did not file.
+
+Lane B as built (U2):
+
+```mermaid
+sequenceDiagram
+  participant O as Overlay
+  participant T as Teller Desk
+  participant PR as Privy (enclave)
+  participant C as Remote EVM
+
+  O->>T: POST /wire {to, amount}
+  T->>C: viem prepares executeWithTimeLock (nonce, gas)
+  T->>PR: eth_signTransaction (policy: to == player's account)
+  PR-->>T: signed raw transaction
+  T->>C: broadcast
+  C-->>T: txId, PENDING, releaseTime
+  T-->>O: SSE pending {txId, releaseTime, chainNow, serverNow}
+  loop every 5s while PENDING
+    T->>C: getTransaction(txId)
+    T-->>O: SSE pending / released
+  end
+  alt after releaseTime
+    O->>T: POST /approve {txId, as: owner|manager}
+    T->>C: approveTimeLockExecution(txId) - contract enforces releaseTime
+    C-->>T: COMPLETED
+  else while PENDING
+    O->>T: POST /cancel {txId}
+    T->>C: cancelTimeLockExecution(txId) - CANCELLED
+  end
+```
+
 ### 3.4 ENS pay-by-name (T1)
 
 `resolve_name("bob.branchzero.eth")` → viem `getEnsAddress({ name, universalResolverAddress? })` on Sepolia (Universal Resolver default works for ENSv2 beta) → address → Lane A. Display name of a payee: viem `getEnsName` (reverse) with forward check enforced on-chain by ENSv2's Universal Resolver.

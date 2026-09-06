@@ -20,8 +20,14 @@ export interface Session {
   signerId: string;
   policyId?: string;
   policyPinnedToAccount: boolean;
+  /** U2 (V6): how the owner's `eth_signTransaction` rules are scoped, and whether they name the account yet. */
+  txPolicy?: { mode: 'calldata' | 'to-only'; pinnedToAccount: boolean; rules: number } | null;
   chainId: number;
   token: { address: string; symbol: string; decimals: number };
+  timeLockSec?: number;
+  instantLimit?: string;
+  /** Branch Manager address when the Teller Desk has a manager key; enables the "Manager stamp" path. */
+  manager?: string | null;
 }
 
 const TELLER = import.meta.env.VITE_TELLER_DESK_URL || '/api';

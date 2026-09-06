@@ -1,4 +1,8 @@
-# Kickoff prompt — U2 Timelock lane (G3)
+# Kickoff prompt — U2 Timelock lane (G3) — **SUPERSEDED**
+
+> **G3 was met on 2026-09-06.** Kept for the record. The live kickoff is
+> [`KICKOFF-U3.md`](./KICKOFF-U3.md); what U2 actually found is in
+> [`progress/2026-09-06-u2-timelock-lane.md`](./progress/2026-09-06-u2-timelock-lane.md).
 
 Paste into a **new** Claude Code / Cursor agent session. Prefer **Fable 5.1**. Escalate to Opus only if stuck on Lane B option choice or permission/gas after one honest attempt.
 

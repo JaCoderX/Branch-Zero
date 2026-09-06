@@ -3,6 +3,9 @@
 .env.*
 !.env.example
 
+# teller desk local player index (dev only, no secrets — but per-machine)
+apps/teller-desk/.data/
+
 # node
 node_modules/
 dist/

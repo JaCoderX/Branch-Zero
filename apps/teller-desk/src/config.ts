@@ -22,10 +22,14 @@ export function redact(v: string): string {
 export const config = {
   port: Number(opt('PORT', '8787')),
   rpcUrl: opt('REMOTE_EVM_RPC_URL', 'http://127.0.0.1:8545'),
+  /** Remote EVM. The only chain the Teller Desk serves until U6. */
+  chainId: 1337,
   allowedOrigins: opt('ALLOWED_ORIGINS', 'http://localhost:5173').split(',').map((s) => s.trim()),
 
   broadcasterPk: req('BROADCASTER_PK') as Hex,
   deployerPk: req('DEPLOYER_PK') as Hex,
+  /** Optional (U2). Branch Manager: a runtime `BRANCH_MANAGER` role holder who may approve / cancel wires directly. */
+  managerPk: (opt('MANAGER_PK') || undefined) as Hex | undefined,
   recoveryAddress: getAddress(req('RECOVERY_ADDRESS')) as Address,
 
   timeLockSec: BigInt(opt('TIMELOCK_SEC', '120')),
@@ -33,6 +37,12 @@ export const config = {
   instantLimit: opt('INSTANT_LIMIT_USDC', '100'),
   /** Opening balance handed to a freshly provisioned account, in display units. */
   openingBalance: opt('OPENING_BALANCE_USDC', '500'),
+  /**
+   * U2, Lane B option 1: the player's embedded wallet sends `executeWithTimeLock` / `approveTimeLockExecution`
+   * itself (signed by the session signer), so it needs a little gas. Topped up from the deployer at
+   * Account Opening whenever the balance drops under half of this.
+   */
+  ownerGasEth: opt('OWNER_GAS_ETH', '0.05'),
 
   privy: {
     appId: req('PRIVY_APP_ID'),
@@ -57,6 +67,8 @@ export function deployments() {
   return {
     chainId: d.chainId as number,
     copyBlox: getAddress(copyBlox.address) as Address,
+    /** First block that can hold a `BloxCloned` event — where account recovery scans from. */
+    copyBloxDeployedAtBlock: BigInt(copyBlox.deployedAtBlock ?? 0),
     /** The U0 fixture doubles as the clone implementation: `Clones.clone` copies runtime code, not storage. */
     accountBloxImplementation: getAddress(copyBlox.cloneImplementation ?? d.accounts[0].address) as Address,
     fixtureAccount: getAddress(d.accounts[0].address) as Address,

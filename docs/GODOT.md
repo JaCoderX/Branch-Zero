@@ -131,9 +131,9 @@ JS side (`apps/web/src/bridge.ts`) exposes a **flat, JSON-only** API. All values
 | `getBalances` | `{ chainId }` | `{ native, usdc }` | viem reads |
 | `resolveName` | `{ name }` | `{ address, chainId, avatar? }` | ENS (Sepolia) |
 | `pay` | `{ chainId, to, amount, memo }` | `{ txId, txHash }` | Teller `/pay` (Lane A) |
-| `wire` | `{ chainId, to, amount, releaseSeconds, memo }` | `{ txId, releaseTime }` | Teller `/wire` (Lane B request) |
-| `approve` / `cancel` | `{ chainId, txId }` | `{ txHash }` | Teller `/approve` `/cancel` |
-| `listPending` | `{ chainId }` | `{ items: [{ txId, status, releaseTime, target, value }] }` | `getPendingTransactions` + `getTransaction` |
+| `wire` | `{ to, amount, memo }` | `{ txId, releaseTime, chainNow, serverNow, hash, status }` | Teller `/wire` (Lane B request). **No `releaseSeconds`** — the cooling period is the account's own `timeLockPeriodSec`, fixed at `initialize`; the game cannot shorten it |
+| `approve` / `cancel` | `{ txId, as?: "owner" or "manager" }` | `{ hash, txId, status, balanceAfter? }` | Teller `/approve` `/cancel` |
+| `listPending` | — | `{ items: [{ txId, status, releaseTime, released, to, amount, requester }], serverNow }` | `getPendingTransactions` + `getTransaction` |
 | `getHistory` | `{ chainId, limit }` | `{ items }` | Teller watcher cache |
 | `ensAvailable` / `ensMint` / `ensSetText` | see [ENS.md](./ENS.md) | — | Teller `/ens/*` |
 | `quote` / `swap` | see [UNISWAP.md](./UNISWAP.md) | — | S1 only |
@@ -153,6 +153,11 @@ Rules:
 Browsers throttle `requestAnimationFrame` in background tabs, so Godot's `_process` stops. Consequences and rules:
 
 - **No gameplay-critical timers in Godot.** Release time comes from chain (`getTransaction().releaseTime`); the board recomputes remaining time from `Time.get_unix_time_from_system()` on each frame.
+- **Correct the local clock against the desk, not against the chain.** Every stage event and `listPending`
+  carries `serverNow` (the Teller Desk's wall clock). Keep `offset = serverNow - localNow` and count down
+  `releaseTime - (localNow + offset)`. Do **not** count against `chainNow`: Remote EVM mines on demand, so
+  its latest block timestamp is frozen between transactions and the clock would appear stopped
+  ([REMOTE-EVM.md](./REMOTE-EVM.md) section 1a). `releaseTime` itself is still read only from the chain.
 - The bridge keeps SSE alive in JS (not throttled the same way); on tab focus Godot calls `listPending` once to reconcile.
 - Audio: resume `AudioServer` on first input after focus (browser autoplay policy).
 

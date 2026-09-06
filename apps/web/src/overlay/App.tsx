@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { onBridgeTraffic, pushStage, setWalletAdapter } from '../bridge/branchZero';
 import { useBranchZeroWallet } from './useBranchZeroWallet';
-import type { StageEvent } from '@branch-zero/shared';
+import type { PendingWire, StageEvent } from '@branch-zero/shared';
 
 interface Line {
   t: string;
@@ -12,20 +12,33 @@ interface Line {
 const MAX = 10;
 const TELLER = import.meta.env.VITE_TELLER_DESK_URL || '/api';
 
+interface Passbook {
+  balance: string;
+  symbol: string;
+  pending: number;
+  wires: PendingWire[];
+  /** Teller Desk wall clock at fetch time, unix seconds. The vault clock counts against this, corrected locally. */
+  serverNow: number;
+}
+
 /**
- * U1 overlay: the Account Opening desk plus the bridge log from U0.
+ * U1/U2 overlay: the Account Opening desk, the counter, the vault — plus the bridge log from U0.
  *
  * This panel is deliberately plain — the greybox bank that replaces it is U3. What matters here is that
- * the delegation consent happens exactly once and is visibly revocable, and that everything after it
- * runs with no wallet modal at all.
+ * the delegation consent happens exactly once and is visibly revocable, that everything after it runs
+ * with no wallet modal at all (Pay, Wire, Release, Recall included), and that the vault clock is the
+ * chain's `releaseTime`, never a timer this panel invented.
  */
 export function App({ engineState }: { engineState: string }) {
   const w = useBranchZeroWallet();
   const [lines, setLines] = useState<Line[]>([]);
   const [stage, setStage] = useState<string>('');
-  const [passbook, setPassbook] = useState<{ balance: string; symbol: string; pending: number } | undefined>();
+  const [passbook, setPassbook] = useState<Passbook | undefined>();
   const [payee, setPayee] = useState('0x95cED938F7991cd0dFcb48F0a06a40FA1aF46EBC');
   const [amount, setAmount] = useState('12.5');
+  const [wireAmount, setWireAmount] = useState('250');
+  const [clockOffset, setClockOffset] = useState(0); // serverNow - localNow, seconds
+  const [, setTick] = useState(0);
   const esRef = useRef<EventSource | undefined>(undefined);
 
   useEffect(() => {
@@ -38,7 +51,15 @@ export function App({ engineState }: { engineState: string }) {
     });
   }, []);
 
-  // Lend the bridge a way to reach Privy. Godot's `login()` / `pay()` land here.
+  // Re-render once a second while a wire is pending so the countdown moves. The clock itself is
+  // `releaseTime` from the chain; only the "now" side is local (server-corrected).
+  useEffect(() => {
+    if (!passbook?.wires.some((x) => x.status === 'PENDING')) return;
+    const t = setInterval(() => setTick((n) => n + 1), 1000);
+    return () => clearInterval(t);
+  }, [passbook?.wires]);
+
+  // Lend the bridge a way to reach Privy. Godot's `login()` / `pay()` / `wire()` land here.
   //
   // The adapter object is created once and reads the current hook values through a ref. Registering a
   // fresh object each render would loop: bridge traffic re-renders this panel, which would re-register.
@@ -59,8 +80,21 @@ export function App({ engineState }: { engineState: string }) {
     return () => setWalletAdapter(undefined);
   }, []);
 
+  const refreshPassbook = async () => {
+    const status = await w.call<{ balance?: string; symbol?: string; pending?: number; account?: string | null; wires?: PendingWire[]; serverNow?: string }>('/status');
+    if (status.account) {
+      const serverNow = Number(status.serverNow ?? Math.floor(Date.now() / 1000));
+      setClockOffset(serverNow - Math.floor(Date.now() / 1000));
+      setPassbook({ balance: status.balance ?? '0', symbol: status.symbol ?? 'dUSDC', pending: status.pending ?? 0, wires: status.wires ?? [], serverNow });
+    } else {
+      setPassbook(undefined);
+    }
+  };
+  const refreshRef = useRef(refreshPassbook);
+  refreshRef.current = refreshPassbook;
+
   // Teller Desk stages arrive over SSE and are forwarded straight into the bridge, so the NPC lines the
-  // game shows and the lines this panel shows are the same events.
+  // game shows and the lines this panel shows are the same events. Vault transitions refresh the passbook.
   useEffect(() => {
     if (!w.session) return;
     let closed = false;
@@ -72,6 +106,8 @@ export function App({ engineState }: { engineState: string }) {
         const e = JSON.parse(ev.data) as StageEvent;
         setStage(e.bankLine);
         pushStage(e);
+        if (e.serverNow) setClockOffset(Number(e.serverNow) - Math.floor(Date.now() / 1000));
+        if (e.lane === 'B' && (e.stage === 'released' || e.stage === 'mined' || e.stage === 'cancelled' || (e.stage === 'pending' && e.hash))) void refreshRef.current();
       };
       es.onerror = () => es.close();
       esRef.current = es;
@@ -96,23 +132,25 @@ export function App({ engineState }: { engineState: string }) {
     setStage(label);
     try {
       await fn();
-      // Provision / pay mutate desk state; /session is the source of account + policyPinned for the UI.
-      await w.refreshSession();
-      const status = await w.call<{ balance?: string; symbol?: string; pending?: number; account?: string | null }>('/status');
-      if (status.account) {
-        setPassbook({ balance: status.balance ?? '0', symbol: status.symbol ?? 'dUSDC', pending: status.pending ?? 0 });
-      } else {
-        setPassbook(undefined);
-      }
     } catch (e) {
       w.setError((e as Error).message);
     } finally {
+      // Provision / pay / wire / approve / cancel mutate desk state; /session is the source of account +
+      // policy pins for the UI (U1 lesson), /status of balance + vault board. Refresh even after a failure —
+      // a refused approve still moved the clock.
+      try {
+        await w.refreshSession();
+        await refreshPassbook();
+      } catch {
+        /* keep the primary error */
+      }
       setStage('');
     }
   };
 
   const s = w.session;
   const delegated = Boolean(s?.delegated);
+  const now = Math.floor(Date.now() / 1000) + clockOffset;
 
   return (
     <div style={panel}>
@@ -147,6 +185,7 @@ export function App({ engineState }: { engineState: string }) {
             <span style={{ color: delegated ? '#7ee787' : '#e3b341' }}>
               {delegated ? 'session signer — no modal per action' : 'client — you sign each slip'}
               {s?.policyId ? ` · policy ${s.policyId.slice(0, 8)}…${s.policyPinnedToAccount ? ' (pinned to your account)' : ' (chain-scoped)'}` : ''}
+              {s?.txPolicy ? ` · owner tx rules: ${s.txPolicy.mode}${s.txPolicy.pinnedToAccount ? ', pinned' : ''}` : ''}
             </span>
           </div>
           {passbook && (
@@ -154,7 +193,7 @@ export function App({ engineState }: { engineState: string }) {
               <span style={label}>passbook</span>
               <span>
                 {passbook.balance} {passbook.symbol}
-                {passbook.pending ? ` · ${passbook.pending} pending` : ''}
+                {passbook.pending ? ` · ${passbook.pending} in the vault` : ''}
               </span>
             </div>
           )}
@@ -186,12 +225,56 @@ export function App({ engineState }: { engineState: string }) {
           </div>
 
           {s?.account && (
-            <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
-              <input style={input} value={payee} onChange={(e) => setPayee(e.target.value)} spellCheck={false} />
-              <input style={{ ...input, width: 80 }} value={amount} onChange={(e) => setAmount(e.target.value)} />
-              <button style={btn} onClick={() => run('Stamping your slip…', () => w.call('/pay', { to: payee, amount }))}>
-                Pay
-              </button>
+            <>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 6, flexWrap: 'wrap' }}>
+                <input style={input} value={payee} onChange={(e) => setPayee(e.target.value)} spellCheck={false} />
+                <input style={{ ...input, width: 80 }} value={amount} onChange={(e) => setAmount(e.target.value)} />
+                <button style={btn} onClick={() => run('Stamping your slip…', () => w.call('/pay', { to: payee, amount }))}>
+                  Pay
+                </button>
+                <span style={{ color: '#667' }}>≤ {s.instantLimit ?? '100'} at the counter</span>
+              </div>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
+                <span style={{ ...label, width: 'auto' }}>vault</span>
+                <input style={{ ...input, width: 80 }} value={wireAmount} onChange={(e) => setWireAmount(e.target.value)} />
+                <button style={{ ...btn, borderColor: '#d2a8ff' }} onClick={() => run('Filing your wire…', () => w.call('/wire', { to: payee, amount: wireAmount }))}>
+                  Wire (time-locked {s.timeLockSec ?? 120}s)
+                </button>
+                <span style={{ color: '#667' }}>same payee · owner signs via session signer, no modal</span>
+              </div>
+            </>
+          )}
+
+          {passbook && passbook.wires.length > 0 && (
+            <div style={{ border: '1px solid #2a3140', borderRadius: 6, padding: '6px 8px', marginBottom: 8 }}>
+              <div style={{ color: '#9aa4b2', marginBottom: 4 }}>vault board — releaseTime from chain (getTransaction), clock vs Teller Desk time</div>
+              {passbook.wires.map((x) => {
+                const left = Number(x.releaseTime) - now;
+                const released = left <= 0;
+                return (
+                  <div key={x.txId} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 4 }}>
+                    <code style={{ color: '#8ab4f8' }}>#{x.txId}</code>
+                    <span>
+                      {x.amount ?? '?'} {passbook.symbol} → {x.to ? `${x.to.slice(0, 8)}…` : '?'}
+                    </span>
+                    <span style={{ color: released ? '#7ee787' : '#e3b341', minWidth: 120 }}>
+                      {released ? '● released' : `○ ${fmt(left)} to release`}
+                    </span>
+                    <span style={{ color: '#556' }}>t={x.releaseTime}</span>
+                    <button style={{ ...btn, opacity: released ? 1 : 0.6 }} onClick={() => run('Opening the vault…', () => w.call('/approve', { txId: x.txId }))}>
+                      Release
+                    </button>
+                    <button style={btn} onClick={() => run('Recalling the wire…', () => w.call('/cancel', { txId: x.txId }))}>
+                      Recall
+                    </button>
+                    {s?.manager && (
+                      <button style={{ ...btn, borderColor: '#e3b341' }} onClick={() => run('Asking the manager…', () => w.call('/approve', { txId: x.txId, as: 'manager' }))}>
+                        Manager stamp
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </>
@@ -212,14 +295,19 @@ export function App({ engineState }: { engineState: string }) {
   );
 }
 
+function fmt(sec: number): string {
+  const s = Math.max(0, sec);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
 const color: Record<Line['kind'], string> = { req: '#8ab4f8', res: '#7ee787', err: '#ff7b72', evt: '#d2a8ff', sys: '#9aa4b2' };
 
 const panel: React.CSSProperties = {
   position: 'fixed',
   right: 12,
   bottom: 12,
-  width: 'min(620px, calc(100vw - 24px))',
-  maxHeight: '80vh',
+  width: 'min(680px, calc(100vw - 24px))',
+  maxHeight: '85vh',
   overflow: 'auto',
   background: 'rgba(11,14,20,0.92)',
   border: '1px solid #2a3140',

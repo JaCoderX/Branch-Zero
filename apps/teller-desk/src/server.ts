@@ -1,23 +1,26 @@
 /**
- * Teller Desk — U1.
+ * Teller Desk — U2.
  *
  * Holds the two keys the browser must never see: the Privy P-256 authorization key (which lets it *ask*
  * a delegated wallet for a signature) and the broadcaster key (which pays gas). Neither can move a
  * player's money alone: the enclave only signs what the policy allows, and the broadcaster can only
- * submit meta-transactions the owner actually signed.
+ * submit meta-transactions the owner actually signed. U2 adds the vault: the owner's own transactions
+ * (`executeWithTimeLock`, approve, cancel) signed by the session signer and broadcast from here, plus an
+ * optional Branch Manager key holding a runtime role.
  *
  *   npm run dev:teller     # :8787, reads ../../.env
  */
 import Fastify from 'fastify';
 import { formatEther, getAddress, isAddress, type Address } from 'viem';
 import type { StageEvent } from '@branch-zero/shared';
-import { broadcasterAddress, chain, deployerAddress, publicClient } from './chain.ts';
+import { broadcasterAddress, chain, deployerAddress, managerAddress, publicClient } from './chain.ts';
 import { config, deployments, redact } from './config.ts';
-import { createPlayerPolicy, identify } from './privy.ts';
+import { createPlayerPolicy, identify, recoverPolicy } from './privy.ts';
 import { pay, passbook } from './lanes/laneA.ts';
-import { provision } from './lanes/provision.ts';
+import { approve, cancel, listPending, resumeWatchers, wire, type Actor } from './lanes/laneB.ts';
+import { ensureTxPolicy, provision, recoverAccount } from './lanes/provision.ts';
 import { emitStage, getPlayer, listReceipts, newJobId, patchPlayer, serialize, subscribe, upsertPlayer, type Player } from './store.ts';
-import type { SignatureAudit } from './signing/privySigner.ts';
+import type { SignatureAudit, TxAudit } from './signing/privySigner.ts';
 
 const app = Fastify({ logger: { level: process.env.LOG_LEVEL ?? 'info', redact: ['req.headers.authorization'] } });
 
@@ -54,27 +57,35 @@ function auditFor(player: Player) {
       `privy session signer: typed data signed for ${player.privyUserId}`,
     );
 }
+/** Same for the owner's own transactions (U2): who, to which contract, which function, which nonce. */
+function txAuditFor(player: Player) {
+  return (e: TxAudit) =>
+    app.log.info({ owner: e.owner, walletId: e.walletId, chainId: e.chainId, to: e.to, selector: e.selector, nonce: e.nonce, gas: e.gas, ms: e.ms }, `privy session signer: transaction signed for ${player.privyUserId}`);
+}
 
 app.get('/healthz', async () => {
   const d = deployments();
   try {
-    const [chainId, block, broadcasterBal, deployerBal] = await Promise.all([
+    const [chainId, block, broadcasterBal, deployerBal, managerBal] = await Promise.all([
       publicClient.getChainId(),
       publicClient.getBlockNumber(),
       publicClient.getBalance({ address: broadcasterAddress }),
       publicClient.getBalance({ address: deployerAddress }),
+      managerAddress ? publicClient.getBalance({ address: managerAddress }) : Promise.resolve(0n),
     ]);
     return {
       ok: chainId === chain.id,
-      unit: 'U1',
+      unit: 'U2',
       chains: { remoteEvm: { chainId, expected: chain.id, block: block.toString(), reachable: true } },
       broadcaster: { address: broadcasterAddress, balanceEth: formatEther(broadcasterBal) },
       deployer: { address: deployerAddress, balanceEth: formatEther(deployerBal) },
+      manager: managerAddress ? { address: managerAddress, balanceEth: formatEther(managerBal) } : null,
       privy: { appId: config.privy.appId, signerId: config.privy.signerId, authorizationKey: redact(config.privy.authorizationKey) },
       contracts: { copyBlox: d.copyBlox, accountBloxImplementation: d.accountBloxImplementation, token: d.token },
+      timeLockSec: Number(config.timeLockSec),
     };
   } catch (e) {
-    return { ok: false, unit: 'U1', chains: { remoteEvm: { reachable: false, error: (e as Error).message } } };
+    return { ok: false, unit: 'U2', chains: { remoteEvm: { reachable: false, error: (e as Error).message } } };
   }
 });
 
@@ -85,13 +96,35 @@ app.get('/healthz', async () => {
  * that id to `addSessionSigners`, so the single consent the player gives covers both "who may sign" (our
  * key quorum) and "what they may sign" (this policy). We cannot attach either from here — the wallet is
  * owned by the player's own key quorum, which is the point.
+ *
+ * U2: a player the index has forgotten (restart, upgrade) is rehydrated from the chain (their clone) and
+ * from Privy (their policy and rules) instead of being opened twice.
  */
 app.post('/session', async (req, reply) => {
   try {
     let player = await requirePlayer(req as never);
     if (!player.policyId) {
-      const policy = await createPlayerPolicy(chain.id, player.ownerAddress.slice(2, 12).toLowerCase());
-      player = patchPlayer(player.privyUserId, { policyId: policy.policyId, policyRuleId: policy.ruleId });
+      const recovered = await recoverPolicy(player.walletId).catch(() => undefined);
+      if (recovered?.policyId) {
+        player = patchPlayer(player.privyUserId, {
+          policyId: recovered.policyId,
+          policyRuleId: recovered.ruleId,
+          ...(recovered.txRules ? { txRuleIds: recovered.txRules.ruleIds, txPolicyMode: recovered.txRules.mode } : {}),
+        });
+      } else {
+        const policy = await createPlayerPolicy(chain.id, player.ownerAddress.slice(2, 12).toLowerCase());
+        player = patchPlayer(player.privyUserId, { policyId: policy.policyId, policyRuleId: policy.ruleId });
+      }
+    }
+    if (!player.account) {
+      const account = await recoverAccount(player.ownerAddress).catch(() => undefined);
+      if (account) player = patchPlayer(player.privyUserId, { account });
+    }
+    // V6 — the eth_signTransaction rules must exist before the player consents (the consent carries the policy).
+    try {
+      player = await ensureTxPolicy(player, player.account);
+    } catch (e) {
+      app.log.warn({ err: (e as Error).message }, 'tx policy rules not ensured');
     }
     return {
       privyUserId: player.privyUserId,
@@ -102,8 +135,12 @@ app.post('/session', async (req, reply) => {
       signerId: config.privy.signerId,
       policyId: player.policyId,
       policyPinnedToAccount: Boolean(player.policyPinned),
+      txPolicy: player.txRuleIds?.length ? { mode: player.txPolicyMode, pinnedToAccount: Boolean(player.txPolicyPinned), rules: player.txRuleIds.length } : null,
       chainId: chain.id,
       token: deployments().token,
+      timeLockSec: Number(config.timeLockSec),
+      instantLimit: config.instantLimit,
+      manager: managerAddress ?? null,
     };
   } catch (e) {
     return fail(reply, e);
@@ -121,19 +158,73 @@ app.post('/provision', async (req, reply) => {
   }
 });
 
+function parseTransfer(body: { to?: string; amount?: string }) {
+  if (!body.to || !isAddress(body.to)) throw Object.assign(new Error('`to` must be an address'), { statusCode: 400, code: 'BAD_ARGS' });
+  if (!body.amount || !/^\d+(\.\d+)?$/.test(body.amount)) throw Object.assign(new Error('`amount` must be a decimal string'), { statusCode: 400, code: 'BAD_ARGS' });
+  return { to: getAddress(body.to) as Address, amount: body.amount };
+}
+
 app.post('/pay', async (req, reply) => {
   try {
     const player = await requirePlayer(req as never);
-    const body = (req.body ?? {}) as { to?: string; amount?: string; memo?: string };
-    if (!body.to || !isAddress(body.to)) throw Object.assign(new Error('`to` must be an address'), { statusCode: 400, code: 'BAD_ARGS' });
-    if (!body.amount || !/^\d+(\.\d+)?$/.test(body.amount)) throw Object.assign(new Error('`amount` must be a decimal string'), { statusCode: 400, code: 'BAD_ARGS' });
-    if (Number(body.amount) > Number(config.instantLimit)) {
+    const { to, amount } = parseTransfer((req.body ?? {}) as { to?: string; amount?: string });
+    if (Number(amount) > Number(config.instantLimit)) {
       // Off-chain routing only — docs/REFLECTION.md §2.2 records this as a partial invariant.
-      throw Object.assign(new Error(`over the ${config.instantLimit} instant limit — that is a wire (Lane B, U2)`), { statusCode: 400, code: 'POLICY' });
+      throw Object.assign(new Error(`over the ${config.instantLimit} instant limit — that is a wire: use /wire`), { statusCode: 400, code: 'POLICY' });
     }
     const jobId = newJobId();
     const current = getPlayer(player.privyUserId)!;
-    const result = await serialize(player.privyUserId, () => pay(current, getAddress(body.to!) as Address, body.amount!, jobId, auditFor(player)));
+    const result = await serialize(player.privyUserId, () => pay(current, to, amount, jobId, auditFor(player)));
+    return { jobId, ...result };
+  } catch (e) {
+    return fail(reply, e);
+  }
+});
+
+// ============ U2 — the vault (Lane B) ============
+
+/** File a time-locked wire. Any amount is accepted here; the counter routes large ones this way. */
+app.post('/wire', async (req, reply) => {
+  try {
+    const player = await requirePlayer(req as never);
+    const { to, amount } = parseTransfer((req.body ?? {}) as { to?: string; amount?: string });
+    const jobId = newJobId();
+    const current = getPlayer(player.privyUserId)!;
+    const result = await serialize(player.privyUserId, () => wire(current, to, amount, jobId, txAuditFor(player)));
+    return { jobId, ...result };
+  } catch (e) {
+    return fail(reply, e);
+  }
+});
+
+function parseDecision(body: { txId?: string | number; as?: string }): { txId: bigint; actor: Actor } {
+  if (body.txId === undefined || !/^\d+$/.test(String(body.txId))) throw Object.assign(new Error('`txId` must be a record id'), { statusCode: 400, code: 'BAD_ARGS' });
+  const actor: Actor = body.as === 'manager' ? 'manager' : 'owner';
+  return { txId: BigInt(body.txId), actor };
+}
+
+/** Open the vault (after `releaseTime`). `as: 'manager'` uses the Branch Manager's runtime role instead of the owner. */
+app.post('/approve', async (req, reply) => {
+  try {
+    const player = await requirePlayer(req as never);
+    const { txId, actor } = parseDecision((req.body ?? {}) as never);
+    const jobId = newJobId();
+    const current = getPlayer(player.privyUserId)!;
+    const result = await serialize(player.privyUserId, () => approve(current, txId, actor, jobId, txAuditFor(player)));
+    return { jobId, ...result };
+  } catch (e) {
+    return fail(reply, e);
+  }
+});
+
+/** Recall a wire while it is PENDING. Same actor rule as /approve. */
+app.post('/cancel', async (req, reply) => {
+  try {
+    const player = await requirePlayer(req as never);
+    const { txId, actor } = parseDecision((req.body ?? {}) as never);
+    const jobId = newJobId();
+    const current = getPlayer(player.privyUserId)!;
+    const result = await serialize(player.privyUserId, () => cancel(current, txId, actor, jobId, txAuditFor(player)));
     return { jobId, ...result };
   } catch (e) {
     return fail(reply, e);
@@ -143,13 +234,16 @@ app.post('/pay', async (req, reply) => {
 app.get('/status', async (req, reply) => {
   try {
     const player = await requirePlayer(req as never);
-    const book = player.account ? await passbook(player.account) : null;
+    const [book, pending] = player.account ? await Promise.all([passbook(player.account), listPending(player.account)]) : [null, []];
     return {
       owner: player.ownerAddress,
       chainId: chain.id,
       signingMode: player.signingMode,
       policyId: player.policyId ?? null,
       ...(book ?? { account: null, balance: '0', symbol: deployments().token.symbol, pending: 0 }),
+      wires: pending,
+      serverNow: String(Math.floor(Date.now() / 1000)),
+      timeLockSec: Number(config.timeLockSec),
       receipts: listReceipts(player.privyUserId),
     };
   } catch (e) {
@@ -160,6 +254,7 @@ app.get('/status', async (req, reply) => {
 /**
  * SSE stage stream. The token rides in the query string because `EventSource` cannot set headers; it is
  * a short-lived Privy access token over localhost in U1, and moves to a cookie when the shell is hosted.
+ * On connect the vault's pending records are re-read from the chain and pushed, and their pollers re-armed.
  */
 app.get('/events', async (req, reply) => {
   const { token = '', owner = '' } = req.query as { token?: string; owner?: string };
@@ -178,6 +273,14 @@ app.get('/events', async (req, reply) => {
   const send = (e: StageEvent) => reply.raw.write(`data: ${JSON.stringify(e)}\n\n`);
   send({ type: 'stage', jobId: 'hello', lane: 'CONFIG', stage: 'queued', bankLine: 'Connected to the branch.' });
   const off = subscribe(player.privyUserId, send);
+  void resumeWatchers(getPlayer(player.privyUserId) ?? player)
+    .then((pending) => {
+      const now = String(Math.floor(Date.now() / 1000));
+      for (const w of pending) {
+        send({ type: 'stage', jobId: `wire-${w.txId}`, lane: 'B', stage: w.released ? 'released' : 'pending', bankLine: w.released ? 'The vault clock has run down.' : 'The vault clock is running.', txId: w.txId, releaseTime: w.releaseTime, serverNow: now, status: w.status });
+      }
+    })
+    .catch((e) => app.log.warn({ err: (e as Error).message }, 'could not resume vault watchers'));
   const keepAlive = setInterval(() => reply.raw.write(': ping\n\n'), 20_000);
   req.raw.on('close', () => {
     clearInterval(keepAlive);
@@ -186,11 +289,8 @@ app.get('/events', async (req, reply) => {
   return reply;
 });
 
-/** Not in U1. Left explicit so the bridge fails with a plan, not a 404. */
+/** Not in U2. Left explicit so the bridge fails with a plan, not a 404. */
 for (const [route, unit] of [
-  ['/wire', 'U2'],
-  ['/approve', 'U2'],
-  ['/cancel', 'U2'],
   ['/ens/claim', 'U5'],
   ['/ens/record', 'U5'],
   ['/fx/swap', 'S1'],
@@ -210,8 +310,8 @@ deployments();
 
 app.listen({ port: config.port, host: '127.0.0.1' }).then((addr) => {
   app.log.info(
-    { rpc: config.rpcUrl, broadcaster: broadcasterAddress, deployer: deployerAddress, privyApp: config.privy.appId, signerId: config.privy.signerId },
-    `Teller Desk (U1) listening on ${addr}`,
+    { rpc: config.rpcUrl, broadcaster: broadcasterAddress, deployer: deployerAddress, manager: managerAddress ?? null, privyApp: config.privy.appId, signerId: config.privy.signerId },
+    `Teller Desk (U2) listening on ${addr}`,
   );
 });
 
