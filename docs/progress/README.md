@@ -13,6 +13,7 @@ Do not commit secrets, `.env`, or large binaries.
 | [2026-09-06 — U2 Timelock lane](./2026-09-06-u2-timelock-lane.md) | U2 | G3 | met — V6 PASS both ways; Lane B wire/approve/cancel green |
 | [2026-09-06 — review + lessons](./2026-09-06-review-lessons.md) | — | — | CC review; four lessons scrubbed to GameDevOS |
 | [2026-09-06 — U3 Bank shell](./2026-09-06-u3-bank-shell.md) | U3 | G4 | met — greybox + 5 NPCs on the bridge; door clock from `releaseTime`; 85 error lines; human OTP walk pending |
+| [2026-09-06 — U3 review + lessons](./2026-09-06-u3-review-lessons.md) | — | — | CC review; four web-Godot lessons scrubbed |
 | [KICKOFF-U4](../KICKOFF-U4.md) | U4 | G5 | paste into new cold agent |
 
 The newest note carries the findings that will otherwise cost the next agent an afternoon. Read it first.
