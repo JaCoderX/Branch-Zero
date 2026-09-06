@@ -4,12 +4,15 @@
 
 **Start here**
 
-- Cold agent / Claude Code: [`docs/HANDOFF-CC.md`](./docs/HANDOFF-CC.md) (**U2** mission)
+- Cold agent / Claude Code: [`docs/HANDOFF-CC.md`](./docs/HANDOFF-CC.md) (**U3** mission)
 - Plan and gates: [`docs/PLAN.md`](./docs/PLAN.md) · construction units: [`docs/DEV-LOOP.md`](./docs/DEV-LOOP.md)
 - Doc index: [`docs/README.md`](./docs/README.md) · honest review + kill-test log: [`docs/REFLECTION.md`](./docs/REFLECTION.md)
 - Daily evidence: [`docs/progress/`](./docs/progress/)
 
-**Status:** U1 / G2 met 2026-09-06. Privy login + session signer + policy + Lane A payment all run on Remote EVM 1337 (**K2, K5, K8 PASS**). **U2 (time-locked wire) is next.**
+**Status:** U2 / G3 met 2026-09-06. Privy login + session signer + policy, Lane A payments **and** Lane B
+time-locked wires all run on Remote EVM 1337 (**K2, K5, K8, V6, Lane A, Lane B PASS**). A wire goes into the
+vault as a time-locked record; the countdown is that record's own `releaseTime` read from the chain, and an
+early release is refused **by the contract**, not by the button. **U3 (walkable greybox bank) is next.**
 
 ---
 
@@ -18,7 +21,7 @@
 ```text
 apps/game/          Godot 4.5.2 project (GDScript). autoload/chain.gd is the ONLY JavaScriptBridge user. Never holds keys.
 apps/web/           Vite + React shell. index.html hosts the canvas; src/bridge installs window.BranchZero (@bloxchain/sdk reads).
-apps/teller-desk/   Fastify service. Holds the Privy authorization key + broadcaster key. /session /provision /pay /status /events.
+apps/teller-desk/   Fastify service. Holds the Privy authorization key + broadcaster key. /session /provision /pay /wire /approve /cancel /status /events.
                     src/signing/privySigner.ts is the signing lane; scripts/kill-tests.ts re-runs K2 / K5 / Lane A.
 packages/shared/    viem chain configs (remoteEvm 1337, sepolia), dev-role addresses, bridge protocol types, deployments schema,
                     the two ABI fragments the SDK does not expose at runtime.
@@ -130,6 +133,6 @@ Public **`@bloxchain/sdk` + `viem`** only for product runtime (plus Privy for id
 
 ## AI tools
 
-Planning and U0 construction: Claude Code (Fable 5.1). U1 construction: Claude Code (Opus 5). Lessons scrubbed into GameDevOS `wiki/lessons/`. See `docs/progress/`.
+Planning and U0 construction: Claude Code (Fable 5.1). U1 construction: Claude Code (Opus 5). U2 construction: Claude Code (Fable 5.1 / Opus 5). Lessons scrubbed into GameDevOS `wiki/lessons/`. See `docs/progress/`.
 
 Licence: MIT. Bloxchain SDK is MPL-2.0.
