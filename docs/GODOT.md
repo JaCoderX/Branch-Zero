@@ -72,6 +72,8 @@ godot --headless --path apps/game --export-release "Web" ../web/public/game/inde
 
 ## 3. Custom HTML shell
 
+> **U0 decision (2026-09-06):** the shell is `apps/web/index.html` served by Vite; `apps/web/src/main.ts` installs `window.BranchZero`, then loads `/game/index.js` and starts `Engine` on `#canvas` with `ensureCrossOriginIsolationHeaders: false`. Godot's own exported `index.html` is ignored and `res://export/shell.html` is **not** created. `npm run export:web` (`scripts/export-web.mjs`) runs `--import` then `--export-release Web`; the exported `GODOT_CONFIG` was checked to carry `ensureCrossOriginIsolationHeaders:false`. The text below describes the Godot-side alternative if a PWA/splash shell is ever needed.
+
 `res://export/shell.html` is a copy of the default shell with:
 
 - `<script type="module" src="/bridge.js">` loaded **before** the engine starts, so `window.BranchZero` exists on first frame.

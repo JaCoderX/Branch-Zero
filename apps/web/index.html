@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Branch Zero</title>
+    <link rel="icon" href="data:," />
+    <style>
+      html, body { margin: 0; height: 100%; background: #0b0e14; color: #e6e6e6; font-family: system-ui, sans-serif; overflow: hidden; }
+      #game { position: fixed; inset: 0; }
+      #canvas { display: block; width: 100%; height: 100%; outline: none; }
+      #overlay { position: fixed; inset: 0; pointer-events: none; }
+      #overlay > * { pointer-events: auto; }
+      #boot { position: fixed; inset: 0; display: grid; place-items: center; font-size: 14px; color: #9aa4b2; }
+    </style>
+  </head>
+  <body>
+    <div id="game"><canvas id="canvas" tabindex="0"></canvas></div>
+    <div id="boot">Branch Zero — loading shell…</div>
+    <div id="overlay"></div>
+    <!-- The shell (bridge first, then the engine). window.BranchZero must exist before Godot's first frame. -->
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

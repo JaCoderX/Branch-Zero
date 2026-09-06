@@ -189,19 +189,19 @@ Fill ENG `findings.md` when you answer that ENG's question. Write ENG `handoff.m
 
 ### 6.3 Definition of Done (G1)
 
-Check all:
+Check all: *(ticked 2026-09-06 by the U0 session — K4 passed via a fallback that needs the principal's confirmation; see `docs/REFLECTION.md` kill-test log)*
 
-- [ ] Repo scaffold exists: `apps/game`, `apps/web`, `apps/teller-desk` (may be stub), `packages/shared`, `infra/scripts`, `infra/deployments`
-- [ ] Godot **4.5** project; web export preset **thread support off**
-- [ ] Browser: Godot canvas + JS round-trip (K1). Document the command to serve it
-- [ ] `@bloxchain/sdk` (and `@bloxchain/contracts` as needed) installed from **npm**
-- [ ] Remote EVM reachable; script deploys or attaches `AccountBlox` on **1337** and reads `owner()` (K4 local / ENG-0005)
-- [ ] `infra/deployments/remote-evm.json` committed with **addresses only**
-- [ ] `.env.example` for RPCs and key **names**; no real keys
-- [ ] Root `README.md`: one-line pitch + how to run web shell + how to point at Remote EVM
-- [ ] `docs/REFLECTION.md` kill-test log: **K1** and **K4** filled (pass/fail/fallback). K2/K3/K5 may stay pending with the next human action named
-- [ ] If you opened ENGs: `findings.md` started; GameLab `work/index.md` unchanged unless you close one
-- [ ] `docs/progress/` note: what ran, commands, blockers (text is enough if capture is awkward)
+- [x] Repo scaffold exists: `apps/game`, `apps/web`, `apps/teller-desk` (may be stub), `packages/shared`, `infra/scripts`, `infra/deployments`
+- [x] Godot **4.5** project; web export preset **thread support off**
+- [x] Browser: Godot canvas + JS round-trip (K1). Document the command to serve it
+- [x] `@bloxchain/sdk` (and `@bloxchain/contracts` as needed) installed from **npm**
+- [x] Remote EVM reachable; script deploys or attaches `AccountBlox` on **1337** and reads `owner()` (K4 local / ENG-0005)
+- [x] `infra/deployments/remote-evm.json` committed with **addresses only**
+- [x] `.env.example` for RPCs and key **names**; no real keys
+- [x] Root `README.md`: one-line pitch + how to run web shell + how to point at Remote EVM
+- [x] `docs/REFLECTION.md` kill-test log: **K1** and **K4** filled (pass/fail/fallback). K2/K3/K5 may stay pending with the next human action named
+- [x] If you opened ENGs: `findings.md` started; GameLab `work/index.md` unchanged unless you close one
+- [x] `docs/progress/` note: what ran, commands, blockers (text is enough if capture is awkward)
 
 ### 6.4 Suggested sequence (not a script — deviate if faster)
 

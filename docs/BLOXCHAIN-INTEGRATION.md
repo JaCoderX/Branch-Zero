@@ -25,6 +25,8 @@ npm i @bloxchain/sdk viem
 npm i -D @bloxchain/contracts   # artifacts for deploy scripts only
 ```
 
+> **Verified 2026-09-06 (U0, K4).** `@bloxchain/contracts@1.0.0` contains Solidity **source** (`core/`, `standards/`) and ABIs — **no compiled bytecode, no `deployed-addresses.json`, and no `AccountBlox`/`CopyBlox`** (its README: templates live in the main repo under `contracts/examples/`). `@bloxchain/sdk@1.0.0` ships `abi/AccountBlox.abi.json` but its `exports` map only exposes `.` and `./abi` (`engineBloxAbi`). Consequence: `infra/scripts/compile.ts` compiles the published sources with solc 0.8.35 (via-IR, 200 runs) and fetches the `AccountBlox.sol` template from the public repo at the `contracts-v1.0.0` commit, pinned by commit + sha256, into a git-ignored build dir. The `artifacts/*.json` import paths sketched in § 3 do not exist; read them as "our compiled artifact". `viem` must be pinned to the SDK's exact version (`2.50.4`) to avoid a second copy. Permissioned reads: `getSupportedFunctions()` / `getSupportedRoles()` revert with `NoPermission` unless `eth_call` is made `from` a role holder — pass `account: owner` in `readContract` for the § 8 board reads.
+
 Kill test **K4** (Day 1): inspect `node_modules/@bloxchain/contracts` for `deployed-addresses.json` with `sepolia` entries for the three definition libraries. If absent, deploy them ourselves (§ 3.1).
 
 ---
@@ -347,9 +349,9 @@ No custom Solidity means we cannot break these; the only project-side risks are 
 
 | ID | What to verify against the installed public package |
 |----|------------------------------------------------------|
-| V1 | Artifact paths in `@bloxchain/contracts` for `AccountBlox`, definition libraries, optional `CopyBlox` |
-| V2 | Whether `deployed-addresses.json` in the package includes Sepolia definition addresses (K4) |
-| V3 | Default schema for `transfer(address,uint256)` present after `initialize` (`getSupportedFunctions` includes `ERC20_TRANSFER_SELECTOR`) |
+| V1 | Artifact paths in `@bloxchain/contracts` for `AccountBlox`, definition libraries, optional `CopyBlox` — **2026-09-06: none exist.** Source only; `AccountBlox`/`CopyBlox` absent. We compile (`infra/scripts/compile.ts`) → `infra/build/artifacts/*.json` |
+| V2 | Whether `deployed-addresses.json` in the package includes Sepolia definition addresses (K4) — **2026-09-06: no such file.** Libraries deployed by us on 1337; see `infra/deployments/remote-evm.json` |
+| V3 | Default schema for `transfer(address,uint256)` present after `initialize` (`getSupportedFunctions` includes `ERC20_TRANSFER_SELECTOR`) — **2026-09-06 partial:** 30 selectors registered after `initialize` (read `from` owner); selector-level check still open for U1 |
 | V4 | Only whitelist needed for Lane A (no extra role permission on execution selector) |
 | V5 | How to read `txId` after `requestAndApproveExecution` (event name/args in ABI) |
 | V6 | `eth_sendTransaction` via Privy session signer for `executeWithTimeLock` (Lane B option 1) |

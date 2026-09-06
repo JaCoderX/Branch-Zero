@@ -89,16 +89,21 @@ Defined in [PLAN.md](./PLAN.md) § 7 (K1–K6). Added here:
 
 | ID | Date | Result | Notes / fallback chosen |
 |----|------|--------|-------------------------|
-| K1 | — | pending | |
-| K2 | — | pending | |
-| K3 | — | pending | |
-| K4 | — | pending | |
-| K5 | — | pending | |
-| K6 | — | pending | |
+| K1 | 2026-09-06 | **PASS** | Godot **4.5.2-stable** (standard/GDScript) Web export, `variant/thread_support=false`; console: `Build configuration: Emscripten 4.0.10, single-threaded, no GDExtension support`. Served by the Vite shell (`apps/web`) with **no** COOP/COEP (`crossOriginIsolated === false`, `SharedArrayBuffer` undefined). `autoload/chain.gd` → `JavaScriptBridge.get_interface("BranchZero")` + `create_callback`; `echo` round-trip returned the sent string; `chainInfo` and `accountInfo` (SDK `owner()` read made by the TS bridge on Remote EVM) also returned through the same callback. No `eval`. Evidence: `docs/progress/2026-09-06-u0-foundation.md`. Re-run: `npm run export:web && npm run dev:web`. |
+| K2 | — | pending | Next human action: create the Privy app + P-256 authorization key (HANDOFF §9); then ENG-2026-0004 / U1. |
+| K3 | — | pending | After G5. Needs a funded Arc Testnet key (never a Ganache-parity key). |
+| K4 | 2026-09-06 | **FAIL as written → PASS with fallback** | **As written (artifacts in npm):** `@bloxchain/contracts@1.0.0` ships Solidity **source + ABI only** — no bytecode, no `deployed-addresses.json`, and **no `AccountBlox`** (README: templates live in the main repo). `@bloxchain/sdk@1.0.0` ships `AccountBlox.abi.json` only. **Fallback chosen (compile published sources, author none):** `infra/scripts/compile.ts` compiles `core/` from the npm package with solc-js 0.8.35 (via-IR, 200 runs, `evmVersion=prague` — Remote EVM chainspec has no Osaka) plus the `AccountBlox.sol` template fetched at build time from the public repo at the commit tagged `contracts-v1.0.0` (`99beac2d…`, MIT), pinned by commit **and** sha256; nothing is copied into this repo. Four libraries linked in upstream order (EngineBlox, SecureOwnableDefinitions, RuntimeRBACDefinitions, GuardControllerDefinitions). Deploy + `initialize(acct4, acct1, acct2, 120, 0x0)` on **1337**; `@bloxchain/sdk` `SecureOwnable.owner()` == acct4, `getBroadcasters()` ∋ acct1, `getRecovery()` == acct2, `getTimeLockPeriodSec()` == 120; ERC-165 for IGuardController/IRuntimeRBAC/ISecureOwnable true. Record: `infra/deployments/remote-evm.json`. **Principal decision needed:** accept "pinned public template fetched at build time" as within the public-only rule, or fall back further (Anvil fork of a future Sepolia deployment; or wait for AccountBlox to ship in npm). Re-run: `npm run chain:compile && npm run chain:deploy && npm run chain:smoke`. |
+| K5 | — | pending | With K2 (Privy dashboard policy). |
+| K6 | — | pending | Producer registers a Sepolia `.eth` parent first (commit/reveal wait). |
 | K7 | — | pending (S1 only) | |
-| K8 | — | pending | |
+| K8 | — | pending | Precondition verified in K1: shell serves without COOP/COEP. Iframe coexistence itself is untested until a Privy app exists (U1). |
 
-Fill on Day 1–2. A `fail` with no chosen fallback blocks G1.
+Fill on Day 1–2. A `fail` with no chosen fallback blocks G1. **G1 status (2026-09-06): met, conditional on the K4 fallback being accepted.**
+
+Findings recorded alongside (not kill tests, but they change later units):
+
+- `getSupportedFunctions()`, `getSupportedRoles()` and the other registry views are **permissioned**: an anonymous `eth_call` reverts with `NoPermission(0x0)`; the same call with `from` = owner returns 30 selectors / 3 roles. Browser-side reads for the ledger board / service menu (BLOXCHAIN §8) must pass `account: owner` in `readContract`, or go through the Teller Desk.
+- `initialize` cost **16,063,099 gas** while the live Remote EVM block gas limit is **16,777,216** (the 60 M genesis in the Remote EVM README needs a `docker compose down -v` that has not been done). Fine for now, but a wipe before U1 is prudent; every 1337 address then changes and `remote-evm.json` must be regenerated.
 
 ---
 
@@ -113,7 +118,7 @@ Prior ETHGlobal "bank" / 3D projects mostly fall into: (a) DeFi dashboards skinn
 | # | Question | Owner | Due | Default if unanswered |
 |---|----------|-------|-----|------------------------|
 | 1 | Exact EIP-712 domain `name`/`version` emitted by `@bloxchain/sdk` `MetaTransactionSigner` (for the Privy policy) | protocol/backend | Day 1 | Read from a signed sample; pin in `infra/privy/policy.json` |
-| 2 | Are definition libraries in `@bloxchain/contracts` published with Sepolia addresses? | backend | Day 1 (K4) | Deploy ourselves |
+| 2 | Are definition libraries in `@bloxchain/contracts` published with Sepolia addresses? | backend | Day 1 (K4) | **Answered 2026-09-06: no.** The package has no `deployed-addresses.json` and no bytecode at all; we compile and deploy the four libraries ourselves (see kill-test log K4) |
 | 3 | ENSv2 Sepolia: which registry implementation to deploy for `branchzero.eth` subnames (`PermissionedRegistry` vs `UserRegistry`) | backend | Day 4 | Follow contract-developer tutorial default |
 | 4 | Do we own a `.eth` name on Sepolia already? | producer | Day 1 | Register a test name via ENS Sepolia app |
 | 5 | Team size / who owns Godot art | producer | Day 1 | Solo: Kenney/Quaternius CC0 assets only, no custom modelling |
@@ -143,3 +148,9 @@ Prior ETHGlobal "bank" / 3D projects mostly fall into: (a) DeFi dashboards skinn
 | Sep 6 | Large-amount routing to Lane B is off-chain policy; stated as partial invariant | Privy policy cannot parse `executionOptions` | document in README; no protocol change in this repo |
 | Sep 6 | Remote EVM (Nethermind `1337`) is the default lab/dev chain | Sepolia faucet and ENS waits must not block Lane A/B construction | Docker down → name blocker; never publish Ganache-parity keys |
 | Sep 6 | GameDevOS OBJ-2026-0004 + GameLab ENG-0003…0008 bound | Lab answers kill tests; product is rewritten; no ENG merge | after G5 scrub first lesson |
+| Sep 6 (U0) | Compile published sources instead of consuming npm artifacts (K4 fallback) | Public packages ship no bytecode and no `AccountBlox`; the template is fetched from the public repo at the `contracts-v1.0.0` commit, pinned by commit + sha256, into a git-ignored build dir. Zero Solidity authored or vendored here | **Principal to confirm** this stays inside "public only"; revisit when `@bloxchain/contracts` publishes templates or bytecode |
+| Sep 6 (U0) | `evmVersion=prague` for 1337 builds (upstream uses `osaka`) | Remote EVM chainspec activates forks through Prague only; Osaka opcodes would fail | Re-align to `osaka` for Sepolia/Arc once those deploys start (`SOLC_EVM_VERSION`) |
+| Sep 6 (U0) | The Vite `apps/web/index.html` **is** the HTML shell; Godot's exported `index.html` is unused and `res://export/shell.html` is not created | One owner of the page; Vite transpiles the TS bridge in dev; `window.BranchZero` is installed before the engine script loads | If a Godot-side custom shell is ever needed (PWA, splash), revisit in U4 |
+| Sep 6 (U0) | `viem` pinned to **2.50.4** in every workspace | `@bloxchain/sdk@1.0.0` pins `viem@2.50.4`; a second viem copy broke `Chain` types and would duplicate runtime code | Bump together with the SDK |
+| Sep 6 (U0) | Godot 4.5.2 installed as a portable zip under `%LOCALAPPDATA%\Programs\Godot-4.5.2\` (not winget, not on PATH); templates under `%APPDATA%\Godot\export_templates\4.5.2.stable\` | Keeps the lab's 4.7.1-mono untouched; `scripts/export-web.mjs` resolves the binary and refuses non-4.5.x | — |
+| Sep 6 (U0) | Deploy + `initialize` as two transactions (no factory) | `CopyBlox`/factory is not in the public package either; window is seconds on 1337; deployer holds no role after `initialize` | U1 provisioner may add a clone factory only if one is published |

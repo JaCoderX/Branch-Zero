@@ -39,6 +39,8 @@ curl -s -X POST http://127.0.0.1:8545 `
 
 Expect `"result":"0x539"`.
 
+> **Observed 2026-09-06 (U0):** Nethermind `v1.39.3`, forks active through **Prague** (no Osaka → compile for `prague`). Live block `gasLimit` = **16,777,216**, not the 60 M genesis the Remote EVM README describes — the volume has not been wiped since that genesis change. `AccountBlox.initialize` costs ≈ **16.06 M gas**, i.e. ~96 % of the current block. Wipe (`docker compose down -v && docker compose up -d`) before U1 provisioning; then `npm run chain:deploy -- --fresh` and commit the new `infra/deployments/remote-evm.json`. Probe from the product: `npm run chain:probe`.
+
 Wipe (new genesis, all addresses change):
 
 ```bash

@@ -24,3 +24,13 @@ Thumbs.db
 .DS_Store
 .vscode/
 .idea/
+
+# infra build output (compiled artifacts + fetched template source) — re-created by `npm run chain:compile`
+infra/build/
+
+# godot web export lands here; regenerate with `npm run export:web`
+apps/web/public/game/
+
+# vite
+apps/web/dist/
+*.local

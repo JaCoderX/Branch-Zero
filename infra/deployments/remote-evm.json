@@ -1,0 +1,53 @@
+{
+  "chainId": 1337,
+  "chainName": "Remote EVM",
+  "updatedAt": "2026-09-06T15:22:53.315Z",
+  "deployer": "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1",
+  "compiler": {
+    "solc": "0.8.35+commit.47b9dedd.Emscripten.clang",
+    "evmVersion": "prague",
+    "optimizerRuns": 200,
+    "viaIR": true
+  },
+  "sources": {
+    "contractsPackage": "@bloxchain/contracts@1.0.0",
+    "sdkPackage": "@bloxchain/sdk@1.0.0",
+    "accountBloxTemplate": {
+      "url": "https://raw.githubusercontent.com/PracticalParticle/Bloxchain-Protocol/99beac2d6e6d7567c23b25cecaf6f4053f31c987/contracts/examples/templates/AccountBlox.sol",
+      "commit": "99beac2d6e6d7567c23b25cecaf6f4053f31c987",
+      "sha256": "a1c2d7c19f59969fb4bf717b15146121a1c68ddc7d802412e0cc023cddbd74c1"
+    }
+  },
+  "libraries": {
+    "EngineBlox": {
+      "address": "0xfc628dd79137395f3c9744e33b1c5de554d94882",
+      "txHash": "0x7a9fb38d84c0fd49b33222efefbbf8805132db44306d93be6655b305efa1075e"
+    },
+    "SecureOwnableDefinitions": {
+      "address": "0x5f8e26facc23fa4cbd87b8d9dbbd33d5047abde1",
+      "txHash": "0x9584d9ffd183377825a72b99245f64176027efcdb1bf1c050845c1813226820e"
+    },
+    "RuntimeRBACDefinitions": {
+      "address": "0x21a59654176f2689d12e828b77a783072cd26680",
+      "txHash": "0xb2d9da12abe3f4e084eb2b75d09c970e14d2ad2b1cbf4a935e40b9d868400455"
+    },
+    "GuardControllerDefinitions": {
+      "address": "0xd86c8f0327494034f60e25074420bccf560d5610",
+      "txHash": "0x15433dc190f4066f96467f1714f915c600ba564a3e7272ccd689c9a6630f4732"
+    }
+  },
+  "accounts": [
+    {
+      "label": "player-owner-acct4",
+      "address": "0x4bf749ec68270027c5910220ceab30cc284c7ba2",
+      "owner": "0xd03ea8624C8C5987235048901fB614fDcA89b117",
+      "broadcaster": "0xFFcf8FDEE72ac11b5c542428B35EEF5769C409f0",
+      "recovery": "0x22d491Bde2303f2f43325b2108D26f1eAbA1e32b",
+      "timeLockPeriodSec": 120,
+      "eventForwarder": "0x0000000000000000000000000000000000000000",
+      "deployTxHash": "0x41e5f8cfefcfb3da63be6fc46cede521e5d887129fc81682f1524b98fbf3804c",
+      "initializeTxHash": "0x9b887229766ad4196ea2302db83abeaaf2975cef09957d8142b4d79ae219a1bc",
+      "block": 28
+    }
+  ]
+}
