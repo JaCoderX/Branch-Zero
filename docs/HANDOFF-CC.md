@@ -63,7 +63,11 @@ Not: a wallet UI, DeFi protocol, Bloxchain fork, mainnet, Tactical-AI, GameLab m
 12. [`docs/progress/2026-09-06-u1-signing-lane.md`](./progress/2026-09-06-u1-signing-lane.md) and [`…u1-human-path.md`](./progress/2026-09-06-u1-human-path.md)
 13. Craft lessons (do not re-author):  
     https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/sdk-runtime-factory-clones.md  
-    https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/delegated-signing-consent-belongs-to-the-key-owner.md
+    https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/delegated-signing-consent-belongs-to-the-key-owner.md  
+    https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/prefer-timed-path-over-untimed-sibling.md  
+    https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/on-demand-mining-freezes-view-time.md  
+    https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/dual-selector-permission-checks.md  
+    https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/refresh-client-session-after-server-mutation.md
 
 GitHub mirrors under `https://github.com/JaCoderX/Branch-Zero/blob/main/docs/…`.
 
