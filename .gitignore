@@ -1,0 +1,26 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+# node
+node_modules/
+dist/
+.turbo/
+
+# godot
+.godot/
+*.translation
+*.tmp
+
+# exports / binaries
+*.pck
+*.wasm
+*.exe
+apps/web/public/game/
+
+# os
+Thumbs.db
+.DS_Store
+.vscode/
+.idea/

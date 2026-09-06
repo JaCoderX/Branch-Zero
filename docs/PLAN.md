@@ -9,7 +9,8 @@
 | Repo | `https://github.com/JaCoderX/Branch-Zero` |
 | Engine | Godot 4.5.x (GDScript), Web export (single-threaded) |
 | Protocol | Bloxchain via the **public** npm packages only: `@bloxchain/sdk` (+ `@bloxchain/contracts` for the account bytecode) |
-| Primary chain | Ethereum Sepolia (ENSv2 beta and Uniswap v4 live there; Privy supports it) |
+| Dev chain | **Remote EVM** `1337` (`http://127.0.0.1:8545`) — [REMOTE-EVM.md](./REMOTE-EVM.md) |
+| Primary public chain | Ethereum Sepolia (ENSv2 beta and Uniswap v4 live there; Privy supports it) |
 | Secondary chain | Arc Testnet (chain id `5042002`, USDC-as-gas) — "Arc wing" of the bank |
 | Sponsor targets | **Privy** (B2B financial product), **ENS** (Best Use of ENSv2), **Arc** (DeFi / Onchain Finance) — Uniswap kept as a documented swap-in (see [REFLECTION.md](./REFLECTION.md) § Sponsor matrix) |
 | Planning date | Sunday Sep 6, 2026 — **10 build days** remain |
@@ -21,6 +22,9 @@
 | Doc | What it answers |
 |-----|-----------------|
 | **PLAN.md** (this file) | What we build, in what order, with what gates, and what "done" means |
+| [HANDOFF-CC.md](./HANDOFF-CC.md) | Cold-agent brief (Claude Code / Fable): constraints, U0 mission, file links |
+| [DEV-LOOP.md](./DEV-LOOP.md) | Craft / lab / product split; construction units U0–U7; OBJ-2026-0004 |
+| [REMOTE-EVM.md](./REMOTE-EVM.md) | Default local chain (Nethermind `1337`) — use before Sepolia |
 | [GAME-DESIGN.md](./GAME-DESIGN.md) | The player experience: core loop, protocol-to-game mapping, quests, HUD |
 | [WORLD-3D-ENVIRONMENT.md](./WORLD-3D-ENVIRONMENT.md) | The bank building: zones, layout, art direction, asset pipeline, perf budget |
 | [NPCS.md](./NPCS.md) | Every NPC: which on-chain role it embodies, dialogue, state machine |
@@ -63,12 +67,13 @@ Bloxchain already encodes exactly that process on-chain: **roles** (owner / broa
 
 | # | Constraint | Consequence |
 |---|-----------|-------------|
-| C1 | **Only the public Bloxchain packages on npm.** `@bloxchain/sdk`; `@bloxchain/contracts` (optional peer) only for `AccountBlox` / definition-library bytecode + ABI. No unpublished packages, no local path deps to other repos, no copied protocol source. | All protocol calls go through `SecureOwnable`, `RuntimeRBAC`, `GuardController`, `BaseStateMachine`, `MetaTransactionSigner`, the definition encoders, and viem. If a helper is missing, we write it in `apps/bridge` — we do not patch the SDK. |
+| C1 | **Only the public Bloxchain packages on npm.** `@bloxchain/sdk`; `@bloxchain/contracts` (optional peer) only for `AccountBlox` / definition-library bytecode + ABI. No unpublished packages, no local path deps to other repos, no copied protocol source. | All protocol calls go through `SecureOwnable`, `RuntimeRBAC`, `GuardController`, `BaseStateMachine`, `MetaTransactionSigner`, the definition encoders, and viem. If a helper is missing, we write it in `apps/web` — we do not patch the SDK. |
 | C2 | **Godot 4.x, GDScript, Web export.** C# is not supported on Web in Godot 4. | All wallet / chain logic lives in TypeScript around the canvas; GDScript only talks to `window.BranchZero` via `JavaScriptBridge`. |
 | C3 | **Single-threaded Web export.** Threaded export needs COOP/COEP `require-corp`, which blocks third-party iframes — Privy's embedded wallet is an iframe. | Export preset: Thread Support **off**. Keep scenes light (see perf budget in WORLD doc). |
 | C4 | **ENSv2 is Sepolia-only (beta).** | Sepolia is the primary chain. Arc gets a second deployment; ENS resolution is read from Sepolia regardless of which "wing" the player is in. |
 | C5 | **Hackathon rules.** New code during the event, public repo, demo video, AI-tool disclosure where required, sponsor-specific deliverables (Uniswap `FEEDBACK.md`, Arc architecture diagram, ENS "central not cosmetic", Privy "at least one control"). | Submission checklist in [DEMO-SCRIPT.md](./DEMO-SCRIPT.md). |
 | C6 | **10 build days, small team.** | Ruthless scope ladder (§ 4). Anything not in MVP has a stated fallback. |
+| C7 | **Remote EVM first.** Local execution is particle-tool-box `Docker Apps/Remote EVM` (chain id `1337`, `http://127.0.0.1:8545`). | Iterate provision + Lane A/B without faucet. Sepolia/Arc only for ENS, Uniswap, Arc-compat, and judge receipts. Well-known Ganache-parity keys never touch a public net. See [REMOTE-EVM.md](./REMOTE-EVM.md). |
 
 ---
 
@@ -126,7 +131,7 @@ Dates are inclusive. Each day ends with a **commit + 30-second screen capture** 
 
 | Day | Date | Theme | Deliverable (Definition of Done) | Gate |
 |-----|------|-------|----------------------------------|------|
-| 1 | Sun Sep 6 | Spike & kill tests | Repo scaffold (`apps/game`, `apps/bridge`, `apps/teller-desk`, `packages/shared`). Godot 4.5 web export with a cube runs in browser single-threaded. `JavaScriptBridge` round-trip proven. `@bloxchain/sdk` installed; `AccountBlox` deployed on Sepolia from a script; `owner()` read back. **Kill tests K1–K4** (§ 7) executed and logged in `REFLECTION.md`. | G1: all four kill tests pass or have a fallback chosen |
+| 1 | Sun Sep 6 | Spike & kill tests | Repo scaffold (`apps/game`, `apps/web`, `apps/teller-desk`, `packages/shared`). Godot 4.5 web export with a cube runs in browser single-threaded. `JavaScriptBridge` round-trip proven. `@bloxchain/sdk` installed; `AccountBlox` deployed on **Remote EVM 1337**; `owner()` read back. **Kill tests K1 + K4** logged in `REFLECTION.md`. Brief: [HANDOFF-CC.md](./HANDOFF-CC.md). | G1: K1 and K4 pass or have a fallback chosen |
 | 2 | Mon Sep 7 | Signing lane | Privy app created; login in the HTML shell; session signer with policy added; server-side `eth_signTypedData_v4` of a Bloxchain meta-tx digest verified against `MetaTransactionSigner.verifySignature` path (recover == signer). Guard config batch executes. | G2: one `requestAndApproveExecution` USDC transfer lands on Sepolia with **zero** browser pop-ups after delegation |
 | 3 | Tue Sep 8 | Time-lock lane | `executeWithTimeLock` → PENDING → wait → `approveTimeLockExecution`; cancel path; `getTransaction` polling; error decode via `decodeRevertReason`. Teller Desk service exposes REST + SSE for tx status. | G3: both lanes green in a headless script and via bridge from a stub UI |
 | 4 | Wed Sep 9 | Bank shell (greybox) | Greybox interior with all zones, player controller, interact prompts, dialogue box, Teller + Vault + Manager interactions wired to bridge. Ledger board reads chain. | G4: end-to-end M1–M4 playable in browser, ugly |
@@ -145,7 +150,7 @@ Dates are inclusive. Each day ends with a **commit + 30-second screen capture** 
 
 | Hat | Owns | Primary docs |
 |-----|------|-------------|
-| **Protocol / bridge** | `apps/bridge`, `apps/teller-desk`, deploy scripts, Privy, ENS, Arc contracts | BLOXCHAIN-INTEGRATION, PRIVY, ENS, ARC, SECURITY |
+| **Protocol / bridge** | `apps/web`, `apps/teller-desk`, deploy scripts, Privy, ENS, Arc contracts | BLOXCHAIN-INTEGRATION, PRIVY, ENS, ARC, SECURITY |
 | **Game** | `apps/game` Godot project, scenes, NPCs, HUD, dialogue, web export shell | GAME-DESIGN, WORLD, NPCS, GODOT |
 | **Producer / narrative** | schedule, demo video, README, submission forms, sponsor compliance | PLAN, DEMO-SCRIPT, REFLECTION |
 
@@ -155,7 +160,7 @@ Solo? Days 1–3 wear the protocol hat, Days 4–5 the game hat, then alternate.
 
 ## 6. Architecture in one paragraph
 
-A **Godot Web build** runs inside a custom HTML shell. The shell also mounts a thin **React overlay** for Privy login and status toasts. GDScript calls `JavaScriptBridge.get_interface("BranchZero")` to invoke a small **TypeScript bridge** (`apps/bridge`) that wraps `@bloxchain/sdk` + viem for reads and builds unsigned meta-transactions. Signing and broadcasting happen in the **Teller Desk service** (`apps/teller-desk`, Node): it holds the Privy authorization key (to request enclave signatures from the player's session-signer-enabled wallet) and the **broadcaster** hot wallet (to execute). State flows back via SSE so the game reacts to PENDING → COMPLETED. Full diagrams in [ARCHITECTURE.md](./ARCHITECTURE.md).
+A **Godot Web build** runs inside a custom HTML shell. The shell also mounts a thin **React overlay** for Privy login and status toasts. GDScript calls `JavaScriptBridge.get_interface("BranchZero")` to invoke a small **TypeScript bridge** (`apps/web`) that wraps `@bloxchain/sdk` + viem for reads and builds unsigned meta-transactions. Signing and broadcasting happen in the **Teller Desk service** (`apps/teller-desk`, Node): it holds the Privy authorization key (to request enclave signatures from the player's session-signer-enabled wallet) and the **broadcaster** hot wallet (to execute). State flows back via SSE so the game reacts to PENDING → COMPLETED. Full diagrams in [ARCHITECTURE.md](./ARCHITECTURE.md).
 
 ```mermaid
 flowchart LR
@@ -163,7 +168,7 @@ flowchart LR
   G <-->|JavaScriptBridge| B[TS Bridge<br/>@bloxchain/sdk + viem]
   B <-->|HTTPS + SSE| T[Teller Desk service<br/>Node]
   T -->|privy-authorization-signature| PR[Privy enclave<br/>session signer]
-  T -->|broadcaster key| C[(Sepolia / Arc<br/>AccountBlox)]
+  T -->|broadcaster key| C[(Remote EVM 1337 / Sepolia / Arc<br/>AccountBlox)]
   B -->|reads| C
   B -->|resolve| E[(ENSv2 Sepolia)]
 ```
@@ -177,7 +182,7 @@ flowchart LR
 | K1 | Can Godot 4.5 single-threaded web export call into a JS module and receive callbacks? | Cube scene, `JavaScriptBridge.create_callback`, echo a promise result | Use `JavaScriptBridge.eval` polling on a global; or desktop build + local HTTP bridge for the video |
 | K2 | Does a Privy session signer sign `eth_signTypedData_v4` for the Bloxchain domain such that `recoverAddress(digest)` == wallet address? | Sign an unsigned meta-tx from `generateUnsignedMetaTransactionForNew`; run the SDK verify path | Sign with Privy **client-side** `signTypedData` (one pop-up per action) — still Privy, still eligible; narrative becomes "teller asks you to sign the slip" |
 | K3 | Does `AccountBlox` + definition libraries deploy and initialise on **Arc Testnet** (EVM version compat with Solidity 0.8.35 output)? | Deploy script against `https://rpc.testnet.arc.io` with faucet USDC | Drop Arc, promote Uniswap to slot 3 (both documented); Arc wing becomes "under construction" set dressing |
-| K4 | Are `GuardControllerDefinitions` / `RuntimeRBACDefinitions` published for Sepolia in `@bloxchain/contracts` (`deployed-addresses.json`)? | Inspect installed package | Deploy the definition libraries ourselves from package artifacts (they are libraries with pure/view functions; cheap) |
+| K4 | Are `GuardControllerDefinitions` / `RuntimeRBACDefinitions` published for Sepolia in `@bloxchain/contracts` (`deployed-addresses.json`)? **Local bar:** can we deploy `AccountBlox` from those artifacts onto **Remote EVM 1337** and read `owner()`? | Inspect installed package; run ENG-2026-0005 / U0 deploy script against `http://127.0.0.1:8545` | Deploy the definition libraries ourselves from package artifacts (they are libraries with pure/view functions; cheap). If Remote EVM rejects bytecode: Anvil fork, then Sepolia |
 | K5 | Can a Privy policy constrain typed-data signing to our domain/verifyingContract? | Create policy in dashboard; attempt an out-of-scope sign; expect denial | Scope by method only (`eth_signTypedData_v4`) and document the residual risk; the on-chain guards remain the real control |
 | K6 | ENSv2 Sepolia: can we register a `UserRegistry` under a name we own and mint subnames in a script? | Follow contract-developer tutorial; mint `test.branchzero.eth` | Use `.eth` name text records + wildcard resolution only; still ENSv2, weaker "central" claim |
 | K7 | Uniswap v4 Universal Router on Sepolia callable from a contract account via `GuardController` (Permit2 approvals as guarded calls)? | Script three guarded calls: `approve(Permit2)`, `Permit2.approve(router)`, `router.execute` | Native-input swap only, or drop S1 |
@@ -206,6 +211,8 @@ Results are recorded in [REFLECTION.md](./REFLECTION.md) § Kill test log.
 | Sep 6 | One `AccountBlox` per player, deployed at onboarding | Matches Bloxchain's account pattern and the "open an account" narrative; keeps per-player isolation | — |
 | Sep 6 | Demo timelock 120 s | Long enough to walk to the vault and see a countdown; short enough for a 4-min video | Day 8 |
 | Sep 6 | Single-threaded Godot export | COOP/COEP `require-corp` would break the Privy iframe | — |
+| Sep 6 | Remote EVM (`1337`) is the default **dev** chain | Kill tests and Teller Desk iteration must not depend on Sepolia faucet; EIP-712 `chainId` isolates signatures | If Docker down: name blocker; do not use Ganache keys on public nets |
+| Sep 6 | Craft/lab bindings: OBJ-2026-0004 · ENG-2026-0003…0008 | Construction units in [DEV-LOOP.md](./DEV-LOOP.md); ENG trees are never merged into this repo | — |
 
 ---
 
@@ -215,3 +222,4 @@ Results are recorded in [REFLECTION.md](./REFLECTION.md) § Kill test log.
 2. Do you own (or will you register) a Sepolia `.eth` name to act as `branchzero.eth`? Registration on Sepolia ENSv2 takes a commit/reveal wait — do it on Day 1.
 3. Confirm the interpretation of "public Bloxchain SDK only": `@bloxchain/sdk` **and** `@bloxchain/contracts` (both on the public npm registry) are the only protocol dependencies; nothing unpublished, no local path deps.
 4. Preferred hosting for the web build (GitHub Pages is fine for single-thread export; Cloudflare Pages if we want custom headers later).
+5. Is Remote EVM already up on this machine / Tailscale? If not, who starts `docker compose` in particle-tool-box `Docker Apps/Remote EVM`?

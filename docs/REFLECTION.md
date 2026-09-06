@@ -141,3 +141,5 @@ Prior ETHGlobal "bank" / 3D projects mostly fall into: (a) DeFi dashboards skinn
 | Sep 6 | Sponsors: Privy + ENS + Arc; Uniswap swap-in | § 3 | Day 5 gate |
 | Sep 6 | Server-side Privy session signer via viem `toAccount` + SDK `MetaTransactionSigner` | SDK does not export the EIP-712 constants; using its signer keeps parity with the contracts | K2 |
 | Sep 6 | Large-amount routing to Lane B is off-chain policy; stated as partial invariant | Privy policy cannot parse `executionOptions` | document in README; no protocol change in this repo |
+| Sep 6 | Remote EVM (Nethermind `1337`) is the default lab/dev chain | Sepolia faucet and ENS waits must not block Lane A/B construction | Docker down → name blocker; never publish Ganache-parity keys |
+| Sep 6 | GameDevOS OBJ-2026-0004 + GameLab ENG-0003…0008 bound | Lab answers kill tests; product is rewritten; no ENG merge | after G5 scrub first lesson |

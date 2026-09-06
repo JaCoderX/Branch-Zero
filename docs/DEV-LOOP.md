@@ -1,0 +1,88 @@
+---
+title: Development loop — craft, lab, product
+created: 2026-09-06
+updated: 2026-09-06
+---
+
+# Development loop
+
+How Branch Zero is built without turning GameDevOS into a second backlog or GameLab into the game.
+
+Related: [HANDOFF-CC.md](./HANDOFF-CC.md) · [PLAN.md](./PLAN.md) · [REMOTE-EVM.md](./REMOTE-EVM.md) · GameDevOS `OBJ-2026-0004` · GameLab `ENG-2026-0003`…`0008`
+
+---
+
+## 1. Three layers
+
+```text
+OBJ-2026-0004 (GameDevOS)     what we intend to still know after the event
+        │
+        ▼
+ENG-2026-0003…0008 (GameLab)  one falsifiable question each (kill tests)
+        │  handoff = rewrite, never merge
+        ▼
+U0–U7 (this repo)             construction that ships
+```
+
+| Layer | Authority | Never |
+|-------|-----------|-------|
+| **GameDevOS** | Craft method, scrubbed lessons | Engine projects, product status |
+| **GameLab** | Isolated yes/no | Hosting the game; merging into this repo |
+| **Branch Zero** | Code, demo, sponsors | Inventing protocol semantics |
+
+Open an ENG when the answer is **unknown and could kill the thesis**. If the shape is already in ARCHITECTURE, **build here**.
+
+---
+
+## 2. Chain policy
+
+| Work | Chain |
+|------|--------|
+| Local Teller Desk, deploy scripts, Lane A/B iteration, Godot MockChain replacement | **Remote EVM `1337`** — [REMOTE-EVM.md](./REMOTE-EVM.md) |
+| ENS mint/resolve, Uniswap, judge-facing Sepolia receipts | Sepolia |
+| Arc wing / K3 | Arc Testnet `5042002` |
+
+Do not use public testnets to find out whether `initialize` reverts.
+
+---
+
+## 3. Construction units
+
+Ordered so that after U2 we can stop and still demo a coherent bank-on-a-chain (ugly is fine).
+
+| Unit | Outcome | Gate | Lab first? |
+|------|---------|------|------------|
+| **U0 Foundation** | Monorepo, Godot web + JS echo, SDK, AccountBlox on Remote EVM | G1 | ENG-0003 / ENG-0005 if throwaway |
+| **U1 Signing lane** | Provision + guard whitelist + Lane A with ≤1 modal | G2 | ENG-0004 |
+| **U2 Timelock lane** | Wire → PENDING → approve/cancel; SSE; `releaseTime` from chain | G3 | No |
+| **U3 Bank shell** | Greybox zones, NPCs wired to bridge, ledger board | G4 | No |
+| **U4 MVP freeze** | Error UX, reconnect, rough capture | G5 | No |
+| **U5 ENS** | Subname + pay-by-name | G6 | ENG-0007 |
+| **U6 Arc + manager role** | Elevator wing + runtime role | G7 | ENG-0006 |
+| **U7 Feel / ship** | Art, video, submission | G8–G10 | ENG-0008 only if S1 |
+
+Each unit ends with: commit, a line in `docs/progress/`, kill/decision log if anything changed.
+
+### Daily rhythm (from PLAN)
+
+09:00 15-min plan · 13:00 integration merge · 20:00 capture + log. No new dependencies after Day 7 without a `REFLECTION.md` note.
+
+---
+
+## 4. Graduation rule
+
+```text
+ENG findings  →  handoff.md (behaviour, not files)
+              →  rewrite in apps/ / infra/
+              →  if it generalises: scrub → GameDevOS wiki/lessons/
+```
+
+A Godot project left only in `GameLab/work/ENG-2026-0003-…` is a failed U0.
+
+---
+
+## 5. Cut order (time death)
+
+Uniswap → Manager runtime role → Arc wing → ENS EAC → ENS mint.
+
+**Never cut:** Privy (or documented K2 fallback) or Lane B.

@@ -49,13 +49,14 @@ Full JSON lives in `infra/privy/policy.json` and is shown in-game on the Manager
 
 | Env | Where | Chains | Keys |
 |-----|-------|--------|------|
-| `local` | laptop; Anvil fork optional | Sepolia / Arc testnets via RPC | throwaway keys in `.env.local` |
+| `local` | laptop; **Remote EVM** (`1337`) default; Anvil fork optional | Remote EVM + optional Sepolia / Arc RPCs | Remote EVM uses Ganache-parity keys **only on 1337**. Separate throwaway keys for Sepolia/Arc in `.env.local` |
 | `demo` | single VPS or Fly.io machine for Teller Desk; static host for web | Sepolia + Arc Testnet | dedicated keys, funded from faucets, rotated after the event |
 
 `.env.example` (Teller Desk):
 
 ```
 PORT=8787
+REMOTE_EVM_RPC_URL=http://127.0.0.1:8545
 SEPOLIA_RPC_URL=
 ARC_RPC_URL=
 BROADCASTER_PK=

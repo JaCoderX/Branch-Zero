@@ -7,6 +7,9 @@ Start with **[PLAN.md](./PLAN.md)**. Read order for a new contributor:
 | # | Doc | Read when |
 |---|-----|-----------|
 | 1 | [PLAN.md](./PLAN.md) | Always first — scope, 10-day schedule, gates, kill tests, submission |
+| 1b | [HANDOFF-CC.md](./HANDOFF-CC.md) | Cold agent (Claude Code) — U0 mission, constraints, absolute/GitHub links |
+| 1c | [DEV-LOOP.md](./DEV-LOOP.md) | OBJ / ENG / U0–U7; when to lab vs when to build here |
+| 1d | [REMOTE-EVM.md](./REMOTE-EVM.md) | Local chain `1337` — default for development |
 | 2 | [GAME-DESIGN.md](./GAME-DESIGN.md) | Before touching gameplay, dialogue or HUD |
 | 3 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Before touching any code — layers, bridge, sequences, repo layout |
 | 4 | [BLOXCHAIN-INTEGRATION.md](./BLOXCHAIN-INTEGRATION.md) | Before touching the Teller Desk or provisioning — public SDK usage only |
@@ -26,7 +29,7 @@ Start with **[PLAN.md](./PLAN.md)**. Read order for a new contributor:
 - `VERIFY` — a fact we have not yet confirmed against the live network / package. Each has a kill test or an open question in [REFLECTION.md](./REFLECTION.md).
 - **Lane A / Lane B** — routine payment (`requestAndApproveExecution`, immediate) / time-locked wire (`executeWithTimeLock` → approve or cancel).
 - **MVP / T1–T3 / S1–S2** — scope ladder tiers from [PLAN.md](./PLAN.md) § 3.
-- **K1–K8** — kill tests; G1–G4 — gates.
+- **K1–K8** — kill tests; **G1–G10** — PLAN gates; **U0–U7** — construction units in [DEV-LOOP.md](./DEV-LOOP.md).
 - Language: **everyday bank words** on screen; **protocol jargon** only in "Ask why" and receipts; **implementation detail** only in docs/README.
 
 ## Hard rules
@@ -35,4 +38,4 @@ Start with **[PLAN.md](./PLAN.md)**. Read order for a new contributor:
 2. Godot never holds keys or talks to a chain; everything goes through `window.BranchZero` → Teller Desk.
 3. One wallet modal in the whole game (Account Opening). If a second appears, it is a bug or a documented fallback.
 4. Everything the player sees about chain state is read from chain.
-5. Testnets only. No mainnet deployment during the event.
+5. Testnets + Remote EVM only. No mainnet deployment during the event. Develop against Remote EVM (`1337`) when the question is not ENS / Uniswap / Arc.

@@ -32,9 +32,10 @@ flowchart TB
     POL["Policy: typed-data only, our domain"]
   end
 
-  subgraph Chains["Public testnets"]
-    SEP[("Sepolia<br/>AccountBlox per player · demo USDC · ENSv2 · Uniswap v4")]
-    ARC[("Arc Testnet 5042002<br/>AccountBlox per player · native USDC")]
+  subgraph Chains["Chains"]
+    DEV[("Remote EVM 1337<br/>dev / lab — default")]
+    SEP[("Sepolia<br/>AccountBlox · demo USDC · ENSv2 · Uniswap v4")]
+    ARC[("Arc Testnet 5042002<br/>AccountBlox · native USDC")]
   end
 
   B -- "HTTPS" --> API
@@ -42,9 +43,11 @@ flowchart TB
   S -- "Privy SDK" --> PW
   SIG -- "privy-authorization-signature" --> PW
   PW --- POL
+  BC --> DEV
   BC --> SEP
   BC --> ARC
-  B -- "reads (public RPC)" --> SEP
+  B -- "reads (public RPC)" --> DEV
+  B -- "reads" --> SEP
   B -- "reads" --> ARC
 ```
 
@@ -299,6 +302,7 @@ Jobs are in-memory queues per player (p-queue) so one player's stuck tx does not
 
 ```text
 apps/teller-desk/.env
+  REMOTE_EVM_RPC_URL=http://127.0.0.1:8545
   PRIVY_APP_ID=
   PRIVY_APP_SECRET=
   PRIVY_AUTHORIZATION_PRIVATE_KEY=       # P-256, for session-signer requests
