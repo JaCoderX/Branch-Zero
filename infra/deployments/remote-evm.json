@@ -1,7 +1,7 @@
 {
   "chainId": 1337,
   "chainName": "Remote EVM",
-  "updatedAt": "2026-09-06T15:22:53.315Z",
+  "updatedAt": "2026-09-06T16:52:18.879Z",
   "deployer": "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1",
   "compiler": {
     "solc": "0.8.35+commit.47b9dedd.Emscripten.clang",
@@ -16,6 +16,16 @@
       "url": "https://raw.githubusercontent.com/PracticalParticle/Bloxchain-Protocol/99beac2d6e6d7567c23b25cecaf6f4053f31c987/contracts/examples/templates/AccountBlox.sol",
       "commit": "99beac2d6e6d7567c23b25cecaf6f4053f31c987",
       "sha256": "a1c2d7c19f59969fb4bf717b15146121a1c68ddc7d802412e0cc023cddbd74c1"
+    },
+    "protocolArtifacts": {
+      "CopyBlox": {
+        "path": "artifacts/contracts/examples/applications/CopyBlox/CopyBlox.sol/CopyBlox.json",
+        "sha256": "1168f8f6ee4a5061b5c499cba0b9bb1cd0ded6a7ee22f3c58076900539f8bb54"
+      },
+      "demoUsdc": {
+        "path": "artifacts/contracts/examples/extra/BasicERC20.sol/BasicERC20.json",
+        "sha256": "831a9fa8014c168789ac9469ad8bfe98c1494e07c42507f7ca80149fc95e52a6"
+      }
     }
   },
   "libraries": {
@@ -49,5 +59,26 @@
       "initializeTxHash": "0x9b887229766ad4196ea2302db83abeaaf2975cef09957d8142b4d79ae219a1bc",
       "block": 28
     }
-  ]
+  ],
+  "applications": {
+    "CopyBlox": {
+      "address": "0x7C728214be9A0049e6a86f2137ec61030D0AA964",
+      "txHash": "0xc23423c8b94fffc21ea94307a8e099b853e4f7bdd245e649abe526f32af5e7ee",
+      "deployedAtBlock": 29,
+      "role": "wallet factory (cloneBlox) - new player accounts",
+      "cloneImplementation": "0x4bf749ec68270027C5910220CEAB30Cc284c7BA2",
+      "note": "Clones the U0 AccountBlox fixture: Clones.clone copies runtime code only, so the clone starts uninitialised."
+    }
+  },
+  "tokens": {
+    "demoUsdc": {
+      "address": "0x5017A545b09ab9a30499DE7F431DF0855bCb7275",
+      "txHash": "0x613a7f8c1a0de973f8b0bb3c11881867a66182424d303256a2a7f5d478e41a05",
+      "deployedAtBlock": 30,
+      "name": "USD Coin (demo)",
+      "symbol": "dUSDC",
+      "decimals": 18,
+      "treasury": "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"
+    }
+  }
 }

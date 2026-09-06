@@ -12,6 +12,8 @@ import react from '@vitejs/plugin-react';
  */
 export default defineConfig({
   plugins: [react()],
+  // VITE_* values live in the repo-root .env alongside the server's secrets, so there is one file to fill.
+  envDir: '../..',
   server: {
     port: 5173,
     strictPort: true,

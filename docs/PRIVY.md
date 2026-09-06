@@ -43,7 +43,13 @@ Not used: Privy Cards (guided onboarding), intents (mocked out of scope), Solana
 
 ## 3. Setup checklist (Day 2 morning)
 
-**Status 2026-09-06 evening:** Privy **application created** by principal. Remaining human steps before / during U1:
+**Status 2026-09-06 (after U1):** done, with corrections. Allowed origins already include
+`http://localhost:5173`; server-side access and the P-256 authorization key are set and the key quorum
+(`PRIVY_SIGNER_ID`) is live. **No dashboard policy is needed** (§4: created per player via the API) and **no
+custom chain entry is needed** — `eth_signTypedData_v4` is chain-agnostic and `1337` rides in the EIP-712
+domain, so K2 ran on Remote EVM without touching Sepolia. Two live facts worth knowing: embedded wallets are
+`create_on_login: "off"` (the overlay calls `createWallet()` explicitly) and the app is in
+`user-controlled-server-wallets-only` mode. Original checklist:
 
 1. Allowed origins: `http://localhost:5173` (+ Pages later).
 2. Login methods: email, passkey, Google. Embedded wallets: **create on login** for EVM.
@@ -58,7 +64,42 @@ Not used: Privy Cards (guided onboarding), intents (mocked out of scope), Solana
 
 Goal: the Teller Desk may only obtain signatures that are (a) typed data, (b) on the Bloxchain domain, (c) for the player's own account contract(s). Everything else is denied.
 
-Policy sketch (dashboard JSON; exact schema per current Privy docs — verify field names on Day 2, kill test **K5**):
+> **Verified 2026-09-06 (K5 PASS).** The sketch below is kept for context but two things in it are wrong.
+> Policies are created **through the API, per player** (`apps/teller-desk/src/privy.ts`), not as dashboard
+> JSON, and **`domain.name` is not a condition field**: `EthereumTypedDataDomainConditionField` is
+> `chainId | verifyingContract | chain_id | verifying_contract`. What we actually ship:
+
+```ts
+await privy.policies().create({
+  version: '1.0',
+  chain_type: 'ethereum',
+  name: `bz-${label}`,                       // <= 48 chars; rule names must be < 50
+  rules: [{
+    name: 'Bloxchain meta-tx for this account',
+    method: 'eth_signTypedData_v4',
+    action: 'ALLOW',
+    conditions: [
+      { field_source: 'ethereum_typed_data_domain', field: 'verifyingContract', operator: 'eq', value: account },
+      { field_source: 'ethereum_typed_data_domain', field: 'chainId',           operator: 'eq', value: '1337' },
+    ],
+  }],
+});
+// anything not matched falls through to Privy's default DENY
+```
+
+Pinning `verifyingContract` is the stronger half of the original intent: it is the player's own AccountBlox,
+so a signature obtained under this policy cannot address anyone else's account. Losing the `name` clause costs
+little — a contract at that address either speaks Bloxchain or the meta-tx reverts.
+
+**Lifecycle.** The policy must exist before the player delegates (the consent carries its id), but the account
+address only exists after provisioning. Wallet records are owned by the *user's* key quorum, so the server
+cannot attach signers or policies later — but policy **rules** are app-owned and can be updated. Hence:
+
+1. `POST /session` → `policies().create` scoped to `chainId`; returns `policyId`.
+2. Browser consent → `addSessionSigners({ signerId, policyIds: [policyId] })`.
+3. `POST /provision` → clone the account, then `policies().updateRule(...)` to add the `verifyingContract` condition.
+
+Original sketch (superseded):
 
 ```json
 {
@@ -79,8 +120,6 @@ Policy sketch (dashboard JSON; exact schema per current Privy docs — verify fi
   "default_action": "DENY"
 }
 ```
-
-Because the verifying contract is per player, either (a) create one policy per player at provisioning via the Policies API and pass its ID to `addSessionSigner`, or (b) if typed-data field matching is unavailable, scope by **method only** and document that the on-chain guards (whitelist, roles, nonce, deadline, chainId) are the real control — which is true, and is exactly Bloxchain's design point.
 
 Lane B option 1 adds a second rule: `eth_sendTransaction` allowed only when `to == <player-account>` and calldata selector == `executeWithTimeLock` (if calldata matching is supported; else method + `to` only).
 
@@ -118,27 +157,41 @@ Client-side fallback (no delegation): wrap `await embedded.getEthereumProvider()
 
 ## 6. Server flow (Teller Desk)
 
+As built against `@privy-io/node@0.34.0` (method names verified, not guessed):
+
 ```ts
 // apps/teller-desk/src/privy.ts
-import { PrivyClient } from '@privy-io/node'; // or REST with privy-authorization-signature header
+import { PrivyClient } from '@privy-io/node';
 
-export const privy = new PrivyClient({
-  appId: env.PRIVY_APP_ID,
-  appSecret: env.PRIVY_APP_SECRET,
-  authorizationPrivateKey: env.PRIVY_AUTHORIZATION_PRIVATE_KEY, // signs every wallet request
-});
+export const privy = new PrivyClient({ appId: env.PRIVY_APP_ID, appSecret: env.PRIVY_APP_SECRET });
 
-// verify player token on /session
+// The P-256 key is passed per request, not on the constructor. The dashboard value is prefixed
+// `wallet-auth:`; strip it — the API wants the bare base64 PKCS8 key.
+const authorizationContext = { authorization_private_keys: [env.PRIVY_AUTHORIZATION_KEY.replace(/^wallet-auth:/, '')] };
+
+// /session: the token proves who they are; looking the claimed wallet up and matching the user id
+// proves the wallet is theirs. (`users().get()` takes an *identity token*, not a user id.)
 const claims = await privy.utils().auth().verifyAccessToken(token);
-const user = await privy.users().get(claims.userId);
-const wallet = user.linkedAccounts.find(a => a.type === 'wallet' && a.walletClientType === 'privy' && a.chainType === 'ethereum');
-// store { privyUserId, ownerAddress: wallet.address, walletId: wallet.id }
+const user = await privy.users().getByWalletAddress({ address });
+if (user.id !== claims.user_id) throw new Error('that wallet does not belong to the authenticated user');
 
 // typed-data signing used by the viem custom account (see BLOXCHAIN-INTEGRATION § 4)
-await privy.wallets().ethereum().signTypedData(walletId, { typedData });
-// Lane B option 1:
-await privy.wallets().ethereum().sendTransaction(walletId, { caip2: 'eip155:11155111', transaction: { to, data, value: '0x0' } });
+await privy.wallets().ethereum().signTypedData(walletId, {
+  authorization_context: authorizationContext,
+  params: { typed_data: { domain, types, primary_type: 'MetaTransaction', message } },
+});
 ```
+
+Two gotchas that cost time:
+
+- **BigInt.** Privy canonicalises the request body as JSON before signing it with the authorization key, and
+  `JSON.stringify` throws on a BigInt — which is exactly what viem hands `signTypedData` for every `uint256`.
+  Render numeric fields as decimal strings first (`jsonSafe` in `signing/privySigner.ts`). The digest is
+  unchanged; only transport encoding is.
+- **The server cannot delegate to itself.** `wallets().update({ additional_signers | policy_ids })` on a
+  user-controlled wallet returns `401 No valid authorization keys or user signing keys available`, because the
+  wallet's `owner_id` is the *user's* key quorum. Only the browser consent can grant signing rights. This is a
+  feature: it is what makes the "one modal" a real control rather than a courtesy.
 
 Exact method names follow the installed Node SDK version; the REST fallback is `POST /v1/wallets/{wallet_id}/rpc` with `method: "eth_signTypedData_v4"` and the authorization signature header.
 

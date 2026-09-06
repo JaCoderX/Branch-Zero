@@ -7,7 +7,7 @@ Start with **[PLAN.md](./PLAN.md)**. Read order for a new contributor:
 | # | Doc | Read when |
 |---|-----|-----------|
 | 1 | [PLAN.md](./PLAN.md) | Always first — scope, 10-day schedule, gates, kill tests, submission |
-| 1b | [HANDOFF-CC.md](./HANDOFF-CC.md) | Cold agent (Claude Code) — U0 mission, constraints, absolute/GitHub links |
+| 1b | [HANDOFF-CC.md](./HANDOFF-CC.md) | Cold agent (Claude Code) — current mission (**U2**), constraints, absolute/GitHub links |
 | 1c | [DEV-LOOP.md](./DEV-LOOP.md) | OBJ / ENG / U0–U7; when to lab vs when to build here |
 | 1d | [REMOTE-EVM.md](./REMOTE-EVM.md) | Local chain `1337` — default for development |
 | 2 | [GAME-DESIGN.md](./GAME-DESIGN.md) | Before touching gameplay, dialogue or HUD |
@@ -23,6 +23,7 @@ Start with **[PLAN.md](./PLAN.md)**. Read order for a new contributor:
 | 12 | [SECURITY-AND-KEYS.md](./SECURITY-AND-KEYS.md) | Before handling any key or env var |
 | 13 | [DEMO-SCRIPT.md](./DEMO-SCRIPT.md) | Day 9–10 — video storyboard, submission checklist |
 | 14 | [REFLECTION.md](./REFLECTION.md) | When a decision feels wrong — design review, sponsor matrix, kill-test log, open questions |
+| 15 | [progress/](./progress/) | What actually ran, and what it cost — one note per construction unit. Read the latest before writing code |
 
 ## Conventions used across the docs
 

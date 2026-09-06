@@ -28,6 +28,16 @@ npm i @bloxchain/sdk viem
 > **U0 history (K4):** npm `@bloxchain/contracts` was inspected and found source-only; a compile fallback produced the lab AccountBlox fixture in `infra/deployments/remote-evm.json`. That path is **rejected for ongoing product work**. Keep the fixture; provision new wallets via **CopyBlox.cloneBlox** (see protocol `scripts/deployment/create-wallet-copyblox.js`). EIP-712 domain name: SDK `META_TX_DOMAIN.name === "Bloxchain"`. Permissioned registry views need `account: owner` on `eth_call`.
 
 Kill test **K4**: settled — fixture on 1337; product path = SDK + CopyBlox.
+
+> **U1 (2026-09-06):** CopyBlox is now deployed on 1337 (`0x7C728214be9A0049e6a86f2137ec61030D0AA964`) by the
+> one-time `npm run chain:bootstrap`, which reads already-built protocol artifacts from a path the operator
+> names in `BLOXCHAIN_PROTOCOL_DIR` and records their sha256. Its clone implementation is the U0 fixture —
+> `Clones.clone` copies runtime code, not storage, so an initialised account is a valid template. Per-player
+> provisioning is `cloneBlox(...)`: clone + `initialize` in **one** transaction, ~16.2 M gas.
+>
+> One runtime gap: the SDK ships `abi/CopyBlox.abi.json` but its package `exports` map has no `./abi/*`
+> subpath, so it is unreachable. `cloneBlox` and a minimal ERC-20 surface are transcribed as viem `parseAbi`
+> fragments in `packages/shared/src/abi.ts`; every stateful call still goes through the SDK wrappers.
 ---
 
 ## 2. Roles and who holds which key
@@ -89,7 +99,7 @@ assert((await so.getTimeLockPeriodSec()) === 120n);
 
 ### 3.3 Per player: guard configuration batch (owner signs, broadcaster executes)
 
-Finding from the public definitions (`GuardControllerDefinitions.sol`): the default schema set **already registers** `transfer(address,uint256)` (`EngineBlox.ERC20_TRANSFER_SELECTOR`, operation `ERC20_TRANSFER`, all actions). So for USDC payments we only need to **whitelist the token address for that selector**. (`VERIFY` on Day 2 that no additional role permission is required for the execution selector; if the engine demands one, add it via a role config batch — § 6.)
+Finding from the public definitions (`GuardControllerDefinitions.sol`): the default schema set **already registers** `transfer(address,uint256)` (`EngineBlox.ERC20_TRANSFER_SELECTOR`, operation `ERC20_TRANSFER`, all actions). So for USDC payments we only need to **whitelist the token address for that selector**. (**Answered 2026-09-06 — the engine does demand one.** The schema exists but no role holds an action on the transfer selector after `initialize`, so the whitelist alone leaves `requestAndApproveExecution` reverting `NoPermission(caller)`. Provisioning runs a role config batch alongside the guard batch — see § 7 and `apps/teller-desk/src/lanes/provision.ts`.)
 
 ```ts
 import {
@@ -110,7 +120,7 @@ const metaTxParams = await gc.createMetaTxParams(
   account,                                   // handlerContract = the account (verifyingContract)
   GC_SEL.GUARD_CONFIG_BATCH_META_SELECTOR,   // exact external function that will submit
   TxAction.SIGN_META_REQUEST_AND_APPROVE,
-  BigInt(Math.floor(Date.now() / 1000) + 600),
+  600n,                                      // DURATION, not a timestamp: the contract adds block.timestamp (V11)
   0n,
   ownerAddr,
 );
@@ -172,7 +182,15 @@ Notes:
 - **Never** sign the digest with `personal_sign` (EIP-191 prefix); the contract recovers against the raw EIP-712 digest. For wallets, typed data is the only correct path — exactly what `signMetaTransactionWithWallet` does.
 - In the lane sketches below, `signMetaTx(unsigned, ctx)` stands for this helper with the player's `{ owner, walletId, account, chain }` context.
 
-Privy policy for the session signer (see [PRIVY.md](./PRIVY.md)): allow `eth_signTypedData_v4` where `domain.name == "Bloxchain"` and `domain.verifyingContract ∈ player's account addresses`; deny everything else. Whether Privy's policy engine can match typed-data fields is kill test **K5**; fallback is method-level scoping.
+Privy policy for the session signer (see [PRIVY.md](./PRIVY.md) § 4): **K2 and K5 both passed on 2026-09-06.**
+The policy allows `eth_signTypedData_v4` where `domain.verifyingContract` is the player's account and
+`domain.chainId` is ours; everything else falls through to Privy's default DENY. `domain.name` turned out
+**not** to be a matchable field, so the `"Bloxchain"` clause was dropped — `verifyingContract` is the stronger
+pin. The method-level fallback was not needed.
+
+One transport detail: viem hands typed data with `uint256` fields as BigInts, and Privy canonicalises the
+request body as JSON before signing it with the authorization key — so numeric fields must be rendered as
+decimal strings before the call (`jsonSafe` in `apps/teller-desk/src/signing/privySigner.ts`).
 
 ---
 
@@ -187,7 +205,7 @@ const params = encodeAbiParameters(parseAbiParameters('address, uint256'), [to, 
 
 const metaTxParams = await gc.createMetaTxParams(
   account, GC_SEL.REQUEST_AND_APPROVE_EXECUTION_SELECTOR,
-  TxAction.SIGN_META_REQUEST_AND_APPROVE, deadline, 0n, ownerAddr,
+  TxAction.SIGN_META_REQUEST_AND_APPROVE, 600n /* duration, V11 */, 0n, ownerAddr,
 );
 
 const unsigned = await gc.generateUnsignedMetaTransactionForNew(
@@ -350,10 +368,12 @@ No custom Solidity means we cannot break these; the only project-side risks are 
 |----|------------------------------------------------------|
 | V1 | Artifact paths in `@bloxchain/contracts` for `AccountBlox`, definition libraries, optional `CopyBlox` — **2026-09-06: none exist.** Source only; `AccountBlox`/`CopyBlox` absent. We compile (`infra/scripts/compile.ts`) → `infra/build/artifacts/*.json` |
 | V2 | Whether `deployed-addresses.json` in the package includes Sepolia definition addresses (K4) — **2026-09-06: no such file.** Libraries deployed by us on 1337; see `infra/deployments/remote-evm.json` |
-| V3 | Default schema for `transfer(address,uint256)` present after `initialize` (`getSupportedFunctions` includes `ERC20_TRANSFER_SELECTOR`) — **2026-09-06 partial:** 30 selectors registered after `initialize` (read `from` owner); selector-level check still open for U1 |
-| V4 | Only whitelist needed for Lane A (no extra role permission on execution selector) |
-| V5 | How to read `txId` after `requestAndApproveExecution` (event name/args in ABI) |
+| V3 | Default schema for `transfer(address,uint256)` present after `initialize` — **2026-09-06: YES.** `getFunctionSchema(0xa9059cbb)` → operation `ERC20_TRANSFER`, `supportedActionsBitmap` 511 (all nine actions), `isProtected` true. Schema present ≠ permission granted: see V4 |
+| V4 | Only whitelist needed for Lane A (no extra role permission on execution selector) — **2026-09-06: NO.** `initialize` registers the `transfer` schema (`supportedActionsBitmap` 511) and the guard batch whitelists the token, but `getActiveRolePermissions` shows **no role holds any action on `0xa9059cbb`**. `requestAndApproveExecution` checks the *execution* selector → `NoPermission(caller)`. Provisioning now adds a role config batch: OWNER `SIGN_META_REQUEST_AND_APPROVE`, BROADCASTER `EXECUTE_META_REQUEST_AND_APPROVE`, `handlerForSelectors: [REQUEST_AND_APPROVE_EXECUTION_SELECTOR]` |
+| V5 | How to read `txId` after `requestAndApproveExecution` — **2026-09-06: answered without decoding logs.** The record just created is the highest id in `getTransactionHistory(1, n)`; reading it back also confirms it reached COMPLETED. Must be read with a sender (see V10) |
 | V6 | `eth_sendTransaction` via Privy session signer for `executeWithTimeLock` (Lane B option 1) |
 | V7 | Role config batch ordering + `handlerForSelectors` rules for `BRANCH_MANAGER` |
 | V8 | Exact custom error names exported in `ERROR_SIGNATURES` for the `errors.json` mapping |
 | V9 | Arc Testnet: deployment + `initialize` succeed; `generateUnsignedMetaTransactionForNew` returns a non-zero digest (K3) |
+| V10 | Registry views are permissioned — **2026-09-06:** the SDK sends `walletClient.account` as the `eth_call` sender, so a wrapper constructed with `undefined` as the wallet client gets `NoPermission(0x0)`. Build readers with the broadcaster's (or owner's) wallet client |
+| V11 | `createMetaTxParams(..., deadline, ...)` — **2026-09-06:** `deadline` is a **duration**; the contract returns `block.timestamp + deadline`. Pass `600n`, not `now + 600` |

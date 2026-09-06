@@ -2,7 +2,7 @@
   "name": "branch-zero",
   "private": true,
   "version": "0.0.1",
-  "description": "Branch Zero — a walkable 3D bank where every desk is a real Bloxchain account operation (ETHOnline 2026)",
+  "description": "Branch Zero \u2014 a walkable 3D bank where every desk is a real Bloxchain account operation (ETHOnline 2026)",
   "license": "MIT",
   "type": "module",
   "workspaces": [
@@ -17,9 +17,11 @@
   "scripts": {
     "dev:web": "npm -w apps/web run dev",
     "dev:teller": "npm -w apps/teller-desk run dev",
+    "killtests": "npm -w apps/teller-desk run killtests --",
     "build:web": "npm -w apps/web run build",
     "export:web": "node scripts/export-web.mjs",
     "chain:probe": "npm -w infra run probe",
+    "chain:bootstrap": "npm -w infra run bootstrap",
     "chain:compile": "npm -w infra run compile",
     "chain:deploy": "npm -w infra run deploy",
     "chain:smoke": "npm -w infra run smoke",

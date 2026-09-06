@@ -9,7 +9,8 @@
     "compile": "tsx scripts/compile.ts",
     "deploy": "tsx scripts/deploy-account.ts",
     "smoke": "tsx scripts/smoke.ts",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "bootstrap": "tsx scripts/bootstrap-blox.ts"
   },
   "dependencies": {
     "@bloxchain/sdk": "1.0.0",

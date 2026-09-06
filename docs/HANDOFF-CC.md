@@ -6,15 +6,24 @@ created: 2026-09-06
 updated: 2026-09-06
 product: Branch-Zero
 objective: OBJ-2026-0004
-first_mission: U1 Signing lane (G2)
-prior_mission: U0 Foundation (G1) — met 2026-09-06
+first_mission: U2 Timelock lane (G3)
+prior_mission: U1 Signing lane (G2) — met 2026-09-06
 ---
 
 # Handoff — Claude Code (Fable 5.1)
 
 You are a **cold agent** unless the human says you are continuing a prior session. Prefer reading this file over chat memory. You have **freedom on how**. You do **not** have freedom on constraints, scope, or protocol semantics.
 
-**Current mission: U1 Signing lane (G2)** — Privy login + session signer + Lane A payment. Do not start U2–U7.
+**Current mission: U2 Timelock lane (G3)** — wire → PENDING → approve/cancel, SSE, `releaseTime` read from
+chain. Do not start U3–U7.
+
+> **U1 met 2026-09-06.** K2, K5 and K8 all PASS; Lane A moves demo USDC on Remote EVM 1337 with the player's
+> Privy session signer and no browser in the loop. Read
+> [`docs/progress/2026-09-06-u1-signing-lane.md`](./progress/2026-09-06-u1-signing-lane.md) before anything
+> else — it carries the findings that will otherwise cost you an afternoon (role permissions on the execution
+> selector, `deadline` being a duration, the 99.2 %-of-a-block clone, Privy's BigInt/JSON and wallet-ownership
+> rules). One human step is still outstanding: completing an email-OTP login in the overlay to see the single
+> consent modal end to end.
 
 ---
 
@@ -64,7 +73,7 @@ GitHub mirrors under `https://github.com/JaCoderX/Branch-Zero/blob/main/docs/…
 2. Derive behaviour from SDK types + public Bloxchain docs. Mark unknowns `VERIFY`.
 3. Godot 4.5 GDScript, web, **threads OFF**. No keys / no RPC in Godot. No `JavaScriptBridge.eval`.
 4. **One wallet modal** (Account Opening). Second modal = bug unless K2 client-side fallback is chosen and logged.
-5. **Remote EVM first** (`1337`, `http://127.0.0.1:8545`). **Do not** `docker compose down -v` or wipe volumes. Live block gas ≈ **20M** — design under it.
+5. **Remote EVM first** (`1337`, `http://127.0.0.1:8545`). **Do not** `docker compose down -v` or wipe volumes. Live block gas limit is **16,777,216** (measured in U1; the earlier "≈20M" is retracted) — design under it, and note `cloneBlox` already uses 99.2 % of a block.
 6. Keep existing `infra/deployments/remote-evm.json` AccountBlox as the **lab fixture**. New players: prefer **CopyBlox.cloneBlox** (protocol `npm run create-wallet` pattern) once CopyBlox is on-chain; if CopyBlox is not deployed yet, you may deploy **CopyBlox only** (no foundation wipe) or use the fixture owner for K2 — document which.
 7. Never use Ganache-parity keys on public nets. No secrets in git.
 8. Never merge GameLab ENG trees into this repo.
@@ -82,9 +91,20 @@ EIP-712 domain name from SDK: **`Bloxchain`** (`META_TX_DOMAIN`).
 - Teller Desk stub `/healthz`
 - See progress note for re-run commands
 
+## 4b. U1 already done (do not redo)
+
+- `npm run chain:bootstrap` — CopyBlox `0x7C728214be9A0049e6a86f2137ec61030D0AA964`, demo ERC-20 `dUSDC`
+  `0x5017A545b09ab9a30499DE7F431DF0855bCb7275`
+- Teller Desk U1: `/session`, `/provision`, `/pay`, `/status`, `/events` (SSE), `/healthz`
+- Privy session signer adapter + per-player policy (K2, K5); React overlay with login, one consent, revoke
+- Lane A green: `requestAndApproveExecution` moving demo USDC
+- `npm -w apps/teller-desk run killtests -- --fresh` re-runs K2 / K5 / Lane A
+
 ---
 
-## 5. Mission U1 — Signing lane (G2)
+## 5. Mission U1 — Signing lane (G2) — **MET 2026-09-06**
+
+Kept as the record of what G2 required and how it was answered. The next mission is §5b.
 
 ### Freedom envelope
 
@@ -100,16 +120,16 @@ EIP-712 domain name from SDK: **`Bloxchain`** (`META_TX_DOMAIN`).
 - Reintroducing `@bloxchain/contracts` compile pipeline
 - Deepening `infra/scripts/compile.ts` (leave as historical; do not call it from default npm scripts for U1)
 
-### Definition of Done (G2)
+### Definition of Done (G2) — all met
 
-- [ ] Privy env filled locally from principal’s app (`.env` / `.env.example` names only in git): `PRIVY_APP_ID`, `PRIVY_APP_SECRET`, `PRIVY_AUTHORIZATION_KEY`, `PRIVY_POLICY_ID`, `VITE_PRIVY_APP_ID`, `VITE_PRIVY_SIGNER_ID`
-- [ ] Login + embedded wallet in React overlay; session signer delegated once (Account Opening)
-- [ ] Teller Desk requests `eth_signTypedData_v4` for a Bloxchain meta-tx; **recover == owner** (K2)
-- [ ] Policy denies (or documents fallback) out-of-scope typed data (K5)
-- [ ] One Lane A path: unsigned meta-tx via SDK → sign → `requestAndApproveExecution` from broadcaster (USDC or demo token on the chosen chain)
-- [ ] After delegation: **no second wallet modal** for that Lane A (or K2 fallback chosen + logged)
-- [ ] `docs/REFLECTION.md` kill log: K2, K5 filled; `docs/progress/` note for U1
-- [ ] ENG-2026-0004 `findings.md` updated if you answered the ENG question
+- [x] Privy env filled locally (`PRIVY_APP_ID`, `PRIVY_APP_SECRET`, `PRIVY_AUTHORIZATION_KEY`, `PRIVY_SIGNER_ID`, `VITE_PRIVY_APP_ID`, `VITE_PRIVY_SIGNER_ID`). `PRIVY_POLICY_ID` turned out to be unnecessary: policies are minted **per player** via the API.
+- [x] Login + embedded wallet in the React overlay; session signer delegated once at Account Opening (`apps/web/src/overlay/useBranchZeroWallet.ts`). *Caveat: the modal was verified to open over the Godot canvas; completing the email OTP needs a human — see the progress note's "Blockers".*
+- [x] Teller Desk requests `eth_signTypedData_v4` for a Bloxchain meta-tx; **recover == owner** — **K2 PASS**
+- [x] Policy denies out-of-scope typed data — **K5 PASS** (`verifyingContract` + `chainId`; `domain.name` is not a matchable field, documented)
+- [x] Lane A: unsigned meta-tx via SDK → session-signer signature → `requestAndApproveExecution` from the broadcaster, moving demo USDC on 1337
+- [x] After delegation: no second wallet modal — the signature is obtained server-side with no browser in the loop at all
+- [x] `docs/REFLECTION.md` kill log (K2, K5, K8) + `docs/progress/2026-09-06-u1-signing-lane.md`
+- [x] ENG-2026-0004 `findings.md` and `handoff.md` filled
 
 ### Suggested sequence
 
@@ -121,6 +141,21 @@ EIP-712 domain name from SDK: **`Bloxchain`** (`META_TX_DOMAIN`).
 6. Log kill tests. Stop.
 
 ---
+
+## 5b. Next mission — U2 Timelock lane (G3)
+
+Scope and gate are already defined; do not re-derive them:
+
+- [`docs/DEV-LOOP.md`](./DEV-LOOP.md) §3 — U2 row
+- [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) §3.3 — Lane B sequence and the three request options (option 1,
+  owner sends via session-signer `eth_sendTransaction`, is marked preferred; V6 is still unverified)
+- [`docs/BLOXCHAIN-INTEGRATION.md`](./BLOXCHAIN-INTEGRATION.md) §6 — request / countdown / approve / cancel
+
+What U1 leaves you: a working signing lane, a provisioner, SSE stage events, and `/wire` `/approve` `/cancel`
+answering `501 { plannedUnit: 'U2' }` so the routes already exist to fill in. Expect the U1 finding about role
+permissions to repeat: `executeWithTimeLock` will need `EXECUTE_TIME_DELAY_REQUEST` on the transfer selector,
+and the approve/cancel meta handlers their own grants — extend the role config batch in
+`apps/teller-desk/src/lanes/provision.ts` rather than adding a second one.
 
 ## 6. After U1
 

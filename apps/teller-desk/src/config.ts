@@ -1,0 +1,72 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { getAddress, type Address, type Hex } from 'viem';
+
+export const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
+
+function req(name: string): string {
+  const v = process.env[name];
+  if (!v) throw new Error(`Missing env ${name} — see .env.example`);
+  return v;
+}
+function opt(name: string, fallback = ''): string {
+  return process.env[name] || fallback;
+}
+
+/** Never log these. `redact` exists so startup logs can prove a value is present without leaking it. */
+export function redact(v: string): string {
+  return v.length <= 10 ? '***' : `${v.slice(0, 6)}…${v.slice(-4)}`;
+}
+
+export const config = {
+  port: Number(opt('PORT', '8787')),
+  rpcUrl: opt('REMOTE_EVM_RPC_URL', 'http://127.0.0.1:8545'),
+  allowedOrigins: opt('ALLOWED_ORIGINS', 'http://localhost:5173').split(',').map((s) => s.trim()),
+
+  broadcasterPk: req('BROADCASTER_PK') as Hex,
+  deployerPk: req('DEPLOYER_PK') as Hex,
+  recoveryAddress: getAddress(req('RECOVERY_ADDRESS')) as Address,
+
+  timeLockSec: BigInt(opt('TIMELOCK_SEC', '120')),
+  /** Lane A soft cap. Off-chain policy only — see docs/REFLECTION.md §2.2 "partial" invariant. */
+  instantLimit: opt('INSTANT_LIMIT_USDC', '100'),
+  /** Opening balance handed to a freshly provisioned account, in display units. */
+  openingBalance: opt('OPENING_BALANCE_USDC', '500'),
+
+  privy: {
+    appId: req('PRIVY_APP_ID'),
+    appSecret: req('PRIVY_APP_SECRET'),
+    /** Dashboard value is prefixed `wallet-auth:`; the API wants the bare base64 PKCS8 key. */
+    authorizationKey: req('PRIVY_AUTHORIZATION_KEY').replace(/^wallet-auth:/, ''),
+    /** Key-quorum id registered in the dashboard — this is the "session signer". */
+    signerId: req('PRIVY_SIGNER_ID'),
+    /** Optional app-wide policy; per-player policies are created at provisioning (K5). */
+    policyId: opt('PRIVY_POLICY_ID'),
+  },
+} as const;
+
+/** Addresses written by `npm run chain:bootstrap` / `chain:deploy`. Public data, committed. */
+export function deployments() {
+  const file = path.join(REPO_ROOT, 'infra', 'deployments', 'remote-evm.json');
+  const d = JSON.parse(fs.readFileSync(file, 'utf8'));
+  const copyBlox = d.applications?.CopyBlox;
+  const token = d.tokens?.demoUsdc;
+  if (!copyBlox?.address) throw new Error('CopyBlox missing from infra/deployments/remote-evm.json — run `npm run chain:bootstrap`');
+  if (!token?.address) throw new Error('demoUsdc missing from infra/deployments/remote-evm.json — run `npm run chain:bootstrap`');
+  return {
+    chainId: d.chainId as number,
+    copyBlox: getAddress(copyBlox.address) as Address,
+    /** The U0 fixture doubles as the clone implementation: `Clones.clone` copies runtime code, not storage. */
+    accountBloxImplementation: getAddress(copyBlox.cloneImplementation ?? d.accounts[0].address) as Address,
+    fixtureAccount: getAddress(d.accounts[0].address) as Address,
+    fixtureOwner: getAddress(d.accounts[0].owner) as Address,
+    guardDefinitions: getAddress(d.libraries.GuardControllerDefinitions.address) as Address,
+    rbacDefinitions: getAddress(d.libraries.RuntimeRBACDefinitions.address) as Address,
+    token: {
+      address: getAddress(token.address) as Address,
+      symbol: (token.symbol ?? 'dUSDC') as string,
+      decimals: (token.decimals ?? 18) as number,
+    },
+  };
+}

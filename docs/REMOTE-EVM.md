@@ -18,7 +18,7 @@ Infra lives in **particle-tool-box**, not this repo. Do not vendor Nethermind he
 | Chain id | **`1337`** (`0x539`) |
 | RPC (host) | `http://127.0.0.1:8545` |
 | RPC (office) | Tailscale Serve HTTPS or `http://<hostname>.<tailnet>.ts.net:8545` — hostname stays in local env, never committed |
-| Gas limit | **Live ceiling ≈ 20M** (operator hard limit for MetaMask and other wallets). Do **not** wipe volumes to chase a higher genesis number. Design all txs under this ceiling. |
+| Gas limit | **Live block `gasLimit` = 16,777,216** (0x1000000), measured 2026-09-06 in U1 — the earlier "≈20M" was optimistic; treat 16.7M as the rule. Do **not** wipe volumes to chase a higher genesis number. Design all txs under this ceiling. |
 | Instant finality | NethDev mining enabled — vault clock must still be **policy** (`releaseTime`), not "waiting for a block" |
 
 ---
@@ -39,7 +39,24 @@ curl -s -X POST http://127.0.0.1:8545 `
 
 Expect `"result":"0x539"`.
 
-> **Observed / principal 2026-09-06:** Nethermind `v1.39.3`, forks through **Prague** (no Osaka). Live block gas ≈ **20M** operator ceiling (U0 measured ~16.7M on an older volume reading — treat **20M** as the rule). `AccountBlox.initialize` ≈ 16.06 M — fits; leave headroom. **Do not** `docker compose down -v` — shared lab data stays. Probe: `npm run chain:probe`.
+> **Observed 2026-09-06 (U0, corrected in U1):** Nethermind `v1.39.3`, forks through **Prague** (no Osaka).
+> Live block `gasLimit` is **16,777,216** — U0's 16.7M reading was the real number, not a stale one; the
+> "≈20M operator ceiling" was wrong and is retracted. **Do not** `docker compose down -v` — shared lab data
+> stays. Probe: `npm run chain:probe`.
+>
+> **Gas budget (U1, measured):**
+>
+> | Operation | Gas | % of a block |
+> |---|---|---|
+> | `AccountBlox.initialize` (U0, standalone) | 16.06 M | 95.7 % |
+> | `CopyBlox.cloneBlox` (clone + initialize, one tx) | **16.20 M** used, ~16.65 M required | **99.2 %** |
+> | `CopyBlox` deploy (one-time) | 2.48 M | 14.8 % |
+> | demo ERC-20 deploy (one-time) | 0.84 M | 5.0 % |
+> | guard config batch / role config batch / Lane A payment | well under 1 M each | — |
+>
+> `cloneBlox` therefore only fits **as the sole transaction in its block**. It works on this instant-mining
+> dev chain, but there is essentially no headroom: if account opening ever starts failing, this is why.
+> Anything that grows `initialize` (more schemas, more roles) breaks provisioning outright.
 
 ~~Wipe~~ — **forbidden for Branch Zero development** unless the principal explicitly orders a new chain. If a wipe ever happens, every address changes and `infra/deployments/remote-evm.json` must be regenerated.
 ---

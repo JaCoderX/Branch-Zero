@@ -9,7 +9,7 @@
 import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { installBridge, onBridgeTraffic } from './bridge/branchZero';
-import { App } from './overlay/App';
+import { Providers } from './overlay/Providers';
 
 const GAME_BASE = '/game/index';
 
@@ -22,7 +22,7 @@ onBridgeTraffic((m) => {
 const root = createRoot(document.getElementById('overlay')!);
 let engineState = 'not started';
 function render() {
-  root.render(createElement(App, { engineState }));
+  root.render(createElement(Providers, { engineState }));
 }
 function setState(s: string) {
   engineState = s;

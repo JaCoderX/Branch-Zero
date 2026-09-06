@@ -34,3 +34,6 @@ apps/web/public/game/
 # vite
 apps/web/dist/
 *.local
+
+# agent scratch probes (never committed)
+.scratch/
