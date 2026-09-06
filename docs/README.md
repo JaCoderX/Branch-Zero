@@ -34,8 +34,8 @@ Start with **[PLAN.md](./PLAN.md)**. Read order for a new contributor:
 
 ## Hard rules
 
-1. Only the public `@bloxchain/sdk` and `@bloxchain/contracts` npm packages. No custom Solidity, no unpublished deps, no local path deps to other repos.
+1. Only the public `@bloxchain/sdk` (+ `viem`). No `@bloxchain/contracts` in this product. No custom Solidity, no unpublished deps, no path deps for runtime.
 2. Godot never holds keys or talks to a chain; everything goes through `window.BranchZero` → Teller Desk.
 3. One wallet modal in the whole game (Account Opening). If a second appears, it is a bug or a documented fallback.
 4. Everything the player sees about chain state is read from chain.
-5. Testnets + Remote EVM only. No mainnet deployment during the event. Develop against Remote EVM (`1337`) when the question is not ENS / Uniswap / Arc.
+5. Testnets + Remote EVM only. No mainnet. Develop against Remote EVM (`1337`, ~20M gas, **no wipe**) when the question is not ENS / Uniswap / Arc.

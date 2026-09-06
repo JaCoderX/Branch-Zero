@@ -67,13 +67,13 @@ Bloxchain already encodes exactly that process on-chain: **roles** (owner / broa
 
 | # | Constraint | Consequence |
 |---|-----------|-------------|
-| C1 | **Only the public Bloxchain packages on npm.** `@bloxchain/sdk`; `@bloxchain/contracts` (optional peer) only for `AccountBlox` / definition-library bytecode + ABI. No unpublished packages, no local path deps to other repos, no copied protocol source. | All protocol calls go through `SecureOwnable`, `RuntimeRBAC`, `GuardController`, `BaseStateMachine`, `MetaTransactionSigner`, the definition encoders, and viem. If a helper is missing, we write it in `apps/web` — we do not patch the SDK. |
+| C1 | **Public `@bloxchain/sdk` (+ viem) only for product runtime.** No `@bloxchain/contracts` in Branch Zero. Bootstrap/clone via protocol CopyBlox scripts or existing lab addresses. No unpublished packages, no path deps for runtime, no copied protocol Solidity. | All protocol calls go through SDK wrappers. Missing helpers → write in `apps/web` / `apps/teller-desk` on top of the public API. |
 | C2 | **Godot 4.x, GDScript, Web export.** C# is not supported on Web in Godot 4. | All wallet / chain logic lives in TypeScript around the canvas; GDScript only talks to `window.BranchZero` via `JavaScriptBridge`. |
 | C3 | **Single-threaded Web export.** Threaded export needs COOP/COEP `require-corp`, which blocks third-party iframes — Privy's embedded wallet is an iframe. | Export preset: Thread Support **off**. Keep scenes light (see perf budget in WORLD doc). |
 | C4 | **ENSv2 is Sepolia-only (beta).** | Sepolia is the primary chain. Arc gets a second deployment; ENS resolution is read from Sepolia regardless of which "wing" the player is in. |
 | C5 | **Hackathon rules.** New code during the event, public repo, demo video, AI-tool disclosure where required, sponsor-specific deliverables (Uniswap `FEEDBACK.md`, Arc architecture diagram, ENS "central not cosmetic", Privy "at least one control"). | Submission checklist in [DEMO-SCRIPT.md](./DEMO-SCRIPT.md). |
 | C6 | **10 build days, small team.** | Ruthless scope ladder (§ 4). Anything not in MVP has a stated fallback. |
-| C7 | **Remote EVM first.** Local execution is particle-tool-box `Docker Apps/Remote EVM` (chain id `1337`, `http://127.0.0.1:8545`). | Iterate provision + Lane A/B without faucet. Sepolia/Arc only for ENS, Uniswap, Arc-compat, and judge receipts. Well-known Ganache-parity keys never touch a public net. See [REMOTE-EVM.md](./REMOTE-EVM.md). |
+| C7 | **Remote EVM first; do not wipe.** Local execution is particle-tool-box Remote EVM (`1337`, ~**20M** gas ceiling). | Iterate without faucet. No `docker compose down -v` unless principal orders it. Sepolia/Arc for ENS / Uniswap / Arc-compat / judge receipts. See [REMOTE-EVM.md](./REMOTE-EVM.md). |
 
 ---
 

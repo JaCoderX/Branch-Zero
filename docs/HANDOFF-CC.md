@@ -6,257 +6,138 @@ created: 2026-09-06
 updated: 2026-09-06
 product: Branch-Zero
 objective: OBJ-2026-0004
-first_mission: U0 Foundation (G1)
+first_mission: U1 Signing lane (G2)
+prior_mission: U0 Foundation (G1) — met 2026-09-06
 ---
 
 # Handoff — Claude Code (Fable 5.1)
 
-You are a **cold agent**. You have not seen the prior chat. This file is the brief. Read it, then follow the **read order**, then execute **Mission U0** only.
+You are a **cold agent** unless the human says you are continuing a prior session. Prefer reading this file over chat memory. You have **freedom on how**. You do **not** have freedom on constraints, scope, or protocol semantics.
 
-You are running in **Claude Code** with a strong model. You have **freedom on how**. You do **not** have freedom on constraints, scope, or protocol semantics.
-
----
-
-## 0. What you are building (one paragraph)
-
-**Branch Zero** is a walkable 3D bank in **Godot 4.5 GDScript**, exported to **web (single-threaded)**, where every desk is a real operation on a **Bloxchain** smart account (`AccountBlox`) driven **only** through the public npm packages `@bloxchain/sdk` and `@bloxchain/contracts`. The player logs in once with **Privy**; afterwards a teller stamps slips (EIP-712 meta-transactions). Large wires go through a vault whose clock **is** the on-chain timelock. Identity is **ENSv2** on Sepolia. A second wing is **Arc Testnet**. Event: ETHOnline 2026, track Start Fresh, **~10 days**.
-
-It is **not** a wallet UI, not a DeFi protocol, not a fork of Bloxchain, not mainnet, not Tactical-AI, not a GameLab merge target.
+**Current mission: U1 Signing lane (G2)** — Privy login + session signer + Lane A payment. Do not start U2–U7.
 
 ---
 
-## 1. Repos you must know (three + one infra)
+## 0. Product (one paragraph)
 
-| Role | Local path (Windows) | GitHub | You write here? |
-|------|----------------------|--------|-----------------|
-| **Product (SoT for code)** | `D:\My Git Projects\D9-Studio\Branch-Zero` | https://github.com/JaCoderX/Branch-Zero | **Yes — all construction** |
-| **Craft (method, OBJ)** | `D:\My Git Projects\D9-Studio\GameDevOS` | https://github.com/D9-Studio/GameDevOS | Lessons + logs only; **no game code** |
-| **Lab (one-question spikes)** | `D:\My Git Projects\D9-Studio\GameLab` | https://github.com/D9-Studio/GameLab | **Yes — only inside `work/ENG-…/`** |
-| **Remote EVM (private chain)** | `D:\My Git Projects\ParticleCS\particle-tool-box\Docker Apps\Remote EVM` | (internal particle-tool-box) | **No** — consume it. Do not modify unless RPC is down and the principal asks |
+**Branch Zero** — walkable 3D bank (Godot 4.5 GDScript, single-thread web) whose desks are real **Bloxchain** smart-account operations, driven only through public **`@bloxchain/sdk`** (+ viem). Privy = one wallet modal. Teller = broadcaster. Vault clock = on-chain timelock. ETHOnline 2026, Start Fresh.
 
-Bloxchain protocol source (`D:\My Git Projects\ParticleCS\Bloxchain-protocol`) is a **reference for reading published behaviour**, not a dependency. **Do not** path-depend it. **Do not** copy Solidity into Branch Zero.
-
-If a sibling repo is not cloned, use the GitHub URLs in this file. Product work still lands only in Branch-Zero.
+Not: a wallet UI, DeFi protocol, Bloxchain fork, mainnet, Tactical-AI, GameLab merge target.
 
 ---
 
-## 2. Read order (do this before writing code)
+## 1. Repos
 
-Read in this order. Do not skim PLAN and then invent a different architecture.
+| Role | Path | GitHub |
+|------|------|--------|
+| **Product** | `D:\My Git Projects\D9-Studio\Branch-Zero` | https://github.com/JaCoderX/Branch-Zero |
+| **Craft** | `D:\My Git Projects\D9-Studio\GameDevOS` | https://github.com/D9-Studio/GameDevOS |
+| **Lab** | `D:\My Git Projects\D9-Studio\GameLab` | https://github.com/D9-Studio/GameLab |
+| **Remote EVM** | `D:\My Git Projects\ParticleCS\particle-tool-box\Docker Apps\Remote EVM` | consume only |
+| **Protocol (reference / CopyBlox scripts)** | `D:\My Git Projects\ParticleCS\Bloxchain-protocol` | **do not path-depend**; may run its deploy/create-wallet scripts **out of band** for bootstrap |
 
-### 2.1 Product (Branch Zero) — required
+---
 
-| # | File | Why |
-|---|------|-----|
-| 1 | **This file** | Mission, constraints, DoD |
-| 2 | [`docs/DEV-LOOP.md`](./DEV-LOOP.md) | How craft/lab/product split; construction units U0–U7 |
-| 3 | [`docs/REMOTE-EVM.md`](./REMOTE-EVM.md) | Default local chain `1337`; when to touch Sepolia |
-| 4 | [`docs/PLAN.md`](./PLAN.md) | Scope ladder, 10-day schedule, kill tests, gates G1–G10 |
-| 5 | [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) | Three runtimes, sequences, `window.BranchZero`, repo layout |
-| 6 | [`docs/BLOXCHAIN-INTEGRATION.md`](./BLOXCHAIN-INTEGRATION.md) | Public SDK only; provision; lanes A/B |
-| 7 | [`docs/GODOT.md`](./GODOT.md) | 4.5, single-thread, `Chain.gd`, no eval |
-| 8 | [`docs/SECURITY-AND-KEYS.md`](./SECURITY-AND-KEYS.md) | Keys, env, threat model |
-| 9 | [`docs/REFLECTION.md`](./REFLECTION.md) | Honest invariants, sponsor matrix, **kill-test log to fill** |
-| 10 | [`docs/GAME-DESIGN.md`](./GAME-DESIGN.md) | Pillars + protocol-to-game table (do not implement greybox in U0) |
+## 2. Read order (before code)
 
-GitHub equivalents (same paths under `https://github.com/JaCoderX/Branch-Zero/blob/main/`):
+1. **This file**
+2. [`docs/DEV-LOOP.md`](./DEV-LOOP.md) — U1 row
+3. [`docs/REMOTE-EVM.md`](./REMOTE-EVM.md) — **do not wipe**; ~20M gas
+4. [`docs/PRIVY.md`](./PRIVY.md)
+5. [`docs/BLOXCHAIN-INTEGRATION.md`](./BLOXCHAIN-INTEGRATION.md) — SDK-only; CopyBlox provision
+6. [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) §1–3, §5–6
+7. [`docs/SECURITY-AND-KEYS.md`](./SECURITY-AND-KEYS.md)
+8. [`docs/REFLECTION.md`](./REFLECTION.md) — kill log + principal decisions
+9. [`docs/progress/2026-09-06-u0-foundation.md`](./progress/2026-09-06-u0-foundation.md) — what already works
+10. GameLab [ENG-2026-0004](https://github.com/D9-Studio/GameLab/blob/main/work/ENG-2026-0004-privy-typed-data-signer/README.md)
+11. Craft lessons (already filed — do not re-author):  
+    https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/sdk-runtime-factory-clones.md  
+    https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/verify-published-package-artifacts.md
 
-- https://github.com/JaCoderX/Branch-Zero/blob/main/docs/HANDOFF-CC.md
-- https://github.com/JaCoderX/Branch-Zero/blob/main/docs/DEV-LOOP.md
-- https://github.com/JaCoderX/Branch-Zero/blob/main/docs/REMOTE-EVM.md
-- https://github.com/JaCoderX/Branch-Zero/blob/main/docs/PLAN.md
-- https://github.com/JaCoderX/Branch-Zero/blob/main/docs/ARCHITECTURE.md
-- https://github.com/JaCoderX/Branch-Zero/blob/main/docs/BLOXCHAIN-INTEGRATION.md
-- https://github.com/JaCoderX/Branch-Zero/blob/main/docs/GODOT.md
-- https://github.com/JaCoderX/Branch-Zero/blob/main/docs/SECURITY-AND-KEYS.md
-- https://github.com/JaCoderX/Branch-Zero/blob/main/docs/REFLECTION.md
-- https://github.com/JaCoderX/Branch-Zero/blob/main/docs/GAME-DESIGN.md
-
-### 2.2 Product — later units (do not implement in U0)
-
-[`docs/PRIVY.md`](./PRIVY.md) · [`docs/ENS.md`](./ENS.md) · [`docs/ARC.md`](./ARC.md) · [`docs/UNISWAP.md`](./UNISWAP.md) · [`docs/NPCS.md`](./NPCS.md) · [`docs/WORLD-3D-ENVIRONMENT.md`](./WORLD-3D-ENVIRONMENT.md) · [`docs/DEMO-SCRIPT.md`](./DEMO-SCRIPT.md)
-
-### 2.3 Craft + lab (required orientation, light)
-
-| File | Why |
-|------|-----|
-| https://github.com/D9-Studio/GameDevOS/blob/main/objectives/OBJ-2026-0004-walkable-governed-account-ux/objective.md | Craft learning contract |
-| https://github.com/D9-Studio/GameDevOS/blob/main/AGENTS.md | Craft never runs engines |
-| https://github.com/D9-Studio/GameLab/blob/main/AGENTS.md | One question per ENG; never merge ENG → product |
-| https://github.com/D9-Studio/GameLab/blob/main/docs/ENGAGEMENT.md | open → run → find → handoff rewrite |
-| https://github.com/D9-Studio/GameLab/blob/main/work/index.md | ENG-0003…0008 |
-
-Local:
-
-- `D:\My Git Projects\D9-Studio\GameDevOS\objectives\OBJ-2026-0004-walkable-governed-account-ux\objective.md`
-- `D:\My Git Projects\D9-Studio\GameLab\work\ENG-2026-0003-godot-web-js-bridge\README.md`
-- `D:\My Git Projects\D9-Studio\GameLab\work\ENG-2026-0005-accountblox-on-remote-evm\README.md`
-
-### 2.4 Remote EVM operator docs
-
-- `D:\My Git Projects\ParticleCS\particle-tool-box\Docker Apps\Remote EVM\README.md`
-- `D:\My Git Projects\ParticleCS\particle-tool-box\Docker Apps\Remote EVM\docker-compose.yml`
+GitHub mirrors under `https://github.com/JaCoderX/Branch-Zero/blob/main/docs/…`.
 
 ---
 
 ## 3. Hard constraints (non-negotiable)
 
-1. **Public Bloxchain only.** `@bloxchain/sdk` and `@bloxchain/contracts` from npm. No unpublished packages, no `file:` / path deps to Bloxchain-protocol, no copied protocol Solidity, no new contracts.
-2. **Derive protocol behaviour from public SDK types + Bloxchain public docs.** If unknown, mark `VERIFY` and add/use a kill test. Do not invent semantics.
-3. **Godot 4.5.x GDScript, Web export, threads OFF.** C# is not supported on Godot 4 web. Do not use the GameLab 4.7.1-mono pin for this product.
-4. **Godot never holds keys and never talks to an RPC.** All chain I/O: GDScript → `window.BranchZero` → TypeScript bridge / Teller Desk.
-5. **No `JavaScriptBridge.eval`.** `get_interface` + JSON + `create_callback` only.
-6. **One wallet modal** in the whole game (Account Opening). A second modal is a bug unless K2 fallback is explicitly chosen and documented.
-7. **Testnets + Remote EVM only.** No mainnet.
-8. **Remote EVM first.** Local/dev execution = chain id `1337` at `http://127.0.0.1:8545` (or Tailscale Serve). Sepolia/Arc only for sponsor proofs, ENS, or when the question cannot be answered locally (ENS, Uniswap, Arc EVM compat).
-9. **Never use Remote EVM / Ganache-parity private keys on a public network.**
-10. **Secrets:** `.env` gitignored; `.env.example` only; no keys in logs or `deployments/*.json` (addresses only).
-11. **Lab isolation:** GameLab work stays in `work/ENG-YYYY-NNNN-slug/`. Copy proven patterns into Branch Zero. **Never merge an ENG tree into the product.**
-12. **Do not mint** `SPEC-*`, `IDEA-*`, or mutate other products' IDs. Branch Zero construction units are `U0`–`U7` in `docs/DEV-LOOP.md`.
-13. **Do not weaken** timelock, RBAC, whitelist, or meta-tx verification to "make the demo easier."
-14. **Custom errors / CEI / no constructors on upgradeable accounts** — inherit from published `AccountBlox`; don't "fix" the protocol.
+1. **Runtime dependency = `@bloxchain/sdk` + `viem` only.** Do **not** add or deepen `@bloxchain/contracts`. Do **not** run `chain:compile` / in-repo solc as the product path.
+2. Derive behaviour from SDK types + public Bloxchain docs. Mark unknowns `VERIFY`.
+3. Godot 4.5 GDScript, web, **threads OFF**. No keys / no RPC in Godot. No `JavaScriptBridge.eval`.
+4. **One wallet modal** (Account Opening). Second modal = bug unless K2 client-side fallback is chosen and logged.
+5. **Remote EVM first** (`1337`, `http://127.0.0.1:8545`). **Do not** `docker compose down -v` or wipe volumes. Live block gas ≈ **20M** — design under it.
+6. Keep existing `infra/deployments/remote-evm.json` AccountBlox as the **lab fixture**. New players: prefer **CopyBlox.cloneBlox** (protocol `npm run create-wallet` pattern) once CopyBlox is on-chain; if CopyBlox is not deployed yet, you may deploy **CopyBlox only** (no foundation wipe) or use the fixture owner for K2 — document which.
+7. Never use Ganache-parity keys on public nets. No secrets in git.
+8. Never merge GameLab ENG trees into this repo.
+9. Do not invent custom Solidity.
 
-Everyday bank words on screen later; U0 may use technical logs.
+EIP-712 domain name from SDK: **`Bloxchain`** (`META_TX_DOMAIN`).
 
 ---
 
-## 4. Architecture you will implement toward (do not redesign)
+## 4. U0 already done (do not redo)
 
-Three runtimes, from [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md):
-
-```text
-Browser:  Godot Web (GDScript)  ←JavaScriptBridge→  window.BranchZero (TS + viem + SDK reads)
-                                                      ↓ HTTPS + SSE
-Node:     Teller Desk (Fastify) — Privy session-signer requests + broadcaster key
-Chain:    AccountBlox per player — Remote EVM (dev) / Sepolia (primary public) / Arc (wing)
-```
-
-Target layout (create in U0 as far as the mission needs):
-
-```text
-Branch-Zero/
-  apps/game/          Godot 4.5 project
-  apps/web/           Vite shell + React overlay + bridge
-  apps/teller-desk/   Node service (may be a stub in U0)
-  packages/shared/    chain configs, zod, constants
-  infra/scripts/      deploy from @bloxchain/contracts artifacts
-  infra/deployments/  addresses only
-  docs/
-```
-
-PLAN also mentioned `apps/bridge`; ARCHITECTURE folded the bridge into `apps/web`. **Follow ARCHITECTURE:** bridge lives in `apps/web`. If you split a package, say why in `docs/REFLECTION.md`.
+- Scaffold: `apps/game`, `apps/web`, `apps/teller-desk`, `packages/shared`, `infra/`
+- K1 PASS — Godot 4.5.2 ↔ `window.BranchZero`
+- K4 fixture — AccountBlox on 1337; SDK `owner()` matches
+- Teller Desk stub `/healthz`
+- See progress note for re-run commands
 
 ---
 
-## 5. Lab vs product (how you are allowed to spike)
+## 5. Mission U1 — Signing lane (G2)
 
-| Unknown / kill test | Where to run | Then |
-|---------------------|--------------|------|
-| K1 / K8 Godot web ↔ JS | GameLab **ENG-2026-0003** *or* directly in `apps/game` if faster | Copy pattern into product; fill ENG findings if you opened the ENG |
-| K4 local AccountBlox | GameLab **ENG-2026-0005** *or* `infra/scripts` in product | Same — product must end with a re-runnable script |
-| K2 / K5 Privy | **ENG-2026-0004** — **not U0** | After U0 |
-| K3 Arc | **ENG-2026-0006** — not U0 | After G5 |
-| K6 ENS | **ENG-2026-0007** — not U0 | Needs a Sepolia name |
-| K7 Uniswap | **ENG-2026-0008** — **do not start** | Until S1 |
+### Freedom envelope
 
-**Preference:** if a spike is clearly the product scaffold, build it in Branch Zero and still **log the kill test** in `docs/REFLECTION.md`. Open an ENG when the experiment is throwaway or might pollute the product tree.
+- Privy React overlay shape inside `apps/web`
+- Fastify route layout for `/session`, `/pay`, SSE stages
+- Whether K2 is proven on Remote EVM 1337 (if Privy allows custom chain) or Sepolia
+- Whether ENG-0004 scripts live briefly in GameLab or only in `apps/teller-desk` (prefer product; still fill ENG findings)
 
-Fill ENG `findings.md` when you answer that ENG's question. Write ENG `handoff.md` before copying into product.
+### Out of scope
 
----
+- Greybox bank / NPCs / ENS / Arc / Uniswap / U2 timelock UI polish beyond what’s needed to prove Lane A
+- Wiping Remote EVM
+- Reintroducing `@bloxchain/contracts` compile pipeline
+- Deepening `infra/scripts/compile.ts` (leave as historical; do not call it from default npm scripts for U1)
 
-## 6. Mission U0 — Foundation (this session)
+### Definition of Done (G2)
 
-**One mission:** Establish a runnable foundation and settle Day-1 kill tests so later sessions only build gameplay on proven rails.
+- [ ] Privy env filled locally from principal’s app (`.env` / `.env.example` names only in git): `PRIVY_APP_ID`, `PRIVY_APP_SECRET`, `PRIVY_AUTHORIZATION_KEY`, `PRIVY_POLICY_ID`, `VITE_PRIVY_APP_ID`, `VITE_PRIVY_SIGNER_ID`
+- [ ] Login + embedded wallet in React overlay; session signer delegated once (Account Opening)
+- [ ] Teller Desk requests `eth_signTypedData_v4` for a Bloxchain meta-tx; **recover == owner** (K2)
+- [ ] Policy denies (or documents fallback) out-of-scope typed data (K5)
+- [ ] One Lane A path: unsigned meta-tx via SDK → sign → `requestAndApproveExecution` from broadcaster (USDC or demo token on the chosen chain)
+- [ ] After delegation: **no second wallet modal** for that Lane A (or K2 fallback chosen + logged)
+- [ ] `docs/REFLECTION.md` kill log: K2, K5 filled; `docs/progress/` note for U1
+- [ ] ENG-2026-0004 `findings.md` updated if you answered the ENG question
 
-### 6.1 Freedom envelope (you choose how)
+### Suggested sequence
 
-- npm workspaces vs pnpm vs bun — prefer **npm workspaces** unless you have a strong reason (document it).
-- Fastify vs a thinner HTTP server for Teller Desk stub.
-- Direct `deployContract` + immediate `initialize` vs clone factory **if** the public artifacts include it.
-- Whether K1 is proven in GameLab ENG-0003 or in `apps/game` first.
-- Exact folder names **inside** the apps listed above.
-- Cube scene, CLI smoke scripts, README run instructions.
-
-### 6.2 Out of scope (do not do)
-
-- Full Privy session-signer production path (U1 / G2)
-- Greybox bank, NPCs, dialogue, ledger board art
-- ENS, Arc wing, Uniswap
-- Demo video, sponsor forms
-- Custom Solidity
-- Changing GameDevOS wiki craft pages except appending `log.md` if you closed an ENG with a scrub-worthy lesson (unlikely in U0)
-
-### 6.3 Definition of Done (G1)
-
-Check all: *(ticked 2026-09-06 by the U0 session — K4 passed via a fallback that needs the principal's confirmation; see `docs/REFLECTION.md` kill-test log)*
-
-- [x] Repo scaffold exists: `apps/game`, `apps/web`, `apps/teller-desk` (may be stub), `packages/shared`, `infra/scripts`, `infra/deployments`
-- [x] Godot **4.5** project; web export preset **thread support off**
-- [x] Browser: Godot canvas + JS round-trip (K1). Document the command to serve it
-- [x] `@bloxchain/sdk` (and `@bloxchain/contracts` as needed) installed from **npm**
-- [x] Remote EVM reachable; script deploys or attaches `AccountBlox` on **1337** and reads `owner()` (K4 local / ENG-0005)
-- [x] `infra/deployments/remote-evm.json` committed with **addresses only**
-- [x] `.env.example` for RPCs and key **names**; no real keys
-- [x] Root `README.md`: one-line pitch + how to run web shell + how to point at Remote EVM
-- [x] `docs/REFLECTION.md` kill-test log: **K1** and **K4** filled (pass/fail/fallback). K2/K3/K5 may stay pending with the next human action named
-- [x] If you opened ENGs: `findings.md` started; GameLab `work/index.md` unchanged unless you close one
-- [x] `docs/progress/` note: what ran, commands, blockers (text is enough if capture is awkward)
-
-### 6.4 Suggested sequence (not a script — deviate if faster)
-
-1. Confirm Remote EVM: `curl` `eth_chainId` → `0x539`. If down, start compose in particle-tool-box Remote EVM folder (`docker compose up -d`). See [`REMOTE-EVM.md`](./REMOTE-EVM.md).
-2. Scaffold workspaces + `.gitignore` (node, `.env`, Godot `.godot/`, `*.pck`).
-3. K1: smallest Godot web export + `window.BranchZero` echo.
-4. K4: deploy script against 1337 using package artifacts. Inspect `@bloxchain/contracts` for artifact paths (`VERIFY` in BLOXCHAIN doc).
-5. Wire `packages/shared` chain config `remoteEvm` (`id: 1337`).
+1. Confirm Remote EVM up; **do not wipe**.
+2. Confirm Privy dashboard: origins include `http://localhost:5173`; embedded wallet on login; server-side access + auth key; policy (domain `Bloxchain` / verifyingContract or method-only).
+3. Wire overlay + Teller Desk session + signer adapter.
+4. K2 against fixture AccountBlox (or CopyBlox clone).
+5. Guard whitelist for transfer target if not already set; Lane A smoke.
 6. Log kill tests. Stop.
 
-If Godot 4.5 is not installed, **name the blocker** and still finish the TS/deploy half. Do not silently switch to 4.7.1-mono.
+---
 
-If Remote EVM is not running and Docker is unavailable, **name the blocker**; do not spend the session on Sepolia unless the principal already provided a Sepolia RPC and a funded key.
+## 6. After U1
+
+| Next | Gate |
+|------|------|
+| U2 Timelock lane | G3 |
+| U3 Greybox | G4 |
+
+Cut order unchanged: Uniswap → Manager → Arc → ENS EAC → ENS mint. **Never cut Privy or Lane B.**
 
 ---
 
-## 7. After U0 (do not start unless G1 is green and the human says so)
+## 7. Stop conditions
 
-| Next | Gate | Docs |
-|------|------|------|
-| U1 Signing lane | G2 | PRIVY.md, BLOXCHAIN-INTEGRATION.md, ENG-0004 |
-| U2 Timelock lane | G3 | ARCHITECTURE §3.3 |
-| U3 Greybox bank | G4 | WORLD, NPCS, GAME-DESIGN |
-| U4 MVP freeze | G5 | DEMO-SCRIPT |
+- Need custom Solidity or path-dep on Bloxchain-protocol for runtime
+- Would wipe Remote EVM or re-add contracts compile as default
+- Scope drifts to greybox/ENS/Arc
+- K2 fails and PLAN fallback not chosen
 
-Cut order if time dies: Uniswap → Manager runtime role → Arc → ENS EAC → ENS mint. **Never cut Privy or Lane B.**
-
----
-
-## 8. Language and honesty
-
-- Copy: "one pop-up" not "zero pop-ups" (delegation at Account Opening).
-- Lane B amount routing is **off-chain** policy. Do not claim the vault is the only on-chain path for large amounts (`REFLECTION.md` §2.2).
-- Bloxchain is an open-source dependency, not "our protocol" in judge copy.
-
----
-
-## 9. Human / principal remaining
-
-These are **not yours to fake**:
-
-1. Privy app + authorization key (U1)
-2. Sepolia `.eth` parent registration (start Day 1, wait is real) — producer
-3. Funded Sepolia/Arc keys when leaving Remote EVM
-4. Team size (assume solo if unknown)
-
----
-
-## 10. Stop conditions
-
-Stop and report if:
-
-- You would need custom Solidity or a local Bloxchain path dep to continue
-- K1 fails and the PLAN fallback is not chosen
-- Remote EVM rejects `AccountBlox` bytecode and Anvil/Sepolia is not authorized
-- Scope is drifting into U1–U7
-
-When you stop, leave: commands, file pointers, kill-test log, and the next agent can resume from G1 incomplete checklist above.
+Leave: commands, file pointers, kill-test log, next agent can resume from G2 checklist.

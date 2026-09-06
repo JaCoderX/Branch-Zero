@@ -42,7 +42,9 @@ Open an ENG when the answer is **unknown and could kill the thesis**. If the sha
 | ENS mint/resolve, Uniswap, judge-facing Sepolia receipts | Sepolia |
 | Arc wing / K3 | Arc Testnet `5042002` |
 
-Do not use public testnets to find out whether `initialize` reverts.
+Do not use public testnets to find out whether `initialize` reverts. **Do not wipe** Remote EVM volumes; live gas ≈ **20M**.
+
+**Product packages:** `@bloxchain/sdk` + `viem` only. Bootstrap/clone via protocol CopyBlox scripts — not `@bloxchain/contracts` in this repo.
 
 ---
 
@@ -52,8 +54,8 @@ Ordered so that after U2 we can stop and still demo a coherent bank-on-a-chain (
 
 | Unit | Outcome | Gate | Lab first? |
 |------|---------|------|------------|
-| **U0 Foundation** | Monorepo, Godot web + JS echo, SDK, AccountBlox on Remote EVM | G1 | ENG-0003 / ENG-0005 if throwaway |
-| **U1 Signing lane** | Provision + guard whitelist + Lane A with ≤1 modal | G2 | ENG-0004 |
+| **U0 Foundation** | Monorepo, Godot web + JS echo, SDK, AccountBlox fixture on Remote EVM | G1 | **met 2026-09-06** |
+| **U1 Signing lane** | Privy + session signer + Lane A (≤1 modal); SDK only; CopyBlox for new accounts when needed | G2 | ENG-0004 — **next** |
 | **U2 Timelock lane** | Wire → PENDING → approve/cancel; SSE; `releaseTime` from chain | G3 | No |
 | **U3 Bank shell** | Greybox zones, NPCs wired to bridge, ledger board | G4 | No |
 | **U4 MVP freeze** | Error UX, reconnect, rough capture | G5 | No |

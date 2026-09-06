@@ -18,7 +18,7 @@ Infra lives in **particle-tool-box**, not this repo. Do not vendor Nethermind he
 | Chain id | **`1337`** (`0x539`) |
 | RPC (host) | `http://127.0.0.1:8545` |
 | RPC (office) | Tailscale Serve HTTPS or `http://<hostname>.<tailnet>.ts.net:8545` — hostname stays in local env, never committed |
-| Gas limit | genesis `0x3938700` (60_000_000) |
+| Gas limit | **Live ceiling ≈ 20M** (operator hard limit for MetaMask and other wallets). Do **not** wipe volumes to chase a higher genesis number. Design all txs under this ceiling. |
 | Instant finality | NethDev mining enabled — vault clock must still be **policy** (`releaseTime`), not "waiting for a block" |
 
 ---
@@ -39,17 +39,9 @@ curl -s -X POST http://127.0.0.1:8545 `
 
 Expect `"result":"0x539"`.
 
-> **Observed 2026-09-06 (U0):** Nethermind `v1.39.3`, forks active through **Prague** (no Osaka → compile for `prague`). Live block `gasLimit` = **16,777,216**, not the 60 M genesis the Remote EVM README describes — the volume has not been wiped since that genesis change. `AccountBlox.initialize` costs ≈ **16.06 M gas**, i.e. ~96 % of the current block. Wipe (`docker compose down -v && docker compose up -d`) before U1 provisioning; then `npm run chain:deploy -- --fresh` and commit the new `infra/deployments/remote-evm.json`. Probe from the product: `npm run chain:probe`.
+> **Observed / principal 2026-09-06:** Nethermind `v1.39.3`, forks through **Prague** (no Osaka). Live block gas ≈ **20M** operator ceiling (U0 measured ~16.7M on an older volume reading — treat **20M** as the rule). `AccountBlox.initialize` ≈ 16.06 M — fits; leave headroom. **Do not** `docker compose down -v` — shared lab data stays. Probe: `npm run chain:probe`.
 
-Wipe (new genesis, all addresses change):
-
-```bash
-docker compose down -v
-docker compose up -d
-```
-
-Then redeploy definitions + accounts; update `infra/deployments/remote-evm.json`.
-
+~~Wipe~~ — **forbidden for Branch Zero development** unless the principal explicitly orders a new chain. If a wipe ever happens, every address changes and `infra/deployments/remote-evm.json` must be regenerated.
 ---
 
 ## 2. Dev accounts (lab only)

@@ -12,23 +12,22 @@ Upstream references (public): [Bloxchain-Protocol on GitHub](https://github.com/
 
 | Package | Used for | Notes |
 |---------|----------|-------|
-| `@bloxchain/sdk` (npm, MPL-2.0) | All reads/writes: `SecureOwnable`, `RuntimeRBAC`, `GuardController`, `BaseStateMachine`, `MetaTransactionSigner`, `MetaTransactionBuilder`, definition encoders, constants, error decoding | Pin exact version (`1.x`); peer `viem ^2.49` |
-| `@bloxchain/contracts` (npm, optional peer) | Compiled artifacts (ABI + bytecode) for `AccountBlox`, `GuardControllerDefinitions`, `RuntimeRBACDefinitions`, `SecureOwnableDefinitions`; `deployed-addresses.json` if it ships testnet addresses | Only consumed for deployment scripts; no Solidity is written or modified by us |
-| `viem` | Clients, ABI encoding, ENS resolution, chain definitions | Same major as SDK peer |
+| `@bloxchain/sdk` (npm, MPL-2.0) | **All** product reads/writes/meta-tx: wrappers, encoders, `MetaTransactionSigner`, ABIs (incl. AccountBlox / CopyBlox under `abi/` where exported) | Pin exact version (`1.x`); peer `viem` pinned to SDK |
+| `viem` | Clients, ABI encoding, ENS, chains | Same version as SDK peer |
 
-Forbidden: unpublished packages, local path dependencies to other repos, copying protocol source into this repo. If a helper is missing from the SDK we write it in `apps/teller-desk` or `packages/shared` on top of the public API.
+**Do not depend on `@bloxchain/contracts` in Branch Zero** (principal 2026-09-06). One-time chain bootstrap and per-player clones use the **protocol repo’s** Hardhat scripts (`deploy:remote-evm:test`, `create-wallet` / CopyBlox) or addresses already on Remote EVM — not an in-product solc pipeline.
+
+Forbidden: unpublished packages, local path deps for **runtime**, copying protocol Solidity into this repo, inventing semantics.
 
 Install:
 
 ```bash
 npm i @bloxchain/sdk viem
-npm i -D @bloxchain/contracts   # artifacts for deploy scripts only
 ```
 
-> **Verified 2026-09-06 (U0, K4).** `@bloxchain/contracts@1.0.0` contains Solidity **source** (`core/`, `standards/`) and ABIs — **no compiled bytecode, no `deployed-addresses.json`, and no `AccountBlox`/`CopyBlox`** (its README: templates live in the main repo under `contracts/examples/`). `@bloxchain/sdk@1.0.0` ships `abi/AccountBlox.abi.json` but its `exports` map only exposes `.` and `./abi` (`engineBloxAbi`). Consequence: `infra/scripts/compile.ts` compiles the published sources with solc 0.8.35 (via-IR, 200 runs) and fetches the `AccountBlox.sol` template from the public repo at the `contracts-v1.0.0` commit, pinned by commit + sha256, into a git-ignored build dir. The `artifacts/*.json` import paths sketched in § 3 do not exist; read them as "our compiled artifact". `viem` must be pinned to the SDK's exact version (`2.50.4`) to avoid a second copy. Permissioned reads: `getSupportedFunctions()` / `getSupportedRoles()` revert with `NoPermission` unless `eth_call` is made `from` a role holder — pass `account: owner` in `readContract` for the § 8 board reads.
+> **U0 history (K4):** npm `@bloxchain/contracts` was inspected and found source-only; a compile fallback produced the lab AccountBlox fixture in `infra/deployments/remote-evm.json`. That path is **rejected for ongoing product work**. Keep the fixture; provision new wallets via **CopyBlox.cloneBlox** (see protocol `scripts/deployment/create-wallet-copyblox.js`). EIP-712 domain name: SDK `META_TX_DOMAIN.name === "Bloxchain"`. Permissioned registry views need `account: owner` on `eth_call`.
 
-Kill test **K4** (Day 1): inspect `node_modules/@bloxchain/contracts` for `deployed-addresses.json` with `sepolia` entries for the three definition libraries. If absent, deploy them ourselves (§ 3.1).
-
+Kill test **K4**: settled — fixture on 1337; product path = SDK + CopyBlox.
 ---
 
 ## 2. Roles and who holds which key

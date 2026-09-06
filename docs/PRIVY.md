@@ -43,12 +43,14 @@ Not used: Privy Cards (guided onboarding), intents (mocked out of scope), Solana
 
 ## 3. Setup checklist (Day 2 morning)
 
-1. Create the Privy app; add allowed origins (local dev, Pages domain).
+**Status 2026-09-06 evening:** Privy **application created** by principal. Remaining human steps before / during U1:
+
+1. Allowed origins: `http://localhost:5173` (+ Pages later).
 2. Login methods: email, passkey, Google. Embedded wallets: **create on login** for EVM.
-3. Enable **Server-side access** (signers) and **Require signed requests**; generate the authorization key. Store the private key in `PRIVY_AUTHORIZATION_PRIVATE_KEY` (server only). Record the key quorum / signer ID.
-4. Create policies (§ 4). Record policy IDs.
-5. Add default chains: Sepolia (`11155111`) and Arc Testnet (`5042002`, custom chain definition).
-6. In the app, wrap the overlay in `PrivyProvider` with `embeddedWallets.ethereum.createOnLogin = 'users-without-wallets'` and `supportedChains` including the two chains.
+3. Enable **Server-side access** (signers) and **Require signed requests**; generate the authorization key → `PRIVY_AUTHORIZATION_KEY`. Record signer / key-quorum ID → `VITE_PRIVY_SIGNER_ID`.
+4. Create policies (§ 4). Domain name = **`Bloxchain`**. Record policy ID → `PRIVY_POLICY_ID`.
+5. Chains: Sepolia (`11155111`); try custom **Remote EVM `1337`** for local K2 — if refused, K2 on Sepolia.
+6. Fill local `.env` / Vite env (never commit secrets). Wrap overlay in `PrivyProvider`.
 
 ---
 
