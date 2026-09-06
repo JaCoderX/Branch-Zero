@@ -77,7 +77,11 @@ Not: a wallet UI, DeFi protocol, Bloxchain fork, mainnet, Tactical-AI, GameLab m
     https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/prefer-timed-path-over-untimed-sibling.md  
     https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/on-demand-mining-freezes-view-time.md  
     https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/dual-selector-permission-checks.md  
-    https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/refresh-client-session-after-server-mutation.md
+    https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/refresh-client-session-after-server-mutation.md  
+    https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/hidden-browser-tab-stops-engine-loop.md  
+    https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/bind-keycode-and-physical-keycode-on-web.md  
+    https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/anchors-and-offsets-for-code-built-ui-roots.md  
+    https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/preserve-error-codes-across-fetch-boundary.md
 
 GitHub mirrors under `https://github.com/JaCoderX/Branch-Zero/blob/main/docs/…`.
 
