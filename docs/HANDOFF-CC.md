@@ -246,18 +246,29 @@ Make the bank walkable and make the desks the operations. Everything the lanes n
 
 ## 5d. Mission U4 — MVP freeze (G5)
 
-Nothing new to build on the chain or in the bank's shape; U4 makes what exists survive a judge's laptop. The human
-OTP walk of the greybox is the first thing to do — it is the only U3 item a machine could not close.
+Nothing new to build on the chain or in the bank's shape; U4 makes what exists survive a judge's laptop. Kickoff:
+[`docs/KICKOFF-U4.md`](./KICKOFF-U4.md).
+
+**2026-09-07 playtest:** real-bridge Pay + Wire worked after Re-check account synced roles (player had been missing
+`configured` / `roleSet`). Feel is good — no art. **Canvas focus loss** after using the React debug overlay is an
+in-scope hotfix (click bank → WASD/`E` must work without reload).
+
+**Parallel (do not wait; do not implement here):** GameLab
+[ENG-2026-0010](https://github.com/D9-Studio/GameLab/tree/main/work/ENG-2026-0010-express-dual-control) (Express
+dual-control) and
+[ENG-2026-0011](https://github.com/D9-Studio/GameLab/tree/main/work/ENG-2026-0011-privy-step-up) (Privy step-up).
+Promote only after lab handoffs + principal OK (likely U6+).
 
 ### Freedom envelope
 
 - How reconnect is surfaced (HUD toast vs NPC line) as long as it comes from real bridge/SSE state
 - Whether the debug pill stays in the shipped build (recommend: yes, collapsed)
+- How canvas re-focus is wired (`canvas.focus()` on game click / after modal close) as long as overlay does not eat the full viewport when collapsed
 - Capture tooling for the 30-second clip
 
 ### Out of scope
 
-- ENS, Arc, Uniswap; art passes; new lanes, roles or policy shapes; wiping Remote EVM
+- ENS, Arc, Uniswap; art passes; Express desk / Privy step-up productization; new lanes, roles or policy shapes; wiping Remote EVM; editing GameLab ENG folders
 
 ### Definition of Done (G5)
 
@@ -266,14 +277,15 @@ OTP walk of the greybox is the first thing to do — it is the only U3 item a ma
 - [ ] Reconnect: SSE drop → reconnect → board reconciles; Teller Desk restart mid-wire → watcher re-arms, clock continues from `releaseTime`
 - [ ] First load measured (wasm + pck + shell) and written down against WORLD-3D §6; obvious wins taken (compression, no debug template)
 - [ ] 30-second capture of the vault clock counting down and the door opening
+- [ ] **Canvas re-focus:** after interacting with the React debug overlay (or Privy UI), click back into the bank and keyboard/mouse drive Godot again without reload
 - [ ] Progress note + REFLECTION; HANDOFF advanced to U5
 
 ### Suggested sequence
 
-1. Confirm the desk is up (`/healthz` says `U2`) and `npm run export:web` still produces a working canvas.
-2. Greybox the four zones and the walk loop; keep the HTML overlay as the debug panel.
-3. Wire one desk end to end (Account Opening), then the counter, then the vault.
-4. Ledger board + NPC error lines; capture 30 seconds; write the note.
+1. Canvas re-focus hotfix if playtest is blocked; desk `/healthz` says `U2`.
+2. Confirm / complete human OTP walk evidence on the real bridge; coach + record.
+3. Error UX + reconnect drills; measure load; 30 s capture (tab visible).
+4. Progress note + REFLECTION; HANDOFF → U5.
 
 ---
 

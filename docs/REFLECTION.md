@@ -153,6 +153,7 @@ Prior ETHGlobal "bank" / 3D projects mostly fall into: (a) DeFi dashboards skinn
 - **Real timelocks (24 h).** Demo uses 60–120 s; the Manager explains it is configurable.
 - **Mobile web.** Desktop Chrome/Edge/Firefox only.
 - **A token or points economy.** Achievements are cosmetic stamps; no on-chain rewards.
+- **Express dual-control / Privy step-up as product (as of Sep 7).** Exploring in GameLab ENG-0010 + ENG-0011 in parallel with U4; ship only after lab handoffs + principal OK (likely U6+). Must not open vault meta-approve.
 
 ---
 
@@ -197,3 +198,6 @@ Prior ETHGlobal "bank" / 3D projects mostly fall into: (a) DeFi dashboards skinn
 | Sep 6 (U3) | Greybox is code-built boxes (`bank_interior.gd`), UI is code-built Controls; `.tscn` is one root scene | Reviewable in a diff, no editor round-trips for a cold agent, `.pck` 125 KB | Replace with kit meshes in U7 |
 | Sep 6 (U3) | Input actions bind **both** `keycode` and `physical_keycode` | Godot web maps `KeyboardEvent.code` to the physical key and browser automation sends none; a physical-only `interact` was dead | never |
 | Sep 6 (U0) | Deploy + `initialize` as two transactions (no factory) | `CopyBlox`/factory is not in the public package either; window is seconds on 1337; deployer holds no role after `initialize` | U1 provisioner may add a clone factory only if one is published |
+| Sep 7 | Explore Express (dual-control) + Privy step-up in **GameLab ENG-0010 / ENG-0011** in parallel with U4; do not build in product until handoffs | Principal playtest liked Counter vs Vault; Ideas A/B are a possible third beat; vault meta-approve stays banned | After both labs answer; promote to U6+ only if yes |
+| Sep 7 | Canvas focus loss after React overlay is a **U4 product hotfix**, not a lab ENG | `#overlay > * { pointer-events: auto }` steals focus from Godot `#canvas` | Close in G5 DoD |
+| Sep 7 | Half-provisioned players (account set, `configured`/`roleSet` missing) fail Wire with `NoPermission` on `executeWithTimeLock`; Re-check `/provision` syncs roles | Dual-selector grants land only at end of provision | U4: harden write path / surface "Re-check" in bank copy if needed |
