@@ -1,0 +1,91 @@
+{
+  "id": "manager",
+  "name": "Mr. Okafor",
+  "role": "Branch Manager",
+  "start": [
+    { "if": "!booted", "node": "booting" },
+    { "if": "!has_account", "node": "no_account" },
+    { "if": "!manager", "node": "lore" },
+    { "node": "idle" }
+  ],
+  "nodes": {
+    "booting": {
+      "text": "Come in — give me a second, the desk is still opening.",
+      "choices": [ { "text": "Sure.", "next": "end" } ]
+    },
+    "no_account": {
+      "text": "Come in. Nothing in the vault needs my decision until you have an account — Ines will open one.",
+      "choices": [ { "text": "OK.", "next": "end" } ]
+    },
+    "lore": {
+      "text": "Come in. Today I'm just decoration — this branch has no manager key on the desk, so go release it yourself at the vault window.",
+      "choices": [
+        { "text": "Ask why", "next": "why_manager" },
+        { "text": "OK.", "next": "end" }
+      ]
+    },
+    "idle": {
+      "text": "Come in. Something in the vault needs a decision? {pending} wire(s) in there.",
+      "choices": [
+        { "text": "Approve a wire", "if": "pending>0", "next": "approve_list" },
+        { "text": "Recall a wire", "if": "pending>0", "next": "cancel_list" },
+        { "text": "Explain the limits", "next": "limits" },
+        { "text": "Ask why", "next": "why_manager" },
+        { "text": "Nothing today.", "next": "end" }
+      ]
+    },
+    "approve_list": {
+      "text": "Which one? Cooling ones will be refused by the vault, not by me.",
+      "choices_from": "pending",
+      "choice_template": { "text": "Stamp #{txId} — {amount} {symbol} to {payee} ({status}, {release_in})", "action": "approve", "as": "manager", "working": "Stamping…", "on_ok": "approved", "on_error": "refused" },
+      "choices": [ { "text": "Back", "next": "idle" } ]
+    },
+    "cancel_list": {
+      "text": "Which one goes in the shredder?",
+      "choices_from": "pending",
+      "choice_template": { "text": "Recall #{txId} — {amount} {symbol} to {payee} ({status})", "action": "cancel", "as": "manager", "working": "Feeding it to the shredder…", "on_ok": "cancelled", "on_error": "refused" },
+      "choices": [ { "text": "Back", "next": "idle" } ]
+    },
+    "approved": {
+      "text": "Stamped. Wire #{txId} is released. Balance on your account now {balance} {symbol}.",
+      "choices": [
+        { "text": "Ask why", "next": "why_manager" },
+        { "text": "Thanks.", "next": "end" }
+      ]
+    },
+    "cancelled": {
+      "text": "Shredded. Wire #{txId} is recalled; nothing left the vault.",
+      "choices": [
+        { "text": "Ask why", "next": "why_manager" },
+        { "text": "Thanks.", "next": "end" }
+      ]
+    },
+    "limits": {
+      "text": "Over the counter: up to {limit} {symbol}, done in one step. Above that: the vault, {timelock} of cooling, then a release from you or from me. Honest footnote — the limit is this branch's policy, enforced at the counter; the vault clock is the contract's.",
+      "choices": [
+        { "text": "Ask why", "next": "why_limits" },
+        { "text": "Back", "next": "idle" }
+      ]
+    },
+    "why_limits": {
+      "text": "Your session signer could technically sign an over-the-counter slip for any amount to a whitelisted target — the policy cannot read the amount inside the call data. So routing large amounts to the vault is a Teller Desk rule, stated as a partial invariant in our review. What is enforced on chain: who may request, approve and cancel, and that approval waits for releaseTime.",
+      "choices": [ { "text": "Back", "next": "idle" } ]
+    },
+    "why_manager": {
+      "text": "I hold a runtime role — BRANCH_MANAGER — with permission to approve or cancel time-locked executions on this branch's transfer function. I cannot start a payment for you; I can only decide on one you started. And the vault refuses me before releaseTime just as it refuses you.",
+      "choices": [ { "text": "OK.", "next": "end" } ]
+    },
+    "refused": {
+      "text": "{reason_line}",
+      "choices": [
+        { "text": "Ask why", "next": "refused_why" },
+        { "text": "Back", "next": "idle" },
+        { "text": "OK.", "next": "end" }
+      ]
+    },
+    "refused_why": {
+      "text": "{reason_why}",
+      "choices": [ { "text": "OK.", "next": "end" } ]
+    }
+  }
+}

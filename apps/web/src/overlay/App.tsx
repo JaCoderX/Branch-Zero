@@ -67,18 +67,24 @@ export function App({ engineState }: { engineState: string }) {
   latest.current = w;
   useEffect(() => {
     setWalletAdapter({
-      login: async () => {
-        latest.current.login();
-      },
+      login: () => latest.current.loginAndWait(),
       logout: () => latest.current.logout(),
       openSession: () => latest.current.openSession(),
       delegate: () => latest.current.delegate(),
       revoke: () => latest.current.revoke(),
       call: (path, body) => latest.current.call(path, body),
       isAuthenticated: () => latest.current.authenticated,
+      isReady: () => latest.current.ready,
     });
     return () => setWalletAdapter(undefined);
   }, []);
+
+  // U3: the greybox is the product surface now; this panel is the debug view of the same bridge traffic.
+  // Collapsed by default once the engine runs (`?debug` keeps it open); the pill re-opens it.
+  const [debugOpen, setDebugOpen] = useState(true);
+  useEffect(() => {
+    if (engineState.startsWith('running') && !/[?&](debug|mock)(=|&|$)/.test(location.search)) setDebugOpen(false);
+  }, [engineState.startsWith('running')]);
 
   const refreshPassbook = async () => {
     const status = await w.call<{ balance?: string; symbol?: string; pending?: number; account?: string | null; wires?: PendingWire[]; serverNow?: string }>('/status');
@@ -152,11 +158,25 @@ export function App({ engineState }: { engineState: string }) {
   const delegated = Boolean(s?.delegated);
   const now = Math.floor(Date.now() / 1000) + clockOffset;
 
+  if (!debugOpen) {
+    return (
+      <button style={pill} onClick={() => setDebugOpen(true)} title="Show the desk debug panel (bridge traffic, session, vault board)">
+        desk debug · {engineState.startsWith('running') ? 'engine running' : engineState}
+        {lines.length ? ` · ${lines.length} msgs` : ''}
+      </button>
+    );
+  }
+
   return (
     <div style={panel}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-        <strong>Branch Zero · Account Opening</strong>
-        <span style={{ color: '#9aa4b2' }}>engine: {engineState}</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, gap: 8 }}>
+        <strong>Branch Zero · desk debug</strong>
+        <span style={{ color: '#9aa4b2' }}>
+          engine: {engineState}{' '}
+          <button style={{ ...btn, padding: '1px 8px', marginLeft: 6 }} onClick={() => setDebugOpen(false)}>
+            hide
+          </button>
+        </span>
       </div>
 
       {!w.ready && <div style={{ color: '#9aa4b2' }}>loading Privy…</div>}
@@ -301,6 +321,19 @@ function fmt(sec: number): string {
 }
 
 const color: Record<Line['kind'], string> = { req: '#8ab4f8', res: '#7ee787', err: '#ff7b72', evt: '#d2a8ff', sys: '#9aa4b2' };
+
+const pill: React.CSSProperties = {
+  position: 'fixed',
+  right: 12,
+  bottom: 12,
+  background: 'rgba(11,14,20,0.85)',
+  color: '#9aa4b2',
+  border: '1px solid #2a3140',
+  borderRadius: 999,
+  padding: '4px 10px',
+  font: '11px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+  cursor: 'pointer',
+};
 
 const panel: React.CSSProperties = {
   position: 'fixed',

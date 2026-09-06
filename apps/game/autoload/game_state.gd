@@ -1,0 +1,443 @@
+extends Node
+## GameState — the game's mirror of what the bridge has told it. Dialogue conditions read this; nothing in a
+## scene script calls Chain directly except through `run_action` here.
+##
+## Rules it keeps (docs/GODOT.md §5): release times are the chain's `releaseTime` (strings in `wires`), the
+## countdown runs against the Teller Desk clock (`serverNow` → `clock_offset`), never against `chainNow`;
+## the pending list is reconciled with `listPending` on tab focus; stage events are relayed, never invented.
+
+signal changed()                       # any state change worth re-rendering
+signal stage(ev: Dictionary)           # a Teller Desk stage event (relayed from Chain)
+signal toast(text: String, kind: String)
+signal zone_changed(zone: String)
+
+const ERRORS_PATH := "res://dialogue/errors.json"
+const STRINGS_PATH := "res://dialogue/strings.json"
+
+var booted: bool = false
+var session: Dictionary = {}           # DeskSession as the bridge returns it
+var balance: String = "0"
+var symbol: String = "dUSDC"
+var wires: Array = []                  # PendingWire dictionaries, strings only
+var receipts: Array = []               # Teller Desk receipts (last few)
+var clock_offset: float = 0.0          # serverNow - local wall clock, seconds
+var last_stage: Dictionary = {}
+var busy: bool = false
+var ui_locked: bool = false            # dialogue / form open → player does not move
+var current_zone: String = ""
+var errors: Dictionary = {}
+var strings: Dictionary = {}
+
+var _reconcile_at: float = 0.0
+var _last_error: Dictionary = {}
+
+
+func _ready() -> void:
+	_setup_controls()
+	errors = _load_json(ERRORS_PATH)
+	strings = _load_json(STRINGS_PATH)
+	Chain.event.connect(_on_chain_event)
+	boot()
+
+
+## First contact with the desk: wait for the bridge, ask who is standing there (no modal), read the passbook.
+func boot() -> void:
+	var t0 := Time.get_ticks_msec()
+	await Chain.wait_ready(4.0)
+	var t1 := Time.get_ticks_msec()
+	await refresh_session()
+	if logged_in():
+		await refresh_passbook()
+	booted = true
+	print("GameState: booted — bridge ready after %d ms, session after %d ms (%s)" % [t1 - t0, Time.get_ticks_msec() - t1, "MockChain" if Chain.use_mock else "bridge " + Chain.bridge_version])
+	changed.emit()
+
+
+# ---------------------------------------------------------------- facts
+
+func logged_in() -> bool:
+	return bool(session.get("loggedIn", false))
+
+
+func has_account() -> bool:
+	return logged_in() and session.get("account") != null and str(session.get("account", "")) != ""
+
+
+func delegated() -> bool:
+	return bool(session.get("delegated", false))
+
+
+func has_manager() -> bool:
+	return session.get("manager") != null and str(session.get("manager", "")) != ""
+
+
+func account() -> String:
+	return str(session.get("account", "")) if has_account() else ""
+
+
+func owner() -> String:
+	return str(session.get("owner", ""))
+
+
+func instant_limit() -> float:
+	return float(str(session.get("instantLimit", "100")))
+
+
+func timelock_sec() -> int:
+	return int(session.get("timeLockSec", 120))
+
+
+func pending_count() -> int:
+	return wires.size()
+
+
+func released_count() -> int:
+	var n := 0
+	for w in wires:
+		if remaining(w) <= 0:
+			n += 1
+	return n
+
+
+func cooling_count() -> int:
+	return pending_count() - released_count()
+
+
+## Desk-corrected wall clock, unix seconds.
+func now() -> int:
+	return int(Time.get_unix_time_from_system() + clock_offset)
+
+
+## Seconds until a record's chain `releaseTime`, counted against the desk clock. Negative once released.
+func remaining(w: Dictionary) -> int:
+	return int(str(w.get("releaseTime", "0"))) - now()
+
+
+## The soonest pending release, or 0 when nothing is cooling.
+func soonest_remaining() -> int:
+	var best := -1
+	for w in wires:
+		var r := remaining(w)
+		if r > 0 and (best < 0 or r < best):
+			best = r
+	return max(best, 0)
+
+
+func wire_by_id(tx_id: String) -> Dictionary:
+	for w in wires:
+		if str(w.get("txId", "")) == tx_id:
+			return w
+	return {}
+
+
+static func fmt_duration(sec: int) -> String:
+	var s: int = max(sec, 0)
+	return "%d:%02d" % [s / 60, s % 60]
+
+
+static func short_address(a: String) -> String:
+	if a.length() < 12:
+		return a
+	return "%s…%s" % [a.substr(0, 6), a.substr(a.length() - 4)]
+
+
+func fmt_amount(v: Variant) -> String:
+	var s := str(v)
+	if s == "" or s == "<null>":
+		return "?"
+	if s.find(".") >= 0:
+		s = s.rstrip("0").rstrip(".")
+	return s
+
+
+## Facts the dialogue conditions may test (docs/NPCS.md §3).
+func facts() -> Dictionary:
+	return {
+		"booted": booted,
+		"logged_in": logged_in(),
+		"has_account": has_account(),
+		"delegated": delegated(),
+		"manager": has_manager(),
+		"pending": pending_count(),
+		"released": released_count(),
+		"cooling": cooling_count(),
+		"busy": busy,
+		"mock": Chain.use_mock,
+		"web": Chain.is_web,
+	}
+
+
+## `{vars}` the dialogue text may interpolate.
+func vars(extra: Dictionary = {}) -> Dictionary:
+	var v := {
+		"name": short_address(owner()) if logged_in() else "friend",
+		"short_address": short_address(account()),
+		"balance": fmt_amount(balance),
+		"symbol": symbol,
+		"limit": fmt_amount(str(session.get("instantLimit", "100"))),
+		"timelock": fmt_duration(timelock_sec()),
+		"timelock_sec": str(timelock_sec()),
+		"pending": str(pending_count()),
+		"released": str(released_count()),
+		"release_in": fmt_duration(soonest_remaining()),
+		"wing": "main",
+		"chain": "Remote EVM 1337" if not Chain.use_mock else "MockChain",
+		"manager_name": "Mr. Okafor",
+	}
+	v.merge(extra, true)
+	return v
+
+
+# ---------------------------------------------------------------- reads
+
+func refresh_session() -> void:
+	var r := await Chain.call_async("getSession", {}, 20.0)
+	if r.get("ok", false) and r.get("result") is Dictionary:
+		session = r["result"]
+		if not logged_in():
+			balance = "0"
+			wires = []
+			receipts = []
+	else:
+		session = {"loggedIn": false, "ready": false}
+		_note_error(r.get("error", {}))
+	changed.emit()
+
+
+## `/status` in one read: balance, pending wires (with the chain's releaseTime), receipts, serverNow.
+func refresh_passbook() -> void:
+	if not logged_in():
+		return
+	var r := await Chain.call_async("getPassbook", {}, 20.0)
+	if not r.get("ok", false):
+		_note_error(r.get("error", {}))
+		return
+	var st: Dictionary = r.get("result", {})
+	balance = str(st.get("balance", balance))
+	symbol = str(st.get("symbol", symbol))
+	if st.get("wires") is Array:
+		wires = st["wires"]
+	if st.get("receipts") is Array:
+		receipts = st["receipts"]
+	_sync_clock(st.get("serverNow"))
+	changed.emit()
+
+
+## Tab regained focus: SSE kept running in JS, Godot's frame loop did not — re-read the pending list once.
+func reconcile_pending(reason: String = "focus") -> void:
+	if not has_account():
+		return
+	var t := Time.get_unix_time_from_system()
+	if t - _reconcile_at < 2.0:
+		return
+	_reconcile_at = t
+	var r := await Chain.call_async("listPending", {}, 20.0)
+	if not r.get("ok", false):
+		_note_error(r.get("error", {}))
+		return
+	var res: Dictionary = r.get("result", {})
+	if res.get("items") is Array:
+		wires = res["items"]
+	_sync_clock(res.get("serverNow"))
+	print("GameState: reconciled %d pending record(s) on %s" % [wires.size(), reason])
+	changed.emit()
+
+
+func refresh_all() -> void:
+	await refresh_session()
+	if logged_in():
+		await refresh_passbook()
+
+
+# ---------------------------------------------------------------- writes (every desk action lands here)
+
+## Run one desk action through the bridge. Returns {"ok", "result", "error"}. Refreshes the mirror afterwards
+## whatever the outcome (a refused approve still moved the clock; a provision changes the session).
+func run_action(action: String, args: Dictionary = {}) -> Dictionary:
+	busy = true
+	changed.emit()
+	var r: Dictionary
+	match action:
+		"login":
+			r = await Chain.call_async("login", {}, 600.0)            # a human types an OTP
+		"delegate":
+			r = await Chain.call_async("addSessionSigner", {}, 300.0)  # the one consent
+		"revoke":
+			r = await Chain.call_async("removeSessionSigner", {}, 60.0)
+		"logout":
+			r = await Chain.call_async("logout", {}, 30.0)
+		"provision":
+			r = await Chain.call_async("provision", {}, 300.0)         # clone + config batches + funding
+		"pay":
+			r = await Chain.call_async("pay", {"to": args.get("to", ""), "amount": str(args.get("amount", "")), "memo": args.get("memo", "")}, 120.0)
+		"wire":
+			r = await Chain.call_async("wire", {"to": args.get("to", ""), "amount": str(args.get("amount", "")), "memo": args.get("memo", "")}, 120.0)
+		"approve", "manager_approve":
+			r = await Chain.call_async("approve", {"txId": str(args.get("txId", "")), "as": "manager" if action.begins_with("manager") else "owner"}, 120.0)
+		"cancel", "manager_cancel":
+			r = await Chain.call_async("cancel", {"txId": str(args.get("txId", "")), "as": "manager" if action.begins_with("manager") else "owner"}, 120.0)
+		"refresh":
+			r = {"ok": true, "result": {}}
+		_:
+			r = {"ok": false, "error": {"code": "UNKNOWN_METHOD", "message": "no desk action named %s" % action}}
+	if not r.get("ok", false):
+		_note_error(r.get("error", {}))
+	await refresh_all()
+	busy = false
+	changed.emit()
+	return r
+
+
+# ---------------------------------------------------------------- errors → NPC lines (docs/NPCS.md §5)
+
+## The bank line for an error code, with `{release_in}` filled from the record the error names when it can.
+func error_line(err: Dictionary, ctx: Dictionary = {}) -> String:
+	var entry := error_entry(err)
+	var extra := ctx.duplicate()
+	if err.has("releaseTime"):
+		extra["release_in"] = fmt_duration(int(str(err["releaseTime"])) - now())
+	elif ctx.has("txId") and not wire_by_id(str(ctx["txId"])).is_empty():
+		extra["release_in"] = fmt_duration(remaining(wire_by_id(str(ctx["txId"]))))
+	return Dialogue.interpolate(str(entry.get("line", "")), vars(extra))
+
+
+## The "Ask why" half: the protocol explanation plus the raw code and message.
+func error_why(err: Dictionary) -> String:
+	var entry := error_entry(err)
+	var code := str(err.get("code", "Unknown"))
+	var msg := str(err.get("message", ""))
+	return "%s\n[%s] %s" % [str(entry.get("why", "")), code, msg.substr(0, 220)]
+
+
+func error_entry(err: Dictionary) -> Dictionary:
+	var code := str(err.get("code", "Unknown"))
+	if errors.has(code):
+		return errors[code]
+	# The Teller Desk reports a settled-but-wrong record as RECORD_<STATUS>.
+	if code.begins_with("RECORD_") and errors.has("RECORD_*"):
+		return errors["RECORD_*"]
+	var d: Dictionary = errors.get("default", {"line": "Sorry — the counter could not do that.", "why": ""})
+	if err.has("bankLine") and str(err["bankLine"]) != "":
+		d = d.duplicate()
+		d["line"] = str(err["bankLine"])
+	return d
+
+
+func last_error() -> Dictionary:
+	return _last_error
+
+
+func _note_error(err: Dictionary) -> void:
+	_last_error = err
+	if not err.is_empty():
+		toast.emit(error_line(err), "error")
+
+
+# ---------------------------------------------------------------- events
+
+func _on_chain_event(kind: String, payload: Dictionary) -> void:
+	match kind:
+		"stage":
+			_on_stage(payload)
+		"tab.visible":
+			if bool(payload.get("visible", false)):
+				reconcile_pending("tab.visible")
+		"bridge.ready":
+			pass
+
+
+## A Teller Desk stage event. The vault board is updated from what the event carries; the chain's
+## `releaseTime` string is stored as-is, and `serverNow` corrects the local clock.
+func _on_stage(ev: Dictionary) -> void:
+	last_stage = ev
+	_sync_clock(ev.get("serverNow"))
+	var lane := str(ev.get("lane", ""))
+	var st := str(ev.get("stage", ""))
+	var tx_id := str(ev.get("txId", ""))
+	if lane == "B" and tx_id != "":
+		var idx := -1
+		for i in wires.size():
+			if str(wires[i].get("txId", "")) == tx_id:
+				idx = i
+		match st:
+			"pending", "released":
+				if idx < 0:
+					wires.append({"txId": tx_id, "status": "PENDING", "releaseTime": str(ev.get("releaseTime", "0")), "released": st == "released", "requester": ""})
+				else:
+					if ev.has("releaseTime"):
+						wires[idx]["releaseTime"] = str(ev["releaseTime"])
+					wires[idx]["released"] = st == "released"
+					wires[idx]["status"] = str(ev.get("status", "PENDING"))
+			"mined", "cancelled", "failed":
+				if idx >= 0 and st != "failed":
+					wires.remove_at(idx)
+				# a settled wire moves money or frees it; either way the passbook changed
+				if st != "failed":
+					refresh_passbook()
+	elif lane == "A" and st == "mined":
+		refresh_passbook()
+	elif lane == "PROVISION" and st == "mined":
+		refresh_all()
+	stage.emit(ev)
+	changed.emit()
+
+
+func _sync_clock(server_now: Variant) -> void:
+	if server_now == null:
+		return
+	var s := str(server_now)
+	if s == "" or not s.is_valid_int():
+		return
+	clock_offset = float(int(s)) - Time.get_unix_time_from_system()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_IN or what == NOTIFICATION_WM_WINDOW_FOCUS_IN:
+		if booted:
+			reconcile_pending("window focus")
+
+
+func set_zone(zone: String) -> void:
+	if zone == current_zone:
+		return
+	current_zone = zone
+	zone_changed.emit(zone)
+
+
+# ---------------------------------------------------------------- helpers
+
+func _load_json(path: String) -> Dictionary:
+	if not FileAccess.file_exists(path):
+		push_error("GameState: missing %s" % path)
+		return {}
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if parsed is Dictionary:
+		return parsed
+	push_error("GameState: %s is not a JSON object" % path)
+	return {}
+
+
+## Input actions are declared here rather than in project.godot so the bindings are reviewable in one place.
+func _setup_controls() -> void:
+	_bind("move_forward", [KEY_W, KEY_UP])
+	_bind("move_back", [KEY_S, KEY_DOWN])
+	_bind("move_left", [KEY_A])
+	_bind("move_right", [KEY_D])
+	_bind("cam_left", [KEY_LEFT, KEY_Q])
+	_bind("cam_right", [KEY_RIGHT, KEY_R])
+	_bind("interact", [KEY_E, KEY_SPACE])
+	_bind("debug_toggle", [KEY_F1])
+
+
+## Both the physical and the logical key are bound: browsers (and automation) do not always send `code`,
+## and Godot web maps that to `physical_keycode`, so a physical-only binding can be silently dead.
+func _bind(action: String, keys: Array) -> void:
+	if not InputMap.has_action(action):
+		InputMap.add_action(action)
+	for k in keys:
+		var phys := InputEventKey.new()
+		phys.physical_keycode = k
+		InputMap.action_add_event(action, phys)
+		var logical := InputEventKey.new()
+		logical.keycode = k
+		InputMap.action_add_event(action, logical)

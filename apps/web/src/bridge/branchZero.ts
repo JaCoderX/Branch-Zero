@@ -8,6 +8,8 @@
  * U0 methods: echo (K1), chainInfo, accountInfo.
  * U1 methods: login, logout, addSessionSigner, removeSessionSigner, provision, getPassbook, pay.
  * U2 methods: wire, approve, cancel, listPending (the vault — Lane B).
+ * U3 methods: getSession (who is at the desk, never opens a modal), getHistory (ledger receipts). Both call
+ *             routes that already exist (`/session`, `/status`); U3 added no chain semantics.
  *
  * Everything that needs a Privy identity is delegated to the React overlay through a small adapter it
  * registers at mount: the bridge itself holds no token and no key, and a method that needs one before the
@@ -15,23 +17,50 @@
  */
 import { createPublicClient, http, type Address } from 'viem';
 import { SecureOwnable } from '@bloxchain/sdk';
-import { remoteEvmWithRpc, type BranchZeroBridge, type BridgeError, type BridgeMessage, type BridgeResponse, type StageEvent } from '@branch-zero/shared';
+import { remoteEvmWithRpc, type BranchZeroBridge, type BridgeError, type BridgeMessage, type BridgeResponse, type DeskSession, type StageEvent } from '@branch-zero/shared';
 import deployments from '../../../../infra/deployments/remote-evm.json';
 
-export const BRIDGE_VERSION = 'u2.0';
+export const BRIDGE_VERSION = 'u3.0';
+
+/**
+ * `?mock=1` on the shell URL tells Godot to answer every desk call from its own MockChain (canned data,
+ * fake latency, no Privy, no chain). It is for walking the greybox without an inbox; it is announced in
+ * `bridge.ready` and nowhere else, and the real bridge methods stay installed regardless.
+ */
+export const MOCK_MODE: false | string = (() => {
+  const v = new URLSearchParams(location.search).get('mock');
+  return v === null ? false : v || 'fresh'; // `?mock=account` starts the mock with an open, funded account
+})();
 
 type Handler = (args: Record<string, unknown>) => Promise<unknown>;
 type Listener = (m: BridgeMessage | { type: 'request'; id: string; method: string; args: Record<string, unknown> }) => void;
 
 /** What the React overlay lends the bridge once Privy is ready. */
 export interface WalletAdapter {
-  login(): Promise<void>;
+  /** Opens the Privy modal and resolves once the player is signed in (`true`) or dismissed it (`false`). */
+  login(): Promise<boolean>;
   logout(): Promise<void>;
-  openSession(): Promise<{ privyUserId: string; owner: string; account: string | null; signingMode: string; delegated: boolean }>;
+  openSession(): Promise<DeskSessionSource>;
   delegate(): Promise<void>;
   revoke(): Promise<void>;
   call<T>(path: string, body?: unknown): Promise<T>;
   isAuthenticated(): boolean;
+  /** Privy provider initialised (auth state is known). */
+  isReady(): boolean;
+}
+
+/** The `/session` view the overlay hook already holds; the bridge trims it to `DeskSession` for Godot. */
+export interface DeskSessionSource {
+  privyUserId: string;
+  owner: string;
+  account: string | null;
+  signingMode: string;
+  delegated: boolean;
+  chainId?: number;
+  timeLockSec?: number;
+  instantLimit?: string;
+  manager?: string | null;
+  token?: { address: string; symbol: string; decimals: number };
 }
 
 let adapter: WalletAdapter | undefined;
@@ -98,9 +127,12 @@ const handlers: Record<string, Handler> = {
   // --- U1: Account Opening ---
   async login() {
     const a = requireAdapter();
-    if (!a.isAuthenticated()) await a.login();
+    if (!a.isAuthenticated()) {
+      const ok = await a.login();
+      if (!ok) throw bridgeError('LOGIN_CANCELLED', 'the sign-in was dismissed', 'No rush — come back when you are ready to sign in.');
+    }
     const session = await a.openSession();
-    return { userId: session.privyUserId, owner: session.owner, account: session.account, signingMode: session.signingMode };
+    return { userId: session.privyUserId, owner: session.owner, account: session.account, signingMode: session.signingMode, delegated: session.delegated };
   },
   async logout() {
     await requireAdapter().logout();
@@ -149,6 +181,42 @@ const handlers: Record<string, Handler> = {
     const status = await requireAdapter().call<{ wires?: unknown[]; serverNow?: string }>('/status');
     return { items: status.wires ?? [], serverNow: status.serverNow };
   },
+
+  // --- U3: the bank shell ---
+  /**
+   * Who is standing at the desk. Never opens a modal: an anonymous visitor gets `loggedIn:false` and the
+   * clerk offers "Sign in". Waits briefly for Privy to initialise so a fresh page load is not misread as
+   * "signed out".
+   */
+  async getSession(): Promise<DeskSession> {
+    const a = adapter;
+    if (!a) return { loggedIn: false, ready: false };
+    for (let i = 0; i < 40 && !a.isReady(); i++) await new Promise((r) => setTimeout(r, 250));
+    if (!a.isReady()) return { loggedIn: false, ready: false };
+    if (!a.isAuthenticated()) return { loggedIn: false, ready: true };
+    const s = await a.openSession();
+    return {
+      loggedIn: true,
+      ready: true,
+      userId: s.privyUserId,
+      owner: s.owner,
+      account: s.account,
+      delegated: s.delegated,
+      signingMode: s.signingMode as DeskSession['signingMode'],
+      chainId: s.chainId,
+      timeLockSec: s.timeLockSec,
+      instantLimit: s.instantLimit,
+      manager: s.manager ?? null,
+      token: s.token,
+    };
+  },
+  /** The ledger board's right-hand column: the Teller Desk's last receipts for this player (`/status.receipts`). */
+  async getHistory(args) {
+    const limit = Math.max(1, Math.min(25, Number(args.limit ?? 8) || 8));
+    const status = await requireAdapter().call<{ receipts?: unknown[]; serverNow?: string }>('/status');
+    const all = status.receipts ?? [];
+    return { items: all.slice(-limit), serverNow: status.serverNow };
+  },
 };
 
 function bridgeError(code: BridgeError['code'], message: string, bankLine?: string): BridgeError {
@@ -156,7 +224,10 @@ function bridgeError(code: BridgeError['code'], message: string, bankLine?: stri
 }
 
 function toError(e: unknown): BridgeError {
-  if (e && typeof e === 'object' && 'code' in e && 'message' in e) return e as BridgeError;
+  if (e && typeof e === 'object' && 'code' in e && 'message' in e) {
+    const err = e as { code: string; message: string; bankLine?: string; status?: number };
+    return { code: err.code, message: err.message, ...(err.bankLine ? { bankLine: err.bankLine } : {}), ...(err.status ? { status: err.status } : {}) };
+  }
   const message = e instanceof Error ? e.message : String(e);
   const code: BridgeError['code'] = /fetch|network|HTTP|ECONN/i.test(message) ? 'RPC' : 'INTERNAL';
   return { code, message, bankLine: code === 'RPC' ? 'The branch cannot reach the ledger right now.' : 'Something went wrong behind the counter.' };
@@ -175,9 +246,10 @@ export function installBridge(): BranchZeroBridge {
     version: BRIDGE_VERSION,
     setGodotCallback(cb) {
       godotCallback = cb;
-      emit({ type: 'event', kind: 'bridge.ready', payload: { version: BRIDGE_VERSION } });
+      const payload = { version: BRIDGE_VERSION, mock: MOCK_MODE };
+      emit({ type: 'event', kind: 'bridge.ready', payload });
       // Let the engine know the door is open (arrives as type:'event' in Chain.gd).
-      queueMicrotask(() => cb(JSON.stringify({ type: 'event', kind: 'bridge.ready', payload: { version: BRIDGE_VERSION } })));
+      queueMicrotask(() => cb(JSON.stringify({ type: 'event', kind: 'bridge.ready', payload })));
     },
     request(method, argsJson, id) {
       let args: Record<string, unknown> = {};
@@ -203,6 +275,14 @@ export function installBridge(): BranchZeroBridge {
       return dispatch(method, args) as Promise<T>;
     },
   };
+
+  // Background tabs throttle Godot's frame loop (docs/GODOT.md §5). When the tab comes back, tell the game
+  // so it reconciles the ledger board with `listPending` once — SSE kept running here in the meantime.
+  document.addEventListener('visibilitychange', () => {
+    const msg = { type: 'event', kind: 'tab.visible', payload: { visible: document.visibilityState === 'visible' } };
+    emit(msg as BridgeMessage);
+    godotCallback?.(JSON.stringify(msg));
+  });
 
   window.BranchZero = bridge;
   return bridge;

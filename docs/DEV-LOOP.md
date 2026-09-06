@@ -56,9 +56,9 @@ Ordered so that after U2 we can stop and still demo a coherent bank-on-a-chain (
 |------|---------|------|------------|
 | **U0 Foundation** | Monorepo, Godot web + JS echo, SDK, AccountBlox fixture on Remote EVM | G1 | **met 2026-09-06** |
 | **U1 Signing lane** | Privy + session signer + Lane A (≤1 modal); SDK only; CopyBlox for new accounts when needed | G2 | ENG-0004 — **met 2026-09-06** |
-| **U2 Timelock lane** | Wire → PENDING → approve/cancel; SSE; `releaseTime` from chain | G3 | No — **next** |
-| **U3 Bank shell** | Greybox zones, NPCs wired to bridge, ledger board | G4 | No |
-| **U4 MVP freeze** | Error UX, reconnect, rough capture | G5 | No |
+| **U2 Timelock lane** | Wire → PENDING → approve/cancel; SSE; `releaseTime` from chain | G3 | No — **met 2026-09-06** |
+| **U3 Bank shell** | Greybox zones, NPCs wired to bridge, ledger board | G4 | No — **met 2026-09-06** (mock walk + real-bridge desk calls; human OTP walk pending) |
+| **U4 MVP freeze** | Error UX, reconnect, rough capture | G5 | No — **next** |
 | **U5 ENS** | Subname + pay-by-name | G6 | ENG-0007 |
 | **U6 Arc + manager role** | Elevator wing + runtime role | G7 | ENG-0006 |
 | **U7 Feel / ship** | Art, video, submission | G8–G10 | ENG-0008 only if S1 |

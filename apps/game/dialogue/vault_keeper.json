@@ -1,0 +1,74 @@
+{
+  "id": "vault_keeper",
+  "name": "Ruth",
+  "role": "Vault Keeper",
+  "start": [
+    { "if": "!booted", "node": "booting" },
+    { "if": "!has_account", "node": "no_account" },
+    { "if": "pending==0", "node": "quiet" },
+    { "if": "released>0", "node": "ready" },
+    { "node": "cooling" }
+  ],
+  "nodes": {
+    "booting": {
+      "text": "Vault's opening up. One moment.",
+      "choices": [ { "text": "Sure.", "next": "end" } ]
+    },
+    "no_account": {
+      "text": "Nothing in the vault under your name — you'd need an account first. Ines, by the plant.",
+      "choices": [ { "text": "OK.", "next": "end" } ]
+    },
+    "quiet": {
+      "text": "Quiet day. Nothing cooling. Wires come in through Counter 1 when a slip is over {limit} {symbol}.",
+      "choices": [
+        { "text": "Ask why", "next": "why_cooling" },
+        { "text": "Check the board again", "action": "refresh", "working": "Reading the vault register…", "on_ok": "end", "on_error": "refused" },
+        { "text": "Thanks.", "next": "end" }
+      ]
+    },
+    "cooling": {
+      "text": "{pending} wire(s) in the vault, the soonest releases in {release_in}. Have a seat, or bother the manager if you want one recalled.",
+      "choices_from": "pending",
+      "choice_template": { "text": "Try to release #{txId} — {amount} {symbol} to {payee} ({status}, {release_in})", "action": "approve", "working": "Taking it to the vault door…", "on_ok": "released_ok", "on_error": "refused" },
+      "choices": [
+        { "text": "Ask why", "next": "why_cooling" },
+        { "text": "I'll wait.", "next": "end" }
+      ]
+    },
+    "ready": {
+      "text": "{released} wire(s) ready. Say the word and it goes.",
+      "choices_from": "pending",
+      "choice_template": { "text": "Release #{txId} — {amount} {symbol} to {payee} ({status})", "action": "approve", "working": "Opening the vault…", "on_ok": "released_ok", "on_error": "refused" },
+      "choices": [
+        { "text": "Ask why", "next": "why_release" },
+        { "text": "Not yet.", "next": "end" }
+      ]
+    },
+    "released_ok": {
+      "text": "Wire #{txId} released — the bolts are back and the money is on its way. Balance now {balance} {symbol}.",
+      "choices": [
+        { "text": "Ask why", "next": "why_release" },
+        { "text": "Thanks.", "next": "end" }
+      ]
+    },
+    "why_cooling": {
+      "text": "The clock is the chain's clock, not mine. releaseTime is written into the transaction record when the wire is filed; nobody here can shorten it. The countdown you see is that releaseTime against the desk's clock — this branch's chain only mines when someone sends a transaction, so its own block time stands still between them.",
+      "choices": [ { "text": "OK.", "next": "end" } ]
+    },
+    "why_release": {
+      "text": "Release is approveTimeLockExecution, sent as your own transaction and signed in the enclave. The contract compares releaseTime to the block that mines it and refuses with BeforeReleaseTime if it's early — the green light is decoration, the contract is the control.",
+      "choices": [ { "text": "OK.", "next": "end" } ]
+    },
+    "refused": {
+      "text": "{reason_line}",
+      "choices": [
+        { "text": "Ask why", "next": "refused_why" },
+        { "text": "OK.", "next": "end" }
+      ]
+    },
+    "refused_why": {
+      "text": "{reason_why}",
+      "choices": [ { "text": "OK.", "next": "end" } ]
+    }
+  }
+}

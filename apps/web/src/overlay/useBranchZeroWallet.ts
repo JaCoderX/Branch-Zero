@@ -7,7 +7,7 @@
  * quorum, and a server-side wallet update is rejected with 401 — so this consent is a real control, not
  * a courtesy dialog. After it, every Bloxchain slip is signed server-side and the player sees no modal.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useCreateWallet, useLogin, useLogout, usePrivy, useSessionSigners, useWallets } from '@privy-io/react-auth';
 import type { SigningMode } from '@branch-zero/shared';
 
@@ -34,7 +34,16 @@ const TELLER = import.meta.env.VITE_TELLER_DESK_URL || '/api';
 
 export function useBranchZeroWallet() {
   const { ready, authenticated, getAccessToken } = usePrivy();
-  const { login } = useLogin();
+
+  // U3: Godot's clerk needs to *await* the sign-in, not just open it. Privy's `login()` returns as soon as
+  // the modal is up, so completion / dismissal are caught here and handed to whoever is waiting.
+  const loginWaiters = useRef<Array<(ok: boolean) => void>>([]);
+  const settleLogin = (ok: boolean) => {
+    const w = loginWaiters.current;
+    loginWaiters.current = [];
+    for (const r of w) r(ok);
+  };
+  const { login } = useLogin({ onComplete: () => settleLogin(true), onError: () => settleLogin(false) });
   const { logout } = useLogout();
   const { wallets } = useWallets();
   const { createWallet } = useCreateWallet();
@@ -60,7 +69,11 @@ export function useBranchZeroWallet() {
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json?.error ?? `${path} failed (${res.status})`);
+      if (!res.ok) {
+        // Keep the Teller Desk's `code` (NO_ACCOUNT, NOT_PENDING, BeforeReleaseTime, policy_violation, ...):
+        // the bridge forwards it unchanged and the NPC picks its line by that code (NPCS.md §5).
+        throw Object.assign(new Error(json?.error ?? `${path} failed (${res.status})`), { code: json?.code ?? (res.status === 401 || res.status === 403 ? 'AUTH' : 'INTERNAL'), status: res.status });
+      }
       return json as T;
     },
     [getAccessToken, embedded?.address, session?.owner],
@@ -124,6 +137,20 @@ export function useBranchZeroWallet() {
     }
   }, [session?.owner, embedded?.address, removeSessionSigners, call]);
 
+  /** Open the Privy modal (the one wallet modal of the game) and resolve when the player is signed in or gave up. */
+  const loginAndWait = useCallback((): Promise<boolean> => {
+    if (authenticated) return Promise.resolve(true);
+    return new Promise<boolean>((resolve) => {
+      loginWaiters.current.push(resolve);
+      try {
+        login();
+      } catch (e) {
+        settleLogin(false);
+        throw e;
+      }
+    });
+  }, [authenticated, login]);
+
   /** Clear local desk state; Privy's logout alone leaves a stale session and hides Start / Pay. */
   const signOut = useCallback(async () => {
     setSession(undefined);
@@ -149,6 +176,7 @@ export function useBranchZeroWallet() {
     error,
     setError,
     login,
+    loginAndWait,
     logout: signOut,
     openSession,
     refreshSession,

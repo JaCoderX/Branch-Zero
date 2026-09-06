@@ -2,13 +2,20 @@
  * JSON-only protocol between GDScript (`autoload/chain.gd`) and `window.BranchZero` (apps/web/src/bridge).
  * Godot never sees keys, hex ABI, or RPC URLs — only display-ready JSON.
  */
-export type BridgeErrorCode = 'TIMEOUT' | 'UNKNOWN_METHOD' | 'BAD_ARGS' | 'RPC' | 'NOT_IMPLEMENTED' | 'INTERNAL' | 'AUTH' | 'POLICY' | 'CHAIN';
+/**
+ * Bridge-level codes. Teller Desk codes (`NO_ACCOUNT`, `NOT_PENDING`, `NO_MANAGER`, `policy_violation`, …) and
+ * decoded protocol error names (`BeforeReleaseTime`, `NoPermission`, `TargetNotWhitelisted`, …) travel in the
+ * same field, so the game maps *one* string to an NPC line (apps/game/dialogue/errors.json, NPCS.md §5).
+ */
+export type BridgeErrorCode = 'TIMEOUT' | 'UNKNOWN_METHOD' | 'BAD_ARGS' | 'RPC' | 'NOT_IMPLEMENTED' | 'INTERNAL' | 'AUTH' | 'POLICY' | 'CHAIN' | 'LOGIN_CANCELLED';
 
 export interface BridgeError {
-  code: BridgeErrorCode;
+  code: BridgeErrorCode | (string & {});
   message: string;
   /** Everyday-bank wording for NPC lines; technical detail stays in `message`. */
   bankLine?: string;
+  /** HTTP status when the error came back from the Teller Desk. */
+  status?: number;
 }
 
 export interface BridgeResponse {
@@ -28,9 +35,11 @@ export interface BridgeEvent {
 export type BridgeMessage = BridgeResponse | BridgeEvent;
 
 /**
- * Methods available in U0–U2. Later units extend this union (see docs/GODOT.md §4).
+ * Methods available in U0–U3. Later units extend this union (see docs/GODOT.md §4).
  * U1 adds the Account Opening desk (`login` … `provision`) and the Lane A counter (`pay`).
  * U2 adds the vault: `wire` (Lane B request), `approve` / `cancel`, `listPending`.
+ * U3 adds the reads the greybox needs without opening a modal: `getSession` (who is at the desk, no
+ * login prompt) and `getHistory` (the ledger board's receipts). Both are backed by existing routes.
  */
 export type BridgeMethod =
   | 'echo'
@@ -49,7 +58,10 @@ export type BridgeMethod =
   | 'wire'
   | 'approve'
   | 'cancel'
-  | 'listPending';
+  | 'listPending'
+  // U3 — bank shell reads
+  | 'getSession'
+  | 'getHistory';
 
 /** How the owner's signature is obtained for meta-transactions. */
 export type SigningMode = 'session' | 'client';
@@ -109,6 +121,30 @@ export interface PendingWire {
   amount?: string;
   requester: string;
 }
+
+/**
+ * `getSession` result — what the Account Opening desk knows without prompting anyone. `loggedIn:false`
+ * is a normal answer, not an error; the clerk offers "Sign in" (the one wallet modal) in that case.
+ */
+export interface DeskSession {
+  loggedIn: boolean;
+  /** Privy provider finished initialising (a `false` here means "ask again in a moment"). */
+  ready: boolean;
+  userId?: string;
+  owner?: string;
+  account?: string | null;
+  delegated?: boolean;
+  signingMode?: SigningMode;
+  chainId?: number;
+  timeLockSec?: number;
+  instantLimit?: string;
+  /** Branch Manager address when the Teller Desk has one; enables the manager's stamp and shredder. */
+  manager?: string | null;
+  token?: { address: string; symbol: string; decimals: number };
+}
+
+/** Events the bridge pushes to Godot besides `stage`: `bridge.ready` {version, mock} and `tab.visible` {visible}. */
+export type BridgeEventKind = 'bridge.ready' | 'stage' | 'tab.visible';
 
 export interface BranchZeroBridge {
   /** Godot registers its `JavaScriptBridge.create_callback` here; JS calls it with one JSON string. */

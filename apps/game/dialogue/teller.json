@@ -1,0 +1,114 @@
+{
+  "id": "teller",
+  "name": "Dev",
+  "role": "Teller · Counter 1",
+  "start": [
+    { "if": "!booted", "node": "booting" },
+    { "if": "!has_account", "node": "no_account" },
+    { "node": "idle" }
+  ],
+  "nodes": {
+    "booting": {
+      "text": "Counter 1 — opening up, one second.",
+      "choices": [ { "text": "Sure.", "next": "end" } ]
+    },
+    "no_account": {
+      "text": "Counter 1. I can't take a slip without an account — Ines at Account Opening opens them, the desk with the plant.",
+      "choices": [
+        { "text": "Ask why", "next": "why_no_account" },
+        { "text": "OK.", "next": "end" }
+      ]
+    },
+    "why_no_account": {
+      "text": "Every payment here is executed by your own account contract. Until it's cloned and initialised there is nothing for me to stamp.",
+      "choices": [ { "text": "OK.", "next": "end" } ]
+    },
+    "idle": {
+      "text": "Counter 1. Paying someone? Up to {limit} {symbol} I do right here; more than that goes through the vault.",
+      "choices": [
+        { "text": "Make a payment", "form": "payment_slip", "on_instant": "pay_now", "on_vault": "over_limit" },
+        { "text": "Who can I pay?", "next": "payees" },
+        { "text": "What services here?", "next": "services" },
+        { "text": "Ask why", "next": "why_counter" },
+        { "text": "Just looking.", "next": "end" }
+      ]
+    },
+    "payees": {
+      "text": "Anyone with an address — the florist, the landlord, the demo merchant are on the slip. What's actually approved on your account is the demo token for the transfer service; that's the list on my wall.",
+      "choices": [
+        { "text": "Ask why", "next": "why_payees" },
+        { "text": "Back", "next": "idle" }
+      ]
+    },
+    "why_payees": {
+      "text": "The guard whitelist is per function selector: your account may call transfer on the demo token and nothing else. Payee addresses are parameters inside that call, so they are not whitelisted individually.",
+      "choices": [ { "text": "Back", "next": "idle" } ]
+    },
+    "services": {
+      "text": "Two services at this counter: a payment over the counter, done in one step, and a scheduled wire, which goes into the vault for {timelock} before anyone can release it.",
+      "choices": [
+        { "text": "Ask why", "next": "why_services" },
+        { "text": "Back", "next": "idle" }
+      ]
+    },
+    "why_services": {
+      "text": "Over the counter is requestAndApproveExecution — request and approval in one transaction, which is why there is no wait. A wire is executeWithTimeLock — a PENDING record with a releaseTime — then approveTimeLockExecution or cancelTimeLockExecution later.",
+      "choices": [ { "text": "Back", "next": "idle" } ]
+    },
+    "why_counter": {
+      "text": "You sign the slip; I execute it. That's a meta-transaction: your signature authorises, my desk pays the gas and submits. Within your instant limit it's approved and executed in one step.",
+      "choices": [ { "text": "Back", "next": "idle" } ]
+    },
+    "pay_now": {
+      "text": "{amount} {symbol} to {payee}. Over the counter — one moment.",
+      "enter_action": { "action": "pay", "working": "Stamping your slip…", "on_ok": "paid", "on_error": "refused" }
+    },
+    "paid": {
+      "text": "Done. Here's your receipt: {amount} {symbol} to {payee}, record #{txId}. Balance now {balance} {symbol}.",
+      "choices": [
+        { "text": "Ask why", "next": "why_instant" },
+        { "text": "Another payment", "form": "payment_slip", "on_instant": "pay_now", "on_vault": "over_limit" },
+        { "text": "Thanks.", "next": "end" }
+      ]
+    },
+    "why_instant": {
+      "text": "Executed by the Teller under your signed instruction — a meta-transaction: the session signer signed the EIP-712 slip for your account, the broadcaster submitted requestAndApproveExecution, and the transfer ran inside your own contract. The receipt's fine print is the transaction hash {hash}.",
+      "choices": [ { "text": "Thanks.", "next": "end" } ]
+    },
+    "over_limit": {
+      "text": "{amount} {symbol} — that's above what I can do here. It goes through the vault: a cooling period of {timelock}, then it needs a release. Walk with me.",
+      "choices": [
+        { "text": "OK", "action": "wire", "working": "Filing your wire with the vault…", "on_ok": "wired", "on_error": "refused", "escort": "vault" },
+        { "text": "Ask why", "next": "why_vault_route" },
+        { "text": "Never mind.", "next": "idle" }
+      ]
+    },
+    "why_vault_route": {
+      "text": "Large movements are requested now and executed later. Between the two, you or the manager can recall it. It's the same account, just a slower lane — and the instant limit itself is branch policy, enforced at my desk; on chain the real controls are the guards and which actions your roles hold.",
+      "choices": [ { "text": "Back", "next": "over_limit" } ]
+    },
+    "wired": {
+      "text": "Filed. Wire #{txId} is in the vault; it releases in {release_in}. Ruth at the vault window will release it once the clock runs down — or Mr. Okafor can recall it.",
+      "choices": [
+        { "text": "Ask why", "next": "why_wired" },
+        { "text": "Thanks.", "next": "end" }
+      ]
+    },
+    "why_wired": {
+      "text": "That was your own transaction — executeWithTimeLock, signed inside the enclave by the session signer under a policy pinned to your account, broadcast by this desk. The record's releaseTime is set by the contract; the wall clock reads it back.",
+      "choices": [ { "text": "Thanks.", "next": "end" } ]
+    },
+    "refused": {
+      "text": "{reason_line}",
+      "choices": [
+        { "text": "Ask why", "next": "refused_why" },
+        { "text": "Try another slip", "form": "payment_slip", "on_instant": "pay_now", "on_vault": "over_limit" },
+        { "text": "OK.", "next": "end" }
+      ]
+    },
+    "refused_why": {
+      "text": "{reason_why}",
+      "choices": [ { "text": "OK.", "next": "end" } ]
+    }
+  }
+}

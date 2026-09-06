@@ -1,0 +1,60 @@
+{
+  "id": "greeter",
+  "name": "Mo",
+  "role": "Greeter",
+  "start": [
+    { "if": "!booted", "node": "booting" },
+    { "if": "!has_account", "node": "no_account" },
+    { "if": "pending>0", "node": "pending" },
+    { "node": "has_account" }
+  ],
+  "nodes": {
+    "booting": {
+      "text": "Morning! Give the desk a second to open up.",
+      "choices": [ { "text": "Sure.", "next": "end" } ]
+    },
+    "no_account": {
+      "text": "Welcome to Branch Zero. First time? Account Opening is the desk with the plant — Ines will sort you out.",
+      "choices": [
+        { "text": "Where am I?", "next": "lore_bank" },
+        { "text": "Thanks.", "next": "end" }
+      ]
+    },
+    "has_account": {
+      "text": "Morning, {name}. Counters are open, the vault's quiet. Try the florist — Counter 1, that's Dev.",
+      "choices": [
+        { "text": "What's the vault for?", "next": "why_vault" },
+        { "text": "Thanks.", "next": "end" }
+      ]
+    },
+    "pending": {
+      "text": "You've got {pending} movement(s) cooling in the vault. Clock's on the wall — or bother Mr. Okafor in the glass office.",
+      "choices": [
+        { "text": "What's the vault for?", "next": "why_vault" },
+        { "text": "Thanks.", "next": "end" }
+      ]
+    },
+    "lore_bank": {
+      "text": "Branch Zero — the first branch of a bank that runs on public rails. Every desk here is a real operation on your own account; we just do the paperwork out loud.",
+      "choices": [
+        { "text": "Ask why (technical)", "next": "lore_bank_tech" },
+        { "text": "Got it.", "next": "end" }
+      ]
+    },
+    "lore_bank_tech": {
+      "text": "Your account is a Bloxchain smart account on {chain}. The tellers hold the broadcaster role, the vault is its timelock, and everything you see on the boards is read back from the chain — this branch keeps no clock of its own.",
+      "choices": [ { "text": "Got it.", "next": "end" } ]
+    },
+    "why_vault": {
+      "text": "Big money doesn't move instantly here. It sits in the vault for a cooling period of {timelock}, then someone has to release it. If you didn't mean it, you can recall it before then.",
+      "choices": [
+        { "text": "Ask why (technical)", "next": "why_vault_tech" },
+        { "text": "Thanks.", "next": "end" }
+      ]
+    },
+    "why_vault_tech": {
+      "text": "Your account is a state machine. Large transfers are time-locked transactions: requested now, executable only after releaseTime, and cancellable until then. The clock on the vault wall is that releaseTime, read from the record.",
+      "choices": [ { "text": "Thanks.", "next": "end" } ]
+    }
+  }
+}

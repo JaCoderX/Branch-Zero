@@ -17,6 +17,8 @@ config/features=PackedStringArray("4.5", "GL Compatibility")
 [autoload]
 
 Chain="*res://autoload/chain.gd"
+GameState="*res://autoload/game_state.gd"
+Dialogue="*res://autoload/dialogue.gd"
 
 [display]
 
@@ -31,3 +33,5 @@ renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 textures/vram_compression/import_etc2_astc=true
 anti_aliasing/quality/msaa_3d=0
+lights_and_shadows/directional_shadow/size=2048
+lights_and_shadows/directional_shadow/soft_shadow_filter_quality=1

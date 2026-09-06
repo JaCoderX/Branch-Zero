@@ -1,0 +1,103 @@
+{
+  "id": "clerk",
+  "name": "Ines",
+  "role": "Account Clerk",
+  "start": [
+    { "if": "!booted", "node": "booting" },
+    { "if": "!logged_in", "node": "no_login" },
+    { "if": "!delegated && !has_account", "node": "consent" },
+    { "if": "!has_account", "node": "open" },
+    { "node": "done" }
+  ],
+  "nodes": {
+    "booting": {
+      "text": "One second — the desk is still opening.",
+      "choices": [ { "text": "Sure.", "next": "end" } ]
+    },
+    "no_login": {
+      "text": "Let's open your account. I'll need you to sign in — email, passkey, whatever you like. It's the one pop-up you'll see in this building.",
+      "choices": [
+        { "text": "Sign in", "action": "login", "working": "Signing you in…", "on_ok": "after_login", "on_error": "refused" },
+        { "text": "Ask why", "next": "why_login" },
+        { "text": "Later.", "next": "end" }
+      ]
+    },
+    "why_login": {
+      "text": "Signing in creates a wallet for you that you control. We never see the key; it lives in a secure enclave. Technically: a Privy embedded wallet — its address becomes the owner of your account.",
+      "choices": [ { "text": "Back", "next": "no_login" } ]
+    },
+    "after_login": {
+      "text": "Welcome, {name}.",
+      "next": "consent"
+    },
+    "consent": {
+      "text": "One more thing. Would you like our tellers to act on your instructions without you signing every slip? You can revoke this here any time.",
+      "choices": [
+        { "text": "Yes, let tellers act for me", "action": "delegate", "working": "Waiting for your consent…", "on_ok": "open", "on_error": "refused" },
+        { "text": "No, I'll sign each slip", "next": "client_mode" },
+        { "text": "Ask why", "next": "why_delegate" }
+      ]
+    },
+    "why_delegate": {
+      "text": "You'd be adding our branch as a signer on your wallet, limited by a policy to signing bank slips for your own account. Nothing else. Technically: a scoped Privy session signer — typed data for the Bloxchain domain pinned to your account's address, plus the three vault transactions pinned to that same address.",
+      "choices": [ { "text": "Back", "next": "consent" } ]
+    },
+    "client_mode": {
+      "text": "No problem — tellers will ask you to sign each slip. You can change your mind at this desk.",
+      "next": "open"
+    },
+    "open": {
+      "text": "Ready to open your account? It takes a moment: Creating account · Registering services · Approving payees · Ready.",
+      "choices": [
+        { "text": "Open my account", "action": "provision", "working": "Opening your account…", "on_ok": "done", "on_error": "refused" },
+        { "text": "Ask why", "next": "why_open" },
+        { "text": "Not now.", "next": "end" }
+      ]
+    },
+    "why_open": {
+      "text": "Your account is its own smart contract, cloned from the branch template and initialised with you as owner, our desk as broadcaster and a {timelock} cooling period. Then we register the transfer service, whitelist the demo token and grant the roles — two selectors each, the function and its handler.",
+      "choices": [ { "text": "Back", "next": "open" } ]
+    },
+    "done": {
+      "text": "Done. Here's your passbook. Your account lives at {short_address} on the {wing} wing, with {balance} practice dollars in it.",
+      "choices": [
+        { "text": "Re-check my account", "action": "provision", "working": "Checking your file…", "on_ok": "done", "on_error": "refused" },
+        { "text": "Revoke teller access", "if": "delegated", "action": "revoke", "working": "Revoking…", "on_ok": "revoked", "on_error": "refused" },
+        { "text": "Let tellers act for me", "if": "!delegated", "action": "delegate", "working": "Waiting for your consent…", "on_ok": "done", "on_error": "refused" },
+        { "text": "Sign out", "action": "logout", "working": "Closing your session…", "on_ok": "end", "on_error": "refused" },
+        { "text": "Ask why", "next": "why_passbook" },
+        { "text": "Thanks.", "next": "end" }
+      ]
+    },
+    "why_passbook": {
+      "text": "The balance is the demo token's balanceOf your account; the pending count is getPendingTransactions. Re-checking runs the provisioner again — it reads the chain first and only sends what's missing.",
+      "choices": [ { "text": "Back", "next": "done" } ]
+    },
+    "revoked": {
+      "text": "Revoked. From now on the tellers will ask you to sign each slip yourself.",
+      "next": "done"
+    },
+    "refused": {
+      "text": "{reason_line}",
+      "choices": [
+        { "text": "Ask why", "next": "refused_why" },
+        { "text": "Try again", "next": "start_over" },
+        { "text": "OK.", "next": "end" }
+      ]
+    },
+    "refused_why": {
+      "text": "{reason_why}",
+      "choices": [ { "text": "OK.", "next": "end" } ]
+    },
+    "start_over": {
+      "text": "Let's take it from the top.",
+      "choices": [
+        { "text": "Sign in", "if": "!logged_in", "action": "login", "working": "Signing you in…", "on_ok": "after_login", "on_error": "refused" },
+        { "text": "Let tellers act for me", "if": "logged_in && !delegated", "action": "delegate", "working": "Waiting for your consent…", "on_ok": "open", "on_error": "refused" },
+        { "text": "Open my account", "if": "logged_in && !has_account", "action": "provision", "working": "Opening your account…", "on_ok": "done", "on_error": "refused" },
+        { "text": "Show my passbook", "if": "has_account", "next": "done" },
+        { "text": "Never mind.", "next": "end" }
+      ]
+    }
+  }
+}

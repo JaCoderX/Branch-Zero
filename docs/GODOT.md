@@ -134,17 +134,32 @@ JS side (`apps/web/src/bridge.ts`) exposes a **flat, JSON-only** API. All values
 | `wire` | `{ to, amount, memo }` | `{ txId, releaseTime, chainNow, serverNow, hash, status }` | Teller `/wire` (Lane B request). **No `releaseSeconds`** — the cooling period is the account's own `timeLockPeriodSec`, fixed at `initialize`; the game cannot shorten it |
 | `approve` / `cancel` | `{ txId, as?: "owner" or "manager" }` | `{ hash, txId, status, balanceAfter? }` | Teller `/approve` `/cancel` |
 | `listPending` | — | `{ items: [{ txId, status, releaseTime, released, to, amount, requester }], serverNow }` | `getPendingTransactions` + `getTransaction` |
+| `getSession` (U3) | — | `{ loggedIn, ready, userId?, owner?, account?, delegated?, signingMode?, chainId?, timeLockSec?, instantLimit?, manager?, token? }` | Privy auth state + Teller `/session`. **Never opens a modal**; `loggedIn:false` is a normal answer |
+| `getHistory` (U3) | `{ limit }` | `{ items: [receipts], serverNow }` | Teller `/status.receipts` (the ledger board's right column) |
 | `getHistory` | `{ chainId, limit }` | `{ items }` | Teller watcher cache |
 | `ensAvailable` / `ensMint` / `ensSetText` | see [ENS.md](./ENS.md) | — | Teller `/ens/*` |
 | `quote` / `swap` | see [UNISWAP.md](./UNISWAP.md) | — | S1 only |
 | `switchWing` | `{ chainId }` | `{ ok }` | local state + Privy chain switch |
 
-Events pushed to Godot (`type: "event"`): `tx.pending`, `tx.released`, `tx.executed`, `tx.cancelled`, `balance.changed`, `session.changed`.
+Events pushed to Godot (`type: "event"`), as built through U3: `bridge.ready` `{ version, mock }` (first message after
+`setGodotCallback`; `mock` is `false`, `"fresh"` or `"account"` — see §5a), `stage` (a Teller Desk `StageEvent`
+relayed verbatim from SSE; carries `lane`, `stage`, `bankLine`, `txId`, `releaseTime`, `serverNow`, `chainNow`),
+and `tab.visible` `{ visible }` (from `visibilitychange`, so Godot reconciles the board with `listPending` once the tab
+is back). The finer-grained `tx.*` / `balance.changed` / `session.changed` names from the plan were not needed: the
+game derives them from `stage`.
 
 Rules:
 - Godot never sees private keys, session tokens or Privy IDs beyond `userId`.
 - Every call has a timeout (15 s) and returns `{ error: { code, message } }` on failure; NPCs have a line for each `code` (see [NPCS.md](./NPCS.md) § 5).
 - On desktop (editor) `MockChain.gd` implements the same API with fake latency and canned data so gameplay can be iterated offline.
+
+### 4a. Bridge version `u3.0` (as built)
+
+`apps/web/src/bridge/branchZero.ts`. Godot's side is `autoload/chain.gd`, with `call_async(method, args, timeout_sec)`
+— the timeout is **per call**: `login` waits up to 600 s for a human OTP, `provision` 300 s, lane calls 120 s, reads 20 s.
+Teller Desk error codes (`NO_ACCOUNT`, `NOT_PENDING`, `BeforeReleaseTime`, `policy_violation`, …) travel unchanged in
+`error.code`; the game maps them to NPC lines in `apps/game/dialogue/errors.json` (NPCS.md §5). Every desk action
+in the game goes `Dialogue` → `GameState.run_action` → `Chain.call_async`; scene scripts never touch the bridge.
 
 ---
 
@@ -159,7 +174,23 @@ Browsers throttle `requestAnimationFrame` in background tabs, so Godot's `_proce
   its latest block timestamp is frozen between transactions and the clock would appear stopped
   ([REMOTE-EVM.md](./REMOTE-EVM.md) section 1a). `releaseTime` itself is still read only from the chain.
 - The bridge keeps SSE alive in JS (not throttled the same way); on tab focus Godot calls `listPending` once to reconcile.
+  As built (U3): the bridge pushes `tab.visible` on `visibilitychange` **and** `GameState` listens for
+  `NOTIFICATION_APPLICATION_FOCUS_IN` / `NOTIFICATION_WM_WINDOW_FOCUS_IN`; either path calls `reconcile_pending`,
+  throttled to once per 2 s.
+- **A hidden tab is a stopped game.** Browsers do not fire `requestAnimationFrame` for a hidden tab at all, so Godot's
+  `_process`, `_physics_process` and `SceneTreeTimer`s do not advance — a `login` awaited in Godot will only resolve
+  once the tab is visible again. Nothing in Godot may therefore be *required* to happen while hidden; the Teller Desk
+  watcher and SSE carry the state in the meantime.
 - Audio: resume `AudioServer` on first input after focus (browser autoplay policy).
+
+### 5a. MockChain and the `?mock` flag (U3)
+
+`autoload/mock_chain.gd` answers the whole bridge API from canned state (addresses start `0xM0CK…`, cooling period
+30 s, receipts local). It is used automatically on desktop, and on web when the shell URL carries `?mock` (`?mock=account`
+starts as a signed-in, delegated player with an open, funded account). The real bridge stays installed; only Godot's
+`Chain` routes calls to the mock. It exists to walk the greybox without an inbox and proves nothing about the chain —
+kill tests run against the Teller Desk (REMOTE-EVM.md §5). Tester keys: **F2 / F3 / F4 / F6 / F7** teleport to Account Opening /
+Counter 1 / Vault / Lobby / Manager (F5 is the browser's reload and is left alone); **1–9** pick a dialogue choice; **Enter** in the payment slip hands it in.
 
 ---
 

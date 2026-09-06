@@ -6,17 +6,26 @@ created: 2026-09-06
 updated: 2026-09-06
 product: Branch-Zero
 objective: OBJ-2026-0004
-first_mission: U3 Bank shell (G4)
-prior_mission: U2 Timelock lane (G3) — met 2026-09-06
+first_mission: U4 MVP freeze (G5)
+prior_mission: U3 Bank shell (G4) — met 2026-09-06
 ---
 
 # Handoff — Claude Code (Fable 5.1)
 
 You are a **cold agent** unless the human says you are continuing a prior session. Prefer reading this file over chat memory. You have **freedom on how**. You do **not** have freedom on constraints, scope, or protocol semantics.
 
-**Current mission: U3 Bank shell (G4)** — greybox zones, NPCs wired to the bridge, ledger board. Do not
-start U4–U7.
+**Current mission: U4 MVP freeze (G5)** — error UX, reconnect, first-load budget, a rough 30-second capture.
+Do not start U5–U7.
 
+> **U3 met 2026-09-06.** The bank is walkable: five NPCs drive the existing lanes through
+> `Dialogue → GameState.run_action → Chain.call_async`; the vault door's clock is the record's `releaseTime`
+> against the desk clock; the ledger board reconciles on tab focus; 85 error codes have bank lines. Read
+> [`docs/progress/2026-09-06-u3-bank-shell.md`](./progress/2026-09-06-u3-bank-shell.md) **first** — it carries the
+> web-Godot findings (a hidden tab is a stopped game; bind `keycode` *and* `physical_keycode`;
+> `set_anchors_and_offsets_preset`, not `set_anchors_preset`, for code-built root Controls). Bridge is `u3.0`.
+> **Still owed by a human:** the OTP walk of the greybox (sign in → consent → open → pay → wire → release) —
+> the mock walk (`?mock=account`) and the kill tests cover the two halves.
+>
 > **U2 met 2026-09-06.** V6 PASS both ways (the owner's own transactions are signed by the Privy session
 > signer and denied for any other account); Lane B green on Remote EVM 1337 — wire → PENDING → approve /
 > cancel, with the countdown read from the record's `releaseTime`. Read
@@ -50,11 +59,12 @@ Not: a wallet UI, DeFi protocol, Bloxchain fork, mainnet, Tactical-AI, GameLab m
 ## 2. Read order (before code)
 
 1. **This file**
-2. [`docs/DEV-LOOP.md`](./DEV-LOOP.md) — U3 row
-3. [`docs/progress/2026-09-06-u2-timelock-lane.md`](./progress/2026-09-06-u2-timelock-lane.md) — newest findings
+2. [`docs/DEV-LOOP.md`](./DEV-LOOP.md) — U4 row
+3. [`docs/progress/2026-09-06-u3-bank-shell.md`](./progress/2026-09-06-u3-bank-shell.md) — newest findings; then
+   [`…u2-timelock-lane.md`](./progress/2026-09-06-u2-timelock-lane.md) for the two chain findings
 4. [`docs/REMOTE-EVM.md`](./REMOTE-EVM.md) — **do not wipe**; gasLimit **16,777,216**; § 1a frozen block clock
 5. [`docs/GAME-DESIGN.md`](./GAME-DESIGN.md) + [`docs/WORLD-3D-ENVIRONMENT.md`](./WORLD-3D-ENVIRONMENT.md) — zones, NPCs, the ledger board
-6. [`docs/GODOT.md`](./GODOT.md) §4–5 — bridge method table (now `u2.0`) and the background-tab rules
+6. [`docs/GODOT.md`](./GODOT.md) §4–5 — bridge method table (now `u3.0`, §4a), MockChain and tester keys (§5a), the background-tab rules
 7. [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) §1–3, §5–6 (§3.3 is Lane B as built)
 8. [`docs/BLOXCHAIN-INTEGRATION.md`](./BLOXCHAIN-INTEGRATION.md) §6–7 — Lane B + roles
 9. [`docs/PRIVY.md`](./PRIVY.md) — session signer and the two policy shapes
@@ -122,6 +132,19 @@ EIP-712 domain name from SDK: **`Bloxchain`** (`META_TX_DOMAIN`).
 - `npm -w apps/teller-desk run killtests:u2 -- --fresh` re-runs V6 + Lane B
 - Bridge is `u2.0`: `wire`, `approve`, `cancel`, `listPending` added
 
+## 4d. U3 already done (do not redo)
+
+- Godot greybox (`apps/game`): Entrance, Lobby, Account Opening, Counter 1, Ledger board wall, Vault antechamber
+  + door, Manager's glass office; signage for Name Desk / Elevator / FX / Side door. Code-built boxes
+  (`scripts/bank_interior.gd`), zones as `Area3D`
+- Five NPCs (Mo, Ines, Dev, Ruth, Mr. Okafor) with JSON dialogue (`dialogue/*.json`, NPCS.md §4), every action with
+  an "Ask why"; `dialogue/errors.json` — 85 codes (NPCS.md §5 + every SDK `ERROR_SIGNATURES` name + desk/bridge/Privy)
+- `autoload/game_state.gd` (desk mirror, `run_action`, desk-clock offset, focus reconcile), `autoload/dialogue.gd`
+  (runner), `autoload/mock_chain.gd` (`?mock` / `?mock=account`), vault door + ledger board (SubViewport), HUD, slip
+- Bridge `u3.0`: `getSession`, `getHistory`; `login` awaits Privy; desk error codes survive; `tab.visible` event;
+  overlay collapses to a debug pill
+- `godot --headless --path apps/game -s tests/run_checks.gd` validates dialogue JSON + error coverage
+
 ## 5. Mission U1 — Signing lane (G2) — **MET 2026-09-06**
 
 Kept as the record of what G2 required and how it was answered. The next mission is §5b.
@@ -185,7 +208,9 @@ Kept as the record of what G3 required. The next mission is §5c.
 
 ---
 
-## 5c. Mission U3 — Bank shell (G4)
+## 5c. Mission U3 — Bank shell (G4) — **MET 2026-09-06**
+
+Kept as the record of what G4 required. The next mission is §5d.
 
 Make the bank walkable and make the desks the operations. Everything the lanes need already exists behind
 `window.BranchZero` (`u2.0`); U3 is Godot work plus the NPC lines, not new chain work.
@@ -203,15 +228,41 @@ Make the bank walkable and make the desks the operations. Everything the lanes n
 - Changing lane semantics, role grants, or the Privy policy shapes
 - Wiping Remote EVM; reintroducing the contracts compile
 
-### Definition of Done (G4)
+### Definition of Done (G4) — all met
 
-- [ ] Walkable greybox: Account Opening, Counter, Vault antechamber, Manager's office ([`GAME-DESIGN.md`](./GAME-DESIGN.md) §zones)
-- [ ] NPCs at each desk drive the real calls through `Chain.call_async` — login/provision, pay, wire, approve/cancel
-- [ ] Vault door clock renders the chain's `releaseTime`, counting against the desk clock (`serverNow`), never `chainNow`
-- [ ] Ledger board shows pending records and the last few receipts; reconciles with `listPending` on tab focus
-- [ ] Every error code in [`NPCS.md`](./NPCS.md) §5 has a line; `BeforeReleaseTime` says "still cooling"
-- [ ] No `JavaScriptBridge.eval`, no keys in Godot, threads still off; first load still budgeted
-- [ ] Progress note + REFLECTION update; HANDOFF advanced to U4
+- [x] Walkable greybox: Account Opening, Counter, Vault antechamber, Manager's office ([`GAME-DESIGN.md`](./GAME-DESIGN.md) §zones)
+- [x] NPCs at each desk drive the real calls through `Chain.call_async` — login/provision, pay, wire, approve/cancel
+- [x] Vault door clock renders the chain's `releaseTime`, counting against the desk clock (`serverNow`), never `chainNow`
+- [x] Ledger board shows pending records and the last few receipts; reconciles with `listPending` on tab focus
+- [x] Every error code in [`NPCS.md`](./NPCS.md) §5 has a line; `BeforeReleaseTime` says "Still cooling — {release_in} to go."
+- [x] No `JavaScriptBridge.eval`, no keys in Godot, threads still off; `.pck` 125 KB, `.wasm` unchanged
+- [x] Progress note + REFLECTION update; HANDOFF advanced to U4
+
+---
+
+## 5d. Mission U4 — MVP freeze (G5)
+
+Nothing new to build on the chain or in the bank's shape; U4 makes what exists survive a judge's laptop. The human
+OTP walk of the greybox is the first thing to do — it is the only U3 item a machine could not close.
+
+### Freedom envelope
+
+- How reconnect is surfaced (HUD toast vs NPC line) as long as it comes from real bridge/SSE state
+- Whether the debug pill stays in the shipped build (recommend: yes, collapsed)
+- Capture tooling for the 30-second clip
+
+### Out of scope
+
+- ENS, Arc, Uniswap; art passes; new lanes, roles or policy shapes; wiping Remote EVM
+
+### Definition of Done (G5)
+
+- [ ] Human walk on the real bridge: sign in → consent → open → pay → wire → door clock → release; **one modal**, recorded in the progress note with account, txIds, hashes
+- [ ] Error UX: every refusal the walk produces shows its NPC line (no raw error on screen); `TIMEOUT` and `RPC` lines verified by killing the Teller Desk mid-session
+- [ ] Reconnect: SSE drop → reconnect → board reconciles; Teller Desk restart mid-wire → watcher re-arms, clock continues from `releaseTime`
+- [ ] First load measured (wasm + pck + shell) and written down against WORLD-3D §6; obvious wins taken (compression, no debug template)
+- [ ] 30-second capture of the vault clock counting down and the door opening
+- [ ] Progress note + REFLECTION; HANDOFF advanced to U5
 
 ### Suggested sequence
 
@@ -222,12 +273,12 @@ Make the bank walkable and make the desks the operations. Everything the lanes n
 
 ---
 
-## 6. After U3
+## 6. After U4
 
 | Next | Gate |
 |------|------|
-| U4 MVP freeze | G5 |
 | U5 ENS | G6 |
+| U6 Arc + manager role | G7 |
 
 Cut order unchanged: Uniswap → Manager → Arc → ENS EAC → ENS mint. **Never cut Privy or Lane B.**
 
@@ -240,4 +291,4 @@ Cut order unchanged: Uniswap → Manager → Arc → ENS EAC → ENS mint. **Nev
 - Scope drifts to greybox/ENS/Arc/Uniswap
 - Lane B blocked and PLAN fallback not chosen
 
-Leave: commands, file pointers, kill-test log, next agent can resume from G3 checklist.
+Leave: commands, file pointers, kill-test log, next agent can resume from the G5 checklist.
