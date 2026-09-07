@@ -27,6 +27,13 @@ static func ensure_theme() -> WingTheme:
 	return theme
 
 
+## U6 elevator beat: clear the palette cache before the static interior is rebuilt for the other wing.
+static func set_wing_theme(wing: String) -> WingTheme:
+	theme = load("res://themes/wing_arc.tres" if wing == "arc" else "res://themes/wing_main.tres")
+	_mats.clear()
+	return theme
+
+
 ## Palette material by name (the names tools/hero_props.py writes into the .glb).
 static func palette(name: String) -> StandardMaterial3D:
 	var t := ensure_theme()

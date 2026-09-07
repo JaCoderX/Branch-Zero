@@ -24,6 +24,11 @@ var talk_framing: bool = false
 var _talk_point: Vector3 = Vector3.ZERO
 var _has_talk_point := false
 var facing: float = 0.0
+## When set, WASD is ignored and the body walks toward this point (demo autopilot / escorts).
+var steer_target: Variant = null
+var steer_speed: float = WALK
+## > 0 pins the boom length (demo autopilot in the glass office); 0 = the walk / talk defaults.
+var cam_dist_override: float = 0.0
 
 var _arm: SpringArm3D
 var _cam: Camera3D
@@ -94,18 +99,28 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _physics_process(delta: float) -> void:
 	var locked: bool = GameState.ui_locked
-	if not locked:
+	var steering: bool = steer_target is Vector3 and not locked
+	if not locked and not steering:
 		var orbit := Input.get_action_strength("cam_left") - Input.get_action_strength("cam_right")
 		cam_yaw += orbit * CAM_SPEED * delta
 	var pivot: Node3D = $CamPivot
 	_ease_camera(delta)
 	pivot.rotation.y = view_yaw
 
-	var input := Vector2.ZERO
-	if not locked:
-		input = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-	var dir := (Basis(Vector3.UP, cam_yaw) * Vector3(input.x, 0.0, input.y))
-	var speed := JOG if Input.is_key_pressed(KEY_SHIFT) else WALK
+	var dir := Vector3.ZERO
+	var speed := WALK
+	if steering:
+		var to: Vector3 = (steer_target as Vector3) - global_position
+		to.y = 0.0
+		if to.length() > 0.15:
+			dir = to.normalized()
+			speed = steer_speed
+			# Keep the camera behind the walk so the reel reads as third-person, not strafe.
+			cam_yaw = lerp_angle(cam_yaw, atan2(-dir.x, -dir.z), 4.0 * delta)
+	elif not locked:
+		var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+		dir = Basis(Vector3.UP, cam_yaw) * Vector3(input.x, 0.0, input.y)
+		speed = JOG if Input.is_key_pressed(KEY_SHIFT) else WALK
 	var target := dir * speed
 	velocity.x = move_toward(velocity.x, target.x, 30.0 * delta)
 	velocity.z = move_toward(velocity.z, target.z, 30.0 * delta)
@@ -117,6 +132,44 @@ func _physics_process(delta: float) -> void:
 	_body.rotation.y = lerp_angle(_body.rotation.y, facing, TURN * delta)
 	var ground_speed := Vector2(velocity.x, velocity.z).length()
 	_play("sprint" if ground_speed > WALK + 0.5 else ("walk" if ground_speed > 0.4 else "idle"))
+
+
+## Clear autopilot steering (idle in place).
+func clear_steer() -> void:
+	steer_target = null
+	velocity.x = 0.0
+	velocity.z = 0.0
+
+
+## Turn the body and camera toward `yaw` (0 = north / -z); the pivot eases there instead of snapping.
+func turn_to(yaw: float) -> void:
+	facing = yaw
+	cam_yaw = yaw
+
+
+## Pin the boom length (tight rooms such as the manager's glass office); pass 0 to release it.
+func set_cam_dist(d: float) -> void:
+	cam_dist_override = clampf(d, 1.2, CAM_DIST) if d > 0.0 else 0.0
+
+
+## Walk toward `p` until within `arrive` metres. Returns false on timeout.
+func walk_to(p: Vector3, arrive: float = 0.55, timeout_sec: float = 45.0, speed: float = WALK) -> bool:
+	steer_target = Vector3(p.x, global_position.y, p.z)
+	steer_speed = clampf(speed, 0.5, JOG)
+	var elapsed := 0.0
+	while elapsed < timeout_sec:
+		if GameState.ui_locked:
+			await get_tree().process_frame
+			elapsed += get_process_delta_time()
+			continue
+		var d := Vector2(global_position.x - p.x, global_position.z - p.z).length()
+		if d <= arrive:
+			clear_steer()
+			return true
+		await get_tree().process_frame
+		elapsed += get_process_delta_time()
+	clear_steer()
+	return false
 
 
 func _play(clip: String) -> void:
@@ -131,7 +184,7 @@ func set_view(yaw: float) -> void:
 	facing = yaw
 	_body.rotation.y = yaw
 	$CamPivot.rotation.y = yaw
-	_arm.spring_length = TALK_DIST if talk_framing else CAM_DIST
+	_arm.spring_length = _boom_target()
 
 
 func look_at_point(p: Vector3) -> void:
@@ -153,7 +206,7 @@ func set_talk_framing(on: bool, snap: bool = false) -> void:
 	talk_framing = on and _has_talk_point
 	if snap:
 		view_yaw = _talk_yaw() if talk_framing else cam_yaw
-		_arm.spring_length = TALK_DIST if talk_framing else CAM_DIST
+		_arm.spring_length = _boom_target()
 		$CamPivot.rotation.y = view_yaw
 
 
@@ -164,8 +217,14 @@ func _talk_yaw() -> float:
 	return to_npc + deg_to_rad(TALK_SWING)
 
 
+func _boom_target() -> float:
+	if cam_dist_override > 0.0:
+		return cam_dist_override
+	return TALK_DIST if talk_framing else CAM_DIST
+
+
 func _ease_camera(delta: float) -> void:
 	var w := clampf(CAM_EASE * delta, 0.0, 1.0)
 	var yaw_target := _talk_yaw() if talk_framing else cam_yaw
 	view_yaw = lerp_angle(view_yaw, yaw_target, w)
-	_arm.spring_length = lerpf(_arm.spring_length, TALK_DIST if talk_framing else CAM_DIST, w)
+	_arm.spring_length = lerpf(_arm.spring_length, _boom_target(), w)

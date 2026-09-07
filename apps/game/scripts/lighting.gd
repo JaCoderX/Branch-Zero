@@ -49,6 +49,30 @@ func _ready() -> void:
 	we.environment = env
 
 
+## U6: update the existing lights/environment after the elevator swaps the interior palette.
+func apply_theme() -> void:
+	var t := PropKit.ensure_theme()
+	_aim(sun, t.key_azimuth_deg, t.key_elevation_deg)
+	sun.light_color = t.key_color
+	sun.light_energy = t.key_energy
+	fill.light_color = t.fill_color
+	fill.light_energy = t.fill_energy
+	var we := get_parent().get_node_or_null("WorldEnvironment") as WorldEnvironment
+	if we == null:
+		return
+	var env := we.environment if we.environment != null else Environment.new()
+	env.background_color = t.background_color
+	env.ambient_light_color = t.ambient_color
+	env.ambient_light_energy = t.ambient_energy
+	env.tonemap_exposure = t.exposure
+	env.fog_enabled = t.fog_enabled
+	env.fog_light_color = t.fog_color
+	env.fog_density = t.fog_density
+	env.glow_enabled = t.glow_enabled
+	env.glow_intensity = t.glow_intensity
+	we.environment = env
+
+
 ## Point a directional light so it shines from compass azimuth `az` (degrees clockwise from north) at `el` above the horizon.
 func _aim(light: DirectionalLight3D, az: float, el: float) -> void:
 	var a := deg_to_rad(az)
