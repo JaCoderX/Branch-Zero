@@ -3,23 +3,28 @@ type: handoff
 title: Handoff — Claude Code / Fable 5.1
 audience: cold agent
 created: 2026-09-06
-updated: 2026-09-07
+updated: 2026-09-08
 product: Branch-Zero
 objective: OBJ-2026-0004
-first_mission: U7 ship packaging (after principal polish re-playtest); U6 Arc G7 deferred — revive via docs/ARC.md §5b
-prior_mission: U7 polish met 2026-09-07; U7 ship reel met; U5 ENS (G6) — met 2026-09-07
+first_mission: Stretch Terminal Console + OBSERVER (Codex Luna) — docs/KICKOFF-terminal-observer.md; U7 ship packaging still owed after principal polish re-playtest; U6 Arc G7 deferred — revive via docs/ARC.md §5b
+prior_mission: U7 polish met 2026-09-07; U7 ship reel met; practice faucet met; U5 ENS (G6) — met 2026-09-07
 ---
 
 # Handoff — Claude Code (Fable 5.1)
 
 You are a **cold agent** unless the human says you are continuing a prior session. Prefer reading this file over chat memory. You have **freedom on how**. You do **not** have freedom on constraints, scope, or protocol semantics.
 
-**Current mission: U7 ship packaging** — polish findings 1–10 are **built** ([`KICKOFF-U7-polish.md`](./KICKOFF-U7-polish.md));
+**Authorized stretch (2026-09-08): Terminal Console + OBSERVER** — prefer **Codex Luna**. Design:
+[`docs/TERMINAL-CONSOLE.md`](./TERMINAL-CONSOLE.md). Kickoff:
+[`docs/KICKOFF-terminal-observer.md`](./KICKOFF-terminal-observer.md). Mission record: **§5h**.
+Privy Global Wallet / RainbowKit cross-app in bloxchain.app is **parked** — do not reopen.
+
+**Also open: U7 ship packaging** — polish findings 1–10 are **built** ([`KICKOFF-U7-polish.md`](./KICKOFF-U7-polish.md));
 **owed** before packaging starts: the principal's cold re-playtest. Kickoff:
-[`docs/KICKOFF-U7-ship-package.md`](./KICKOFF-U7-ship-package.md). Prefer **Fable 5.1**. Early art Stage 1–5 met;
-ship reel met (laptop-local). U6 Arc remains **DEFERRED** — do not revive funding; elevator stays “coming soon.”
-Do not regress the U4 freeze, the U4+ Priority desk, U5 ENS verbs, or the polish DoD (Bob, Space/E, debug-gated
-F-keys, Petra at Counter 2).
+[`docs/KICKOFF-U7-ship-package.md`](./KICKOFF-U7-ship-package.md). Prefer **Fable 5.1** for packaging.
+Early art Stage 1–5 met; ship reel met (laptop-local). U6 Arc remains **DEFERRED** — do not revive funding;
+elevator stays “coming soon.” Do not regress the U4 freeze, the U4+ Priority desk, U5 ENS verbs, the polish DoD
+(Bob, Space/E, debug-gated F-keys, Petra at Counter 2), or the practice faucet.
 
 > **Practice faucet met:** [`docs/KICKOFF-U7-practice-faucet.md`](./KICKOFF-U7-practice-faucet.md) —
 > Ines **Top up practice dollars** → `/faucet` restores demo balance **up to** `OPENING_BALANCE_USDC` (500);
@@ -116,7 +121,7 @@ Not: a wallet UI, DeFi protocol, Bloxchain fork, mainnet, Tactical-AI, GameLab m
 
 ## 2. Read order (before code)
 
-1. **This file** (§5g is the open mission)
+1. **This file** (§5h Terminal/OBSERVER stretch is authorized; packaging §6; U6 §5g deferred)
 2. [`docs/DEV-LOOP.md`](./DEV-LOOP.md) — U6 row; ENG-0006 **yes** (K3); U5 / G6 **met**
 3. [`docs/progress/2026-09-07-u5-ens-g6.md`](./progress/2026-09-07-u5-ens-g6.md) — Name Desk frozen; then
    [`…k6-yes.md`](./progress/2026-09-07-k6-yes.md) only if you need Sepolia address pins
@@ -519,16 +524,49 @@ Evidence: [`docs/progress/2026-09-07-u6-arc-g7.md`](./progress/2026-09-07-u6-arc
 
 ---
 
+## 5h. Mission stretch — Terminal Console + OBSERVER — **OPEN**
+
+Diegetic computer → overlay with iframe of `bloxchain.app` + opt-in **OBSERVER** runtime role (empty permissions)
+for a MetaMask/EOA or ENS so permissioned registry views work under Console’s existing RainbowKit connect.
+Design: [`docs/TERMINAL-CONSOLE.md`](./TERMINAL-CONSOLE.md). Kickoff:
+[`docs/KICKOFF-terminal-observer.md`](./KICKOFF-terminal-observer.md). Prefer **Codex Luna**.
+
+**Parked (do not build):** Privy Global Wallet / `@privy-io/cross-app-connect` inside the SaaS Console.
+
+### Freedom envelope
+
+- Which existing `computerScreen` becomes the interactable (manager, AO, or both)
+- Overlay chrome / CRT framing (HTML overlay only — not a live SubViewport texture)
+- Bridge version label (`u5.1` vs `u7.t` etc.) as long as ENS + Priority methods remain
+- Iframe vs top-level-tab fallback when CSP blocks framing
+
+### Out of scope
+
+- SaaS Privy connector; Arc revive; Uniswap; ship packaging; default OBSERVER on every `/provision`; any write bits on OBSERVER; custom Solidity; merging GameLab ENG trees
+
+### Definition of Done
+
+- [ ] Terminal overlay from in-world computer; close returns canvas focus
+- [ ] `/observer/grant` + `/observer/revoke` (names flexible) via roleConfigBatch; OBSERVER has **no** function permissions
+- [ ] Bridge + MockChain methods; ENS or `0x` input
+- [ ] Iframe loads bloxchain.app **or** documented fallback (new tab) if framed
+- [ ] Kill tests: observer can read a permissioned view; observer cannot pay/wire/config; revoke works; live 1337 evidence in progress note
+- [ ] REFLECTION row; this §5h DoD updated
+
+---
+
 ## 6. After U5 / with U6 deferred
 
 | Next | Gate |
 |------|------|
+| **Terminal Console + OBSERVER** | Stretch — **open** ([`KICKOFF-terminal-observer.md`](./KICKOFF-terminal-observer.md); Luna) |
 | U7 polish | Principal playtest — **met** 2026-09-07 ([`KICKOFF-U7-polish.md`](./KICKOFF-U7-polish.md); owed: principal re-playtest) |
 | **U7 ship packaging** | G8–G10 — **open** after re-playtest ([`KICKOFF-U7-ship-package.md`](./KICKOFF-U7-ship-package.md)) |
 | U6 Arc + manager role | G7 — **deferred** (revive ARC.md §5b) |
 
-**Now:** staged art Stage 1–5 **met**; ship reel **met**; polish **met** (code). Do not reopen Arc funding;
-elevator refuses with coming-soon. Packaging waits on the principal's re-walk of the ten findings.
+**Now:** staged art Stage 1–5 **met**; ship reel **met**; polish **met** (code); practice faucet **met**.
+Terminal/OBSERVER stretch is authorized in parallel with packaging. Do not reopen Arc funding; elevator refuses
+with coming-soon. Packaging waits on the principal's re-walk of the ten findings.
 
 Cut order unchanged: Uniswap → Manager → Arc → ENS EAC → ENS mint. **Never cut Privy or Lane B.**
 
@@ -540,5 +578,8 @@ Cut order unchanged: Uniswap → Manager → Arc → ENS EAC → ENS mint. **Nev
 - Would wipe Remote EVM or re-add contracts compile as default
 - Scope drifts to greybox redesign / ENS rework / Uniswap without a gate
 - Lane B blocked and PLAN fallback not chosen
+- Stretch tries to add Privy cross-app or write permissions on OBSERVER
 
-Leave: commands, file pointers, kill-test log; next agent resumes from [`docs/KICKOFF-U7-ship-package.md`](./KICKOFF-U7-ship-package.md) after the principal's polish re-playtest.
+Leave: commands, file pointers, kill-test log. Stretch resumes from
+[`docs/KICKOFF-terminal-observer.md`](./KICKOFF-terminal-observer.md). Packaging resumes from
+[`docs/KICKOFF-U7-ship-package.md`](./KICKOFF-U7-ship-package.md) after the principal's polish re-playtest.

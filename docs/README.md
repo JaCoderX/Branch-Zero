@@ -22,8 +22,9 @@ Start with **[PLAN.md](./PLAN.md)**. Read order for a new contributor:
 | 12 | [SECURITY-AND-KEYS.md](./SECURITY-AND-KEYS.md) | Before handling any key or env var |
 | 13 | [DEMO-SCRIPT.md](./DEMO-SCRIPT.md) | Day 9–10 — video storyboard, submission checklist |
 | 14 | [REFLECTION.md](./REFLECTION.md) | When a decision feels wrong — design review, sponsor matrix, kill-test log, open questions |
+| 15 | [TERMINAL-CONSOLE.md](./TERMINAL-CONSOLE.md) | Stretch — bank computer iframe of bloxchain.app + OBSERVER view role (Privy↔SaaS parked) |
 
-**Not published** (gitignored; stay on the laptop): `docs/progress/` (daily notes + captures), `docs/KICKOFF-*.md`, `docs/HANDOFF-CC.md`, `.claude/`.
+**Not published** (gitignored; stay on the laptop): `docs/progress/` (daily notes + captures). Kickoffs and `HANDOFF-CC.md` stay in git for cold agents.
 
 ## Conventions used across the docs
 

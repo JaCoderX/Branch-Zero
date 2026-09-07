@@ -1,7 +1,7 @@
 ---
 title: Development loop — craft, lab, product
 created: 2026-09-06
-updated: 2026-09-07
+updated: 2026-09-08
 ---
 
 # Development loop
@@ -62,7 +62,8 @@ Ordered so that after U2 we can stop and still demo a coherent bank-on-a-chain (
 | **U4+ Priority release** | Ruth waits the clock; Okafor meta-bypass + Passkey before `releaseTime` | G5b | ENG-0012 + 0011 + 0013 — **met 2026-09-07** (ROLE_SET 3 split on chain, `/priority/*`, Passkey step-up in the overlay, policy pins the silent lane to `params.action`; kill tests Y0–Y9) |
 | **U5 ENS** | Subname + pay-by-name | G6 | **met** 2026-09-07 — UR V2 pin; live `u5-mtra3lb6…`; pay on 1337 |
 | **U6 Arc + manager role** | Elevator wing + runtime role (manager already in U4+ as Priority submitter) | G7 | **DEFERRED** 2026-09-07 — PARTIAL kept; revive via [ARC.md §5b](./ARC.md#5b-deferred-revive-checklist-g7--parked-2026-09-07) |
-| **U7 Feel / ship** | Art, video, submission | G8–G10 | ENG-0008 only if S1; staged art Stage 1–5 **met**; ship reel **met** 2026-09-07; polish **met** (`KICKOFF-U7-polish.md`; principal re-playtest owed); **next = packaging** (`KICKOFF-U7-ship-package.md`; [DEMO-SCRIPT.md](./DEMO-SCRIPT.md)) |
+| **U7 Feel / ship** | Art, video, submission | G8–G10 | ENG-0008 only if S1; staged art Stage 1–5 **met**; ship reel **met** 2026-09-07; polish **met** (`KICKOFF-U7-polish.md`; principal re-playtest owed); **packaging** (`KICKOFF-U7-ship-package.md`; [DEMO-SCRIPT.md](./DEMO-SCRIPT.md)) |
+| **Stretch — Terminal Console** | Iframe `bloxchain.app` + opt-in `OBSERVER` role (empty permissions) for MetaMask/ENS view access | — | **OPEN** 2026-09-08 — [TERMINAL-CONSOLE.md](./TERMINAL-CONSOLE.md) · [`KICKOFF-terminal-observer.md`](./KICKOFF-terminal-observer.md) (Codex Luna). Privy↔SaaS Global Wallet **parked** |
 
 Each unit ends with: commit, a local note under `docs/progress/` (gitignored), and a kill/decision line in [REFLECTION.md](./REFLECTION.md) if anything changed.
 
