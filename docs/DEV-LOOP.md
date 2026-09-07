@@ -62,7 +62,7 @@ Ordered so that after U2 we can stop and still demo a coherent bank-on-a-chain (
 | **U4+ Priority release** | Ruth waits the clock; Okafor meta-bypass + Passkey before `releaseTime` | G5b | ENG-0012 + 0011 + 0013 — **met 2026-09-07** (ROLE_SET 3 split on chain, `/priority/*`, Passkey step-up in the overlay, policy pins the silent lane to `params.action`; kill tests Y0–Y9) |
 | **U5 ENS** | Subname + pay-by-name | G6 | ENG-0007 — **partial** (viem resolve yes; ENSv2 parent owner still zero as of dig 2026-09-07; mint waits) |
 | **U6 Arc + manager role** | Elevator wing + runtime role (manager already in U4+ as Priority submitter) | G7 | ENG-0006 |
-| **U7 Feel / ship** | Art, video, submission | G8–G10 | ENG-0008 only if S1; staged art: Stage 1 met ([`KICKOFF-U7-viz.md`](./KICKOFF-U7-viz.md)); next [`KICKOFF-U7-viz-stage2.md`](./KICKOFF-U7-viz-stage2.md) when clear of U5 |
+| **U7 Feel / ship** | Art, video, submission | G8–G10 | ENG-0008 only if S1; staged art: Stage 1 met ([`KICKOFF-U7-viz.md`](./KICKOFF-U7-viz.md)), Stage 2 met ([`KICKOFF-U7-viz-stage2.md`](./KICKOFF-U7-viz-stage2.md), [`progress/2026-09-07-u7-viz-stage2.md`](./progress/2026-09-07-u7-viz-stage2.md)); Stage 3 later, when clear of U5 |
 
 Each unit ends with: commit, a line in `docs/progress/`, kill/decision log if anything changed.
 

@@ -12,7 +12,7 @@ elevator panel). Stage 1 (legible bank) is **met**: [`docs/progress/2026-09-07-u
 | Stage | Goal | Status |
 |-------|------|--------|
 | 1 | Legible bank — kits + lighting + bake | **met** |
-| **2** | **Hero polish — demo-critical props look intentional** | **this kickoff** |
+| **2** | **Hero polish — demo-critical props look intentional** | **met 2026-09-07** — [`progress/2026-09-07-u7-viz-stage2.md`](./progress/2026-09-07-u7-viz-stage2.md) |
 | 3 | Character pass — adult-ish CC0 silhouettes | later |
 | 4 | Shell architecture — walls stop reading as CSG | later |
 | 5 | Feel — particles, fonts, HUD, video | full U7 |

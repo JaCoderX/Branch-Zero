@@ -16,9 +16,10 @@ You are a **cold agent** unless the human says you are continuing a prior sessio
 
 **Current mission: U5 ENS (G6)** — Petra's Name Desk. Kickoff: [`docs/KICKOFF-U5.md`](./KICKOFF-U5.md). Do not
 start U6 or **full** U7 ship (video / submission). Early art: Stage 1 met
-([`docs/progress/2026-09-07-u7-early-viz.md`](./progress/2026-09-07-u7-early-viz.md)); next art unit is
-[`docs/KICKOFF-U7-viz-stage2.md`](./KICKOFF-U7-viz-stage2.md) (hero polish) when the principal schedules it clear of
-U5. Do not regress the U4 freeze or the U4+ Priority desk.
+([`docs/progress/2026-09-07-u7-early-viz.md`](./progress/2026-09-07-u7-early-viz.md)) and Stage 2 hero polish met
+([`docs/progress/2026-09-07-u7-viz-stage2.md`](./progress/2026-09-07-u7-viz-stage2.md)); the next art unit is
+Stage 3 (characters) and has **no kickoff yet** — the principal schedules it clear of U5. Do not regress the U4
+freeze or the U4+ Priority desk.
 
 > **U4+ met 2026-09-07 — Priority release is the third way out of the vault.** Read
 > [`docs/progress/2026-09-07-u4-plus-priority-release.md`](./progress/2026-09-07-u4-plus-priority-release.md)

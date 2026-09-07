@@ -9,8 +9,9 @@ extends Node3D
 ##   just settled    → LED amber for a moment, then off
 ##
 ## U7 early art: the frame, LED strip and door are hero meshes from assets/models/hero (tools/hero_props.py); the
-## six bolts are radial bars that slide out of the rim. A repeater strip on the lobby face of the vault lintel shares
-## the LED material so the state reads from the lobby (WORLD-3D §10). State logic is unchanged since U3.
+## six bolts are radial bars that slide out of the rim into receivers on the frame's collar. A repeater strip on the
+## lobby face of the vault lintel (prop_vault_repeater.glb, Stage 2) shares the LED material so the state reads from
+## the lobby (WORLD-3D §10). State logic is unchanged since U3.
 
 const OPEN_DEG := 30.0
 const DOOR_R := 1.6          # disc radius — matches tools/hero_props.py DOOR_R
@@ -47,9 +48,14 @@ func _ready() -> void:
 	var strip := PropKit.find_mesh(frame, "LedStrip")
 	if strip != null:
 		strip.material_override = _led_mat
-	# repeater on the lobby side of the vault lintel, just above the opening (world (8, 3.58, -4.8); this node sits
-	# at (8, 0, -10.7)) — the lobby reads the state without seeing the door
-	add_child(_box(Vector3(0.0, 3.58, 5.9), Vector3(3.8, 0.14, 0.06), _led_mat))
+	# repeater on the lobby side of the vault lintel, just above the opening (world (8, 3.58, -4.78); this node sits
+	# at (8, 0, -10.7)) — the lobby reads the state without seeing the door. Stage 2: a brass-cased hero strip.
+	var repeater := PropKit.instance(PropKit.HERO + "prop_vault_repeater.glb")
+	repeater.position = Vector3(0.0, 3.58, 5.92)
+	add_child(repeater)
+	var rep_strip := PropKit.find_mesh(repeater, "LedStrip")
+	if rep_strip != null:
+		rep_strip.material_override = _led_mat
 
 	# hinge on the west edge; the door hero mesh is centred on its own disc
 	_hinge = Node3D.new()
@@ -85,16 +91,6 @@ func _ready() -> void:
 	_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_sub.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(_sub)
-
-
-func _box(pos: Vector3, size: Vector3, m: Material) -> MeshInstance3D:
-	var mi := MeshInstance3D.new()
-	var mesh := BoxMesh.new()
-	mesh.size = size
-	mi.mesh = mesh
-	mi.position = pos
-	mi.material_override = m
-	return mi
 
 
 func _process(delta: float) -> void:

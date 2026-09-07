@@ -3,7 +3,8 @@ extends RefCounted
 ## Set-dressing loader with the material budget built in (docs/WORLD-3D-ENVIRONMENT.md §5 pipeline, §6 ≤ 40 unique
 ## materials). Two kinds of .glb come through here:
 ##  - hero props (assets/models/hero, made by tools/hero_props.py) name their materials after the palette — Marble,
-##    Brass, Glass, … — and are re-pointed at the WingTheme colours, so the mesh carries shape only;
+##    Brass, BrassDark, Steel, SteelDark, Glass, … — and are re-pointed at the WingTheme colours, so the mesh carries
+##    shape only (the two Dark tones are derived from the theme's brass / steel, Stage 2 hero recesses);
 ##  - Kenney Furniture Kit props (assets/models/kenney_furniture, CC0) carry 1–4 flat-colour materials each; identical
 ##    colours collapse into one shared StandardMaterial3D, and `recolor` re-tints named kit colours into the bank palette.
 ## Anything that blocks the player gets a StaticBody3D on layer 1 / mask 0 — colliders that block must not listen
@@ -34,12 +35,16 @@ static func palette(name: String) -> StandardMaterial3D:
 			return color(t.wainscot_color, 0.0, 0.55)
 		"Brass":
 			return color(t.trim_color, 0.85, 0.35)
+		"BrassDark":
+			return color(t.trim_color.darkened(0.4), 0.85, 0.4)
 		"Wood":
 			return color(t.wood_color, 0.0, 0.7)
 		"Graphite":
 			return color(t.graphite_color, 0.1, 0.8)
 		"Steel":
 			return color(t.steel_color, 0.75, 0.35)
+		"SteelDark":
+			return color(t.steel_color.darkened(0.45), 0.7, 0.45)
 		"Glass":
 			return color(t.glass_color, 0.0, 0.1)
 		"LED":
@@ -63,7 +68,7 @@ static func palette(name: String) -> StandardMaterial3D:
 
 
 static func is_palette_name(name: String) -> bool:
-	return name in ["Marble", "MarbleDark", "Brass", "Wood", "Graphite", "Steel", "Glass", "LED", "Bulb", "Cream", "Paper", "Plant", "Rope", "Ceiling", "Floor"]
+	return name in ["Marble", "MarbleDark", "Brass", "BrassDark", "Wood", "Graphite", "Steel", "SteelDark", "Glass", "LED", "Bulb", "Cream", "Paper", "Plant", "Rope", "Ceiling", "Floor"]
 
 
 ## One shared material per (colour, metallic, roughness, emission) — quantised so near-identical kit colours merge.

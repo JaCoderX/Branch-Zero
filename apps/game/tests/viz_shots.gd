@@ -18,6 +18,7 @@ const VIEWS := [
 	["06_manager", Vector3(-8.0, 0.1, -7.3), 0.0],
 	["07_vault", Vector3(8.0, 0.1, -6.5), 0.0],
 	["08_name_desk", Vector3(-11.0, 0.1, -3.5), PI / 2],
+	["09_elevator", Vector3(9.2, 0.1, 0.2), -PI / 2],
 ]
 
 var out_dir := ""
