@@ -23,7 +23,9 @@ F-keys, Petra at Counter 2).
 
 > **Practice faucet met:** [`docs/KICKOFF-U7-practice-faucet.md`](./KICKOFF-U7-practice-faucet.md) —
 > Ines **Top up practice dollars** → `/faucet` restores demo balance **up to** `OPENING_BALANCE_USDC` (500);
-> provision `fundAccount` stays zero-only; Arc refuses `FAUCET_OFF`. Mock: `tests/run_faucet_walk.gd`.
+> provision `fundAccount` stays zero-only; Arc refuses `FAUCET_OFF`. Mock: `tests/run_faucet_walk.gd`. Live 1337:
+> `npm -w apps/teller-desk run smoke:faucet` (restore + already-full no-op). Craft lessons:
+> GameDevOS `keep-opening-fund-zero-only`, `track-engine-uid-for-new-scripts`.
 
 > **U7 polish pass landed 2026-09-07** (local `docs/progress/2026-09-07-u7-polish.md`): findings 1–10 built and checked
 > (`run_checks`, `run_viz_budget`, `run_mock_walk` green; :5173 `?mock=account` walk). Product facts that changed: the vault

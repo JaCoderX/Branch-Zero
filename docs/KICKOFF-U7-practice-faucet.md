@@ -76,12 +76,12 @@ F. Overlay (optional, thin) — only if other desk verbs already have a debug bu
 G. Docs — thin HANDOFF / REFLECTION pointer when DoD met; keep NPCS §4.2 aligned if wording drifts.
 
 TESTS / DoD (all required):
-- [ ] Mock: `?mock=account` → spend down balance (pay/wire) → Ines → Top up → balance reads opening again
-- [ ] Mock: already at opening → choice succeeds with no invented second economy; balance unchanged
-- [ ] Live (if Remote EVM up): same path; one deployer ERC-20 transfer of the delta; no Privy modal
-- [ ] Re-check still does NOT top up a non-zero underfunded balance (opening fundAccount unchanged)
-- [ ] `run_checks` / existing desk smoke green; no freeze regression
-- [ ] Commit with a clear message; push if the human asked
+- [x] Mock: `?mock=account` → spend down balance (pay/wire) → Ines → Top up → balance reads opening again
+- [x] Mock: already at opening → choice succeeds with no invented second economy; balance unchanged
+- [x] Live (if Remote EVM up): same path; one deployer ERC-20 transfer of the delta; no Privy modal (`npm -w apps/teller-desk run smoke:faucet`, 2026-09-07)
+- [x] Re-check still does NOT top up a non-zero underfunded balance (opening fundAccount unchanged)
+- [x] `run_checks` / existing desk smoke green; no freeze regression
+- [x] Commit with a clear message; push if the human asked
 
 CONSTRAINTS:
 - Freeze: faucet must not open Privy / Passkey / wallet UI
