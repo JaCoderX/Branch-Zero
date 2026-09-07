@@ -35,8 +35,7 @@ Do these on `http://localhost:5173/` (not `127.0.0.1` — Privy origin). Tab mus
 3. Save as `docs/progress/captures/YYYY-MM-DD-u4-vault-clock-real.*` (gif/mp4; keep under a few MB or link externally).
 4. Do **not** commit secrets or full `.env`.
 
-## Producer gate for ENG-0007 mint (blocks full G6)
+## ENG-0007 / K6 — closed
 
-1. Set `ENS_REGISTRAR_PK` in Branch-Zero `.env` to a **Sepolia** throwaway (ETH + MockUSDC) — never mainnet, never commit. (As of 2026-09-07 dig the key line was empty.)
-2. Register label `branchzero` on **ENSv2** `ETHRegistrar` (commit/reveal ≥60 s). Confirm with `node scripts/dig-parent.mjs` in GameLab ENG-0007: `ownerOf` non-zero, `isAvailable=false`. A Universal Resolver address alone is **not** enough.
-3. Deploy UserRegistry + mint `test.branchzero.eth` — see GameLab `work/ENG-2026-0007-ensv2-subname-mint/handoff.md`.
+Passed 2026-09-07. See [`../2026-09-07-k6-yes.md`](../2026-09-07-k6-yes.md) and GameLab ENG-0007 handoff.
+Product U5 must pin ENSv2 Universal Resolver `0x85edf8b6b7d4211e2b07aa687506b746357b92cf` and Customers UserRegistry `0x64ED6bd3858d95F5e822ACe73b977103B905073c`.

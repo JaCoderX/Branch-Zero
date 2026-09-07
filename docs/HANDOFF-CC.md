@@ -94,13 +94,13 @@ Not: a wallet UI, DeFi protocol, Bloxchain fork, mainnet, Tactical-AI, GameLab m
 ## 2. Read order (before code)
 
 1. **This file** (§5f is the open mission)
-2. [`docs/DEV-LOOP.md`](./DEV-LOOP.md) — U5 row; lab-first for ENG-0007
-3. [`docs/progress/2026-09-07-u4-plus-checkpoint.md`](./progress/2026-09-07-u4-plus-checkpoint.md) — process scrub +
-   "ENG-0007 still unrun"; then [`…u4-plus-priority-release.md`](./progress/2026-09-07-u4-plus-priority-release.md) and
-   [`…u4-mvp-freeze.md`](./progress/2026-09-07-u4-mvp-freeze.md) for Priority / freeze findings
+2. [`docs/DEV-LOOP.md`](./DEV-LOOP.md) — U5 row; ENG-0007 **yes**
+3. [`docs/progress/2026-09-07-k6-yes.md`](./progress/2026-09-07-k6-yes.md) — K6 pass + UR V2 pin; then
+   [`…u4-plus-checkpoint.md`](./progress/2026-09-07-u4-plus-checkpoint.md) /
+   [`…u4-plus-priority-release.md`](./progress/2026-09-07-u4-plus-priority-release.md) for prior gates
 4. [`docs/ENS.md`](./ENS.md) §2–4 + [`docs/NPCS.md`](./NPCS.md) §4.6 — Name Desk. GameLab ENG-2026-0007
    [`handoff.md`](https://github.com/D9-Studio/GameLab/blob/main/work/ENG-2026-0007-ensv2-subname-mint/handoff.md)
-   is **partial** (resolve yes; mint needs parent). Do not invent addresses — use the Sepolia table in that handoff.
+   is **yes**. Pin addresses from that handoff (esp. UR V2 `0x85ed…b92cf`); do not invent.
 5. [`docs/REMOTE-EVM.md`](./REMOTE-EVM.md) — **do not wipe**; payments stay on 1337; gasLimit **16,777,216**; § 1a frozen block clock
 6. [`docs/GAME-DESIGN.md`](./GAME-DESIGN.md) + [`docs/WORLD-3D-ENVIRONMENT.md`](./WORLD-3D-ENVIRONMENT.md) — zones, NPCs, the ledger board
 7. [`docs/GODOT.md`](./GODOT.md) §4–5 — bridge method table (`u4.1` now; U5 adds `ens*`), MockChain (§5a), canvas focus (§5b)
@@ -109,8 +109,10 @@ Not: a wallet UI, DeFi protocol, Bloxchain fork, mainnet, Tactical-AI, GameLab m
 10. [`docs/PRIVY.md`](./PRIVY.md) — session signer, action pin, Priority Passkey exception
 11. [`docs/SECURITY-AND-KEYS.md`](./SECURITY-AND-KEYS.md) — registrar key is a bank key
 12. [`docs/REFLECTION.md`](./REFLECTION.md) — kill log + principal decisions
-13. Craft lessons (do not re-author) — especially the U4+ scrub:
+13. Craft lessons (do not re-author) — U4+ scrub + ENG-0007:
     https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/lab-gate-before-product-unit.md  
+    https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/app-resolve-is-not-registry-ownership.md  
+    https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/pin-the-resolver-that-walks-your-hierarchy.md  
     https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/pin-delegated-signer-to-allowed-payload.md  
     https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/headless-cannot-prove-user-held-credential.md  
     https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/colliders-that-block-must-not-listen.md  
@@ -427,11 +429,10 @@ Kickoff: [`docs/KICKOFF-U5.md`](./KICKOFF-U5.md). Design: [`docs/ENS.md`](./ENS.
 
 **U4+ / G5b met 2026-09-07** — this is the open mission.
 
-**Gate before code:** GameLab ENG-2026-0007 is **partial** ([pre-U5 closeout](./progress/2026-09-07-pre-u5-closeout.md)):
-viem resolve on Sepolia works; Universal Resolver answers `branchzero.eth` → `0xc4d7…`; **ENSv2**
-`ETHRegistry` owner is still zero and workspace `ENS_REGISTRAR_PK` was empty. Mainnet `branchzero.eth`
-is brand-only (separate wallet). U5 may scaffold `/ens/*` + resolve; **do not claim G6 mint** until
-`dig-parent` shows a non-zero ENSv2 owner and a lab mint of `test.branchzero.eth` resolves. See GameLab
+**Lab gate:** GameLab ENG-2026-0007 is **yes** ([K6 note](./progress/2026-09-07-k6-yes.md)). Parent `branchzero`
+owned on ENSv2; UserRegistry `0x64ED…073c`; `test.branchzero.eth` resolves via UR **`0x85ed…b92cf`**.
+Rewrite into `/ens/*` + Name Desk; pin that resolver; map claim `setAddr` to the player's AccountBlox.
+Mainnet `branchzero.eth` remains brand-only. See GameLab
 `work/ENG-2026-0007-ensv2-subname-mint/handoff.md`.
 
 ### Freedom envelope

@@ -58,7 +58,7 @@ The staff names make the roster **auditable by name**: the manager's office boar
 
 1. **Parent name `branchzero.eth`**
    - **Mainnet:** owned by the bank in a **separate** wallet (brand / prize surface only — never in Teller Desk env).
-   - **Sepolia ENSv2 (product):** as of 2026-09-07 dig, Universal Resolver already answers `branchzero.eth` → `0xc4d7…49277`, but ENSv2 `ETHRegistry.ownerOf` is still **zero** and `ETHRegistrar.isAvailable("branchzero")` is **true**. Product mint requires a real ENSv2 commit/reveal with `ENS_REGISTRAR_PK` (testnet throwaway + MockUSDC) until dig shows non-zero owner. See GameLab ENG-2026-0007 `dig-parent.mjs`.
+   - **Sepolia ENSv2 (product):** **ready** (ENG-2026-0007 **yes**, 2026-09-07). `ETHRegistrar.isAvailable("branchzero")=false`; `ETHRegistry.ownerOf` = registrar `0xc4d7…9277`; Customers UserRegistry `0x64ED…073c`; resolver proxy `0xf8b95…6C72`. Lab minted `test.branchzero.eth` and resolved via ENSv2 Universal Resolver **`0x85edf8b6b7d4211e2b07aa687506b746357b92cf`**. The legacy Universal Resolver proxy `0xeEeE…EeEe` still follows a mirror path and returns **null** for native children — product must **pin UR V2**. See GameLab ENG-0007 handoff.
 2. **Deploy a `UserRegistry`** for customers (and one for staff) through the ENSv2 `VerifiableFactory` per the contract-developer tutorial; deploy a `PermissionedResolver` (UUPS proxy) via the same factory or use the parent's resolver initially.
 3. **Point the parent at the subregistry**: `ETHRegistry.setSubregistry(tokenId(branchzero), customersRegistry)` — we hold `ROLE_SET_SUBREGISTRY` from registration. Same for `staff` as a subname whose subregistry is the staff registry.
 4. **Registrar**: the tutorial's `SimpleRegistrar` pattern (availability, `register(label, owner, registry, resolver, roleBitmap, expiry)`). For the hackathon our Teller Desk holds the registrar key and mints on behalf of players (free, rate-limited per Privy user). The player becomes the **owner** of the ERC-1155 subname token.
@@ -80,9 +80,13 @@ import { sepolia } from 'viem/chains';
 import { getEnsAddress, getEnsName, getEnsText } from 'viem/actions';
 
 const client = createPublicClient({ chain: sepolia, transport: http(env.SEPOLIA_RPC_URL) });
-const to = await getEnsAddress(client, { name: normalize('bob.branchzero.eth') });
-// Universal Resolver proxy address is the same on mainnet and Sepolia; viem ships it, no config needed.
-// For Arc wing: getEnsAddress(client, { name, coinType: 0x80000000 | 5042002 })  (VERIFY viem coinType param)
+const ENSV2_UNIVERSAL_RESOLVER = '0x85edf8b6b7d4211e2b07aa687506b746357b92cf' as const;
+const to = await getEnsAddress(client, {
+  name: normalize('bob.branchzero.eth'),
+  universalResolverAddress: ENSV2_UNIVERSAL_RESOLVER,
+});
+// Pin UR V2 — viem default / legacy proxy 0xeEeE… returns null for native ENSv2 children under branchzero (ENG-0007).
+// For Arc wing: getEnsAddress(client, { name, coinType: 0x80000000 | 5042002, universalResolverAddress: ENSV2_UNIVERSAL_RESOLVER })
 ```
 
 If `to` is `null` the Teller says "No such customer." If the whitelist for `ERC20_TRANSFER_SELECTOR` is a list of *specific payees*, the bank additionally checks the resolved address is on it; otherwise the payment goes through the normal Lane A path.

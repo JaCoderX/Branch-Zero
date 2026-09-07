@@ -228,7 +228,7 @@ sequenceDiagram
 
 ### 3.4 ENS pay-by-name (T1)
 
-`resolve_name("bob.branchzero.eth")` → viem `getEnsAddress({ name, universalResolverAddress? })` on Sepolia (Universal Resolver default works for ENSv2 beta) → address → Lane A. Display name of a payee: viem `getEnsName` (reverse) with forward check enforced on-chain by ENSv2's Universal Resolver.
+`resolve_name("bob.branchzero.eth")` → viem `getEnsAddress({ name, universalResolverAddress: '0x85ed…b92cf' })` on Sepolia (**pin ENSv2 UR V2** from ENG-0007; default/legacy proxy returns null for native children) → address → Lane A. Display name of a payee: viem `getEnsName` (reverse) with forward check enforced on-chain by ENSv2's Universal Resolver.
 
 ### 3.5 Wing switch (T2)
 
