@@ -24,6 +24,7 @@ Do not commit secrets, `.env`, or large binaries.
 | [2026-09-07 — U7 early viz (Stage 1)](./2026-09-07-u7-early-viz.md) | U7 (art) | early viz DoD | met — kits + lighting + bake; `.pck` 0.14 → 0.97 MB |
 | [2026-09-07 — U7 viz Stage 2](./2026-09-07-u7-viz-stage2.md) | U7 (art) | Stage 2 DoD | met — hero polish; worst 188 draws / 130k prims; `.pck` 1.25 MB |
 | [2026-09-07 — U7 viz Stage 3](./2026-09-07-u7-viz-stage3.md) | U7 (art) | Stage 3 DoD | met — adult-ish CC0 characters (Kenney Blocky, one atlas material); worst 242 draws / 126k prims / 34 mats; `.pck` 1.21 MB; Quaternius ruled out (QAL, not CC0) |
+| [2026-09-07 — U7 viz Stage 4](./2026-09-07-u7-viz-stage4.md) | U7 (art) | Stage 4 DoD | met — architecture shell (pilasters, frieze, framed panels, coffers, elevator surround) baked at +0 draws / +0 materials; worst 242 draws on the prior views (284 on a new one) / 143k prims / 34 mats; `.pck` 1.22 MB; no new assets; MultiMesh not justified |
 | [KICKOFF-U6](../KICKOFF-U6.md) | U6 | G7 | **paste into cold agent** — Arc + manager; ENG-0006 yes |
 | [KICKOFF-U5](../KICKOFF-U5.md) | U5 | G6 | historical — G6 met |
 

@@ -10,10 +10,15 @@ extends SceneTree
 ## every StaticBody3D under the interior is layer 1 / mask 0, the six zone volumes are where U3 put them, and
 ## nothing solid sits in the manager door, the vault opening or on the escort waypoints. Stage 3 adds the
 ## characters: clips present, U3 capsules unchanged, head height, one shared atlas material, Petra's skin entry.
+## Stage 4 adds the shell: the wall / ceiling modules exist and all went into the static batch, the skylight glass
+## and NamesBoardQuad stayed out of it, and the pendant count is still eight shadowless omnis (a ninth is unlit
+## on the merged mesh under Compatibility).
 
 const MAX_MATERIALS := 40
 const MAX_TRIS := 400_000
 const MAX_SURFACES := 350
+const MAX_OMNIS := 8          # Compatibility lights ≤ 8 omnis per mesh and the merged interior sees them all
+const MIN_SHELL_PIECES := 300  # Stage 4 built 415 wall / ceiling modules; fewer means a build path was lost
 
 var failures := 0
 
@@ -149,6 +154,49 @@ func _run() -> void:
 		_ok("npc.gd SKINS has an explicit registrar entry (%s) for U5" % skins["registrar"])
 	else:
 		_fail("npc.gd SKINS has no registrar entry")
+
+	# architecture shell (U7 viz Stage 4): mesh-only modules that must all have merged into the batch
+	print("shell (Stage 4)")
+	var interior4: Node3D = main.get_node("BankInterior")
+	var pieces := int(interior4.get_meta("shell_pieces", 0))
+	var loose: PackedStringArray = []
+	for n in _all(interior4):
+		if n is MeshInstance3D and n != batch:
+			loose.append(n.name)
+	print("  %d shell modules built · %d mesh instances left outside the batch (%s)" % [pieces, loose.size(), ", ".join(loose)])
+	if pieces >= MIN_SHELL_PIECES:
+		_ok("wall / ceiling shell present (%d modules ≥ %d)" % [pieces, MIN_SHELL_PIECES])
+	else:
+		_fail("wall / ceiling shell thin or missing: %d modules < %d" % [pieces, MIN_SHELL_PIECES])
+	if baked >= pieces + 250:
+		_ok("static batch took the shell (%d surfaces merged, Stage 3 had 282)" % baked)
+	else:
+		_fail("static batch merged only %d surfaces for %d shell modules — something stayed unbatched or stopped building" % [baked, pieces])
+	var sky := interior4.get_node_or_null("SkyGlass") as MeshInstance3D
+	var names_quad := interior4.get_node_or_null("NamesBoardQuad") as MeshInstance3D
+	if sky != null and sky.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF and sky.has_meta("no_batch"):
+		_ok("skylight glass is its own node, no_batch, casts no shadow")
+	else:
+		_fail("skylight glass was batched, lost no_batch, or casts a shadow")
+	if names_quad != null and names_quad.has_meta("no_batch"):
+		_ok("NamesBoardQuad is still its own no_batch node (U5 swaps its material)")
+	else:
+		_fail("NamesBoardQuad missing or batched")
+	if loose.size() <= 3:
+		_ok("only %d mesh instance(s) outside the batch under BankInterior (batch + glass + quad)" % loose.size())
+	else:
+		_fail("%d mesh instances outside the batch under BankInterior: %s" % [loose.size(), ", ".join(loose)])
+	var omnis := 0
+	var omni_shadow := 0
+	for n in _all(main):
+		if n is OmniLight3D:
+			omnis += 1
+			if (n as OmniLight3D).shadow_enabled:
+				omni_shadow += 1
+	if omnis <= MAX_OMNIS and omni_shadow == 0:
+		_ok("%d shadowless omnis ≤ %d (no ninth on the merged interior)" % [omnis, MAX_OMNIS])
+	else:
+		_fail("%d omnis (%d shadowed) — budget is %d shadowless" % [omnis, omni_shadow, MAX_OMNIS])
 
 	print("freeze rules")
 	var bad_layers: PackedStringArray = []

@@ -4,7 +4,7 @@ extends Node
 ##   godot --path apps/game tests/viz_shots.tscn -- <out_dir>
 ##
 ## Runs the main scene as a child, walks the camera through the DoD views (lobby → counter → vault, manager,
-## account opening, entrance, Stage 3 character two-shots), files a mock wire so the vault door shows PENDING, waits for the mock clock so it
+## account opening, entrance, Stage 3 character two-shots, Stage 4 shell views), files a mock wire so the vault door shows PENDING, waits for the mock clock so it
 ## shows OPEN, releases it (DONE), files and recalls another (CANCELLED), and saves a PNG per view into <out_dir>
 ## with the renderer's draw-call / primitive counters printed for each. Quits when done. Tester aid only; the
 ## product path is the walk.
@@ -25,6 +25,10 @@ const VIEWS := [
 	["18_ruth_close", Vector3(8.4, 0.1, -6.0), -0.85],
 	["19_okafor_close", Vector3(-6.6, 0.1, -7.6), 0.0],
 	["20_ines_close", Vector3(-7.6, 0.1, 9.0), 0.0],
+	# Stage 4 shell views: the antechamber's west end (north wall bays, bench, magazine rack) and the lobby looking west
+	# along the partition's lobby face towards the counters. Both keep the spring arm (4.6 m behind) clear of walls.
+	["21_vault_west", Vector3(10.5, 0.1, -9.6), PI / 2],
+	["22_lobby_west", Vector3(5.5, 0.1, -2.5), PI / 2],
 ]
 
 var out_dir := ""
