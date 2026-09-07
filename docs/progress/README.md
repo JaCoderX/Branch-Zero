@@ -15,6 +15,8 @@ Do not commit secrets, `.env`, or large binaries.
 | [2026-09-06 — U3 Bank shell](./2026-09-06-u3-bank-shell.md) | U3 | G4 | met — greybox + 5 NPCs on the bridge; door clock from `releaseTime`; 85 error lines; human OTP walk pending |
 | [2026-09-06 — U3 review + lessons](./2026-09-06-u3-review-lessons.md) | — | — | CC review; four web-Godot lessons scrubbed |
 | [2026-09-07 — U4 MVP freeze](./2026-09-07-u4-mvp-freeze.md) | U4 | G5 | met — canvas focus, `RPC`/`AUTH`/`NOT_CONFIGURED`, SSE reconnect + `desk.link`, first load measured; real 30 s clip owed by the human walk |
-| [KICKOFF-U5](../KICKOFF-U5.md) | U5 | G6 | paste into new cold agent |
+| [2026-09-07 — U4+ Priority kickoff](./2026-09-07-u4-plus-kickoff.md) | U4+ | G5b | docs only — labs 0012/0011/0013 consumed; 0013 re-smoke aborted (no policy id) |
+| [KICKOFF-U4-plus](../KICKOFF-U4-plus.md) | U4+ | G5b | **paste into new cold agent** |
+| [KICKOFF-U5](../KICKOFF-U5.md) | U5 | G6 | after U4+ |
 
 The newest note carries the findings that will otherwise cost the next agent an afternoon. Read it first.

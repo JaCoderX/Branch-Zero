@@ -7,7 +7,7 @@ Start with **[PLAN.md](./PLAN.md)**. Read order for a new contributor:
 | # | Doc | Read when |
 |---|-----|-----------|
 | 1 | [PLAN.md](./PLAN.md) | Always first — scope, 10-day schedule, gates, kill tests, submission |
-| 1b | [HANDOFF-CC.md](./HANDOFF-CC.md) | Cold agent (Claude Code) — current mission (**U2**), constraints, absolute/GitHub links |
+| 1b | [HANDOFF-CC.md](./HANDOFF-CC.md) | Cold agent (Claude Code) — current mission (**U4+ Priority / G5b**), constraints, absolute/GitHub links |
 | 1c | [DEV-LOOP.md](./DEV-LOOP.md) | OBJ / ENG / U0–U7; when to lab vs when to build here |
 | 1d | [REMOTE-EVM.md](./REMOTE-EVM.md) | Local chain `1337` — default for development |
 | 2 | [GAME-DESIGN.md](./GAME-DESIGN.md) | Before touching gameplay, dialogue or HUD |

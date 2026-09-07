@@ -11,7 +11,7 @@ Related: [PLAN.md](./PLAN.md) · [NPCS.md](./NPCS.md) · [WORLD-3D-ENVIRONMENT.m
 | Pillar | Meaning | Test |
 |--------|---------|------|
 | **Process is the puzzle** | The bank's procedure *is* the on-chain workflow. There are no fake mini-games; every friction the player feels is a real security property. | If a step could be skipped without changing chain state, cut it. |
-| **No pop-ups, ever** | After the one-time delegation at Account Opening, the player never sees a wallet modal. Signing is diegetic: the teller stamps a slip. | Count modals in the demo video. Target: 1 (delegation). |
+| **No pop-ups, ever** | After the one-time delegation at Account Opening, routine pays and Ruth’s timed release never show a wallet modal. **U4+ exception:** Priority at Okafor’s desk is a Passkey / “hand scan” — that is the teaching cost of skipping the clock. | Count modals in the demo video. Target: 1 (delegation) + 0 or 1 Passkey only if the player chooses Priority. |
 | **Honest theatre** | Everything the player sees is read from chain (statuses, countdowns, balances, names). If chain says PENDING the board says PENDING. | No local timers for release time; poll `getTransaction`. |
 | **Everyday bank language first** | NPCs speak like bank staff. Protocol terms only appear in the optional "Ask why" dialogue branch and in the receipt's fine print. | On-screen copy uses bank words; technical terms stay in "Ask why" / fine print. |
 | **Small, warm, legible** | One building, ~8 NPCs, 3D but stylised low-poly. Readability over fidelity; web single-thread budget. | 60 fps on an integrated GPU in Chrome. |
@@ -20,7 +20,7 @@ Related: [PLAN.md](./PLAN.md) · [NPCS.md](./NPCS.md) · [WORLD-3D-ENVIRONMENT.m
 
 ## 2. Player fantasy and framing
 
-You are a new customer at **Branch Zero**, the first branch of a bank that runs on public rails. The bank is staffed by people who take rules seriously and explain them cheerfully. You open an account, make a payment, get bounced to the vault for a big wire, watch the vault timer, get the manager's stamp, and leave with a receipt whose fine print is a block explorer link.
+You are a new customer at **Branch Zero**, the first branch of a bank that runs on public rails. The bank is staffed by people who take rules seriously and explain them cheerfully. You open an account, make a payment, get bounced to the vault for a big wire, watch the vault timer, release it at Ruth’s window when the clock is done — or skip cooling at Mr. Okafor’s desk with a hand scan — and leave with a receipt whose fine print is a block explorer link.
 
 Tone reference: *Papers, Please* procedural satisfaction + *Animal Crossing* warmth + a hint of *Wes Anderson* symmetry in the set design.
 
@@ -59,12 +59,13 @@ The loop is errand-driven, not level-driven. The tutorial is simply the first er
 | `OWNER_ROLE` | You, the customer | "Account holder" | Player's Privy wallet |
 | `BROADCASTER_ROLE` | **The Teller** (and their desk computer) | "Teller" | Teller Desk service hot wallet; executes `requestAndApproveExecution`, `approveTimeLockExecution` when signer-based |
 | `RECOVERY_ROLE` | **Security Officer** at the side door | "Security" | Recovery wallet; `transferOwnershipRequest` (stretch S2) |
-| Runtime role `BRANCH_MANAGER` (RuntimeRBAC) | **Branch Manager** in the glass office | "Manager sign-off" | `approveTimeLockExecution` / `cancelTimeLockExecution` permission on the wire selector |
+| Runtime role `BRANCH_MANAGER` (RuntimeRBAC) | **Branch Manager** in the glass office | "Priority / shredder" | U4+: `EXECUTE_META_APPROVE` + cancel — **not** timed vault stamp |
 | Meta-transaction (EIP-712 sign → broadcast) | **The slip**: you fill it, the teller stamps it | "Sign the slip" (automatic after delegation) | `generateUnsignedMetaTransactionForNew` → Privy session signer → `requestAndApproveExecution` |
 | `requestAndApproveExecution` (instant) | **Counter lane** | "Over-the-counter payment" | Lane A |
 | `executeWithTimeLock` (PENDING) | **Vault request**: the wire goes into the vault | "Scheduled wire" | Lane B step 1 |
 | `releaseTime` / timelock | **Vault door countdown** (big analog clock + LED) | "Cooling period" | Read from `getTransaction(txId)` |
-| `approveTimeLockExecution` | **Manager's stamp** (or your own at the vault window) | "Release the wire" | Lane B step 2 |
+| `approveTimeLockExecution` | **Ruth’s release** after the clock | "Release the wire" | Lane B wait path |
+| Owner-signed meta-approve + manager submit | **Okafor’s Priority** (bypass cooling; hand scan) | "Skip the cooling period" | U4+ / G5b |
 | `cancelTimeLockExecution` | **Shredder** at the manager's desk | "Recall the wire" | Lane B alt |
 | Target whitelist per selector | **Approved payee list** on the teller's wall | "This branch only pays approved counterparties" | Guard config batch; `getFunctionWhitelistTargets` |
 | Function schema / operation type | **Service menu** on the counter sign | "Services offered at this counter" | `getSupportedFunctions`, `getFunctionSchema` |
@@ -106,10 +107,10 @@ Failure UX: if delegation is refused, the clerk says "No problem — tellers wil
 1. Amount > instant limit → Teller: "That's above what I can do here. It goes through the vault — there's a cooling period, then it needs a release."
 2. Teller walks you (waypoint) to the Vault antechamber. `executeWithTimeLock` fires; the vault door clock starts from `releaseTime`.
 3. Waiting is a design moment: the antechamber has a bench, a magazine ("Why do banks wait?" → optional lore about timelocks), and the Ledger board is visible.
-4. On release: door light turns green. Two ways to finish:
-   - Walk to the Vault window: "Release my wire" (owner approval).
-   - Or ask the Branch Manager (if role T3 shipped) to stamp it.
-5. Alternative: at any time before release, the Manager's shredder cancels the wire.
+4. Two ways to finish, plus recall:
+   - **Wait:** when the door light turns green, Ruth at the vault window — owner timed `approveTimeLockExecution` after `releaseTime` (silent).
+   - **Priority:** Mr. Okafor while still cooling — Passkey / hand scan, then meta-approve bypass. He is not a second timed stamp.
+   - **Recall:** shredder while PENDING (owner or manager).
 
 ### 5.4 Errand 3 — Claim your name (ENS, T1)
 

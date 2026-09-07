@@ -1,7 +1,7 @@
 ---
 title: Development loop — craft, lab, product
 created: 2026-09-06
-updated: 2026-09-06
+updated: 2026-09-07
 ---
 
 # Development loop
@@ -18,7 +18,7 @@ Related: [HANDOFF-CC.md](./HANDOFF-CC.md) · [PLAN.md](./PLAN.md) · [REMOTE-EVM
 OBJ-2026-0004 (GameDevOS)     what we intend to still know after the event
         │
         ▼
-ENG-2026-0003…0008 (GameLab)  one falsifiable question each (kill tests)
+ENG-2026-0003…0013 (GameLab)  one falsifiable question each (kill tests)
         │  handoff = rewrite, never merge
         ▼
 U0–U7 (this repo)             construction that ships
@@ -59,8 +59,9 @@ Ordered so that after U2 we can stop and still demo a coherent bank-on-a-chain (
 | **U2 Timelock lane** | Wire → PENDING → approve/cancel; SSE; `releaseTime` from chain | G3 | No — **met 2026-09-06** |
 | **U3 Bank shell** | Greybox zones, NPCs wired to bridge, ledger board | G4 | No — **met 2026-09-06** (mock walk + real-bridge desk calls; human OTP walk pending) |
 | **U4 MVP freeze** | Error UX, reconnect, canvas focus, rough capture | G5 | No — **met 2026-09-07** (canvas re-focus, `RPC`/`AUTH`/`NOT_CONFIGURED` paths, SSE reconnect + `desk.link`, first load measured; real 30 s capture owed by the human walk) |
-| **U5 ENS** | Subname + pay-by-name | G6 | ENG-0007 — **next** |
-| **U6 Arc + manager role** | Elevator wing + runtime role (+ Express only if ENG-0012 + ENG-0011 hand off yes; 0010 = dual-control baseline only) | G7 | ENG-0006; Express: **ENG-0012** (meta bypass) + ENG-0011 (step-up); 0010 timed dual-control |
+| **U4+ Priority release** | Ruth waits the clock; Okafor meta-bypass + Passkey before `releaseTime` | G5b | ENG-0012 + 0011 + 0013 — **next** (0010 is timed dual-control only, not this beat) |
+| **U5 ENS** | Subname + pay-by-name | G6 | ENG-0007 — after U4+ |
+| **U6 Arc + manager role** | Elevator wing + runtime role (manager already in U4+ as Priority submitter) | G7 | ENG-0006 |
 | **U7 Feel / ship** | Art, video, submission | G8–G10 | ENG-0008 only if S1 |
 
 Each unit ends with: commit, a line in `docs/progress/`, kill/decision log if anything changed.

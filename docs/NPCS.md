@@ -13,8 +13,8 @@ Related: [GAME-DESIGN.md](./GAME-DESIGN.md) § 4 mapping · [BLOXCHAIN-INTEGRATI
 | **Greeter** (Mo) | Lobby | none | account existence, pending count, achievements | — | MVP |
 | **Account Clerk** (Ines) | Account Opening | deployer wallet (bank) | Privy user, `owner()`, `initialized()` | deploy `AccountBlox`, guard config batch, faucet top-up | MVP |
 | **Teller A** (Dev) / **Teller B** (Ama) | Counters | `BROADCASTER_ROLE` (Teller Desk hot wallet) | balance, whitelist, `getFunctionSchema`, ENS resolve | Lane A `requestAndApproveExecution`; Lane B `executeWithTimeLock` request | MVP |
-| **Vault Keeper** (Ruth) | Vault antechamber | none (owner acts) | `getPendingTransactions`, `getTransaction` | owner `approveTimeLockExecution` (via signed meta-tx or direct) | MVP |
-| **Branch Manager** (Mr. Okafor) | Manager's office | runtime role `BRANCH_MANAGER` | pending list, role membership | `approveTimeLockExecution`, `cancelTimeLockExecution` | T3 (MVP: lore + owner cancel) |
+| **Vault Keeper** (Ruth) | Vault antechamber | none (owner acts) | `getPendingTransactions`, `getTransaction` | owner timed `approveTimeLockExecution` **after** `releaseTime` | MVP; U4+ wait path |
+| **Branch Manager** (Mr. Okafor) | Manager's office | runtime role `BRANCH_MANAGER` | pending list, role membership | Priority: `EXECUTE_META_APPROVE` (owner-signed) **before** clock; recall `cancelTimeLockExecution`. **Not** post-clock timed stamp | U4+ (today’s `approve as: "manager"` is the pre-U4+ stamp — change it) |
 | **Registrar** (Petra) | Name Desk | bank's ENSv2 registrar key | availability, records | mint subname, `setText`, EAC delegation | T1 |
 | **Dealer** (Kenji) | FX Desk | none | Uniswap quote | guarded swap | S1 |
 | **Security Officer** (Sgt. Bale) | Side door | `RECOVERY_ROLE` | `getRecovery()` | `transferOwnershipRequest` | S2 (MVP: lore) |
@@ -167,7 +167,7 @@ Lane routing note: the **instant limit is a branch policy** enforced by the Tell
 
 ### 4.4 Vault Keeper — Ruth (Vault antechamber)
 
-Purpose: show pending wires, countdown, owner release.
+Purpose: show pending wires, countdown, **wait-path** owner release after `releaseTime`. **U4+:** she is not the bypass. “Bother the manager” = recall or Priority, not a second timed stamp. Replace `why_cooling` “nobody here can shorten it” — Okafor’s Priority can, at the cost of a hand scan.
 
 ```text
 [pending > 0, before release]
@@ -187,21 +187,21 @@ Ruth: Quiet day. Nothing cooling.
 
 ### 4.5 Branch Manager — Mr. Okafor (Manager's office)
 
-Purpose: approvals and cancellations with a distinct role; explains limits.
+Purpose: **U4+ Priority** (bypass cooling) and recall. Today’s `approve as: "manager"` still stamps timed approve — that is the bug U4+ removes. He must not be a second Ruth.
 
 ```text
 [idle]
 Okafor: Come in. Something in the vault needs a decision?
-  > Approve a wire     → list pending (released only) → action: manager_approve(txId)
+  > Priority release   → list pending (still cooling) → action: priority / approve as: "priority"
   > Recall a wire      → list pending → action: manager_cancel(txId)
   > Explain the limits → limits_poster
   > Ask why            → why_manager
 
 [why_manager]
-Okafor: I hold a runtime role — BRANCH_MANAGER — with permission to approve or cancel time-locked executions on this branch's transfer function. I cannot start a payment for you; I can only decide on one you started.
+Okafor: I hold BRANCH_MANAGER. I cannot start a payment. I cannot open the vault after the clock — that is Ruth. I can shred a wire, or stamp a Priority release before the clock if you bring a hand scan.
 
-[T3 not shipped]
-Okafor: (lore only) Today I'm just decoration — go release it yourself at the vault window.
+[pre-U4+ leftover]
+Okafor: (do not ship) list pending (released only) → manager_approve timed stamp.
 ```
 
 ### 4.6 Registrar — Petra (Name Desk) — T1

@@ -3,12 +3,13 @@
 Paste into a **new** Claude Code / Cursor agent session. Prefer **Fable 5.1**. Escalate to Opus only if stuck on
 ENSv2 Sepolia contract wiring after one honest attempt.
 
-**Before this unit:** GameLab **ENG-2026-0007** (ENSv2 subnames on Sepolia) must have a `handoff.md` with a yes. If it
-does not, the first task is to run that kill test — in the lab, not here. **Parallel labs (do not wait on them; do
-not edit them):** ENG-2026-0010 (Express dual-control) and ENG-2026-0011 (Privy step-up) — Express stays out of scope.
+**Before this unit:** U4+ Priority release (G5b) must be **met**. Kickoff for that unit: [`docs/KICKOFF-U4-plus.md`](./KICKOFF-U4-plus.md). GameLab **ENG-2026-0007** (ENSv2 subnames on Sepolia) must have a `handoff.md` with a yes. If it
+does not, the first task is to run that kill test — in the lab, not here. **Do not edit GameLab ENG-0010–0013.**
+Priority / Passkey / meta-bypass are **out of U5** (already a prior unit).
 
-The MVP is frozen (U4 / G5, 2026-09-07). Nothing in U5 may regress it: one wallet modal, canvas focus after any
-overlay, `desk.link` reconnect, NPC lines for every refusal, `.pck` + `.wasm` sizes as measured. Run
+The MVP is frozen (U4 / G5, 2026-09-07) plus U4+ if G5b is met. Nothing in U5 may regress: one Account Opening
+modal, Priority Passkey only on Okafor’s bypass, canvas focus after any overlay, `desk.link` reconnect, NPC lines
+for every refusal, `.pck` + `.wasm` sizes as measured. Run
 `godot --headless --path apps/game -s tests/run_checks.gd`, `npm run typecheck` and the two kill-test scripts before
 you call G6.
 
@@ -19,7 +20,7 @@ MISSION: Branch Zero construction unit U5 — ENS (gate G6) ONLY.
 Freedom on HOW. No freedom on constraints.
 
 BEFORE CODE — read in order:
-1. https://github.com/JaCoderX/Branch-Zero/blob/main/docs/HANDOFF-CC.md   (§5e is the mission)
+1. https://github.com/JaCoderX/Branch-Zero/blob/main/docs/HANDOFF-CC.md   (§5f is the mission; U4+ must already be met)
 2. https://github.com/JaCoderX/Branch-Zero/blob/main/docs/progress/2026-09-07-u4-mvp-freeze.md
 3. https://github.com/JaCoderX/Branch-Zero/blob/main/docs/ENS.md
 4. https://github.com/JaCoderX/Branch-Zero/blob/main/docs/DEV-LOOP.md   (chain policy: ENS lives on Sepolia)
@@ -59,9 +60,9 @@ SEQUENCE:
 4. Kill tests: mint → resolve → pay-by-name on 1337; a taken name is refused with Petra's line.
 5. Progress note + REFLECTION; HANDOFF → U6 + docs/KICKOFF-U6.md.
 
-DoD = HANDOFF-CC §5e (G6).
+DoD = HANDOFF-CC §5f (G6).
 
-OUT OF SCOPE: Arc (U6), Express desk / Privy step-up, Uniswap, art/audio, greybox redesign, wiping Remote EVM,
+OUT OF SCOPE: Arc (U6), Priority / Passkey / meta-bypass (U4+), Uniswap, art/audio, greybox redesign, wiping Remote EVM,
 editing GameLab ENG folders, ENS on mainnet.
 
 Stop when G6 met or a named blocker with fallback chosen (cut order: ENS EAC before ENS mint — see DEV-LOOP §5).

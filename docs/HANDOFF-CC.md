@@ -6,7 +6,7 @@ created: 2026-09-06
 updated: 2026-09-07
 product: Branch-Zero
 objective: OBJ-2026-0004
-first_mission: U5 ENS (G6)
+first_mission: U4+ Priority release (G5b)
 prior_mission: U4 MVP freeze (G5) — met 2026-09-07
 ---
 
@@ -14,8 +14,9 @@ prior_mission: U4 MVP freeze (G5) — met 2026-09-07
 
 You are a **cold agent** unless the human says you are continuing a prior session. Prefer reading this file over chat memory. You have **freedom on how**. You do **not** have freedom on constraints, scope, or protocol semantics.
 
-**Current mission: U5 ENS (G6)** — Petra's Name Desk: subnames under the bank's parent on Sepolia, pay-by-name at
-the counter. Kickoff: [`docs/KICKOFF-U5.md`](./KICKOFF-U5.md). Do not start U6–U7. Do not regress the freeze.
+**Current mission: U4+ Priority release (G5b)** — a third desk workflow: Ruth waits the clock; Okafor bypasses
+it only with the player's Passkey (hand scan) + meta-approve. Kickoff: [`docs/KICKOFF-U4-plus.md`](./KICKOFF-U4-plus.md).
+Do not start U5–U7. Do not regress the U4 freeze except the deliberate Priority Passkey.
 
 > **U4 met 2026-09-07 — the MVP is frozen.** Read
 > [`docs/progress/2026-09-07-u4-mvp-freeze.md`](./progress/2026-09-07-u4-mvp-freeze.md) **first**. What it fixed
@@ -72,11 +73,12 @@ Not: a wallet UI, DeFi protocol, Bloxchain fork, mainnet, Tactical-AI, GameLab m
 ## 2. Read order (before code)
 
 1. **This file**
-2. [`docs/DEV-LOOP.md`](./DEV-LOOP.md) — U5 row
+2. [`docs/DEV-LOOP.md`](./DEV-LOOP.md) — U4+ row
 3. [`docs/progress/2026-09-07-u4-mvp-freeze.md`](./progress/2026-09-07-u4-mvp-freeze.md) — newest findings (canvas
    focus, reconnect, tsx watch); then [`…u3-bank-shell.md`](./progress/2026-09-06-u3-bank-shell.md) for the web-Godot
    findings and [`…u2-timelock-lane.md`](./progress/2026-09-06-u2-timelock-lane.md) for the two chain findings
-3a. [`docs/ENS.md`](./ENS.md) — the U5 design
+3a. GameLab ENG-0012 / 0011 / 0013 `handoff.md` (behaviour). [`docs/NPCS.md`](./NPCS.md) §4.4–4.5. Do **not** read
+    [`docs/ENS.md`](./ENS.md) as this mission.
 4. [`docs/REMOTE-EVM.md`](./REMOTE-EVM.md) — **do not wipe**; gasLimit **16,777,216**; § 1a frozen block clock
 5. [`docs/GAME-DESIGN.md`](./GAME-DESIGN.md) + [`docs/WORLD-3D-ENVIRONMENT.md`](./WORLD-3D-ENVIRONMENT.md) — zones, NPCs, the ledger board
 6. [`docs/GODOT.md`](./GODOT.md) §4–5 — bridge method table (now `u4.0`, §4a), MockChain and tester keys (§5a), canvas focus (§5b), the background-tab rules
@@ -261,7 +263,7 @@ Make the bank walkable and make the desks the operations. Everything the lanes n
 
 ## 5d. Mission U4 — MVP freeze (G5) — **MET 2026-09-07**
 
-Kept as the record of what G5 required. The next mission is §5e.
+Kept as the record of what G5 required. The next mission is **§5e U4+** (then §5f ENS).
 
 Nothing new to build on the chain or in the bank's shape; U4 makes what exists survive a judge's laptop. Kickoff:
 [`docs/KICKOFF-U4.md`](./KICKOFF-U4.md).
@@ -303,22 +305,82 @@ Promote only after lab handoffs + principal OK (likely U6+).
       shell entry 2.6 MB / 0.75 gzip / 0.53 brotli. Release template confirmed; the win is transfer compression at the host
 - [x] 30-second capture: mock clip committed (`docs/progress/captures/`); the real-bridge clip is owed with the human walk
 - [x] **Canvas re-focus** verified in the shell: pill → `body`; click bank → `canvas`; *hide* → `canvas`; `F6` + `E` drive Godot
-- [x] Progress note + REFLECTION; HANDOFF advanced to U5
+- [x] Progress note + REFLECTION; HANDOFF had advanced to U5; **U4+ inserted 2026-09-07** (this file §5e)
 
 ### Suggested sequence
 
 1. Canvas re-focus hotfix if playtest is blocked; desk `/healthz` says `U2`.
 2. Confirm / complete human OTP walk evidence on the real bridge; coach + record.
 3. Error UX + reconnect drills; measure load; 30 s capture (tab visible).
-4. Progress note + REFLECTION; HANDOFF → U5.
+4. Progress note + REFLECTION; HANDOFF → U5 (later inserted U4+ before ENS).
 
 ---
 
-## 5e. Mission U5 — ENS (G6)
+## 5e. Mission U4+ — Priority release (G5b)
+
+A **third** workflow, not a rename of Ruth’s timed vault release and **not** ENG-0010’s short clock.
+
+| Path | Who | When | Credential |
+|------|-----|------|------------|
+| Wait | **Ruth** | After `releaseTime` | Silent session signer — today’s owner `approveTimeLockExecution` |
+| Priority | **Mr. Okafor** | Before `releaseTime` | Owner Passkey / in-game “hand scan”; manager submits meta-approve |
+| Recall | Owner and/or manager | While PENDING | Unchanged |
+
+**Okafor must stop being a second Ruth.** Remove his post-clock vault stamp. Copy: “Skip the cooling period — hand scan required.” Prefer **Priority release** / **Manager’s bypass** over “Express.”
+
+Kickoff: [`docs/KICKOFF-U4-plus.md`](./KICKOFF-U4-plus.md). Labs (do not edit):
+[ENG-0012](https://github.com/D9-Studio/GameLab/blob/main/work/ENG-2026-0012-express-meta-approve-bypass/handoff.md) (chain yes),
+[ENG-0011](https://github.com/D9-Studio/GameLab/blob/main/work/ENG-2026-0011-privy-step-up/handoff.md) (two signers),
+[ENG-0013](https://github.com/D9-Studio/GameLab/blob/main/work/ENG-2026-0013-privy-mfa-silent-vs-step-up/handoff.md) (Passkey; `promptMfa()` is not a 1-min cache). ENG-0010 stays timed dual-control only.
+
+**Grant split (product, not a copy of the 0012 clone):** the throwaway lab withheld owner timed-approve. This bank needs Ruth **and** Priority on the same account:
+
+- OWNER: Lane A `SIGN_META_REQUEST_AND_APPROVE` + `EXECUTE_TIME_DELAY_REQUEST` + `_CANCEL` + timed `_APPROVE` (Ruth) + `SIGN_META_APPROVE` (Priority payload)
+- `BRANCH_MANAGER`: `_CANCEL` (recall) + `EXECUTE_META_APPROVE` (submit). **Remove** `EXECUTE_TIME_DELAY_APPROVE` from the manager
+- Never one role with both `SIGN_META_APPROVE` and `EXECUTE_META_APPROVE` (`ConflictingMetaTxPermissions`)
+- Bump `ROLE_SET_VERSION` (currently 2). META bits are account-wide: any PENDING can bypass once granted. Vault-only mode (no META) stays the U2 invariant if you keep a hard switch.
+
+**UX:** overlay step-up only on Priority (`/priority` or `approve as: "priority"`). User signer, not Teller session signer. Silent Pay must stay silent after MFA enroll.
+
+### Freedom envelope
+
+- Route name and whether Godot uses `as: "priority"` vs a new action verb
+- Whether Passkey every time (`clear()` + `promptMfa()`, 0013 M2 — recommended for teaching) vs sign-only without `promptMfa()` (unmeasured)
+- How Okafor’s desk lists cooling vs ready wires (Priority vs refuse)
+
+### Out of scope
+
+- ENS (U5), Arc (U6), Uniswap, art/audio, greybox redesign
+- Restoring Okafor’s post-clock timed stamp
+- ENG-0010 short-clock desk; wiping Remote EVM; editing GameLab ENG folders
+- Lane A amount routing / policy rewrite; claiming dashboard MFA cache
+
+### Definition of Done (G5b)
+
+- [ ] Same account: Ruth early → `BeforeReleaseTime`; Okafor Priority early → `COMPLETED`; Ruth after clock → `COMPLETED`
+- [ ] Okafor has no post-clock timed stamp (grant + dialogue). Manager cannot file. Owner cannot submit their own meta-approve
+- [ ] Passkey / hand scan on Priority only; counter Pay silent after MFA enroll
+- [ ] `ROLE_SET_VERSION` bumped; Re-check provision upgrades existing players; no half-configured writes
+- [ ] NPCS.md §4.4–4.5 + `errors.json` + `run_checks.gd`; MockChain answers Priority (fake)
+- [ ] Freeze intact: one Account Opening modal; canvas focus after Passkey; `desk.link`; `RPC`/`AUTH`/`NOT_CONFIGURED`; `npm run typecheck`; both kill-test scripts green
+- [ ] Progress note + REFLECTION; HANDOFF advanced to U5 ([`docs/KICKOFF-U5.md`](./KICKOFF-U5.md))
+
+### Suggested sequence
+
+1. Grants + ROLE_SET bump + provision upgrade.
+2. Teller Priority path (user-sign meta, manager execute).
+3. Ruth wait-only; Okafor Priority + recall; copy + errors.
+4. Kill tests Y1–Y7 + freeze; progress + HANDOFF → U5.
+
+---
+
+## 5f. Mission U5 — ENS (G6)
 
 Petra's Name Desk becomes a desk. A player claims a subname under the bank's parent on Sepolia; the name points at
 their account; the counter pays by name. Payments stay on Remote EVM 1337 — ENS only answers "which address".
 Kickoff: [`docs/KICKOFF-U5.md`](./KICKOFF-U5.md). Design: [`docs/ENS.md`](./ENS.md) §2–4; NPC: [`docs/NPCS.md`](./NPCS.md) §4.6.
+
+**After U4+.** Do not start this while G5b is open.
 
 **Gate before code:** GameLab ENG-2026-0007 must say yes (registry, resolver, client). If it has not run, run it there.
 
@@ -330,8 +392,8 @@ Kickoff: [`docs/KICKOFF-U5.md`](./KICKOFF-U5.md). Design: [`docs/ENS.md`](./ENS.
 
 ### Out of scope
 
-- Arc (U6); Express desk / Privy step-up; Uniswap; art/audio; greybox redesign; wiping Remote EVM; ENS on mainnet;
-  moving Lane A/B off 1337; any change to the one-modal rule, lane semantics, role grants or policy shapes
+- Arc (U6); Priority / Privy step-up productization (done in U4+); Uniswap; art/audio; greybox redesign; wiping Remote EVM; ENS on mainnet;
+  moving Lane A/B off 1337; any change to the one-modal rule except the already-shipped Priority Passkey; lane semantics
 
 ### Definition of Done (G6)
 
@@ -340,7 +402,7 @@ Kickoff: [`docs/KICKOFF-U5.md`](./KICKOFF-U5.md). Design: [`docs/ENS.md`](./ENS.
 - [ ] Petra at the Name Desk claims a name for the player's account; a taken or invalid name is refused with her line
 - [ ] Counter 1 accepts a name on the slip: resolve → address → Lane A / Lane B on 1337 unchanged
 - [ ] Names board on the Name Desk wall lists recent claims
-- [ ] Freeze intact: `run_checks.gd`, `npm run typecheck`, both kill-test scripts green; canvas focus and `desk.link` unchanged; one modal
+- [ ] Freeze intact: `run_checks.gd`, `npm run typecheck`, both kill-test scripts green; canvas focus and `desk.link` unchanged; Account Opening still one modal; Priority Passkey still only on Okafor’s bypass
 - [ ] Progress note + REFLECTION; HANDOFF advanced to U6 + `docs/KICKOFF-U6.md`
 
 ---
@@ -363,4 +425,4 @@ Cut order unchanged: Uniswap → Manager → Arc → ENS EAC → ENS mint. **Nev
 - Scope drifts to greybox/ENS/Arc/Uniswap
 - Lane B blocked and PLAN fallback not chosen
 
-Leave: commands, file pointers, kill-test log, next agent can resume from the G6 checklist.
+Leave: commands, file pointers, kill-test log, next agent can resume from the G5b checklist.
