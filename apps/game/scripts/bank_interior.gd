@@ -122,7 +122,9 @@ func _lobby_furniture() -> void:
 		var x := -4.5 + i * 3.0
 		box("Bench%d" % i, Vector3(x, 0.25, 2.5), Vector3(1.8, 0.5, 0.6), WOOD)
 	for i in 3:
-		var x := -6.0 + i * 6.0
+		# Keep clear of the teller's vault escort (path passes ~x=6, z=-3.5). Plants stay on the
+		# lobby side of the north partition, west of the vault opening (x ∈ [6, 10]).
+		var x := -8.0 + i * 4.0
 		cylinder("LobbyPlant%d" % i, Vector3(x, 1.0, -3.6), 0.5, 1.4, PLANT)
 	box("WaterCooler", Vector3(8.0, 0.6, 4.5), Vector3(0.4, 1.2, 0.4), GLASS, false)
 	# ledger board backing on the north partition (the board itself is scenes/props ledger_board)

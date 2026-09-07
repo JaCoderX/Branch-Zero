@@ -162,14 +162,23 @@ export function useBranchZeroWallet() {
     }
   }, [ensureWallet, call]);
 
-  /** The one consent. Grants the Teller Desk's key quorum the right to sign, bounded by this policy. */
+  /** The one consent. Grants the Teller Desk's key quorum the right to sign, bounded by this policy.
+   * Idempotent: if Privy already has our signer (reload / second "Let tellers act for me"), treat that as
+   * success — Privy answers `invalid_data: Duplicate signer(s)…` and the wallet is already delegated. */
   const delegate = useCallback(async () => {
     setError(undefined);
     setBusy('Waiting for your consent…');
     try {
       const s = session ?? (await openSession());
       if (!s.policyId) throw new Error('Teller Desk did not issue a policy for this player');
-      await addSessionSigners({ address: s.owner, signers: [{ signerId: s.signerId, policyIds: [s.policyId] }] });
+      if (!s.delegated) {
+        try {
+          await addSessionSigners({ address: s.owner, signers: [{ signerId: s.signerId, policyIds: [s.policyId] }] });
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          if (!/duplicate signer/i.test(msg)) throw e;
+        }
+      }
       setSession(await call<Session>('/session', {}, s.owner));
     } catch (e) {
       setError((e as Error).message);

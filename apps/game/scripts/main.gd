@@ -55,6 +55,7 @@ func _ready() -> void:
 			path.append(p)
 		n.escort_path = path
 		n.player_near.connect(_on_player_near)
+		n.duty_changed.connect(_update_prompt)
 		npcs.add_child(n)
 
 	player = CharacterBody3D.new()
@@ -99,6 +100,8 @@ func _nearest() -> Npc:
 	var best: Npc = null
 	var best_d := INF
 	for n in _near:
+		if not n.can_talk():
+			continue
 		var d := n.global_position.distance_to(player.global_position)
 		if d < best_d:
 			best_d = d

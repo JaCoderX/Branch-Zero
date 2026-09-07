@@ -113,7 +113,9 @@ address only exists after provisioning. Wallet records are owned by the *user's*
 cannot attach signers or policies later — but policy **rules** are app-owned and can be updated. Hence:
 
 1. `POST /session` → `policies().create` scoped to `chainId`; returns `policyId`.
-2. Browser consent → `addSessionSigners({ signerId, policyIds: [policyId] })`.
+2. Browser consent → `addSessionSigners({ signerId, policyIds: [policyId] })`. Idempotent in the overlay: if the
+   session already says `delegated`, or Privy returns `Duplicate signer(s)`, refresh `/session` and treat as success
+   (re-consent after a reload must not toast an error while the signer is already on the wallet).
 3. `POST /provision` → clone the account, then `policies().updateRule(...)` to add the `verifyingContract` condition.
 
 Original sketch (superseded):

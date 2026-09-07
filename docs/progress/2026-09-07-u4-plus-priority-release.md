@@ -2,7 +2,7 @@
 date: 2026-09-07
 unit: U4+ Priority release
 gate: G5b
-result: met — same account, three ways out of the vault on Remote EVM 1337: Ruth early → `BeforeReleaseTime`; Okafor's Priority (owner-signed meta-approve, manager submits) → `COMPLETED` 102 s before the clock; Ruth after the clock → `COMPLETED`. Manager refused `NoPermission` before and after the clock. Session signer refused the bypass payload by Privy policy, still signs counter pays. Owed by a human: the in-browser Passkey walk on the real bridge
+result: met — same account, three ways out of the vault on Remote EVM 1337: Ruth early → `BeforeReleaseTime`; Okafor's Priority (owner-signed meta-approve, manager submits) → `COMPLETED` 102 s before the clock; Ruth after the clock → `COMPLETED`. Manager refused `NoPermission` before and after the clock. Session signer refused the bypass payload by Privy policy, still signs counter pays. Principal Passkey walk recorded 2026-09-07 (wire #9, `mfaPrompted: true`, `0xaa381c00…`)
 agent: Claude Code (Fable 5.1), cold session
 ---
 
@@ -122,16 +122,32 @@ half-configured writes.
   (#17 CANCELLED, `0x44ba2885…`). Both older scripts now top the rig up from the treasury first — the first U2 re-run
   released 250 against 86.5 dUSDC and the record went FAILED, the same hygiene finding as run 4.
 
-## Still owed by a human (~5 minutes, needs an inbox and a Passkey)
+## Human walk — Passkey on the real bridge (2026-09-07, ~09:21 local)
 
-1. `npm run dev:teller`, `npm run dev:web`, open `http://localhost:5173/` (no `?mock`). Ines: *Sign in* → if the
-   account says `NOT_CONFIGURED` anywhere, *Re-check my account* (already done server-side for the principal).
-2. Counter 1: 250 → *OK* → the wire cools (2:00). Walk to the glass office (F7): Okafor → *Priority release — hand
-   scan* → the wire → Privy MFA sheet (Passkey) → sign sheet "Priority release — hand scan" → *Confirm* → "Released. Wire
-   #n left the vault with m:ss still on the clock — your hand scan, my stamp." Confirm WASD / `E` still work afterwards.
-3. Counter 1: pay 12.5 immediately after → no sheet (silent Lane A after the Passkey).
-4. Optional: dismiss the Passkey sheet on a second wire → "No hand scan, no priority release — the wire keeps cooling."
-5. `npm -w apps/teller-desk run evidence` → paste the `approveTimeLockExecutionWithMetaTx` row here.
+Principal account `0x7954…c26B` / clone `0x9C01…5Cb9`, roleSet 3/3, MFA enrolled, Priority desk open. Debug overlay +
+`window.BranchZero` traffic:
+
+| Step | Evidence |
+|------|----------|
+| Wire #9 filed | job `e4b32221`, hash `0x758e756d…`, `releaseTime` 1788762119 |
+| Priority (hand scan) | job `579de08a`, hash **`0xaa381c0047cd34743e3d56f648ccb92cc42f02f6b4c106ff9610f0adec86c5fd`**, `actor: "priority"`, **`mfaPrompted: true`**, `chainNow` 1788762058 (**61 s before** `releaseTime`), `balanceAfter` 250, payee received 112.5 dUSDC |
+| Session after | `priority: true`, `signingMode: session`, policy `wllkltf7…` pinned, pending empty |
+
+This is the product half ENG-0013 M2 proved in the lab. G5b human Passkey item is closed.
+
+## Teller escort (playtest 2026-09-07)
+
+After a vault wire, Dev walked to the antechamber and stayed there: `ESCORTING` ignores `interact()`, the body had no
+gravity, leftover velocity was never zeroed, and standing on the last waypoint blocked arrival so the 5 s "walk home"
+never started. Fixed in `apps/game/scripts/npc.gd`: gravity, ignore the player while escorting, short pause, reverse
+the path back to the counter, skip a stuck leg, hard-home after 22 s. `E` only talks to NPCs in IDLE/TALKING, so Ruth
+is the vault desk while Dev is walking. Lobby plants shifted west of the vault opening so the green cylinder at ~(6,-3.5)
+no longer blocks the escort.
+
+## Still optional
+
+- Silent counter Pay immediately after a Passkey (no sheet) — kill test Y8b already covers the policy; a filmed beat is nice, not blocking.
+- Dismiss the Passkey sheet → `PRIORITY_CANCELLED` line.
 
 ## Code pointers
 
@@ -142,5 +158,5 @@ half-configured writes.
 - `apps/teller-desk/scripts/kill-tests-u4plus.ts`, `upgrade-players.ts`, `probe-typed-data-policy.ts`
 - `packages/shared/src/metaTx.ts`, `packages/shared/src/bridge.ts` (`priority`, `via`)
 - `apps/web/src/overlay/useBranchZeroWallet.ts` (`priority()`), `apps/web/src/bridge/branchZero.ts` (`u4.1`)
-- `apps/game/autoload/game_state.gd`, `autoload/mock_chain.gd`, `dialogue/manager.json`, `dialogue/vault_keeper.json`,
+- `apps/game/scripts/npc.gd` (escort returns to the counter), `apps/game/autoload/game_state.gd`, `autoload/mock_chain.gd`, `dialogue/manager.json`, `dialogue/vault_keeper.json`,
   `dialogue/errors.json`, `tests/run_checks.gd`, `tests/run_mock_walk.gd`

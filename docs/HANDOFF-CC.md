@@ -31,10 +31,9 @@ start U6–U7. Do not regress the U4 freeze or the U4+ Priority desk.
 > `isGrantRevocable=false`) — it stays, inert without the transfer half, and provisioning reports it as "stranded";
 > a headless rig cannot hold a Passkey, so `killtests:u4plus` obtains the owner's Priority signature by briefly
 > relaxing its own rule and restoring it (documented in the script); the SDK re-wraps a viem-decoded revert as text
-> (`Error: NoPermission(address caller)`), so `explainRevert` now also reads that. **Still owed by a human:** the
-> Passkey walk in the browser (Okafor → Priority → MFA sheet → sign sheet → COMPLETED before the clock) and a check
-> that a counter Pay right after is still silent — the lab (ENG-0013 M2/M4) proved both halves, the product walk is
-> not yet recorded.
+> (`Error: NoPermission(address caller)`), so `explainRevert` now also reads that. **Human Passkey walk recorded
+> 2026-09-07:** principal `0x7954…` / `0x9C01…`, wire #9 Priority `COMPLETED` 61 s early, hash `0xaa381c00…`,
+> `mfaPrompted: true`. Optional: film a silent counter Pay right after.
 >
 > **U4 met 2026-09-07 — the MVP is frozen.** Read
 > [`docs/progress/2026-09-07-u4-mvp-freeze.md`](./progress/2026-09-07-u4-mvp-freeze.md) **first**. What it fixed
@@ -385,7 +384,7 @@ Kickoff: [`docs/KICKOFF-U4-plus.md`](./KICKOFF-U4-plus.md). Labs (do not edit):
 - ENG-0010 short-clock desk; wiping Remote EVM; editing GameLab ENG folders
 - Lane A amount routing / policy rewrite; claiming dashboard MFA cache
 
-### Definition of Done (G5b) — met, with one human-owed item
+### Definition of Done (G5b) — met
 
 - [x] Same account (rig clone `0xD026…8DbD`, kill tests Y2 / Y3 / Y7 on 1337, blocks 235–244): Ruth early →
       `BeforeReleaseTime`; Okafor Priority early → `COMPLETED` 102 s before `releaseTime` (`0xf34c88f6…`), payee paid;
@@ -396,8 +395,8 @@ Kickoff: [`docs/KICKOFF-U4-plus.md`](./KICKOFF-U4-plus.md). Labs (do not edit):
       file (Y5). Owner cannot submit their own meta-approve (Y4)
 - [x] Passkey / hand scan on Priority only: the `priority` bridge method is the one second Privy surface (user signer,
       `clear()` + `promptMfa()` when enrolled, `showWalletUIs`); Lane A / Ruth / recall untouched. The session signer
-      cannot sign the bypass payload (Y8a `policy_violation`) and still signs a counter pay (Y8b). **Owed by a human:**
-      the in-browser Passkey walk on the real bridge (ENG-0013 M2 proved the UI; the product walk is not recorded)
+      cannot sign the bypass payload (Y8a `policy_violation`) and still signs a counter pay (Y8b). **Human walk
+      2026-09-07:** wire #9, `mfaPrompted: true`, `0xaa381c00…`, 61 s before `releaseTime` (progress note)
 - [x] `ROLE_SET_VERSION` 3; Re-check (`/provision`) re-syncs REMOVE+ADD in one batch (Y0 on a roleSet-2 account);
       `upgrade-players` script for players on file; `NOT_CONFIGURED` until then; player index written synchronously (U4)
 - [x] NPCS.md §4.4–4.5 as built; `errors.json` 92 lines (+6 codes); `run_checks.gd` checks the Ruth/Okafor verb split
