@@ -325,6 +325,27 @@ func _run() -> void:
 	else:
 		_fail("fill colliders moved or missing: %s" % ", ".join(seat_bad))
 
+	# surfaces (U7 viz Stage 6c): ambientCG CC0 albedo JPEGs tint existing Marble/Wood/Ceiling/Paper slots — no new materials.
+	print("surfaces (Stage 6c)")
+	var surf_dir := "res://assets/textures/surfaces/"
+	var surf_missing: PackedStringArray = []
+	for f in ["marble_albedo.jpg", "wood_albedo.jpg", "plaster_albedo.jpg", "LICENSE-ambientcg.txt"]:
+		if not FileAccess.file_exists(surf_dir + f):
+			surf_missing.append(f)
+	if surf_missing.is_empty():
+		_ok("ambientCG albedo trio + LICENSE-ambientcg.txt present under textures/surfaces/")
+	else:
+		_fail("Stage 6c surfaces missing: %s" % ", ".join(surf_missing))
+	var textured_slots := 0
+	for slot in ["Marble", "Wood", "Ceiling", "Paper"]:
+		var sm: StandardMaterial3D = PropKit.palette(slot)
+		if sm != null and sm.albedo_texture != null:
+			textured_slots += 1
+	if textured_slots >= 4:
+		_ok("Marble / Wood / Ceiling / Paper palette slots carry albedo textures (no new material class)")
+	else:
+		_fail("only %d/4 Stage 6c palette slots textured" % textured_slots)
+
 	print("freeze rules")
 	var bad_layers: PackedStringArray = []
 	for b in bodies:

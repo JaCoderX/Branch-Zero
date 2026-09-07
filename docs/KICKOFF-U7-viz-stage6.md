@@ -118,19 +118,20 @@ DoD (Stage 6a):
 
 **Reject for 6a:** KayKit Adventurers / dungeon packs (narrative), voxel office packs (style), Quaternius furniture (QAL).
 
-### 6b — Desk clutter (after 6a green)
+### 6b — Desk clutter — **SKIPPED**
 
-| Pack | Why | Licence |
-|------|-----|---------|
-| [MrEliptik Office low poly](https://mreliptik.itch.io/office-low-poly-pack) | Monitors, printers, lamps, chairs for Name Desk / Manager / counters | itch lists **CC0** — re-verify page + zip |
+| Pack | Why skipped |
+|------|-------------|
+| [MrEliptik Office low poly](https://mreliptik.itch.io/office-low-poly-pack) | itch **name-your-own-price** gate (not a free direct download for public-repo intake). Principal: skip. Desk tech stays on existing Kenney screen/keyboard + hero printer/stamp. |
 
-### 6c — Surfaces (after 6b)
+### 6c — Surfaces (after 6a; 6b skipped)
 
 | Source | Use | Licence |
 |--------|-----|---------|
-| [Poly Haven](https://polyhaven.com/license) / [ambientCG](https://ambientcg.com/license) | Marble, wood, plaster → **one** shared ≤1024² atlas (albedo + light AO); no full 8K PBR on web | **CC0** |
+| [ambientCG](https://ambientcg.com/license) Marble016 / WoodFloor043 / Plaster001 | 512² albedo only → tint existing Marble / Wood / Ceiling / Paper slots (**zero new materials**) | **CC0** — `tools/surface_pack.py` |
 
-Keep Compatibility: prefer flat/soft shade + atlas grain over normal-heavy stacks.
+Keep Compatibility: albedo + theme tint only; no normal/roughness stacks on web.
+
 
 ### 6d — Optional soft props
 

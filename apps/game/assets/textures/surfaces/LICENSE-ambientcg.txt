@@ -1,0 +1,6 @@
+﻿ambientCG materials (Marble016, WoodFloor043, Plaster001) — Creative Commons CC0 1.0 Universal
+https://creativecommons.org/publicdomain/zero/1.0/
+https://ambientcg.com/license
+
+Only the Color (albedo) maps are redistributed here, downsampled to 512² JPEG for the
+Branch Zero web build (U7 viz Stage 6c). Full PBR packs were not imported.

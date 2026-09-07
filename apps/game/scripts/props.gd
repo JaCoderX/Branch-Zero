@@ -13,6 +13,9 @@ extends RefCounted
 ##    palette atlas that tools/kaykit_pack.py strips out of the .glb: at load `_split_kaykit` reads each triangle's UV
 ##    cell and hands it the matching WingTheme palette material, so the denser fill costs zero new materials and
 ##    recolours with the wing like every hero prop.
+##  - Stage 6c surface grain (assets/textures/surfaces, ambientCG CC0 albedo only): Marble / Wood / Ceiling sample
+##    512² JPEGs tinted by the WingTheme colour. Same material slots — zero new unique materials. Floor stays the
+##    procedural terrazzo (no photoreal floor map). Stage 6b (MrEliptik office pack) was skipped: itch NYOP, not free.
 ## Anything that blocks the player gets a StaticBody3D on layer 1 / mask 0 — colliders that block must not listen
 ## (U4+ lesson: Godot Physics on web shoves listening bodies).
 
@@ -20,6 +23,7 @@ const HERO := "res://assets/models/hero/"
 const KIT := "res://assets/models/kenney_furniture/"
 const KAYKIT := "res://assets/models/kaykit_furniture/"
 const CHARACTERS := "res://assets/characters/kenney_blocky/"
+const SURFACES := "res://assets/textures/surfaces/"
 
 static var theme: WingTheme = null
 static var _mats: Dictionary = {}
@@ -44,17 +48,17 @@ static func palette(name: String) -> StandardMaterial3D:
 	var t := ensure_theme()
 	match name:
 		"Marble":
-			return color(t.wall_color, 0.0, 0.7)
+			return surface("Marble", t.wall_color, 0.0, 0.7, SURFACES + "marble_albedo.jpg", Vector3(2.5, 2.5, 2.5))
 		"MarbleDark":
-			return color(t.wainscot_color, 0.0, 0.55)
+			return surface("MarbleDark", t.wainscot_color, 0.0, 0.55, SURFACES + "marble_albedo.jpg", Vector3(2.0, 2.0, 2.0))
 		"Brass":
 			return color(t.trim_color, 0.85, 0.35)
 		"BrassDark":
 			return color(t.trim_color.darkened(0.4), 0.85, 0.4)
 		"Wood":
-			return color(t.wood_color, 0.0, 0.7)
+			return surface("Wood", t.wood_color, 0.0, 0.7, SURFACES + "wood_albedo.jpg", Vector3(1.5, 1.5, 1.5))
 		"WoodDark":
-			return color(t.wood_color.darkened(0.25), 0.0, 0.7)
+			return surface("WoodDark", t.wood_color.darkened(0.25), 0.0, 0.7, SURFACES + "wood_albedo.jpg", Vector3(1.5, 1.5, 1.5))
 		"Graphite":
 			return color(t.graphite_color, 0.1, 0.8)
 		"Steel":
@@ -70,13 +74,13 @@ static func palette(name: String) -> StandardMaterial3D:
 		"Cream":
 			return color(t.cream_color)
 		"Paper":
-			return color(t.paper_color, 0.0, 1.0)
+			return surface("Paper", t.paper_color, 0.0, 1.0, SURFACES + "plaster_albedo.jpg", Vector3(3.0, 3.0, 3.0))
 		"Plant":
 			return color(t.plant_color, 0.0, 0.9)
 		"Rope":
 			return color(t.rope_color, 0.0, 0.9)
 		"Ceiling":
-			return color(t.ceiling_color, 0.0, 1.0)
+			return surface("Ceiling", t.ceiling_color, 0.0, 1.0, SURFACES + "plaster_albedo.jpg", Vector3(4.0, 4.0, 4.0))
 		"Floor":
 			return floor_material()
 	push_warning("PropKit: unknown palette name %s" % name)
@@ -104,6 +108,26 @@ static func color(c: Color, metallic: float = 0.0, roughness: float = 0.85, emis
 		m.emission_enabled = true
 		m.emission = emission
 		m.emission_energy_multiplier = energy
+	_mats[key] = m
+	return m
+
+
+## Stage 6c: existing palette slot + ambientCG albedo (tint via albedo_color). Falls back to flat colour if the file is missing.
+static func surface(slot: String, tint: Color, metallic: float, roughness: float, tex_path: String, uv_scale: Vector3) -> StandardMaterial3D:
+	var key := "surf|%s" % slot
+	if _mats.has(key):
+		return _mats[key]
+	if not ResourceLoader.exists(tex_path):
+		push_warning("PropKit: missing surface %s — flat fallback" % tex_path)
+		return color(tint, metallic, roughness)
+	var m := StandardMaterial3D.new()
+	m.resource_name = slot
+	m.albedo_color = tint
+	m.albedo_texture = load(tex_path)
+	m.uv1_scale = uv_scale
+	m.metallic = metallic
+	m.roughness = roughness
+	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	_mats[key] = m
 	return m
 
