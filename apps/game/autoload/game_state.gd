@@ -72,6 +72,12 @@ func has_manager() -> bool:
 	return session.get("manager") != null and str(session.get("manager", "")) != ""
 
 
+## U4+: the branch runs the Priority desk and this account carries the META_APPROVE split (ROLE_SET 3). When false
+## the manager can still shred, but nobody skips the cooling (vault-only, or Ines has to re-check the file).
+func priority_enabled() -> bool:
+	return has_manager() and bool(session.get("priority", false))
+
+
 func account() -> String:
 	return str(session.get("account", "")) if has_account() else ""
 
@@ -159,6 +165,7 @@ func facts() -> Dictionary:
 		"has_account": has_account(),
 		"delegated": delegated(),
 		"manager": has_manager(),
+		"priority": priority_enabled(),
 		"pending": pending_count(),
 		"released": released_count(),
 		"cooling": cooling_count(),
@@ -181,10 +188,12 @@ func vars(extra: Dictionary = {}) -> Dictionary:
 		"timelock_sec": str(timelock_sec()),
 		"pending": str(pending_count()),
 		"released": str(released_count()),
+		"cooling": str(cooling_count()),
 		"release_in": fmt_duration(soonest_remaining()),
 		"wing": "main",
 		"chain": "Remote EVM 1337" if not Chain.use_mock else "MockChain",
 		"manager_name": "Mr. Okafor",
+		"priority_copy": str(strings.get("priority_copy", "Skip the cooling period — hand scan required.")),
 	}
 	v.merge(extra, true)
 	return v
@@ -255,6 +264,8 @@ func refresh_all() -> void:
 
 ## Run one desk action through the bridge. Returns {"ok", "result", "error"}. Refreshes the mirror afterwards
 ## whatever the outcome (a refused approve still moved the clock; a provision changes the session).
+## Vault verbs (U4+): `approve` = Ruth (owner, after the clock) · `priority` = Okafor (hand scan, before the clock) ·
+## `cancel` / `manager_cancel` = recall. There is no manager approve.
 func run_action(action: String, args: Dictionary = {}) -> Dictionary:
 	busy = true
 	changed.emit()
@@ -274,8 +285,17 @@ func run_action(action: String, args: Dictionary = {}) -> Dictionary:
 			r = await Chain.call_async("pay", {"to": args.get("to", ""), "amount": str(args.get("amount", "")), "memo": args.get("memo", "")}, 120.0)
 		"wire":
 			r = await Chain.call_async("wire", {"to": args.get("to", ""), "amount": str(args.get("amount", "")), "memo": args.get("memo", "")}, 120.0)
-		"approve", "manager_approve":
-			r = await Chain.call_async("approve", {"txId": str(args.get("txId", "")), "as": "manager" if action.begins_with("manager") else "owner"}, 120.0)
+		"approve":
+			# Ruth's wait path — the owner's timed release after the clock, silent. Never the manager (U4+).
+			r = await Chain.call_async("approve", {"txId": str(args.get("txId", "")), "as": "owner"}, 120.0)
+		"manager_approve":
+			# Okafor's post-clock stamp was removed in U4+ (ROLE_SET 3). Kept as a refusal so a stale dialogue line
+			# gets his bank line instead of a chain revert.
+			r = {"ok": false, "error": {"code": "MANAGER_NO_STAMP", "message": "the manager does not stamp vault releases (U4+); use priority before the clock or Ruth after it"}}
+		"priority":
+			# Okafor's Priority release: the one call that may open a second Privy surface (Passkey + sign sheet).
+			# A human scans a hand, so the timeout is generous, like login.
+			r = await Chain.call_async("priority", {"txId": str(args.get("txId", ""))}, 300.0)
 		"cancel", "manager_cancel":
 			r = await Chain.call_async("cancel", {"txId": str(args.get("txId", "")), "as": "manager" if action.begins_with("manager") else "owner"}, 120.0)
 		"refresh":

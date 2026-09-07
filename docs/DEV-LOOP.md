@@ -59,8 +59,8 @@ Ordered so that after U2 we can stop and still demo a coherent bank-on-a-chain (
 | **U2 Timelock lane** | Wire → PENDING → approve/cancel; SSE; `releaseTime` from chain | G3 | No — **met 2026-09-06** |
 | **U3 Bank shell** | Greybox zones, NPCs wired to bridge, ledger board | G4 | No — **met 2026-09-06** (mock walk + real-bridge desk calls; human OTP walk pending) |
 | **U4 MVP freeze** | Error UX, reconnect, canvas focus, rough capture | G5 | No — **met 2026-09-07** (canvas re-focus, `RPC`/`AUTH`/`NOT_CONFIGURED` paths, SSE reconnect + `desk.link`, first load measured; real 30 s capture owed by the human walk) |
-| **U4+ Priority release** | Ruth waits the clock; Okafor meta-bypass + Passkey before `releaseTime` | G5b | ENG-0012 + 0011 + 0013 — **next** (0010 is timed dual-control only, not this beat) |
-| **U5 ENS** | Subname + pay-by-name | G6 | ENG-0007 — after U4+ |
+| **U4+ Priority release** | Ruth waits the clock; Okafor meta-bypass + Passkey before `releaseTime` | G5b | ENG-0012 + 0011 + 0013 — **met 2026-09-07** (ROLE_SET 3 split on chain, `/priority/*`, Passkey step-up in the overlay, policy pins the silent lane to `params.action`; kill tests Y0–Y9) |
+| **U5 ENS** | Subname + pay-by-name | G6 | ENG-0007 — **next** |
 | **U6 Arc + manager role** | Elevator wing + runtime role (manager already in U4+ as Priority submitter) | G7 | ENG-0006 |
 | **U7 Feel / ship** | Art, video, submission | G8–G10 | ENG-0008 only if S1 |
 

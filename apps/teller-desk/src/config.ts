@@ -43,6 +43,15 @@ export const config = {
    * Account Opening whenever the balance drops under half of this.
    */
   ownerGasEth: opt('OWNER_GAS_ETH', '0.05'),
+  /**
+   * U4+ Priority release. `on` (default when a manager key is present): accounts are provisioned with the
+   * owner-signs / manager-submits META_APPROVE split on the transfer selector, so Mr. Okafor can release a
+   * cooling wire early once the player brings a Passkey (hand scan). `off` = vault-only accounts (the U2
+   * invariant: no META_APPROVE bits on `transfer`; the clock is the only way out). Changing this changes
+   * `desiredGrants()`; the next Re-check re-syncs every player. META bits are account-wide: once granted, any
+   * PENDING wire on that account can be bypassed — Okafor says so in his "Ask why".
+   */
+  priorityRelease: opt('PRIORITY_RELEASE', opt('MANAGER_PK') ? 'on' : 'off').toLowerCase() === 'on' && Boolean(opt('MANAGER_PK')),
 
   privy: {
     appId: req('PRIVY_APP_ID'),

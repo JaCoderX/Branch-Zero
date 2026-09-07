@@ -4,7 +4,8 @@ extends Node
 ##
 ## Used on desktop (editor play) and on web behind `?mock`. It exists so the greybox, the NPC lines and the
 ## vault clock can be walked without an inbox; it proves nothing about the chain (docs/REMOTE-EVM.md §5).
-## Every value is obviously fake: addresses start with 0xM0CK, the cooling period is 30 s, receipts are local.
+## Every value is obviously fake: addresses start with 0xM0CK, the cooling period is 30 s, receipts are local, and
+## the U4+ Priority release "hand scan" is a timer — no Passkey, no signature.
 
 const OWNER := "0xM0CK0000000000000000000000000000000000E7"
 const ACCOUNT := "0xM0CK0000000000000000000000000000000ACC7"
@@ -79,9 +80,13 @@ func call_method(method: String, args: Dictionary) -> Dictionary:
 		"wire":
 			return await _wire(args)
 		"approve":
+			if str(args.get("as", "owner")) == "manager":
+				return _err("MANAGER_NO_STAMP", "the manager does not stamp vault releases (U4+)")
 			return await _decide(args, "approve")
 		"cancel":
 			return await _decide(args, "cancel")
+		"priority":
+			return await _priority(args)
 		_:
 			return _err("UNKNOWN_METHOD", "unknown bridge method %s" % method)
 
@@ -154,6 +159,33 @@ func _decide(args: Dictionary, kind: String) -> Dictionary:
 	return _ok({"jobId": job, "hash": _hash(), "txId": tx_id, "status": "CANCELLED", "actor": actor})
 
 
+## U4+ Okafor's Priority release, mocked: no Passkey, no signature, nothing on a chain — it only lets the greybox
+## walk the desk. The real path is /priority/prepare → Privy MFA + user-signer sign sheet → /priority/submit.
+func _priority(args: Dictionary) -> Dictionary:
+	if account == "":
+		return _err("NO_ACCOUNT", "No account opened for this player")
+	var tx_id := str(args.get("txId", ""))
+	var idx := _find(tx_id)
+	if idx < 0:
+		return _err("NOT_PENDING", "record %s is not PENDING" % tx_id)
+	var rec: Dictionary = wires[idx]
+	if int(rec["releaseTime"]) <= _now():
+		return _err("NOT_COOLING", "record %s passed its releaseTime — that is Ruth's window" % tx_id)
+	var job := _new_job()
+	_stage(job, "B", "signing", "Hand scan at the manager’s desk — (MockChain: no Passkey, nothing signed)…", {"txId": tx_id, "releaseTime": rec["releaseTime"], "via": "priority"})
+	await get_tree().create_timer(1.2).timeout
+	_stage(job, "B", "broadcasting", "Hand scan on file (mock). The manager is stamping a priority release…", {"txId": tx_id, "via": "priority"})
+	await get_tree().create_timer(0.6).timeout
+	idx = _find(tx_id)
+	if idx < 0:
+		return _err("NOT_PENDING", "record %s is not PENDING" % tx_id)
+	wires.remove_at(idx)
+	balance -= float(rec["amount"])
+	var h := _hash()
+	_stage(job, "B", "mined", "Priority release (mock): %s dUSDC sent before the clock — hand scan on file." % rec["amount"], {"hash": h, "txId": tx_id, "status": "COMPLETED", "via": "priority", "releaseTime": rec["releaseTime"], "chainNow": str(_now() - 47)})
+	return _ok({"jobId": job, "hash": h, "txId": tx_id, "status": "COMPLETED", "actor": "priority", "releaseTime": rec["releaseTime"], "chainNow": str(_now() - 47), "balanceAfter": _fmt(balance), "mfaPrompted": false})
+
+
 ## Mirror of the Teller Desk watcher: a `released` tick once the mock clock passes releaseTime.
 func _watch(tx_id: int, job: String) -> void:
 	var announced := false
@@ -179,7 +211,7 @@ func _session() -> Dictionary:
 		"loggedIn": true, "ready": true, "userId": "did:privy:mock", "owner": OWNER,
 		"account": account if account != "" else null, "delegated": delegated,
 		"signingMode": "session" if delegated else "client", "chainId": 1337,
-		"timeLockSec": TIMELOCK_SEC, "instantLimit": INSTANT_LIMIT, "manager": MANAGER,
+		"timeLockSec": TIMELOCK_SEC, "instantLimit": INSTANT_LIMIT, "manager": MANAGER, "priority": true,
 		"token": {"address": "0xM0CK00000000000000000000000000000000dUSD", "symbol": "dUSDC", "decimals": 18},
 	}
 

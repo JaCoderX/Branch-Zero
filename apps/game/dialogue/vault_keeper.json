@@ -27,7 +27,7 @@
       ]
     },
     "cooling": {
-      "text": "{pending} wire(s) in the vault, the soonest releases in {release_in}. Have a seat, or bother the manager if you want one recalled.",
+      "text": "{pending} wire(s) in the vault, the soonest releases in {release_in}. Have a seat — or see Mr. Okafor: he can shred it, or skip the cooling if you bring a hand scan. I wait the clock.",
       "choices_from": "pending",
       "choice_template": { "text": "Try to release #{txId} — {amount} {symbol} to {payee} ({status}, {release_in})", "action": "approve", "working": "Taking it to the vault door…", "on_ok": "released_ok", "on_error": "refused" },
       "choices": [
@@ -36,7 +36,7 @@
       ]
     },
     "ready": {
-      "text": "{released} wire(s) ready. Say the word and it goes.",
+      "text": "{released} wire(s) ready. Say the word and it goes — no scan, no manager, just the clock having run down.",
       "choices_from": "pending",
       "choice_template": { "text": "Release #{txId} — {amount} {symbol} to {payee} ({status})", "action": "approve", "working": "Opening the vault…", "on_ok": "released_ok", "on_error": "refused" },
       "choices": [
@@ -52,11 +52,11 @@
       ]
     },
     "why_cooling": {
-      "text": "The clock is the chain's clock, not mine. releaseTime is written into the transaction record when the wire is filed; nobody here can shorten it. The countdown you see is that releaseTime against the desk's clock — this branch's chain only mines when someone sends a transaction, so its own block time stands still between them.",
+      "text": "The clock is the chain's clock, not mine. releaseTime is written into the transaction record when the wire is filed; my window cannot shorten it. The one way round it is the manager's priority release — your own signature under a hand scan, his stamp — and the contract only allows that because the two of you are different roles. The countdown you see is that releaseTime against the desk's clock; this branch's chain only mines when someone sends a transaction, so its own block time stands still between them.",
       "choices": [ { "text": "OK.", "next": "end" } ]
     },
     "why_release": {
-      "text": "Release is approveTimeLockExecution, sent as your own transaction and signed in the enclave. The contract compares releaseTime to the block that mines it and refuses with BeforeReleaseTime if it's early — the green light is decoration, the contract is the control.",
+      "text": "Release is approveTimeLockExecution, sent as your own transaction and signed silently in the enclave by the session signer. The contract compares releaseTime to the block that mines it and refuses with BeforeReleaseTime if it's early — the green light is decoration, the contract is the control. The manager has no part in this path any more.",
       "choices": [ { "text": "OK.", "next": "end" } ]
     },
     "refused": {

@@ -16,11 +16,12 @@
  *   LaneB-1  approve **before** releaseTime reverts `BeforeReleaseTime` — the clock is enforced on chain.
  *   LaneB-2  cancel while PENDING → CANCELLED; nothing moved.
  *   LaneB-3  a second wire, wait out the clock (no time warp on this chain), approve → COMPLETED, payee paid.
- *   LaneB-4  (if MANAGER_PK) a third wire approved by the Branch Manager's runtime role.
+ *   LaneB-4  (if MANAGER_PK) U4+: the Branch Manager is refused NoPermission before and after the clock (no timed stamp)
+ *            and recalls the third wire instead.
  */
 import { encodeFunctionData, formatUnits, getAddress, parseAbi, parseUnits, type Address } from 'viem';
 import { erc20Abi } from '@branch-zero/shared';
-import { chain, managerAddress, publicClient } from '../src/chain.ts';
+import { chain, deployer, managerAddress, publicClient } from '../src/chain.ts';
 import { config, deployments } from '../src/config.ts';
 import { authorizationContext, createPlayerPolicy, embeddedWalletOf, privy, recoverPolicy } from '../src/privy.ts';
 import { approve, cancel, explainRevert, listPending, readWire, wire } from '../src/lanes/laneB.ts';
@@ -126,6 +127,18 @@ async function main() {
   );
   const { token } = deployments();
 
+  // The rig spends real dUSDC every run; a wire released against an empty account executes as FAILED (U4+ finding).
+  // Top the account back up to the opening balance from the treasury before filing anything.
+  {
+    const bal = await balanceOf(account);
+    const want = parseUnits(config.openingBalance, token.decimals);
+    if (bal < want) {
+      const hash = await deployer.writeContract({ address: token.address, abi: erc20Abi, functionName: 'transfer', args: [account, want - bal], chain, account: deployer.account! });
+      await publicClient.waitForTransactionReceipt({ hash });
+      console.log(`topped the rig account up from ${formatUnits(bal, token.decimals)} to ${config.openingBalance} ${token.symbol} (${hash})`);
+    }
+  }
+
   // ---- V6-a: wire → PENDING with releaseTime from the chain
   const t0 = now();
   let w1;
@@ -181,23 +194,35 @@ async function main() {
     `approve ${a.hash} → txId ${w2.txId} ${a.status}; payee +${formatUnits(moved, token.decimals)} ${token.symbol}; account ${a.balanceAfter} ${token.symbol}; pending now [${pendingNow.join(',')}]`,
   );
 
-  // ---- LaneB-4: manager path
+  // ---- LaneB-4: manager path. U2 expected the Branch Manager's timed stamp after the clock; U4+ (ROLE_SET 3) removed
+  //      it — Okafor is not a second Ruth. The manager must be refused before AND after releaseTime (NoPermission), and
+  //      the wire is then recalled by the manager (his shredder still works) so the rig account keeps its balance.
   if (!managerAddress) {
-    record('LaneB-4', 'SKIP', 'MANAGER_PK not set — manager approve path not exercised');
+    record('LaneB-4', 'SKIP', 'MANAGER_PK not set — manager path not exercised');
   } else {
     const w3 = await wire(player, PAYEE, '150', 'kt-wire-3');
     const rel3 = Number(w3.releaseTime);
+    let earlyCode = '';
     try {
       await approve(player, BigInt(w3.txId), 'manager', 'kt-manager-early');
       record('LaneB-4', 'FAIL', 'manager approved before releaseTime');
     } catch (e) {
-      console.log(`manager early approve refused as expected: ${(e as Error).message.slice(0, 120)}`);
-      console.log(`waiting ${Math.max(0, rel3 - now())}s for txId ${w3.txId}…`);
+      earlyCode = (e as { code?: string }).code ?? explainRevert(e).code;
+      console.log(`manager early approve refused (${earlyCode}); waiting ${Math.max(0, rel3 - now())}s for txId ${w3.txId}…`);
       while (now() < rel3 + 1) await sleep(1000);
-      const before3 = await balanceOf(PAYEE);
-      const m = await approve(player, BigInt(w3.txId), 'manager', 'kt-manager-approve');
-      const moved3 = (await balanceOf(PAYEE)) - before3;
-      record('LaneB-4', m.status === 'COMPLETED' && moved3 === parseUnits('150', token.decimals) ? 'PASS' : 'FAIL', `BRANCH_MANAGER ${managerAddress} approved txId ${w3.txId}: ${m.hash} → ${m.status}; payee +${formatUnits(moved3, token.decimals)}`);
+      let lateCode = '';
+      try {
+        await approve(player, BigInt(w3.txId), 'manager', 'kt-manager-late');
+        record('LaneB-4', 'FAIL', `BRANCH_MANAGER stamped txId ${w3.txId} after the clock — the U4+ removal of the timed stamp did not land`);
+      } catch (e2) {
+        lateCode = (e2 as { code?: string }).code ?? explainRevert(e2).code;
+        const c = await cancel(player, BigInt(w3.txId), 'manager', 'kt-manager-recall');
+        record(
+          'LaneB-4',
+          earlyCode === 'NoPermission' && lateCode === 'NoPermission' && c.status === 'CANCELLED' ? 'PASS' : 'PARTIAL',
+          `U4+: BRANCH_MANAGER ${managerAddress} refused before (${earlyCode}) and after (${lateCode}) releaseTime — no timed stamp; manager recall of txId ${w3.txId} → ${c.status} (${c.hash})`,
+        );
+      }
     }
   }
   finish();

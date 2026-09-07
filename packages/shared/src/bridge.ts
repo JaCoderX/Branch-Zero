@@ -40,6 +40,8 @@ export type BridgeMessage = BridgeResponse | BridgeEvent;
  * U2 adds the vault: `wire` (Lane B request), `approve` / `cancel`, `listPending`.
  * U3 adds the reads the greybox needs without opening a modal: `getSession` (who is at the desk, no
  * login prompt) and `getHistory` (the ledger board's receipts). Both are backed by existing routes.
+ * U4+ adds `priority` — the one bridge method that is allowed to open a second Privy surface (the Passkey / hand
+ * scan), over `/priority/prepare` + `/priority/submit`. `approve` is owner-only from here on.
  */
 export type BridgeMethod =
   | 'echo'
@@ -61,7 +63,9 @@ export type BridgeMethod =
   | 'listPending'
   // U3 — bank shell reads
   | 'getSession'
-  | 'getHistory';
+  | 'getHistory'
+  // U4+ — Priority release (Okafor): owner Passkey signature in the browser, manager submits before the clock
+  | 'priority';
 
 /** How the owner's signature is obtained for meta-transactions. */
 export type SigningMode = 'session' | 'client';
@@ -108,6 +112,8 @@ export interface StageEvent {
   chainNow?: string;
   serverNow?: string;
   status?: RecordStatus;
+  /** U4+: which way the wire left the vault. `priority` = owner Passkey + manager meta-approve before the clock. */
+  via?: 'priority';
 }
 
 /** One time-locked record as the vault board shows it. Strings only (bigint → decimal). */
@@ -138,8 +144,10 @@ export interface DeskSession {
   chainId?: number;
   timeLockSec?: number;
   instantLimit?: string;
-  /** Branch Manager address when the Teller Desk has one; enables the manager's stamp and shredder. */
+  /** Branch Manager address when the Teller Desk has one; enables the shredder and (U4+) the Priority desk. */
   manager?: string | null;
+  /** U4+: the branch runs Priority releases and this account carries the META_APPROVE split (ROLE_SET 3). */
+  priority?: boolean;
   token?: { address: string; symbol: string; decimals: number };
 }
 

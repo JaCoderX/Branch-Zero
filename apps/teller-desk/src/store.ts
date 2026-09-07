@@ -39,6 +39,10 @@ export interface Player {
   configured?: boolean;
   /** Version of the role-permission set applied to this account (provision.ts `ROLE_SET_VERSION`). */
   roleSet?: number;
+  /** U4+: the account was last synced with the Priority grant split (META_APPROVE owner-signs / manager-submits). */
+  priority?: boolean;
+  /** U4+: shape of the typed-data policy rule (privy.ts `TYPED_DATA_RULE_VERSION`); 1 = no action pin. */
+  typedDataRule?: number;
   createdAt: number;
 }
 

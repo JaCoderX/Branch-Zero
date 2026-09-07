@@ -132,7 +132,9 @@ JS side (`apps/web/src/bridge.ts`) exposes a **flat, JSON-only** API. All values
 | `resolveName` | `{ name }` | `{ address, chainId, avatar? }` | ENS (Sepolia) |
 | `pay` | `{ chainId, to, amount, memo }` | `{ txId, txHash }` | Teller `/pay` (Lane A) |
 | `wire` | `{ to, amount, memo }` | `{ txId, releaseTime, chainNow, serverNow, hash, status }` | Teller `/wire` (Lane B request). **No `releaseSeconds`** — the cooling period is the account's own `timeLockPeriodSec`, fixed at `initialize`; the game cannot shorten it |
-| `approve` / `cancel` | `{ txId, as?: "owner" or "manager" }` | `{ hash, txId, status, balanceAfter? }` | Teller `/approve` `/cancel` |
+| `approve` | `{ txId }` | `{ hash, txId, status, balanceAfter? }` | Teller `/approve` — **owner only** (Ruth's wait path, after `releaseTime`). U4+: `as: "manager"` is refused (`MANAGER_NO_STAMP`) |
+| `cancel` | `{ txId, as?: "owner" or "manager" }` | `{ hash, txId, status }` | Teller `/cancel` (recall) |
+| `priority` (U4+) | `{ txId }` | `{ hash, txId, status, actor: "priority", releaseTime, chainNow, balanceAfter, mfaPrompted }` | Teller `/priority/prepare` → Privy **user signer** (`clear()` + `promptMfa()` Passkey when enrolled, `signTypedData` with `showWalletUIs`) → `/priority/submit`. The one method allowed to open a second Privy surface; hands focus back to the canvas afterwards. Refuses a released wire (`NOT_COOLING`) |
 | `listPending` | — | `{ items: [{ txId, status, releaseTime, released, to, amount, requester }], serverNow }` | `getPendingTransactions` + `getTransaction` |
 | `getSession` (U3) | — | `{ loggedIn, ready, userId?, owner?, account?, delegated?, signingMode?, chainId?, timeLockSec?, instantLimit?, manager?, token? }` | Privy auth state + Teller `/session`. **Never opens a modal**; `loggedIn:false` is a normal answer |
 | `getHistory` (U3) | `{ limit }` | `{ items: [receipts], serverNow }` | Teller `/status.receipts` (the ledger board's right column) |
@@ -155,9 +157,14 @@ Rules:
 - Every call has a timeout (15 s) and returns `{ error: { code, message } }` on failure; NPCs have a line for each `code` (see [NPCS.md](./NPCS.md) § 5).
 - On desktop (editor) `MockChain.gd` implements the same API with fake latency and canned data so gameplay can be iterated offline.
 
-### 4a. Bridge version `u4.0` (as built; `u3.0` + U4)
+### 4a. Bridge version `u4.1` (as built; `u4.0` + U4+)
 
-`apps/web/src/bridge/branchZero.ts`. `u4.0` adds **no methods**: the `desk.link` event above, and `login` /
+`apps/web/src/bridge/branchZero.ts`. `u4.1` adds one method, **`priority`** (Okafor's desk, U4+): the overlay
+prepares the owner's `SIGN_META_APPROVE` payload at the Teller Desk, asks the player's *own* Privy signer to sign it
+with the wallet UI shown — preceded by a fresh Passkey (`useMfa().clear()` + `promptMfa()`) when the player has MFA
+enrolled — and hands the signature back for the Branch Manager to submit. It is the only bridge method allowed to open a
+Privy surface after Account Opening, and like `login` it calls `focusCanvas()` in a `finally`. `approve` is owner-only
+(`as` is ignored). `u4.0` added **no methods**: the `desk.link` event above, and `login` /
 `addSessionSigner` hand DOM focus back to the canvas when the Privy modal closes (`shell/focus.ts`, see §5b). Godot's side is `autoload/chain.gd`, with `call_async(method, args, timeout_sec)`
 — the timeout is **per call**: `login` waits up to 600 s for a human OTP, `provision` 300 s, lane calls 120 s, reads 20 s.
 Teller Desk error codes (`NO_ACCOUNT`, `NOT_PENDING`, `BeforeReleaseTime`, `policy_violation`, …) travel unchanged in
@@ -201,11 +208,16 @@ off it and WASD / `E` go dead. Rules that follow:
   timers — not `requestAnimationFrame`, which a background tab never runs — because React unmounts the clicked button
   in the same commit and an unmounted focused element drops focus to `<body>`.
 - Verified 2026-09-07 in the shell: pill → `body`; click bank → `canvas`; *hide* → `canvas`; `F6` teleports, `E` opens Mo.
+- U4+: the Priority hand scan (Privy MFA sheet + sign sheet) is the second surface that moves focus; the bridge's
+  `priority` handler calls `focusCanvas()` in a `finally`, success or refusal.
 
 ### 5a. MockChain and the `?mock` flag (U3)
 
 `autoload/mock_chain.gd` answers the whole bridge API from canned state (addresses start `0xM0CK…`, cooling period
-30 s, receipts local). It is used automatically on desktop, and on web when the shell URL carries `?mock` (`?mock=account`
+30 s, receipts local; U4+ `priority` is a 1.8 s timer labelled "MockChain: no Passkey, nothing signed" and
+`approve as: manager` answers `MANAGER_NO_STAMP`). `godot --headless --path apps/game -s tests/run_mock_walk.gd`
+boots the autoloads by hand and walks Ruth's and Okafor's desks against it (U4+) — a `-s` script gets no project
+autoloads, so the test adds `Chain` / `GameState` / `Dialogue` to the root itself. It is used automatically on desktop, and on web when the shell URL carries `?mock` (`?mock=account`
 starts as a signed-in, delegated player with an open, funded account). The real bridge stays installed; only Godot's
 `Chain` routes calls to the mock. It exists to walk the greybox without an inbox and proves nothing about the chain —
 kill tests run against the Teller Desk (REMOTE-EVM.md §5). Tester keys: **F2 / F3 / F4 / F6 / F7** teleport to Account Opening /

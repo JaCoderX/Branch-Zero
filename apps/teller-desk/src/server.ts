@@ -1,24 +1,27 @@
 /**
- * Teller Desk — U2.
+ * Teller Desk — U4+ (Priority release on top of the frozen U4 MVP).
  *
  * Holds the two keys the browser must never see: the Privy P-256 authorization key (which lets it *ask*
  * a delegated wallet for a signature) and the broadcaster key (which pays gas). Neither can move a
  * player's money alone: the enclave only signs what the policy allows, and the broadcaster can only
  * submit meta-transactions the owner actually signed. U2 adds the vault: the owner's own transactions
  * (`executeWithTimeLock`, approve, cancel) signed by the session signer and broadcast from here, plus an
- * optional Branch Manager key holding a runtime role.
+ * optional Branch Manager key holding a runtime role. U4+ adds the Priority desk: the owner signs a
+ * `SIGN_META_APPROVE` payload in the browser behind a Passkey and the manager submits it before `releaseTime`
+ * (`/priority/prepare` + `/priority/submit`); the manager's post-clock timed stamp is gone.
  *
  *   npm run dev:teller     # :8787, reads ../../.env
  */
 import Fastify from 'fastify';
-import { formatEther, getAddress, isAddress, type Address } from 'viem';
+import { formatEther, getAddress, isAddress, type Address, type Hex } from 'viem';
 import type { StageEvent } from '@branch-zero/shared';
 import { broadcasterAddress, chain, deployerAddress, managerAddress, publicClient } from './chain.ts';
 import { config, deployments, redact } from './config.ts';
 import { createPlayerPolicy, identify, recoverPolicy } from './privy.ts';
 import { pay, passbook } from './lanes/laneA.ts';
 import { approve, cancel, listPending, resumeWatchers, wire, type Actor } from './lanes/laneB.ts';
-import { ROLE_SET_VERSION, ensureTxPolicy, provision, recoverAccount } from './lanes/provision.ts';
+import { preparePriority, submitPriority } from './lanes/priority.ts';
+import { ROLE_SET_VERSION, ensureTxPolicy, ensureTypedDataPolicy, provision, recoverAccount } from './lanes/provision.ts';
 import { emitStage, getPlayer, listReceipts, newJobId, patchPlayer, serialize, subscribe, upsertPlayer, type Player } from './store.ts';
 import type { SignatureAudit, TxAudit } from './signing/privySigner.ts';
 
@@ -75,7 +78,9 @@ app.get('/healthz', async () => {
     ]);
     return {
       ok: chainId === chain.id,
-      unit: 'U2',
+      unit: 'U4+',
+      priorityRelease: config.priorityRelease,
+      roleSetVersion: ROLE_SET_VERSION,
       chains: { remoteEvm: { chainId, expected: chain.id, block: block.toString(), reachable: true } },
       broadcaster: { address: broadcasterAddress, balanceEth: formatEther(broadcasterBal) },
       deployer: { address: deployerAddress, balanceEth: formatEther(deployerBal) },
@@ -85,7 +90,7 @@ app.get('/healthz', async () => {
       timeLockSec: Number(config.timeLockSec),
     };
   } catch (e) {
-    return { ok: false, unit: 'U2', chains: { remoteEvm: { reachable: false, error: (e as Error).message } } };
+    return { ok: false, unit: 'U4+', chains: { remoteEvm: { reachable: false, error: (e as Error).message } } };
   }
 });
 
@@ -126,6 +131,12 @@ app.post('/session', async (req, reply) => {
     } catch (e) {
       app.log.warn({ err: (e as Error).message }, 'tx policy rules not ensured');
     }
+    // U4+ — an older typed-data rule (no `params.action` pin) is tightened in place once the account is known.
+    try {
+      player = await ensureTypedDataPolicy(player);
+    } catch (e) {
+      app.log.warn({ err: (e as Error).message }, 'typed-data rule not tightened');
+    }
     return {
       privyUserId: player.privyUserId,
       owner: player.ownerAddress,
@@ -141,6 +152,10 @@ app.post('/session', async (req, reply) => {
       timeLockSec: Number(config.timeLockSec),
       instantLimit: config.instantLimit,
       manager: managerAddress ?? null,
+      /** U4+: this branch runs the Priority desk (manager key + PRIORITY_RELEASE) and this account carries the split. */
+      priority: config.priorityRelease && Boolean(player.priority),
+      roleSet: player.roleSet ?? 0,
+      roleSetWanted: ROLE_SET_VERSION,
     };
   } catch (e) {
     return fail(reply, e);
@@ -221,14 +236,61 @@ function parseDecision(body: { txId?: string | number; as?: string }): { txId: b
   return { txId: BigInt(body.txId), actor };
 }
 
-/** Open the vault (after `releaseTime`). `as: 'manager'` uses the Branch Manager's runtime role instead of the owner. */
+/**
+ * Open the vault after `releaseTime` — the **wait** path, Ruth's window, always the owner (silent session signer).
+ * U4+: `as: 'manager'` is refused. Mr. Okafor no longer holds the timed stamp (ROLE_SET 3 removed it); his desk is
+ * `/priority/*`, which needs the player's Passkey, and `/cancel` (recall).
+ */
 app.post('/approve', async (req, reply) => {
   try {
     const player = await requirePlayer(req as never);
     const { txId, actor } = parseDecision((req.body ?? {}) as never);
+    if (actor === 'manager') {
+      throw Object.assign(new Error('the Branch Manager does not stamp vault releases (U4+): Ruth releases after the clock, Okafor bypasses it with /priority'), { statusCode: 400, code: 'MANAGER_NO_STAMP' });
+    }
     const jobId = newJobId();
     const current = getPlayer(player.privyUserId)!;
-    const result = await serialize(player.privyUserId, () => approve(current, txId, actor, jobId, txAuditFor(player)));
+    requireConfigured(current);
+    const result = await serialize(player.privyUserId, () => approve(current, txId, 'owner', jobId, txAuditFor(player)));
+    return { jobId, ...result };
+  } catch (e) {
+    return fail(reply, e);
+  }
+});
+
+// ============ U4+ — Priority release (Okafor's desk) ============
+
+/**
+ * Step 1: build the owner's `SIGN_META_APPROVE` payload for a wire that is still cooling. Returns EIP-712 typed data
+ * for the player's own signer (Passkey in the browser) and a `priorityId` to hand back with the signature. Refuses a
+ * released wire (`NOT_COOLING` — that is Ruth's), a settled one (`NOT_PENDING`), a vault-only branch (`PRIORITY_OFF`).
+ */
+app.post('/priority/prepare', async (req, reply) => {
+  try {
+    const player = await requirePlayer(req as never);
+    const body = (req.body ?? {}) as { txId?: string | number };
+    if (body.txId === undefined || !/^\d+$/.test(String(body.txId))) throw Object.assign(new Error('`txId` must be a record id'), { statusCode: 400, code: 'BAD_ARGS' });
+    const jobId = newJobId();
+    const current = getPlayer(player.privyUserId)!;
+    requireConfigured(current);
+    const result = await serialize(player.privyUserId, () => preparePriority(current, BigInt(body.txId!), jobId));
+    return { jobId, ...result };
+  } catch (e) {
+    return fail(reply, e);
+  }
+});
+
+/** Step 2: the Passkey-backed signature comes back; the Branch Manager submits the meta-approve before the clock. */
+app.post('/priority/submit', async (req, reply) => {
+  try {
+    const player = await requirePlayer(req as never);
+    const body = (req.body ?? {}) as { priorityId?: string; signature?: string };
+    if (!body.priorityId || !/^[0-9a-f-]{8,40}$/i.test(body.priorityId)) throw Object.assign(new Error('`priorityId` missing'), { statusCode: 400, code: 'BAD_ARGS' });
+    if (!body.signature || !/^0x[0-9a-fA-F]{130}$/.test(body.signature)) throw Object.assign(new Error('`signature` must be 65 bytes hex'), { statusCode: 400, code: 'BAD_ARGS' });
+    const jobId = newJobId();
+    const current = getPlayer(player.privyUserId)!;
+    const result = await serialize(player.privyUserId, () => submitPriority(current, body.priorityId!, body.signature as Hex, jobId));
+    app.log.info({ owner: current.ownerAddress, account: current.account, txId: result.txId, hash: result.hash, releaseTime: result.releaseTime, chainNow: result.chainNow }, 'priority release: owner-signed meta-approve submitted by the Branch Manager');
     return { jobId, ...result };
   } catch (e) {
     return fail(reply, e);
@@ -328,8 +390,8 @@ deployments();
 
 app.listen({ port: config.port, host: '127.0.0.1' }).then((addr) => {
   app.log.info(
-    { rpc: config.rpcUrl, broadcaster: broadcasterAddress, deployer: deployerAddress, manager: managerAddress ?? null, privyApp: config.privy.appId, signerId: config.privy.signerId },
-    `Teller Desk (U2) listening on ${addr}`,
+    { rpc: config.rpcUrl, broadcaster: broadcasterAddress, deployer: deployerAddress, manager: managerAddress ?? null, priorityRelease: config.priorityRelease, roleSet: ROLE_SET_VERSION, privyApp: config.privy.appId, signerId: config.privy.signerId },
+    `Teller Desk (U4+) listening on ${addr}`,
   );
 });
 

@@ -10,6 +10,9 @@
  * U2 methods: wire, approve, cancel, listPending (the vault — Lane B).
  * U3 methods: getSession (who is at the desk, never opens a modal), getHistory (ledger receipts). Both call
  *             routes that already exist (`/session`, `/status`); U3 added no chain semantics.
+ * U4+ method: priority (Okafor's desk) — the one call allowed to open a second Privy surface: the player's own
+ *             signer signs the meta-approve bypass behind a Passkey, the Branch Manager submits it before the clock.
+ *             `approve` is owner-only from here (Ruth's wait path); `as: 'manager'` is refused by the desk.
  *
  * Everything that needs a Privy identity is delegated to the React overlay through a small adapter it
  * registers at mount: the bridge itself holds no token and no key, and a method that needs one before the
@@ -22,8 +25,8 @@ import deployments from '../../../../infra/deployments/remote-evm.json';
 import type { DeskLink } from '../shell/deskEvents';
 import { focusCanvas } from '../shell/focus';
 
-/** u4.0: no new methods; adds the `desk.link` event and gives the canvas focus back after the Privy modals. */
-export const BRIDGE_VERSION = 'u4.0';
+/** u4.1: `priority` (U4+). u4.0 added the `desk.link` event and gave the canvas focus back after the Privy modals. */
+export const BRIDGE_VERSION = 'u4.1';
 
 /**
  * `?mock=1` on the shell URL tells Godot to answer every desk call from its own MockChain (canned data,
@@ -46,6 +49,8 @@ export interface WalletAdapter {
   openSession(): Promise<DeskSessionSource>;
   delegate(): Promise<void>;
   revoke(): Promise<void>;
+  /** U4+: prepare → Passkey + user-signer typed data (UI shown) → submit. The only second Privy surface. */
+  priority(txId: string): Promise<unknown>;
   call<T>(path: string, body?: unknown): Promise<T>;
   isAuthenticated(): boolean;
   /** Privy provider initialised (auth state is known). */
@@ -63,6 +68,7 @@ export interface DeskSessionSource {
   timeLockSec?: number;
   instantLimit?: string;
   manager?: string | null;
+  priority?: boolean;
   token?: { address: string; symbol: string; decimals: number };
 }
 
@@ -196,8 +202,22 @@ const handlers: Record<string, Handler> = {
     // Returns { txId, releaseTime, chainNow, serverNow, hash } — releaseTime is read from the chain record.
     return requireAdapter().call('/wire', { to, amount, memo: args.memo });
   },
+  /** Ruth's wait path: the owner's timed release after the clock, silent. U4+: never the manager. */
   async approve(args) {
-    return requireAdapter().call('/approve', { txId: String(args.txId ?? ''), as: args.as === 'manager' ? 'manager' : 'owner' });
+    return requireAdapter().call('/approve', { txId: String(args.txId ?? ''), as: 'owner' });
+  },
+  /**
+   * U4+ — Okafor's Priority release. The hand scan is a Privy MFA sheet plus a visible sign sheet, so like `login`
+   * it leaves DOM focus behind: the canvas gets it back whatever the outcome (docs/GODOT.md §5b).
+   */
+  async priority(args) {
+    const txId = String(args.txId ?? '');
+    if (!/^\d+$/.test(txId)) throw bridgeError('BAD_ARGS', `not a record id: ${txId}`, 'We have no wire by that number.');
+    try {
+      return await requireAdapter().priority(txId);
+    } finally {
+      focusCanvas();
+    }
   },
   async cancel(args) {
     return requireAdapter().call('/cancel', { txId: String(args.txId ?? ''), as: args.as === 'manager' ? 'manager' : 'owner' });
@@ -232,6 +252,7 @@ const handlers: Record<string, Handler> = {
       timeLockSec: s.timeLockSec,
       instantLimit: s.instantLimit,
       manager: s.manager ?? null,
+      priority: Boolean(s.priority),
       token: s.token,
     };
   },

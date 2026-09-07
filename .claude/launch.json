@@ -4,8 +4,20 @@
     {
       "name": "branch-zero-web",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev:web"],
+      "runtimeArgs": [
+        "run",
+        "dev:web"
+      ],
       "port": 5173
+    },
+    {
+      "name": "branch-zero-teller",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev:teller"
+      ],
+      "port": 8787
     }
   ]
 }

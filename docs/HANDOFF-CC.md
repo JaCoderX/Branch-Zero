@@ -6,18 +6,36 @@ created: 2026-09-06
 updated: 2026-09-07
 product: Branch-Zero
 objective: OBJ-2026-0004
-first_mission: U4+ Priority release (G5b)
-prior_mission: U4 MVP freeze (G5) — met 2026-09-07
+first_mission: U5 ENS (G6)
+prior_mission: U4+ Priority release (G5b) — met 2026-09-07
 ---
 
 # Handoff — Claude Code (Fable 5.1)
 
 You are a **cold agent** unless the human says you are continuing a prior session. Prefer reading this file over chat memory. You have **freedom on how**. You do **not** have freedom on constraints, scope, or protocol semantics.
 
-**Current mission: U4+ Priority release (G5b)** — a third desk workflow: Ruth waits the clock; Okafor bypasses
-it only with the player's Passkey (hand scan) + meta-approve. Kickoff: [`docs/KICKOFF-U4-plus.md`](./KICKOFF-U4-plus.md).
-Do not start U5–U7. Do not regress the U4 freeze except the deliberate Priority Passkey.
+**Current mission: U5 ENS (G6)** — Petra's Name Desk. Kickoff: [`docs/KICKOFF-U5.md`](./KICKOFF-U5.md). Do not
+start U6–U7. Do not regress the U4 freeze or the U4+ Priority desk.
 
+> **U4+ met 2026-09-07 — Priority release is the third way out of the vault.** Read
+> [`docs/progress/2026-09-07-u4-plus-priority-release.md`](./progress/2026-09-07-u4-plus-priority-release.md)
+> **first**. Ruth is wait-only (owner timed approve after the clock, silent); Mr. Okafor submits an owner-signed
+> `SIGN_META_APPROVE` **before** the clock, and that signature is made in the browser by the player's own Privy signer
+> behind a Passkey — the "hand scan". `ROLE_SET_VERSION` is **3**: OWNER +`SIGN_META_APPROVE`, `BRANCH_MANAGER`
+> +`EXECUTE_META_APPROVE` −`EXECUTE_TIME_DELAY_APPROVE` on `transfer`; Re-check (`/provision`, or
+> `npm -w apps/teller-desk run upgrade-players`) upgrades existing players and `/pay` `/wire` `/priority/*` refuse
+> `NOT_CONFIGURED` until it has. The per-player Privy typed-data rule now pins `params.action` to
+> `SIGN_META_REQUEST_AND_APPROVE`, so the silent session signer **cannot** sign the bypass payload (kill test Y8a) and
+> still signs counter pays (Y8b). Bridge is `u4.1` (`priority`; `approve` owner-only). Findings that will otherwise cost
+> you: the manager's old grant on the `approveTimeLockExecution` *handler* selector is **not revocable** (schema
+> `isGrantRevocable=false`) — it stays, inert without the transfer half, and provisioning reports it as "stranded";
+> a headless rig cannot hold a Passkey, so `killtests:u4plus` obtains the owner's Priority signature by briefly
+> relaxing its own rule and restoring it (documented in the script); the SDK re-wraps a viem-decoded revert as text
+> (`Error: NoPermission(address caller)`), so `explainRevert` now also reads that. **Still owed by a human:** the
+> Passkey walk in the browser (Okafor → Priority → MFA sheet → sign sheet → COMPLETED before the clock) and a check
+> that a counter Pay right after is still silent — the lab (ENG-0013 M2/M4) proved both halves, the product walk is
+> not yet recorded.
+>
 > **U4 met 2026-09-07 — the MVP is frozen.** Read
 > [`docs/progress/2026-09-07-u4-mvp-freeze.md`](./progress/2026-09-07-u4-mvp-freeze.md) **first**. What it fixed
 > and why: the keyboard died after any overlay click because a full-viewport `#boot` div sat over the canvas
@@ -152,6 +170,16 @@ EIP-712 domain name from SDK: **`Bloxchain`** (`META_TX_DOMAIN`).
   `CopyBlox.BloxCloned` logs
 - `npm -w apps/teller-desk run killtests:u2 -- --fresh` re-runs V6 + Lane B
 - Bridge is `u2.0`: `wire`, `approve`, `cancel`, `listPending` added
+
+## 4e. U4 / U4+ already done (do not redo)
+
+- U4 (G5): canvas re-focus, `RPC` / `AUTH` / `NOT_CONFIGURED`, reconnecting SSE + `desk.link`, persisted receipts, first
+  load measured — [`docs/progress/2026-09-07-u4-mvp-freeze.md`](./progress/2026-09-07-u4-mvp-freeze.md)
+- U4+ (G5b): `ROLE_SET_VERSION` 3 grant split (`lanes/provision.ts` `desiredGrants`, `PRIORITY_RELEASE` flag);
+  `lanes/priority.ts` + `/priority/prepare` `/priority/submit`; `/approve` owner-only; typed-data rule pins
+  `params.action` (`privy.ts`, `packages/shared/src/metaTx.ts`); overlay `priority()` (user signer + MFA);
+  bridge `u4.1` `priority`; Godot `run_action("priority")`, Ruth wait-only, Okafor Priority + recall, 6 new error
+  lines, MockChain; `npm -w apps/teller-desk run killtests:u4plus` (Y0–Y9) and `upgrade-players`
 
 ## 4d. U3 already done (do not redo)
 
@@ -316,7 +344,9 @@ Promote only after lab handoffs + principal OK (likely U6+).
 
 ---
 
-## 5e. Mission U4+ — Priority release (G5b)
+## 5e. Mission U4+ — Priority release (G5b) — **MET 2026-09-07**
+
+Kept as the record of what G5b required and how it was answered. The next mission is §5f.
 
 A **third** workflow, not a rename of Ruth’s timed vault release and **not** ENG-0010’s short clock.
 
@@ -355,15 +385,28 @@ Kickoff: [`docs/KICKOFF-U4-plus.md`](./KICKOFF-U4-plus.md). Labs (do not edit):
 - ENG-0010 short-clock desk; wiping Remote EVM; editing GameLab ENG folders
 - Lane A amount routing / policy rewrite; claiming dashboard MFA cache
 
-### Definition of Done (G5b)
+### Definition of Done (G5b) — met, with one human-owed item
 
-- [ ] Same account: Ruth early → `BeforeReleaseTime`; Okafor Priority early → `COMPLETED`; Ruth after clock → `COMPLETED`
-- [ ] Okafor has no post-clock timed stamp (grant + dialogue). Manager cannot file. Owner cannot submit their own meta-approve
-- [ ] Passkey / hand scan on Priority only; counter Pay silent after MFA enroll
-- [ ] `ROLE_SET_VERSION` bumped; Re-check provision upgrades existing players; no half-configured writes
-- [ ] NPCS.md §4.4–4.5 + `errors.json` + `run_checks.gd`; MockChain answers Priority (fake)
-- [ ] Freeze intact: one Account Opening modal; canvas focus after Passkey; `desk.link`; `RPC`/`AUTH`/`NOT_CONFIGURED`; `npm run typecheck`; both kill-test scripts green
-- [ ] Progress note + REFLECTION; HANDOFF advanced to U5 ([`docs/KICKOFF-U5.md`](./KICKOFF-U5.md))
+- [x] Same account (rig clone `0xD026…8DbD`, kill tests Y2 / Y3 / Y7 on 1337, blocks 235–244): Ruth early →
+      `BeforeReleaseTime`; Okafor Priority early → `COMPLETED` 102 s before `releaseTime` (`0xf34c88f6…`), payee paid;
+      Ruth after clock → `COMPLETED` (`0x99f8a3e5…`)
+- [x] Okafor has no post-clock timed stamp: `EXECUTE_TIME_DELAY_APPROVE` removed from `BRANCH_MANAGER` on `transfer`
+      (Y0), manager direct approve → `NoPermission` before **and** after the clock (Y2b, Y7b), `/approve as: manager` →
+      `MANAGER_NO_STAMP`, `manager.json` offers `priority` + `cancel` only (`run_checks.gd` enforces). Manager cannot
+      file (Y5). Owner cannot submit their own meta-approve (Y4)
+- [x] Passkey / hand scan on Priority only: the `priority` bridge method is the one second Privy surface (user signer,
+      `clear()` + `promptMfa()` when enrolled, `showWalletUIs`); Lane A / Ruth / recall untouched. The session signer
+      cannot sign the bypass payload (Y8a `policy_violation`) and still signs a counter pay (Y8b). **Owed by a human:**
+      the in-browser Passkey walk on the real bridge (ENG-0013 M2 proved the UI; the product walk is not recorded)
+- [x] `ROLE_SET_VERSION` 3; Re-check (`/provision`) re-syncs REMOVE+ADD in one batch (Y0 on a roleSet-2 account);
+      `upgrade-players` script for players on file; `NOT_CONFIGURED` until then; player index written synchronously (U4)
+- [x] NPCS.md §4.4–4.5 as built; `errors.json` 92 lines (+6 codes); `run_checks.gd` checks the Ruth/Okafor verb split
+      and the copy line; MockChain answers `priority` (labelled fake) and refuses `approve as: manager`;
+      `tests/run_mock_walk.gd` walks both desks headlessly against the mock (PASS)
+- [x] Freeze intact: one Account Opening modal (Priority is the documented exception); `focusCanvas()` after the Passkey
+      / sign sheets; `desk.link` / `RPC` / `AUTH` / `NOT_CONFIGURED` paths unchanged; `npm run typecheck` clean;
+      `killtests` (U1), `killtests:u2`, `killtests:u4plus` green — see the progress note for the run
+- [x] Progress note + REFLECTION; HANDOFF advanced to U5 ([`docs/KICKOFF-U5.md`](./KICKOFF-U5.md))
 
 ### Suggested sequence
 
@@ -374,13 +417,13 @@ Kickoff: [`docs/KICKOFF-U4-plus.md`](./KICKOFF-U4-plus.md). Labs (do not edit):
 
 ---
 
-## 5f. Mission U5 — ENS (G6)
+## 5f. Mission U5 — ENS (G6) — **NEXT**
 
 Petra's Name Desk becomes a desk. A player claims a subname under the bank's parent on Sepolia; the name points at
 their account; the counter pays by name. Payments stay on Remote EVM 1337 — ENS only answers "which address".
 Kickoff: [`docs/KICKOFF-U5.md`](./KICKOFF-U5.md). Design: [`docs/ENS.md`](./ENS.md) §2–4; NPC: [`docs/NPCS.md`](./NPCS.md) §4.6.
 
-**After U4+.** Do not start this while G5b is open.
+**U4+ / G5b met 2026-09-07** — this is the open mission.
 
 **Gate before code:** GameLab ENG-2026-0007 must say yes (registry, resolver, client). If it has not run, run it there.
 

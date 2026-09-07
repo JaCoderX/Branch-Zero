@@ -105,6 +105,11 @@ const ERROR_SELECTORS: Record<string, string> = {
   [toFunctionSelector('CanOnlyCancelPending(uint256)')]: 'CanOnlyCancelPending',
   [toFunctionSelector('MetaTxExpired(uint256,uint256)')]: 'MetaTxExpired',
   [toFunctionSelector('TransactionNotFound(uint256)')]: 'TransactionNotFound',
+  // U4+: a Priority payload prepared before a counter pay carries a stale signer nonce (`0x06427aeb`). The SDK's
+  // ERROR_SIGNATURES lists InvalidNonce with a different parameter list, so it cannot name this one.
+  [toFunctionSelector('InvalidNonce(uint256,uint256)')]: 'InvalidNonce',
+  [toFunctionSelector('SignerNotAuthorized(address)')]: 'SignerNotAuthorized',
+  [toFunctionSelector('InvalidSignature(bytes)')]: 'InvalidSignature',
 };
 
 /** Pull the revert payload out of viem's error chain — structured fields first, never the message text. */
@@ -129,16 +134,25 @@ function viemErrorName(e: unknown): string | undefined {
 /** Turn a revert into a bank line + the decoded protocol error name, when we can name it. */
 export function explainRevert(e: unknown): { code: string; message: string; bankLine: string } {
   const err = e as Error & { shortMessage?: string; cause?: { message?: string } };
-  const text = `${err.shortMessage ?? err.message ?? ''} ${err.cause?.message ?? ''}`;
+  // The SDK often re-wraps viem's error as plain text, so the decoded name only survives in the full message.
+  const text = `${err.shortMessage ?? ''} ${err.message ?? ''} ${err.cause?.message ?? ''}`;
   const data = revertData(e);
   const decoded = data ? decodeRevertReason(data) : null;
-  const name =
-    viemErrorName(e) ??
-    (data ? ERROR_SELECTORS[data.slice(0, 10).toLowerCase()] : undefined) ??
-    decoded?.name ??
-    // Last resort: viem prints the unmatched selector into the message as `signature "0x…"`.
-    ERROR_SELECTORS[(/signature "?(0x[0-9a-fA-F]{8})"?/.exec(text)?.[1] ?? '').toLowerCase()] ??
-    'Unknown';
+  // In order of trust: viem's own decode → a raw selector we know → the SDK's decoder → the selector viem printed
+  // into the message (`signature "0x…"`) → the name viem printed when its ABI knew the error but the SDK re-wrapped
+  // it as text (`Error: NoPermission(address caller)`). Written as steps, not one `??` chain: a regex literal after
+  // `??` and a comment line was mis-parsed by the transpiler and silently skipped (U4+ kill-test run 3/4).
+  const SIG_IN_TEXT = /signature:?\s*"?(0x[0-9a-fA-F]{8})"?/;
+  const NAME_IN_TEXT = /Error: ([A-Z][A-Za-z0-9]+)\(/;
+  let name: string | undefined = viemErrorName(e);
+  if (!name && data) name = ERROR_SELECTORS[data.slice(0, 10).toLowerCase()];
+  if (!name && decoded?.name) name = decoded.name;
+  if (!name) {
+    const sig = SIG_IN_TEXT.exec(text)?.[1];
+    if (sig) name = ERROR_SELECTORS[sig.toLowerCase()];
+  }
+  if (!name) name = NAME_IN_TEXT.exec(text)?.[1];
+  if (!name) name = 'Unknown';
   const bankLine =
     name === 'BeforeReleaseTime'
       ? 'Still cooling — the vault clock has not run down yet.'

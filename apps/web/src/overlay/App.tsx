@@ -74,6 +74,7 @@ export function App({ engineState }: { engineState: string }) {
       openSession: () => latest.current.openSession(),
       delegate: () => latest.current.delegate(),
       revoke: () => latest.current.revoke(),
+      priority: (txId) => latest.current.priority(txId),
       call: (path, body) => latest.current.call(path, body),
       isAuthenticated: () => latest.current.authenticated,
       isReady: () => latest.current.ready,
@@ -215,6 +216,16 @@ export function App({ engineState }: { engineState: string }) {
               {s?.txPolicy ? ` · owner tx rules: ${s.txPolicy.mode}${s.txPolicy.pinnedToAccount ? ', pinned' : ''}` : ''}
             </span>
           </div>
+          {s?.account && (
+            <div style={row}>
+              <span style={label}>vault</span>
+              <span style={{ color: s.priority ? '#e3b341' : '#9aa4b2' }}>
+                {s.priority ? 'priority desk open — Okafor bypasses the clock with your Passkey' : 'vault-only — the clock is the only way out'}
+                {` · roleSet ${s.roleSet ?? '?'}/${s.roleSetWanted ?? '?'}`}
+                {w.mfaEnrolled ? ' · MFA enrolled' : ' · no MFA enrolled (sign sheet only)'}
+              </span>
+            </div>
+          )}
           {passbook && (
             <div style={row}>
               <span style={label}>passbook</span>
@@ -288,15 +299,19 @@ export function App({ engineState }: { engineState: string }) {
                       {released ? '● released' : `○ ${fmt(left)} to release`}
                     </span>
                     <span style={{ color: '#556' }}>t={x.releaseTime}</span>
-                    <button style={{ ...btn, opacity: released ? 1 : 0.6 }} onClick={() => run('Opening the vault…', () => w.call('/approve', { txId: x.txId }))}>
+                    <button style={{ ...btn, opacity: released ? 1 : 0.6 }} title="Ruth — owner timed release after the clock, silent" onClick={() => run('Opening the vault…', () => w.call('/approve', { txId: x.txId }))}>
                       Release
                     </button>
                     <button style={btn} onClick={() => run('Recalling the wire…', () => w.call('/cancel', { txId: x.txId }))}>
                       Recall
                     </button>
-                    {s?.manager && (
-                      <button style={{ ...btn, borderColor: '#e3b341' }} onClick={() => run('Asking the manager…', () => w.call('/approve', { txId: x.txId, as: 'manager' }))}>
-                        Manager stamp
+                    {s?.priority && !released && (
+                      <button
+                        style={{ ...btn, borderColor: '#e3b341' }}
+                        title="Okafor — skip the cooling period, hand scan required (Passkey + your own signature; the manager submits)"
+                        onClick={() => run('Priority release — hand scan…', () => w.priority(x.txId))}
+                      >
+                        Priority (hand scan)
                       </button>
                     )}
                   </div>

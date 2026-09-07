@@ -327,8 +327,10 @@ Godot only consumes `bankLine` on the main path and `technical` under "Ask why".
 | POST | `/provision` | `{ chainId }` | session | deploy + init + guard batch + airdrop; returns `jobId` |
 | POST | `/pay` | `{ chainId, to, amount, memo }` | session | Lane A job |
 | POST | `/wire` | `{ chainId, to, amount, memo }` | session | Lane B request job |
-| POST | `/approve` | `{ chainId, txId, as: 'owner'|'manager' }` | session (manager requires role) | approve job |
-| POST | `/cancel` | `{ chainId, txId, as }` | session | cancel job |
+| POST | `/approve` | `{ txId }` | session | Ruth's wait path — owner timed approve after `releaseTime` (U4+: `as: 'manager'` → 400 `MANAGER_NO_STAMP`) |
+| POST | `/cancel` | `{ txId, as: 'owner'|'manager' }` | session | recall job |
+| POST | `/priority/prepare` | `{ txId }` | session | U4+: owner `SIGN_META_APPROVE` payload as EIP-712 typed data + `priorityId`; refuses released (`NOT_COOLING`), vault-only (`PRIORITY_OFF`) |
+| POST | `/priority/submit` | `{ priorityId, signature }` | session | U4+: verifies recover == owner, Branch Manager submits `approveTimeLockExecutionWithMetaTx` before the clock |
 | GET | `/status` | — | session | passbook snapshot |
 | GET | `/events` | — | session | SSE stream |
 | POST | `/ens/claim` | `{ label }` | session | mint subname + records |

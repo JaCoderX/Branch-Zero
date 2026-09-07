@@ -47,7 +47,7 @@ Kill test **K4**: settled — fixture on 1337; product path = SDK + CopyBlox.
 | `OWNER_ROLE` | Player | Privy embedded wallet (enclave); delegated session signer for typed data | Sign meta-txs (request-and-approve, approve, cancel, config batches); request time-locked executions; approve/cancel directly |
 | `BROADCASTER_ROLE` | Teller Desk | `BROADCASTER_PRIVATE_KEY_*` on the server | Execute meta-txs the owner signed; pays gas |
 | `RECOVERY_ROLE` | Security Officer | `RECOVERY_ADDRESS` (cold; key offline unless S2) | Ownership recovery workflow only |
-| Runtime `BRANCH_MANAGER` (T3) | Manager wallet | `MANAGER_PRIVATE_KEY` (demo) or a second Privy user | `approveTimeLockExecution`, `cancelTimeLockExecution` on the ERC-20 transfer flow |
+| Runtime `BRANCH_MANAGER` | Manager wallet | `MANAGER_PK` (demo) | **U4+:** `approveTimeLockExecutionWithMetaTx` carrying the owner's `SIGN_META_APPROVE` (Priority, before `releaseTime`) and `cancelTimeLockExecution` (recall) on the ERC-20 transfer flow. **Not** `approveTimeLockExecution` — the timed stamp is the owner's (Ruth) |
 | Runtime `REQUESTER` (optional, Lane B option 2) | Teller Desk requester wallet | server | `executeWithTimeLock` only — never approve |
 | Deployer | Bank | `DEPLOYER_PRIVATE_KEY` | Deploys + initialises each player's `AccountBlox`; funds demo USDC |
 
@@ -306,6 +306,21 @@ Approval before `releaseTime` reverts — the Vault Keeper's line "Still cooling
 > `EXECUTE_TIME_DELAY_APPROVE` and `EXECUTE_TIME_DELAY_CANCEL` on `transfer` alongside U1's
 > `SIGN_META_REQUEST_AND_APPROVE`. `BRANCH_MANAGER` gets approve/cancel on the transfer selector *and* on the
 > two handler selectors, because the handler half is granted only to OWNER by default.
+>
+> **U4+ (2026-09-07) — the untimed path is reopened on purpose, as a third workflow (`ROLE_SET_VERSION` 3).**
+> ENG-2026-0012 proved the split the contract demands: one role may not hold both `SIGN_META_APPROVE` and
+> `EXECUTE_META_APPROVE` on a selector (`ConflictingMetaTxPermissions`). Branch Zero grants OWNER
+> `SIGN_META_APPROVE` and `BRANCH_MANAGER` `EXECUTE_META_APPROVE` on `transfer` (plus the manager's handler half on
+> `approveTimeLockExecutionWithMetaTx`), and **removes** `EXECUTE_TIME_DELAY_APPROVE` from the manager. Result:
+> Ruth's wait path is the owner's timed `approveTimeLockExecution` (unchanged, still refused `BeforeReleaseTime`
+> early); Okafor's **Priority release** is `approveTimeLockExecutionWithMetaTx` submitted by the manager under the
+> owner's signature, and it completes *before* `releaseTime`; the manager can no longer stamp after the clock
+> (`NoPermission`). The owner's signature is the control: the session signer's Privy policy only signs
+> `params.action == SIGN_META_REQUEST_AND_APPROVE`, so the bypass payload can only be signed by the player's own
+> signer — in the browser, behind a Passkey (PRIVY.md §4, §5a). META bits are account-wide: any PENDING wire on a
+> Priority-enabled account can be bypassed this way; `PRIORITY_RELEASE=off` keeps the U2 shape for vault-only
+> branches. Implementation: `apps/teller-desk/src/lanes/provision.ts` (`desiredGrants`), `lanes/priority.ts`.
+> Evidence: `docs/progress/2026-09-07-u4-plus-priority-release.md` (kill tests Y0–Y9).
 
 ---
 

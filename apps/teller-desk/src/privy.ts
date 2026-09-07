@@ -1,5 +1,6 @@
 import { PrivyClient, isEmbeddedWalletLinkedAccount, type User } from '@privy-io/node';
 import { getAddress, parseAbi, type Address } from 'viem';
+import { META_TX_PRIMARY_TYPE, META_TX_TYPED_DATA_TYPES_AS_SIGNED, SILENT_SIGNER_ACTIONS } from '@branch-zero/shared';
 import { config } from './config.ts';
 
 export const privy = new PrivyClient({ appId: config.privy.appId, appSecret: config.privy.appSecret });
@@ -85,6 +86,41 @@ export function embeddedWalletOf(user: User, address?: string): { ownerAddress: 
  */
 const RULE_NAME = 'Bloxchain meta-tx for this account';
 
+/**
+ * U4+ — shape of the typed-data rule, recorded per player (`player.typedDataRule`) so an older rule is re-written.
+ *   1  U1: `verifyingContract` + `chainId`
+ *   2  U4+ (retired same day): `params.action` pin built from the bare SDK type list — Privy denied every request
+ *   3  U4+: plus `params.action` ∈ SILENT_SIGNER_ACTIONS — the session signer may sign Lane A / config batches
+ *      (`SIGN_META_REQUEST_AND_APPROVE`) and nothing else. A Priority payload is `SIGN_META_APPROVE` on the same
+ *      domain; without this pin Privy could not tell it from a counter pay, and the hand scan would be theatre.
+ *      Anything not matched falls through to Privy's default DENY (`policy_violation`).
+ */
+export const TYPED_DATA_RULE_VERSION = 3; // 2 = action pin with the bare SDK types (denied everything); 3 = as-signed types
+
+/**
+ * The message half of the typed-data rule. Privy decodes the EIP-712 message with the `types` / `primary_type` we give
+ * it and compares the dotted field (`params.action` — nested paths work, the primary type is not a prefix). The types
+ * are the SDK's `META_TX_TYPES`, transcribed into `packages/shared` because the SDK does not export them at runtime;
+ * `lanes/priority.ts` cross-checks the transcription against what the SDK actually asks the wallet to sign.
+ *
+ * Two things Privy taught us on 2026-09-07 (`scripts/probe-typed-data-policy.ts`):
+ *   - message fields take `eq | gt | gte | lt | lte` only — `in` is rejected (`invalid_policy_format`), so one silent
+ *     action means one `eq`; a second action would need a second rule;
+ *   - the condition's `typed_data.types` must equal the request's `types` **exactly**, and viem prepends
+ *     `EIP712Domain` to the types before the account signer sees them — with the bare SDK list every request
+ *     (action 3 and 4 alike) was denied, i.e. the silent lane went dark. Hence `META_TX_TYPED_DATA_TYPES_AS_SIGNED`.
+ */
+function silentActionCondition() {
+  if (SILENT_SIGNER_ACTIONS.length !== 1) throw new Error('silentActionCondition: one action per rule (Privy message conditions have no `in`)');
+  return {
+    field_source: 'ethereum_typed_data_message' as const,
+    typed_data: { primary_type: META_TX_PRIMARY_TYPE, types: META_TX_TYPED_DATA_TYPES_AS_SIGNED as never },
+    field: 'params.action',
+    operator: 'eq' as const,
+    value: String(SILENT_SIGNER_ACTIONS[0]),
+  };
+}
+
 export interface PlayerPolicy {
   policyId: string;
   ruleId: string;
@@ -101,7 +137,7 @@ export async function createPlayerPolicy(chainId: number, label: string): Promis
         name: RULE_NAME,
         method: 'eth_signTypedData_v4',
         action: 'ALLOW',
-        conditions: [{ field_source: 'ethereum_typed_data_domain', field: 'chainId', operator: 'eq', value: String(chainId) }],
+        conditions: [{ field_source: 'ethereum_typed_data_domain', field: 'chainId', operator: 'eq', value: String(chainId) }, silentActionCondition()],
       },
     ],
   });
@@ -112,9 +148,21 @@ export async function createPlayerPolicy(chainId: number, label: string): Promis
 
 /**
  * Narrow the player's policy to their account once it exists. Everything outside this account — another
- * player's AccountBlox, another chain, any non-typed-data method — now falls through to the default DENY.
+ * player's AccountBlox, another chain, any non-typed-data method, any meta-tx action other than the silent
+ * lane's (U4+) — now falls through to the default DENY.
  */
-export async function pinPolicyToAccount(policy: PlayerPolicy, account: Address, chainId: number): Promise<void> {
+export async function pinPolicyToAccount(
+  policy: PlayerPolicy,
+  account: Address,
+  chainId: number,
+  /**
+   * `pinAction: false` writes the pre-U4+ shape (no `params.action` pin). **Kill-test rig only**: it is how the
+   * headless rig obtains the owner's Priority signature from the session signer, standing in for the Passkey a
+   * human gives in the browser. The product never calls it this way; the rig restores the pin afterwards.
+   */
+  opts: { pinAction?: boolean } = {},
+): Promise<void> {
+  const pinAction = opts.pinAction ?? true;
   await privy.policies().updateRule(policy.ruleId, {
     policy_id: policy.policyId,
     authorization_context: authorizationContext,
@@ -124,6 +172,7 @@ export async function pinPolicyToAccount(policy: PlayerPolicy, account: Address,
     conditions: [
       { field_source: 'ethereum_typed_data_domain', field: 'verifyingContract', operator: 'eq', value: account },
       { field_source: 'ethereum_typed_data_domain', field: 'chainId', operator: 'eq', value: String(chainId) },
+      ...(pinAction ? [silentActionCondition()] : []),
     ],
   });
 }

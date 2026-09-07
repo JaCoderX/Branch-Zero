@@ -81,11 +81,28 @@ await privy.policies().create({
     conditions: [
       { field_source: 'ethereum_typed_data_domain', field: 'verifyingContract', operator: 'eq', value: account },
       { field_source: 'ethereum_typed_data_domain', field: 'chainId',           operator: 'eq', value: '1337' },
+      // U4+: the silent lane may only sign SIGN_META_REQUEST_AND_APPROVE (Lane A, config batches).
+      { field_source: 'ethereum_typed_data_message', typed_data: { primary_type: 'MetaTransaction', types: META_TX_TYPED_DATA_TYPES_AS_SIGNED },
+        field: 'params.action', operator: 'eq', value: '3' },   // message fields: eq/gt/gte/lt/lte only — no `in`
     ],
   }],
 });
 // anything not matched falls through to Privy's default DENY
 ```
+
+> **U4+ (2026-09-07) — the third condition.** A Priority release is an owner-signed `SIGN_META_APPROVE` on the
+> *same* domain and account as a counter pay; without a message-level pin Privy could not tell them apart and the
+> session signer could sign the bypass silently (ENG-2026-0011 called this out). `ethereum_typed_data_message`
+> conditions decode the EIP-712 message with the `types` / `primary_type` we pass (the SDK's `META_TX_TYPES`,
+> transcribed in `packages/shared/src/metaTx.ts` and cross-checked against the SDK on every Priority) and compare a
+> dotted field — here `params.action` (nested paths work; the primary type is *not* a prefix). Two traps, probed
+> 2026-09-07 with `npm -w apps/teller-desk run probe:policy`: (1) message fields accept `eq | gt | gte | lt | lte`
+> only — `in` is `invalid_policy_format`; (2) the condition's `typed_data.types` must equal the request's `types`
+> **exactly**, and viem prepends `EIP712Domain` to the types before the account signer sees them, so a condition built
+> from the bare SDK list denied *every* request (action 3 and 4) and the silent lane went dark during provisioning.
+> `META_TX_TYPED_DATA_TYPES_AS_SIGNED` is the set that matches. Rules are app-owned, so existing players are re-written
+> in place (`player.typedDataRule` = 2; `ensureTypedDataPolicy`). Verified in `killtests:u4plus` Y8a/Y8b: the session
+> signer is refused the Priority payload with `policy_violation` and still signs a counter pay right after.
 
 Pinning `verifyingContract` is the stronger half of the original intent: it is the player's own AccountBlox,
 so a signature obtained under this policy cannot address anyone else's account. Losing the `name` clause costs
@@ -126,6 +143,37 @@ Lane B option 1 adds a second rule: `eth_sendTransaction` allowed only when `to 
 ---
 
 ## 5. Client flow (React overlay)
+
+### 5a. Priority release — the one step-up (U4+)
+
+The only Privy surface after Account Opening, and the deliberate exception to "no pop-ups": at Mr. Okafor's desk the
+player can skip the vault's cooling period, and that costs a **hand scan**. Built from ENG-2026-0011 (two signers on
+one wallet) and ENG-2026-0013 (Passkey step-up), in `apps/web/src/overlay/useBranchZeroWallet.ts` `priority()`:
+
+```ts
+const prep = await call('/priority/prepare', { txId });           // Teller Desk: contract-built unsigned meta-approve as typed data
+if (user.mfaMethods.length) { await clear(); await promptMfa(); }  // fresh second factor — Passkey — every time
+const { signature } = await signTypedData(prep.typedData, {
+  address: owner,
+  uiOptions: { showWalletUIs: true, title: 'Priority release — hand scan',
+               description: 'Skip the cooling period — hand scan required. …', buttonText: 'Confirm priority release' },
+});
+await call('/priority/submit', { priorityId: prep.priorityId, signature }); // recover == owner, manager submits
+```
+
+Rules that follow:
+
+- **User signer, never the session signer.** The session signer's policy cannot sign `params.action == 4` (§4), so the
+  step-up is a control, not a courtesy: Y8a in the U4+ kill tests asks the session signer to sign the exact payload and
+  gets `policy_violation`.
+- **`promptMfa()` asks every time.** ENG-2026-0013 measured re-challenges at ~9 s and ~21 s under a dashboard "1 min"
+  cache; the product calls `clear()` then `promptMfa()` and documents no skip. A player with no MFA enrolled sees the
+  sign sheet only (the response reports `mfaPrompted: false`).
+- **Silent Lane A stays silent** after MFA enrolment (0013 M4; Y8b re-checks it in the product policy shape).
+- **Focus goes back to the canvas** after the sheets close (GODOT.md §5b) — the bridge's `priority` handler does it in
+  a `finally`, so a dismissed Passkey (`PRIORITY_CANCELLED`) leaves the keyboard alive.
+- MFA stays **on** in the dashboard (Passkey). Do not turn it off to make the demo shorter; the bank's teaching is that
+  the stamp costs a human check.
 
 ```tsx
 // apps/web/src/overlay/Wallet.tsx

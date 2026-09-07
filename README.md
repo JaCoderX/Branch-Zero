@@ -10,8 +10,8 @@
 - Daily evidence: [`docs/progress/`](./docs/progress/)
 
 **Status:** U4 / G5 met 2026-09-07 — MVP frozen. The bank is walkable (Godot 4.5 web, single-threaded): Ines opens accounts,
-Dev takes payments and routes big ones to the vault, Ruth releases, Mr. Okafor stamps or shreds — every desk a call
-through `window.BranchZero` (`u4.0`) to the same Teller Desk lanes that passed **K2, K5, K8, V6, Lane A, Lane B**
+Dev takes payments and routes big ones to the vault, Ruth releases once the clock runs down, Mr. Okafor skips the
+cooling for a hand scan (U4+ Priority release) or shreds — every desk a call through `window.BranchZero` (`u4.1`) to the same Teller Desk lanes that passed **K2, K5, K8, V6, Lane A, Lane B**
 in U1–U2 on Remote EVM 1337. The vault door's clock is the record's own `releaseTime`, counted against the desk
 clock; the lobby board lists what is cooling and the last receipts. Walk it without an inbox at
 `http://localhost:5173/?mock=account`. U4 made it survive a judge's laptop: the canvas takes the keyboard back after

@@ -6,6 +6,7 @@
     { "if": "!booted", "node": "booting" },
     { "if": "!has_account", "node": "no_account" },
     { "if": "!manager", "node": "lore" },
+    { "if": "!priority", "node": "vault_only" },
     { "node": "idle" }
   ],
   "nodes": {
@@ -18,27 +19,50 @@
       "choices": [ { "text": "OK.", "next": "end" } ]
     },
     "lore": {
-      "text": "Come in. Today I'm just decoration — this branch has no manager key on the desk, so go release it yourself at the vault window.",
+      "text": "Come in. Today I'm decoration — this branch has no manager key on the desk. Ruth releases at the vault window once the clock runs down, and nobody skips the cooling.",
       "choices": [
         { "text": "Ask why", "next": "why_manager" },
         { "text": "OK.", "next": "end" }
       ]
     },
-    "idle": {
-      "text": "Come in. Something in the vault needs a decision? {pending} wire(s) in there.",
+    "vault_only": {
+      "text": "Come in. The priority desk isn't open for your account — either this branch runs vault-only, or Ines still has to re-check your file. I can still shred a wire.",
       "choices": [
-        { "text": "Approve a wire", "if": "pending>0", "next": "approve_list" },
+        { "text": "Recall a wire", "if": "pending>0", "next": "cancel_list" },
+        { "text": "Ask why", "next": "why_vault_only" },
+        { "text": "OK.", "next": "end" }
+      ]
+    },
+    "why_vault_only": {
+      "text": "A priority release needs META_APPROVE permissions on your account's transfer function — you sign, I submit. Vault-only accounts deliberately carry none, so the only way out of the vault is the path the contract time-checks. If your file is simply behind the current role set, Ines's re-check adds the split.",
+      "choices": [ { "text": "OK.", "next": "end" } ]
+    },
+    "idle": {
+      "text": "Come in. {pending} wire(s) in the vault, {cooling} still cooling. {priority_copy} Or I can shred one.",
+      "choices": [
+        { "text": "Priority release — hand scan", "if": "cooling>0", "next": "priority_list" },
+        { "text": "Priority release — hand scan", "if": "cooling==0 && released>0", "next": "not_cooling" },
         { "text": "Recall a wire", "if": "pending>0", "next": "cancel_list" },
         { "text": "Explain the limits", "next": "limits" },
         { "text": "Ask why", "next": "why_manager" },
         { "text": "Nothing today.", "next": "end" }
       ]
     },
-    "approve_list": {
-      "text": "Which one? Cooling ones will be refused by the vault, not by me.",
-      "choices_from": "pending",
-      "choice_template": { "text": "Stamp #{txId} — {amount} {symbol} to {payee} ({status}, {release_in})", "action": "approve", "as": "manager", "working": "Stamping…", "on_ok": "approved", "on_error": "refused" },
-      "choices": [ { "text": "Back", "next": "idle" } ]
+    "priority_list": {
+      "text": "Which one? Your hand scan authorises it; my desk submits it before the clock. {priority_copy}",
+      "choices_from": "pending_cooling",
+      "choice_template": { "text": "Priority #{txId} — {amount} {symbol} to {payee} (releases in {release_in})", "action": "priority", "working": "Hand scan… then my stamp.", "on_ok": "priority_ok", "on_error": "refused" },
+      "choices": [
+        { "text": "Ask why", "next": "why_priority" },
+        { "text": "Back", "next": "idle" }
+      ]
+    },
+    "not_cooling": {
+      "text": "Those have finished cooling — Ruth releases them at the vault window, no hand scan needed. I don't stamp after the clock.",
+      "choices": [
+        { "text": "Ask why", "next": "why_manager" },
+        { "text": "Back", "next": "idle" }
+      ]
     },
     "cancel_list": {
       "text": "Which one goes in the shredder?",
@@ -46,12 +70,16 @@
       "choice_template": { "text": "Recall #{txId} — {amount} {symbol} to {payee} ({status})", "action": "cancel", "as": "manager", "working": "Feeding it to the shredder…", "on_ok": "cancelled", "on_error": "refused" },
       "choices": [ { "text": "Back", "next": "idle" } ]
     },
-    "approved": {
-      "text": "Stamped. Wire #{txId} is released. Balance on your account now {balance} {symbol}.",
+    "priority_ok": {
+      "text": "Released. Wire #{txId} left the vault with {release_in} still on the clock — your hand scan, my stamp. Balance on your account now {balance} {symbol}.",
       "choices": [
-        { "text": "Ask why", "next": "why_manager" },
+        { "text": "Ask why", "next": "why_priority" },
         { "text": "Thanks.", "next": "end" }
       ]
+    },
+    "why_priority": {
+      "text": "A priority release is a meta-transaction. You signed an approval for that exact record with your own key — the hand scan guards that key — and my BRANCH_MANAGER role submitted it. The contract lets this path skip releaseTime by design, which is why the branch never lets the silent teller signer sign it: its policy only covers counter slips. Fine print: once an account carries these permissions, any cooling wire on it can leave this way — always under your scan, never without.",
+      "choices": [ { "text": "OK.", "next": "end" } ]
     },
     "cancelled": {
       "text": "Shredded. Wire #{txId} is recalled; nothing left the vault.",
@@ -61,18 +89,18 @@
       ]
     },
     "limits": {
-      "text": "Over the counter: up to {limit} {symbol}, done in one step. Above that: the vault, {timelock} of cooling, then a release from you or from me. Honest footnote — the limit is this branch's policy, enforced at the counter; the vault clock is the contract's.",
+      "text": "Over the counter: up to {limit} {symbol}, done in one step. Above that: the vault, {timelock} of cooling, then Ruth releases it — or you bring a hand scan here and I release it early. Honest footnote — the limit is this branch's policy, enforced at the counter; the vault clock is the contract's.",
       "choices": [
         { "text": "Ask why", "next": "why_limits" },
         { "text": "Back", "next": "idle" }
       ]
     },
     "why_limits": {
-      "text": "Your session signer could technically sign an over-the-counter slip for any amount to a whitelisted target — the policy cannot read the amount inside the call data. So routing large amounts to the vault is a Teller Desk rule, stated as a partial invariant in our review. What is enforced on chain: who may request, approve and cancel, and that approval waits for releaseTime.",
+      "text": "Your session signer could technically sign an over-the-counter slip for any amount to a whitelisted target — the policy cannot read the amount inside the call data. So routing large amounts to the vault is a Teller Desk rule, stated as a partial invariant in our review. What is enforced on chain: who may request, approve and cancel, that a timed approval waits for releaseTime, and that a priority release needs two different roles — one to sign, one to submit.",
       "choices": [ { "text": "Back", "next": "idle" } ]
     },
     "why_manager": {
-      "text": "I hold a runtime role — BRANCH_MANAGER — with permission to approve or cancel time-locked executions on this branch's transfer function. I cannot start a payment for you; I can only decide on one you started. And the vault refuses me before releaseTime just as it refuses you.",
+      "text": "I hold a runtime role — BRANCH_MANAGER. I cannot start a payment. I cannot open the vault after the clock — that is Ruth's window, and the chain would refuse me anyway; my timed stamp was removed. I can shred a wire, or submit a priority release before the clock when you bring a hand scan.",
       "choices": [ { "text": "OK.", "next": "end" } ]
     },
     "refused": {

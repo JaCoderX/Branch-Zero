@@ -6,10 +6,27 @@
  * server attach either of those itself — a user-controlled embedded wallet is owned by the *user's* key
  * quorum, and a server-side wallet update is rejected with 401 — so this consent is a real control, not
  * a courtesy dialog. After it, every Bloxchain slip is signed server-side and the player sees no modal.
+ *
+ * U4+ — one deliberate exception: a **Priority release** at the manager's desk. The bypass payload
+ * (`SIGN_META_APPROVE`) is outside the session signer's policy on purpose, so it is signed here by the player's *own*
+ * signer with the Privy UI shown and — when the player has MFA enrolled — a fresh Passkey first (`clear()` +
+ * `promptMfa()`; ENG-2026-0013: this re-challenges every time, there is no cache to lean on). That is the "hand scan".
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useCreateWallet, useLogin, useLogout, usePrivy, useSessionSigners, useWallets } from '@privy-io/react-auth';
-import type { SigningMode } from '@branch-zero/shared';
+import {
+  errorIndicatesMaxMfaRetries,
+  errorIndicatesMfaTimeout,
+  errorIndicatesMfaVerificationFailed,
+  useCreateWallet,
+  useLogin,
+  useLogout,
+  useMfa,
+  usePrivy,
+  useSessionSigners,
+  useSignTypedData,
+  useWallets,
+} from '@privy-io/react-auth';
+import type { PriorityTypedData, SigningMode } from '@branch-zero/shared';
 
 export interface Session {
   privyUserId: string;
@@ -26,14 +43,43 @@ export interface Session {
   token: { address: string; symbol: string; decimals: number };
   timeLockSec?: number;
   instantLimit?: string;
-  /** Branch Manager address when the Teller Desk has a manager key; enables the "Manager stamp" path. */
+  /** Branch Manager address when the Teller Desk has a manager key; enables recall and (U4+) the Priority desk. */
   manager?: string | null;
+  /** U4+: this branch runs Priority releases and this account carries the META_APPROVE split. */
+  priority?: boolean;
+  roleSet?: number;
+  roleSetWanted?: number;
+}
+
+/** What `/priority/prepare` hands back: the unsigned bypass payload as EIP-712 typed data plus its handle. */
+interface PriorityPrepared {
+  priorityId: string;
+  txId: string;
+  releaseTime: string;
+  deadline: string;
+  signer: string;
+  submitter: string;
+  typedData: PriorityTypedData;
+}
+
+export interface PriorityResult {
+  hash: string;
+  txId: string;
+  status: string;
+  actor: 'priority';
+  releaseTime: string;
+  chainNow: string;
+  balanceAfter: string;
+  /** Whether Privy asked for a second factor before the signature (false when the player has none enrolled). */
+  mfaPrompted: boolean;
 }
 
 const TELLER = import.meta.env.VITE_TELLER_DESK_URL || '/api';
 
 export function useBranchZeroWallet() {
-  const { ready, authenticated, getAccessToken } = usePrivy();
+  const { ready, authenticated, getAccessToken, user } = usePrivy();
+  const { signTypedData } = useSignTypedData();
+  const { promptMfa, clear: clearMfa } = useMfa();
 
   // U3: Godot's clerk needs to *await* the sign-in, not just open it. Privy's `login()` returns as soon as
   // the modal is up, so completion / dismissal are caught here and handed to whoever is waiting.
@@ -146,6 +192,62 @@ export function useBranchZeroWallet() {
     }
   }, [session?.owner, embedded?.address, removeSessionSigners, call]);
 
+  /**
+   * U4+ Priority release — the hand scan. Three steps, all owned by the overlay:
+   *   1. `/priority/prepare` → the contract-built unsigned meta-approve as typed data (Teller Desk).
+   *   2. Fresh MFA if the player has any enrolled (`clear()` drops Privy's cache, `promptMfa()` asks now — Passkey),
+   *      then `signTypedData` with the wallet UI **shown**: the player sees what they authorise.
+   *   3. `/priority/submit` → recover == owner is checked by the SDK, the Branch Manager submits, COMPLETED.
+   * Errors keep their Teller Desk code (`NOT_COOLING`, `PRIORITY_OFF`, `NOT_PENDING`, …); a dismissed sheet or a
+   * failed second factor becomes `PRIORITY_CANCELLED` / `MFA_FAILED` so Okafor has a line for each.
+   */
+  const priority = useCallback(
+    async (txId: string): Promise<PriorityResult> => {
+      const owner = session?.owner ?? embedded?.address;
+      if (!owner) throw Object.assign(new Error('no embedded wallet to sign with'), { code: 'NO_WALLET' });
+      setError(undefined);
+      setBusy('Preparing the priority release…');
+      try {
+        const prep = await call<PriorityPrepared>('/priority/prepare', { txId }, owner);
+        const enrolled = (user?.mfaMethods?.length ?? 0) > 0;
+        let signature: string;
+        try {
+          if (enrolled) {
+            setBusy('Hand scan — confirm with your Passkey…');
+            await clearMfa();
+            await promptMfa();
+          }
+          setBusy('Confirm the priority release in your wallet…');
+          const res = await signTypedData(prep.typedData as never, {
+            address: owner,
+            uiOptions: {
+              showWalletUIs: true,
+              title: 'Priority release — hand scan',
+              description: `Skip the cooling period — hand scan required. Wire #${prep.txId} will be released before its clock by the Branch Manager under this signature.`,
+              buttonText: 'Confirm priority release',
+            },
+          });
+          signature = res.signature;
+        } catch (e) {
+          const err = e as Error;
+          if (errorIndicatesMfaVerificationFailed(err) || errorIndicatesMfaTimeout(err) || errorIndicatesMaxMfaRetries(err)) {
+            throw Object.assign(new Error(`hand scan failed: ${err.message}`), { code: 'MFA_FAILED' });
+          }
+          throw Object.assign(new Error(`priority release not signed: ${err.message}`), { code: 'PRIORITY_CANCELLED' });
+        }
+        setBusy('The manager is stamping a priority release…');
+        const result = await call<Omit<PriorityResult, 'mfaPrompted'>>('/priority/submit', { priorityId: prep.priorityId, signature }, owner);
+        return { ...result, mfaPrompted: enrolled };
+      } catch (e) {
+        setError((e as Error).message);
+        throw e;
+      } finally {
+        setBusy(undefined);
+      }
+    },
+    [session?.owner, embedded?.address, call, user?.mfaMethods, clearMfa, promptMfa, signTypedData],
+  );
+
   /** Open the Privy modal (the one wallet modal of the game) and resolve when the player is signed in or gave up. */
   const loginAndWait = useCallback((): Promise<boolean> => {
     if (authenticated) return Promise.resolve(true);
@@ -191,6 +293,8 @@ export function useBranchZeroWallet() {
     refreshSession,
     delegate,
     revoke,
+    priority,
+    mfaEnrolled: (user?.mfaMethods?.length ?? 0) > 0,
     call,
     getAccessToken,
   };

@@ -22,6 +22,9 @@ const REQUIRED_CODES := [
 	"TransactionNotPending", "CanOnlyApprovePending", "CanOnlyCancelPending", "TransactionNotFound",
 	"NO_ACCOUNT", "NO_WALLET", "NO_MANAGER", "NOT_PENDING", "RECORD_*", "policy_violation", "Unknown",
 	"TIMEOUT", "UNKNOWN_METHOD", "BAD_ARGS", "RPC", "NOT_IMPLEMENTED", "INTERNAL", "AUTH", "POLICY", "CHAIN", "LOGIN_CANCELLED",
+	"NOT_CONFIGURED",
+	# U4+ Priority release (Okafor) — desk + overlay codes
+	"MANAGER_NO_STAMP", "NOT_COOLING", "PRIORITY_OFF", "PRIORITY_CANCELLED", "MFA_FAILED", "PRIORITY_EXPIRED",
 	"default",
 ]
 
@@ -33,6 +36,7 @@ func _initialize() -> void:
 	_check_errors()
 	for id in NPCS:
 		_check_npc(id)
+	_check_vault_desks()
 	_check_eval(Dlg)
 	print("\n%s — %d failure(s)" % ["PASS" if failures == 0 else "FAIL", failures])
 	quit(0 if failures == 0 else 1)
@@ -141,13 +145,62 @@ func _check_npc(id: String) -> void:
 	_ok("%d nodes, %d action choices, targets resolve" % [nodes.size(), action_nodes])
 
 
+## U4+ (HANDOFF §5e): Ruth waits the clock, Okafor bypasses it. The dialogue must not hand either the other's verb.
+func _check_vault_desks() -> void:
+	print("vault desks (U4+)")
+	var m := _load("res://dialogue/manager.json")
+	var r := _load("res://dialogue/vault_keeper.json")
+	var m_actions := _actions_in(m)
+	var r_actions := _actions_in(r)
+	if m_actions.has("approve") or m_actions.has("manager_approve"):
+		_fail("manager.json still stamps a timed approve (Okafor is not a second Ruth)")
+	if not m_actions.has("priority"):
+		_fail("manager.json has no priority action")
+	if not m_actions.has("cancel"):
+		_fail("manager.json has no recall")
+	if r_actions.has("priority"):
+		_fail("vault_keeper.json offers priority (Ruth is the wait path)")
+	if not r_actions.has("approve"):
+		_fail("vault_keeper.json has no owner approve")
+	var m_text := JSON.stringify(m)
+	if m_text.find("hand scan") < 0:
+		_fail("manager.json never says 'hand scan'")
+	if m_text.find("{priority_copy}") < 0:
+		_fail("manager.json does not show the on-screen copy {priority_copy}")
+	var strings := _load("res://dialogue/strings.json")
+	if str(strings.get("priority_copy", "")) != "Skip the cooling period — hand scan required.":
+		_fail("strings.json priority_copy is not the mandated line")
+	_ok("Ruth: approve only · Okafor: priority + cancel, no approve · copy present")
+
+
+func _actions_in(d: Dictionary) -> Dictionary:
+	var out := {}
+	for nid in d.get("nodes", {}).keys():
+		var node: Dictionary = d["nodes"][nid]
+		var choices: Array = node.get("choices", []).duplicate()
+		if node.has("choice_template"):
+			choices.append(node["choice_template"])
+		if node.has("enter_action"):
+			choices.append(node["enter_action"])
+		for c in choices:
+			if c.has("action"):
+				var a := str(c["action"])
+				if str(c.get("as", "")) == "manager" and (a == "approve" or a == "cancel"):
+					a = "manager_" + a
+				out[a] = true
+				if a.begins_with("manager_"):
+					out[a.substr(8)] = true
+	return out
+
+
 func _check_eval(Dlg) -> void:
 	print("condition evaluator / interpolation")
-	var facts := {"logged_in": true, "has_account": false, "pending": 2, "released": 0, "delegated": false, "manager": true}
+	var facts := {"logged_in": true, "has_account": false, "pending": 2, "released": 0, "cooling": 2, "delegated": false, "manager": true, "priority": true}
 	var cases := [
 		["logged_in", true], ["!logged_in", false], ["!has_account", true], ["pending>0", true], ["pending>2", false],
 		["released==0", true], ["pending>=2", true], ["logged_in && !has_account", true], ["logged_in && has_account", false],
 		["!delegated && !has_account", true], ["manager", true], ["", true],
+		["cooling>0", true], ["cooling==0 && released>0", false], ["!priority", false],
 	]
 	for c in cases:
 		var got: bool = Dlg.eval_condition(c[0], facts)
