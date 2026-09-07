@@ -121,5 +121,5 @@ Stop when Stage 2 DoD is met or a named budget blocker needs a principal cut.
 
 ## After this pass
 
-Next art unit: **Stage 3** (Quaternius / adult-ish CC0 characters). Product mission stays **U5 ENS** until HANDOFF
-says otherwise. Full U7 Feel / ship remains G8–G10.
+Next art unit: **Stage 3** — [`docs/KICKOFF-U7-viz-stage3.md`](./KICKOFF-U7-viz-stage3.md) (characters). Product
+mission stays **U5 ENS** until HANDOFF says otherwise. Full U7 Feel / ship remains G8–G10.

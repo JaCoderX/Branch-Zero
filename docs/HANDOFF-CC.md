@@ -15,11 +15,11 @@ prior_mission: U4+ Priority release (G5b) — met 2026-09-07
 You are a **cold agent** unless the human says you are continuing a prior session. Prefer reading this file over chat memory. You have **freedom on how**. You do **not** have freedom on constraints, scope, or protocol semantics.
 
 **Current mission: U5 ENS (G6)** — Petra's Name Desk. Kickoff: [`docs/KICKOFF-U5.md`](./KICKOFF-U5.md). Do not
-start U6 or **full** U7 ship (video / submission). Early art: Stage 1 met
-([`docs/progress/2026-09-07-u7-early-viz.md`](./progress/2026-09-07-u7-early-viz.md)) and Stage 2 hero polish met
-([`docs/progress/2026-09-07-u7-viz-stage2.md`](./progress/2026-09-07-u7-viz-stage2.md)); the next art unit is
-Stage 3 (characters) and has **no kickoff yet** — the principal schedules it clear of U5. Do not regress the U4
-freeze or the U4+ Priority desk.
+start U6 or **full** U7 ship (video / submission). Early art: Stage 1 + Stage 2 met
+([`progress/2026-09-07-u7-early-viz.md`](./progress/2026-09-07-u7-early-viz.md),
+[`progress/2026-09-07-u7-viz-stage2.md`](./progress/2026-09-07-u7-viz-stage2.md)); next art unit is
+[`docs/KICKOFF-U7-viz-stage3.md`](./KICKOFF-U7-viz-stage3.md) (characters) when the principal schedules it clear of
+U5. Do not regress the U4 freeze or the U4+ Priority desk.
 
 > **U4+ met 2026-09-07 — Priority release is the third way out of the vault.** Read
 > [`docs/progress/2026-09-07-u4-plus-priority-release.md`](./progress/2026-09-07-u4-plus-priority-release.md)
@@ -466,8 +466,7 @@ Mainnet `branchzero.eth` remains brand-only. See GameLab
 | U7 Feel / ship | G8–G10 |
 
 **Parallel (principal-scheduled, not the open mission):** staged U7 art —
-Stage 1 met ([`progress/2026-09-07-u7-early-viz.md`](./progress/2026-09-07-u7-early-viz.md)); next is
-[`docs/KICKOFF-U7-viz-stage2.md`](./KICKOFF-U7-viz-stage2.md) (hero polish only). Leave Name Desk
+Stage 1–2 met; next is [`docs/KICKOFF-U7-viz-stage3.md`](./KICKOFF-U7-viz-stage3.md) (characters only). Leave Name Desk
 interactables and all bridge/desk work to U5. Do not advance HANDOFF past U5 from that pass.
 
 Cut order unchanged: Uniswap → Manager → Arc → ENS EAC → ENS mint. **Never cut Privy or Lane B.**
