@@ -14,10 +14,10 @@ Paste into a **new** Claude Code / Cursor agent session. Prefer **Fable 5.1**. E
 | Stage | Goal | Status |
 |-------|------|--------|
 | 1–5 | Legible bank → heroes → characters → shell → feel | **met** |
-| **6a** | **Fill furniture → denser CC0 interiors (palette remap)** | **this kickoff** |
-| 6b | Desk / office clutter (Name Desk, Manager, counters) | after 6a |
-| 6c | Shared surface atlas (marble / wood / paper) ≤ 1024² | after 6b |
-| 6d | Plants / soft props only if budget remains | optional |
+| 6a | KayKit furniture fill (palette remap) | **met** |
+| 6b | MrEliptik desk clutter | **skipped** (NYOP) |
+| 6c | ambientCG albedo on existing palette slots | **met** |
+| 6d | Kenney Nature Kit plants | optional — [`KICKOFF-U7-viz-stage6d.md`](./KICKOFF-U7-viz-stage6d.md) |
 
 ---
 
