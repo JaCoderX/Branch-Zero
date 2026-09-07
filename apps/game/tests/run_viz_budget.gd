@@ -27,7 +27,7 @@ const MAX_OMNIS := 8          # Compatibility lights ≤ 8 omnis per mesh and th
 const MIN_SHELL_PIECES := 300  # Stage 4 built 415 wall / ceiling modules; fewer means a build path was lost
 const MAX_PARTICLES := 2       # Stage 5: skylight dust + stamp ink — CPUParticles3D only, shadowless, unshaded
 const MIN_PLAQUES_DRESSED := 8 # Stage 5: title plaques carrying the Cinzel face
-const MIN_PLANTERS := 8        # Stage 6d: LobbyPlant0..2, AOPlant, AODeskPlant, MgrPlant, NameDeskPlant, VaultLedgePlant
+const MIN_PLANTERS := 9        # Stage 6d: LobbyPlant0..2, AOPlant, AODeskPlant, MgrPlant, NameDeskPlant, VaultLedgePlant, MgrCabinetPlant
 const MIN_NATURE_TRIS := 1200  # Stage 6d: the eight Furniture Kit plants were ~640 tris together; denser or it is not an upgrade
 
 var failures := 0
@@ -374,15 +374,23 @@ func _run() -> void:
 		_ok("all %d Nature Kit .glb present with LICENSE-kenney-nature-kit.txt beside them" % nk_files.size())
 	else:
 		_fail("Nature Kit files missing: %s (licence %s)" % [", ".join(nk_missing), "present" if FileAccess.file_exists(nk_dir + "LICENSE-kenney-nature-kit.txt") else "MISSING"])
-	var want_planters: PackedStringArray = ["LobbyPlant0", "LobbyPlant1", "LobbyPlant2", "AOPlant", "AODeskPlant", "MgrPlant", "NameDeskPlant", "VaultLedgePlant"]
+	var want_planters: PackedStringArray = ["LobbyPlant0", "LobbyPlant1", "LobbyPlant2", "AOPlant", "AODeskPlant", "MgrPlant", "NameDeskPlant", "VaultLedgePlant", "MgrCabinetPlant"]
 	var planter_missing: PackedStringArray = []
 	for pn in want_planters:
 		if not planters.has(pn):
 			planter_missing.append(pn)
-	if planters.size() >= MIN_PLANTERS and planter_missing.is_empty() and nk_instances >= 2 * MIN_PLANTERS and nk_roots == 0:
+	if planters.size() >= MIN_PLANTERS and planter_missing.is_empty() and nk_instances >= 2 * 8 and nk_roots == 0:
 		_ok("%d planters (pot + foliage, %d kit instances), every Nature Kit mesh baked (no kit root left standing)" % [planters.size(), nk_instances])
 	else:
 		_fail("planters: %d built (missing %s), %d kit instances, %d kit roots outside the batch" % [planters.size(), ", ".join(planter_missing), nk_instances, nk_roots])
+	# Manager cabinet must be the undecorated KayKit body (decorated baked a plant into the atlas — consistency pass).
+	# Recorded in _count_fill before bake frees the KayKit roots.
+	var decorated_cabs := int(interior4.get_meta("kaykit_decorated_cabinets", -1))
+	var mgr_cab_glb := str(interior4.get_meta("mgr_bookcase_glb", ""))
+	if decorated_cabs == 0 and mgr_cab_glb.ends_with("cabinet_medium.glb") and planters.has("MgrCabinetPlant"):
+		_ok("manager cabinet is plain KayKit + Nature Kit MgrCabinetPlant (no decorated atlas plant)")
+	else:
+		_fail("manager cabinet consistency: decorated_cabs=%d mgr_glb=%s MgrCabinetPlant=%s" % [decorated_cabs, mgr_cab_glb, planters.has("MgrCabinetPlant")])
 	if nk_tris >= MIN_NATURE_TRIS:
 		_ok("plants are %d tris (≥ %d; the Furniture Kit plants were ~640) — denser silhouettes" % [nk_tris, MIN_NATURE_TRIS])
 	else:
@@ -430,8 +438,10 @@ func _run() -> void:
 			tall.append("%s %.2f m" % [pn, bb.end.y])
 		if floor_planter and (bb.size.x > 1.4 or bb.size.z > 1.4):
 			tall.append("%s footprint %.2f × %.2f m" % [pn, bb.size.x, bb.size.z])
-		if not floor_planter and bb.size.y > 0.6:
+		if not floor_planter and str(pn) != "MgrCabinetPlant" and bb.size.y > 0.6:
 			tall.append("%s desk pot %.2f m" % [pn, bb.size.y])
+		if str(pn) == "MgrCabinetPlant" and bb.size.y > 0.75:
+			tall.append("%s cabinet pot %.2f m" % [pn, bb.size.y])
 		for e in eyes:
 			for tn in targets.keys():
 				if bb.intersects_segment(e, targets[tn]):

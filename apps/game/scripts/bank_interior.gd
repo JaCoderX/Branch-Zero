@@ -9,11 +9,12 @@ extends Node3D
 ## so they merge into the static batch at zero extra draw calls and zero new materials.
 ## U7 viz Stage 6a swaps the Kenney *fill* in the high-traffic zones (lobby seating, vault antechamber, manager's office,
 ## behind the counters) for denser KayKit Furniture Bits (CC0) split into the same palette materials (PropKit.kaykit):
-## couches where the bench pairs were, side tables + lamps, credenzas, a dressed cabinet, framed pictures, rugs. Every
+## couches where the bench pairs were, side tables + lamps, credenzas, a plain cabinet, framed pictures, rugs. Every
 ## pre-existing collider keeps its size and place; the few new solids stand behind counters or against the north wall.
 ## U7 viz Stage 6d swaps the eight Kenney Furniture Kit plants for Kenney Nature Kit planters (CC0, PropKit.nature): a
 ## deep-green marble bowl with a small tree / bush arrangement on the lobby partition and at Account Opening, cream
-## desk pots elsewhere (`_planter`). Same positions, same colliders; every mesh takes an existing palette material.
+## desk pots elsewhere (`_planter`), plus a ninth cream pot on the manager's north-wall cabinet (plain `cabinet_medium`
+## — the decorated KayKit mesh baked a plant into the atlas). Same colliders; every mesh takes an existing palette material.
 ##
 ## Rules kept from U4+: props that block the player collide on layer 1 and listen on mask 0 (Godot Physics on web
 ## shoves listening bodies); nothing sits in the manager door (x ∈ [-9, -7] at z = -5), the vault opening
@@ -61,17 +62,25 @@ func _ready() -> void:
 	PropKit.bake_static(self)
 
 
-## Stage 6a bookkeeping for tests/run_viz_budget.gd, taken before the bake frees the KayKit roots: how many KayKit
-## props were placed, how many of their meshes were split into palette surfaces, and their triangle count.
+## Stage 6a / 6d bookkeeping for tests/run_viz_budget.gd, taken before the bake frees the KayKit / Nature roots:
+## how many props were placed, how many KayKit meshes were split into palette surfaces, Nature triangle count,
+## and which .glb sat under MgrBookcase (plain cabinet_medium after the Stage 6d consistency pass).
 func _count_fill() -> void:
 	var instances := 0
 	var split := 0
 	var tris := 0
 	var nature := 0
 	var nature_tris := 0
+	var decorated_cabs := 0
+	var mgr_cab_glb := ""
 	for n in PropKit._all_nodes(self):
 		if n.has_meta("glb") and str(n.get_meta("glb")).begins_with(PropKit.KAYKIT):
 			instances += 1
+			var gpath := str(n.get_meta("glb"))
+			if gpath.ends_with("cabinet_medium_decorated.glb"):
+				decorated_cabs += 1
+			if n.get_parent() != null and str(n.get_parent().name) == "MgrBookcase":
+				mgr_cab_glb = gpath
 		if n.has_meta("glb") and str(n.get_meta("glb")).begins_with(PropKit.NATURE):
 			nature += 1
 			for mi in PropKit._meshes(n):
@@ -85,6 +94,8 @@ func _count_fill() -> void:
 	set_meta("kaykit_tris", tris)
 	set_meta("nature_instances", nature)
 	set_meta("nature_tris", nature_tris)
+	set_meta("kaykit_decorated_cabinets", decorated_cabs)
+	set_meta("mgr_bookcase_glb", mgr_cab_glb)
 
 
 # ---------------------------------------------------------------- shell
@@ -301,7 +312,10 @@ func _north_strip() -> void:
 	PropKit.kaykit(self, "MgrChairA", "chair_A", Vector3(-8.8, 0, -7.6), PI, {"scale": 0.68}, Vector3(0.5, 0.5, 0.5), Vector3(0, 0.25, 0))
 	PropKit.kaykit(self, "MgrChairB", "chair_A", Vector3(-7.2, 0, -7.6), PI, {"scale": 0.68}, Vector3(0.5, 0.5, 0.5), Vector3(0, 0.25, 0))
 	PropKit.kaykit(self, "MgrRug", "rug_rectangle_stripes_B", Vector3(-8.0, 0.004, -8.4), 0.0, {"fit": Vector3(3.8, 0.02, 2.8)})
-	PropKit.kaykit(self, "MgrBookcase", "cabinet_medium_decorated", Vector3(-4.2, 0, -10.6), 0.0, {"fit": Vector3(1.2, 1.8, 0.45)}, Vector3(1.0, 1.8, 0.4), Vector3(0, 0.9, 0))
+	# Plain cabinet (not cabinet_medium_decorated): the decorated mesh baked a KayKit plant into the atlas — Stage 6d
+	# consistency uses an undecorated body + a Nature Kit planter on top so every plant is PropKit.nature.
+	PropKit.kaykit(self, "MgrBookcase", "cabinet_medium", Vector3(-4.2, 0, -10.6), 0.0, {"fit": Vector3(1.2, 1.8, 0.45)}, Vector3(1.0, 1.8, 0.4), Vector3(0, 0.9, 0))
+	_planter("MgrCabinetPlant", Vector3(-4.2, 1.82, -10.45), 0.2, ["pot_small", Vector3(0.28, 0.22, 0.28)], [["plant_bushDetailed", Vector3(0.42, 0.28, 0.42)], ["plant_flatShort", Vector3(0.22, 0.24, 0.22), Vector3(0.06, 0.0, -0.04)]], "Cream")
 	PropKit.kaykit(self, "MgrCredenza", "cabinet_medium", Vector3(-11.8, 0, -10.6), 0.0, {"fit": Vector3(1.8, 0.85, 0.5)}, Vector3(1.8, 0.85, 0.5), Vector3(0, 0.425, 0))
 	PropKit.kaykit(self, "MgrLedgers", "book_set", Vector3(-12.3, 0.85, -10.6), 0.0, {"fit": Vector3(0.6, 0.34, 0.28)})
 	PropKit.kaykit(self, "MgrPictureW", "pictureframe_medium", Vector3(-12.6, 2.25, -10.82), 0.0, {"fit": Vector3(0.7, 0.9, 0.06), "ground": false})
