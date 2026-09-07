@@ -15,7 +15,8 @@ var facing: float = 0.0
 
 var _arm: SpringArm3D
 var _cam: Camera3D
-var _body: MeshInstance3D
+var _body: Node3D
+var _anim: AnimationPlayer
 var _dragging := false
 
 
@@ -30,24 +31,16 @@ func _ready() -> void:
 	shape.position.y = 0.9
 	add_child(shape)
 
-	_body = MeshInstance3D.new()
-	var mesh := CapsuleMesh.new()
-	mesh.radius = 0.35
-	mesh.height = 1.8
-	_body.mesh = mesh
-	_body.position.y = 0.9
-	var m := StandardMaterial3D.new()
-	m.albedo_color = Color(0.20, 0.45, 0.80)
-	_body.material_override = m
+	# the customer: a CC0 Kenney Mini Character (U7 early art); the collider above is still the U3 capsule
+	_body = Node3D.new()
+	_body.name = "Body"
 	add_child(_body)
-	# a nose so the facing direction reads
-	var nose := MeshInstance3D.new()
-	var nm := BoxMesh.new()
-	nm.size = Vector3(0.18, 0.18, 0.25)
-	nose.mesh = nm
-	nose.position = Vector3(0, 1.45, -0.4)
-	nose.material_override = m
-	_body.add_child(nose)
+	var ch := PropKit.character("character-female-b", 1.8)
+	var ch_root: Node3D = ch["root"]
+	ch_root.rotation.y = PI   # glTF characters face +Z; a Godot body faces -Z
+	_body.add_child(ch_root)
+	_anim = ch["anim"]
+	_play("idle")
 
 	var pivot := Node3D.new()
 	pivot.name = "CamPivot"
@@ -101,6 +94,13 @@ func _physics_process(delta: float) -> void:
 	if dir.length() > 0.1:
 		facing = atan2(-dir.x, -dir.z)
 	_body.rotation.y = lerp_angle(_body.rotation.y, facing, TURN * delta)
+	var ground_speed := Vector2(velocity.x, velocity.z).length()
+	_play("sprint" if ground_speed > WALK + 0.5 else ("walk" if ground_speed > 0.4 else "idle"))
+
+
+func _play(clip: String) -> void:
+	if _anim != null and _anim.has_animation(clip) and _anim.current_animation != clip:
+		_anim.play(clip, 0.15)
 
 
 ## Point both the camera and the body along `yaw` (0 = north / -z).

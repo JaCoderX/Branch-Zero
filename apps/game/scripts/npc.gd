@@ -2,12 +2,23 @@ class_name Npc
 extends CharacterBody3D
 ## NPC — one on-chain role or read surface each (docs/NPCS.md §2). State machine:
 ## IDLE → TALKING → WORKING → TALKING | REFUSING → TALKING → ESCORTING → IDLE.
-## The body is a coloured capsule; states are read from pose (bob while working, shake when refusing).
+## The body is a CC0 Kenney Mini Character (assets/characters/kenney_mini); states are read from its clips
+## (idle · interact-right while working · emote-no while refusing · walk while escorting). `tint` colours the nameplate.
 
 signal player_near(npc: Npc, near: bool)
 signal duty_changed
 
 enum State { IDLE, TALKING, WORKING, ESCORTING, REFUSING }
+
+## npc_id → Kenney Mini Character skin (U7 early art). Unlisted ids (Petra, U5) fall back to `default`.
+const SKINS := {
+	"greeter": "character-male-c",
+	"clerk": "character-female-a",
+	"teller": "character-male-b",
+	"vault_keeper": "character-female-d",
+	"manager": "character-male-e",
+	"default": "character-female-c",
+}
 
 @export var npc_id: String = "greeter"
 @export var display_name: String = "Mo"
@@ -19,7 +30,8 @@ var state: State = State.IDLE
 var home: Vector3
 var home_yaw: float = 0.0
 
-var _body: MeshInstance3D
+var _body: Node3D
+var _anim: AnimationPlayer
 var _plate: Label3D
 var _bubble: Label3D
 var _zone: Area3D
@@ -53,32 +65,27 @@ func _ready() -> void:
 	shape.position.y = 0.875
 	add_child(shape)
 
-	_body = MeshInstance3D.new()
-	var mesh := CapsuleMesh.new()
-	mesh.radius = 0.35
-	mesh.height = 1.75
-	_body.mesh = mesh
-	_body.position.y = 0.875
-	var m := StandardMaterial3D.new()
-	m.albedo_color = tint
-	_body.material_override = m
+	# silhouette + idle from a CC0 rig; the collider above is still the U3 capsule
+	_body = Node3D.new()
+	_body.name = "Body"
 	add_child(_body)
-	var nose := MeshInstance3D.new()
-	var nm := BoxMesh.new()
-	nm.size = Vector3(0.16, 0.16, 0.22)
-	nose.mesh = nm
-	nose.position = Vector3(0, 1.4, -0.4)
-	nose.material_override = m
-	_body.add_child(nose)
+	var ch := PropKit.character(str(SKINS.get(npc_id, SKINS["default"])), 1.75)
+	var ch_root: Node3D = ch["root"]
+	ch_root.rotation.y = PI   # glTF characters face +Z; a Godot body faces -Z
+	_body.add_child(ch_root)
+	_anim = ch["anim"]
+	_play("idle")
 
 	_plate = Label3D.new()
 	_plate.text = "%s\n%s" % [display_name, role]
+	_plate.modulate = tint.lightened(0.35)
 	_plate.position.y = 2.25
 	_plate.pixel_size = 0.006
 	_plate.font_size = 40
 	_plate.outline_size = 8
 	_plate.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_plate.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_plate.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(_plate)
 
 	_bubble = Label3D.new()
@@ -90,6 +97,7 @@ func _ready() -> void:
 	_bubble.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_bubble.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_bubble.visible = false
+	_bubble.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(_bubble)
 
 	_zone = Area3D.new()
@@ -142,6 +150,15 @@ func _set_state(s: State) -> void:
 	state = s
 	_t = 0.0
 	duty_changed.emit()
+	match s:
+		State.WORKING:
+			_play("interact-right")
+		State.REFUSING:
+			_play("emote-no")
+		State.ESCORTING:
+			_play("walk")
+		_:
+			_play("idle")
 	if s == State.REFUSING:
 		_say(str(GameState.strings.get("refusing_bubble", "…")))
 		get_tree().create_timer(1.6).timeout.connect(func() -> void:
@@ -155,6 +172,11 @@ func _say(text: String) -> void:
 	_bubble.visible = text != ""
 
 
+func _play(clip: String) -> void:
+	if _anim != null and _anim.has_animation(clip) and _anim.current_animation != clip:
+		_anim.play(clip, 0.2)
+
+
 func _physics_process(delta: float) -> void:
 	_t += delta
 	rotation.x = 0.0
@@ -165,18 +187,9 @@ func _physics_process(delta: float) -> void:
 				var d := _player.global_position - global_position
 				if d.length() > 0.05:
 					rotation.y = lerp_angle(rotation.y, atan2(-d.x, -d.z), 8.0 * delta)
-			if state == State.WORKING:
-				_body.position.y = 0.875 + 0.06 * sin(_t * 9.0)
-			elif state == State.REFUSING:
-				_body.rotation.z = 0.08 * sin(_t * 18.0)
-			else:
-				_body.position.y = 0.875
-				_body.rotation.z = 0.0
 		State.ESCORTING:
 			_escort(delta)
 		_:
-			_body.position.y = 0.875
-			_body.rotation.z = 0.0
 			rotation.y = lerp_angle(rotation.y, home_yaw, 3.0 * delta)
 			velocity.x = 0.0
 			velocity.z = 0.0
