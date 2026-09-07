@@ -13,7 +13,7 @@
  * U4+ method: priority (Okafor's desk) — the one call allowed to open a second Privy surface: the player's own
  *             signer signs the meta-approve bypass behind a Passkey, the Branch Manager submits it before the clock.
  * U5 methods: ensAvailable / ensMint / ensSetText / resolveName — ENSv2 identity on Sepolia; payments remain 1337.
- *             `approve` is owner-only from here (Ruth's wait path); `as: 'manager'` is refused by the desk.
+ *             `approve` is owner-only from here (Bob's wait path); `as: 'manager'` is refused by the desk.
  *
  * Everything that needs a Privy identity is delegated to the React overlay through a small adapter it
  * registers at mount: the bridge itself holds no token and no key, and a method that needs one before the
@@ -252,7 +252,7 @@ const handlers: Record<string, Handler> = {
     // Returns { txId, releaseTime, chainNow, serverNow, hash } — releaseTime is read from the chain record.
     return requireAdapter().call('/wire', { to, amount, memo: args.memo });
   },
-  /** Ruth's wait path: the owner's timed release after the clock, silent. U4+: never the manager. */
+  /** Bob's wait path: the owner's timed release after the clock, silent. U4+: never the manager. */
   async approve(args) {
     return requireAdapter().call('/approve', { txId: String(args.txId ?? ''), as: 'owner' });
   },

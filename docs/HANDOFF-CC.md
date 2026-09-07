@@ -6,19 +6,20 @@ created: 2026-09-06
 updated: 2026-09-07
 product: Branch-Zero
 objective: OBJ-2026-0004
-first_mission: U7 polish (principal playtest); then ship packaging; U6 Arc G7 deferred — revive via docs/ARC.md §5b
-prior_mission: U7 ship reel met; U5 ENS (G6) — met 2026-09-07
+first_mission: U7 ship packaging (after principal polish re-playtest); U6 Arc G7 deferred — revive via docs/ARC.md §5b
+prior_mission: U7 polish met 2026-09-07; U7 ship reel met; U5 ENS (G6) — met 2026-09-07
 ---
 
 # Handoff — Claude Code (Fable 5.1)
 
 You are a **cold agent** unless the human says you are continuing a prior session. Prefer reading this file over chat memory. You have **freedom on how**. You do **not** have freedom on constraints, scope, or protocol semantics.
 
-**Current mission: U7 polish** — principal MockChain playtest findings (NPC homes, manager door rail, controls,
-vault interior, Ruth→Bob, Arc elevator “coming soon”). Kickoff: [`docs/KICKOFF-U7-polish.md`](./KICKOFF-U7-polish.md).
-Prefer **Fable 5.1**. Early art Stage 1–5 met; ship reel met (laptop-local). U6 Arc remains **DEFERRED** — do not
-revive funding; elevator must not black the canvas. After polish: [`docs/KICKOFF-U7-ship-package.md`](./KICKOFF-U7-ship-package.md).
-Do not regress the U4 freeze, the U4+ Priority desk, or U5 ENS verbs.
+**Current mission: U7 ship packaging** — polish findings 1–10 are **built** ([`KICKOFF-U7-polish.md`](./KICKOFF-U7-polish.md));
+**owed** before packaging starts: the principal's cold re-playtest. Kickoff:
+[`docs/KICKOFF-U7-ship-package.md`](./KICKOFF-U7-ship-package.md). Prefer **Fable 5.1**. Early art Stage 1–5 met;
+ship reel met (laptop-local). U6 Arc remains **DEFERRED** — do not revive funding; elevator stays “coming soon.”
+Do not regress the U4 freeze, the U4+ Priority desk, U5 ENS verbs, or the polish DoD (Bob, Space/E, debug-gated
+F-keys, Petra at Counter 2).
 
 > **U7 polish pass landed 2026-09-07** (local `docs/progress/2026-09-07-u7-polish.md`): findings 1–10 built and checked
 > (`run_checks`, `run_viz_budget`, `run_mock_walk` green; :5173 `?mock=account` walk). Product facts that changed: the vault
@@ -512,12 +513,12 @@ Evidence: [`docs/progress/2026-09-07-u6-arc-g7.md`](./progress/2026-09-07-u6-arc
 
 | Next | Gate |
 |------|------|
-| **U7 polish** | Principal playtest — **open** ([`KICKOFF-U7-polish.md`](./KICKOFF-U7-polish.md)) |
-| U7 ship packaging | G8–G10 — after polish ([`KICKOFF-U7-ship-package.md`](./KICKOFF-U7-ship-package.md)) |
+| U7 polish | Principal playtest — **met** 2026-09-07 ([`KICKOFF-U7-polish.md`](./KICKOFF-U7-polish.md); owed: principal re-playtest) |
+| **U7 ship packaging** | G8–G10 — **open** after re-playtest ([`KICKOFF-U7-ship-package.md`](./KICKOFF-U7-ship-package.md)) |
 | U6 Arc + manager role | G7 — **deferred** (revive ARC.md §5b) |
 
-**Now:** staged art Stage 1–5 **met**; ship reel **met** (laptop-local). Construction buffer → polish the ten
-playtest findings before packaging. Do not reopen Arc funding from polish; elevator refuses with coming-soon.
+**Now:** staged art Stage 1–5 **met**; ship reel **met**; polish **met** (code). Do not reopen Arc funding;
+elevator refuses with coming-soon. Packaging waits on the principal's re-walk of the ten findings.
 
 Cut order unchanged: Uniswap → Manager → Arc → ENS EAC → ENS mint. **Never cut Privy or Lane B.**
 
@@ -530,4 +531,4 @@ Cut order unchanged: Uniswap → Manager → Arc → ENS EAC → ENS mint. **Nev
 - Scope drifts to greybox redesign / ENS rework / Uniswap without a gate
 - Lane B blocked and PLAN fallback not chosen
 
-Leave: commands, file pointers, kill-test log; next agent resumes from [`docs/KICKOFF-U7-polish.md`](./KICKOFF-U7-polish.md).
+Leave: commands, file pointers, kill-test log; next agent resumes from [`docs/KICKOFF-U7-ship-package.md`](./KICKOFF-U7-ship-package.md) after the principal's polish re-playtest.
