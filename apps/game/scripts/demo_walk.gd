@@ -28,6 +28,7 @@ const SPOT_MO := Vector2(3.0, 6.0)
 const SPOT_DEV := Vector2(-9.5, 3.0)
 const SPOT_VAULT_WAIT := Vector2(8.0, -3.6)   # just outside the opening while Dev finishes the escort
 const SPOT_RUTH := Vector2(8.4, -7.2)         # a step inside the opening so the two-shot lens (~(6.1, -8.4)) stays in the room
+const SPOT_VAULT_DOOR := Vector2(8.0, -6.5)   # main.gd F4 spot — the door, clock and cooling line read from here
 const SPOT_OKAFOR := Vector2(-8.0, -7.15)
 const SPOT_PETRA := Vector2(-9.6, -4.1)       # east of the Name Desk, off the rope's north post; Petra stands behind the glass
 const SPOT_END := Vector2(3.0, 5.5)
@@ -38,6 +39,9 @@ const NPC_RUTH := Vector3(10.0, 0.0, -7.5)
 const NPC_OKAFOR := Vector3(-8.0, 0.0, -9.8)
 const NPC_PETRA := Vector3(-12.0, 0.0, -5.8)
 const DEV_VAULT_END := Vector3(8.0, 0.0, -6.8)
+const DOOR_POS := Vector3(8.0, 0.0, -10.7)    # vault_door.gd node position
+const DOOR_READ := 4.0                        # seconds on the door clock after Ruth
+const GO_TIMEOUT := 40.0                      # desktop: how long to wait for the recorder's go marker
 
 # Legs. Each is the ordered waypoint list from the previous spot.
 const ROUTE_TO_MO: Array[Vector2] = [Vector2(3.0, 6.0)]
@@ -101,7 +105,7 @@ func _boot() -> void:
 	Chain._mock.preset_account()
 	await GameState.refresh_all()
 	print("DemoWalk: starting desk circuit (account=%s, mock clock %ds)" % [GameState.account(), DEMO_TIMELOCK_SEC])
-	await _pause(2.0)
+	await _wait_for_go()
 	await _run()
 	_done = true
 	print("DemoWalk: DONE")
@@ -113,6 +117,23 @@ func _boot() -> void:
 		if f:
 			f.store_string("ok\n")
 			f.close()
+
+
+## Desktop: scripts/record-demo-walk.ps1 writes BRANCH_ZERO_DEMO_GO once ffmpeg is rolling, so the first steps
+## toward Mo are on film. Without the variable (web, hand runs) the old 2 s idle applies.
+func _wait_for_go() -> void:
+	var go := ""
+	if not OS.has_feature("web"):
+		go = OS.get_environment("BRANCH_ZERO_DEMO_GO").strip_edges()
+	if go.is_empty():
+		await _pause(2.0)
+		return
+	var t := 0.0
+	while t < GO_TIMEOUT and not FileAccess.file_exists(go):
+		await _pause(0.2)
+		t += 0.2
+	print("DemoWalk: go marker %s after %.1f s" % ["seen" if FileAccess.file_exists(go) else "NOT seen", t])
+	await _pause(1.0)
 
 
 func _run() -> void:
@@ -165,7 +186,10 @@ func _run() -> void:
 	else:
 		await _pick(["I'll wait.", "Thanks.", "OK."])
 	await _closed()
-	await _pause(SETTLE)
+	# Door read: step back to the F4 spot and face the vault door so the clock and the cooling line are on film.
+	await _walk([SPOT_VAULT_DOOR])
+	await _face(DOOR_POS)
+	await _pause(DOOR_READ)
 	_player.set_cam_dist(0.0)                 # wide again for the lobby crossing
 
 	# 4. Manager's office — Priority release (mock hand scan, no Passkey). Short boom: the office is glass.
