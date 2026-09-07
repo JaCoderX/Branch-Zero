@@ -25,7 +25,10 @@ F-keys, Petra at Counter 2).
 > (`run_checks`, `run_viz_budget`, `run_mock_walk` green; :5173 `?mock=account` walk). Product facts that changed: the vault
 > keeper is **Bob**; **Space** talks and **E** orbits right; F2–F8 teleports need **`?debug=1`**; Petra serves from **Counter 2**;
 > the elevator refuses Arc with "ARC floor — coming soon" and never rebuilds the interior. **Owed:** the principal's
-> re-playtest of the ten findings before packaging.
+> re-playtest of the ten findings before packaging. **Live Priority (same evening):** free balance below wire amount →
+> meta-approve mined, record `FAILED` / `RECORD_FAILED` (auth OK). Optional follow-up: `/wire` balance pre-check +
+> clearer FAILED copy. Craft lessons scrubbed to GameDevOS (`pending-count-is-not-reserved-balance`,
+> `outer-tx-success-is-not-record-completed`, plus four polish lessons).
 
 > **U5 met 2026-09-07 — ENS Name Desk / G6.** Read
 > [`docs/progress/2026-09-07-u5-ens-g6.md`](./progress/2026-09-07-u5-ens-g6.md) **first** for live evidence.
