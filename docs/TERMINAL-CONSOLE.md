@@ -153,9 +153,16 @@ Evidence: [`progress/2026-09-08-terminal-observer.md`](./progress/2026-09-08-ter
 
 ---
 
-## 10. Parked follow-ups
+## 10. Parked follow-ups / owed
 
+- **Human walk (owed):** grant a real MetaMask/WC address → Import/Connect inside the iframe or tab → confirm pending/history on a chain the Console can reach (1337 grant vs Sepolia Console is VERIFY).
 - SaaS: embed CSP allowlist + embed chrome (only if framing breaks)
 - Deep-link `?account=0x…` on Console
 - Diegetic CRT bezel / SubViewport fake screen (cosmetic)
 - ROLE_SET bump to create empty OBSERVER at provision time (optional)
+
+## 11. Craft lessons (scrubbed 2026-09-08)
+
+- GameDevOS [`refused-iframe-is-undetectable-from-parent`](https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/refused-iframe-is-undetectable-from-parent.md)
+- GameDevOS [`resolve-overlay-open-dont-await-close`](https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/resolve-overlay-open-dont-await-close.md)
+- GameDevOS [`membership-only-roles-for-gated-reads`](https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/membership-only-roles-for-gated-reads.md)

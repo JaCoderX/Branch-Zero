@@ -64,7 +64,7 @@ Ordered so that after U2 we can stop and still demo a coherent bank-on-a-chain (
 | **U6 Arc + manager role** | Elevator wing + runtime role (manager already in U4+ as Priority submitter) | G7 | **DEFERRED** 2026-09-07 — PARTIAL kept; revive via [ARC.md §5b](./ARC.md#5b-deferred-revive-checklist-g7--parked-2026-09-07) |
 | **U7 Feel / ship** | Art, video, submission | G8–G10 | ENG-0008 only if S1; staged art Stage 1–5 **met**; ship reel **met** 2026-09-07; polish **met** (`KICKOFF-U7-polish.md`; principal re-playtest owed); **packaging** (`KICKOFF-U7-ship-package.md`; [DEMO-SCRIPT.md](./DEMO-SCRIPT.md)) |
 | **S1 Uniswap v4 FX** | FX Desk: Sepolia quote + guarded UR swap + Kenji viz + `FEEDBACK.md` | K7 | **OPEN** 2026-09-08 — [UNISWAP.md](./UNISWAP.md) · [`KICKOFF-S1-uniswap-fx.md`](./KICKOFF-S1-uniswap-fx.md) (Fable 5.1). Sponsor #3 while Arc deferred |
-| **Stretch — Terminal Console** | Iframe `bloxchain.app` + opt-in `OBSERVER` role (empty permissions) for MetaMask/ENS view access | — | **OPEN** 2026-09-08 — [TERMINAL-CONSOLE.md](./TERMINAL-CONSOLE.md) · [`KICKOFF-terminal-observer.md`](./KICKOFF-terminal-observer.md) (Codex Luna). Privy↔SaaS Global Wallet **parked** |
+| **Stretch — Terminal Console** | Iframe `bloxchain.app` + opt-in `OBSERVER` role (empty permissions) for MetaMask/ENS view access | — | **met** 2026-09-08 — [TERMINAL-CONSOLE.md](./TERMINAL-CONSOLE.md) · §5h; Privy↔SaaS Global Wallet **parked**. Human Console+MetaMask walk still owed |
 
 Each unit ends with: commit, a local note under `docs/progress/` (gitignored), and a kill/decision line in [REFLECTION.md](./REFLECTION.md) if anything changed.
 
