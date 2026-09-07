@@ -6,15 +6,21 @@ created: 2026-09-06
 updated: 2026-09-08
 product: Branch-Zero
 objective: OBJ-2026-0004
-first_mission: Stretch Terminal Console + OBSERVER (Codex Luna) — docs/KICKOFF-terminal-observer.md; U7 ship packaging still owed after principal polish re-playtest; U6 Arc G7 deferred — revive via docs/ARC.md §5b
-prior_mission: U7 polish met 2026-09-07; U7 ship reel met; practice faucet met; U5 ENS (G6) — met 2026-09-07
+first_mission: S1 Uniswap v4 FX Desk (docs/KICKOFF-S1-uniswap-fx.md) — sponsor #3 while Arc deferred; Terminal Console stretch still open (Codex Luna); U7 ship packaging owed after principal polish re-playtest; U6 Arc G7 deferred — revive via docs/ARC.md §5b
+prior_mission: U7 polish met 2026-09-07; U7 ship reel met; practice faucet met; U5 ENS (G6) — met 2026-09-07; Terminal Console kickoff filed 2026-09-08
 ---
 
 # Handoff — Claude Code (Fable 5.1)
 
 You are a **cold agent** unless the human says you are continuing a prior session. Prefer reading this file over chat memory. You have **freedom on how**. You do **not** have freedom on constraints, scope, or protocol semantics.
 
-**Authorized stretch (2026-09-08): Terminal Console + OBSERVER** — prefer **Codex Luna**. Design:
+**Authorized construction (2026-09-08): S1 Uniswap v4 FX Desk** — prefer **Fable 5.1**. Spec:
+[`docs/UNISWAP.md`](./UNISWAP.md). Kickoff (infra → viz):
+[`docs/KICKOFF-S1-uniswap-fx.md`](./KICKOFF-S1-uniswap-fx.md). Mission record: **§5i**.
+Arc stays **DEFERRED**; Uniswap is the activated **sponsor #3** for submission unless Arc revives first.
+Official pitch still names at most three sponsors (Privy + ENS + Uniswap **or** Arc).
+
+**Also open: Terminal Console + OBSERVER** — prefer **Codex Luna**. Design:
 [`docs/TERMINAL-CONSOLE.md`](./TERMINAL-CONSOLE.md). Kickoff:
 [`docs/KICKOFF-terminal-observer.md`](./KICKOFF-terminal-observer.md). Mission record: **§5h**.
 Privy Global Wallet / RainbowKit cross-app in bloxchain.app is **parked** — do not reopen.
@@ -121,7 +127,7 @@ Not: a wallet UI, DeFi protocol, Bloxchain fork, mainnet, Tactical-AI, GameLab m
 
 ## 2. Read order (before code)
 
-1. **This file** (§5h Terminal/OBSERVER stretch is authorized; packaging §6; U6 §5g deferred)
+1. **This file** (§5i Uniswap FX is authorized; §5h Terminal stretch; packaging §6; U6 §5g deferred)
 2. [`docs/DEV-LOOP.md`](./DEV-LOOP.md) — U6 row; ENG-0006 **yes** (K3); U5 / G6 **met**
 3. [`docs/progress/2026-09-07-u5-ens-g6.md`](./progress/2026-09-07-u5-ens-g6.md) — Name Desk frozen; then
    [`…k6-yes.md`](./progress/2026-09-07-k6-yes.md) only if you need Sepolia address pins
@@ -542,7 +548,8 @@ Design: [`docs/TERMINAL-CONSOLE.md`](./TERMINAL-CONSOLE.md). Kickoff:
 
 ### Out of scope
 
-- SaaS Privy connector; Arc revive; Uniswap; ship packaging; default OBSERVER on every `/provision`; any write bits on OBSERVER; custom Solidity; merging GameLab ENG trees
+- SaaS Privy connector; Arc revive; ship packaging; default OBSERVER on every `/provision`; any write bits on OBSERVER; custom Solidity; merging GameLab ENG trees
+- **Do not block on Uniswap** — S1 is a parallel authorized mission (§5i); do not merge FX desk work into Terminal commits
 
 ### Definition of Done
 
@@ -552,6 +559,41 @@ Design: [`docs/TERMINAL-CONSOLE.md`](./TERMINAL-CONSOLE.md). Kickoff:
 - [ ] Iframe loads bloxchain.app **or** documented fallback (new tab) if framed
 - [ ] Kill tests: observer can read a permissioned view; observer cannot pay/wire/config; revoke works; live 1337 evidence in progress note
 - [ ] REFLECTION row; this §5h DoD updated
+
+---
+
+## 5i. Mission S1 — Uniswap v4 FX Desk — **OPEN**
+
+Activated **2026-09-08** as sponsor **#3** while U6 Arc stays deferred. End-to-end: Sepolia infra → AccountBlox
+guards → Teller `/quote` `/swap` → bridge → Kenji + FX desk visualization → `FEEDBACK.md` + Uniswap form.
+Spec: [`docs/UNISWAP.md`](./UNISWAP.md). Kickoff:
+[`docs/KICKOFF-S1-uniswap-fx.md`](./KICKOFF-S1-uniswap-fx.md). Prefer **Fable 5.1**.
+
+**Reset:** v4 only; Sepolia for FX writes; 1337 for Main-wing pay/wire; no custom SwapHelper; no new Privy modal;
+MockChain for greybox only — **K7 evidence must be live Sepolia**.
+
+### Freedom envelope
+
+- Exact FX desk placement in Main wing (reuse a bay/alcove vs thin new module)
+- Quote-board art (LED panel / CRT / wall plaque) within viz budget
+- Bridge method names (`quote` / `fxQuote` / `fxSwap`)
+- Whether first FX visit upgrades guards via Re-check vs dedicated `/fx/enable`
+
+### Out of scope
+
+- Arc revive / funding; Terminal/OBSERVER; ship packaging title cards; Unichain; CCA; custom v4 hooks;
+  v2/v3 as the primary path; custom Solidity; wiping Remote EVM; ENS mainnet
+
+### Definition of Done
+
+- [ ] Sepolia v4 addresses + liquid pool documented in `infra/deployments/sepolia.json` / UNISWAP.md
+- [ ] Guard whitelist: token `approve`, Permit2 `approve`, UniversalRouter `execute`
+- [ ] Live K7: AccountBlox completes a v4 swap on Sepolia; hash in progress note
+- [ ] Desk `/quote` + `/swap` + bridge + Kenji dialogue (mock + live paths)
+- [ ] In-world FX desk + Kenji + quote board + sponsor signage; `run_viz_budget` / named shot OK
+- [ ] `FEEDBACK.md` committed; README points at integration lines; form reminder recorded
+- [ ] `run_checks` green; no freeze / Priority / ENS / faucet regression
+- [ ] REFLECTION K7 row; this §5i DoD updated
 
 ---
 

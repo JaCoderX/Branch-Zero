@@ -71,11 +71,11 @@ Scoring 1–5. Weights: fit 0.35, feasibility in 10 days 0.30, prize size/odds 0
 |---------|-----|-------------|-------|-------|----------|----------|
 | **Privy** | 5 (B2B financial product criteria read like our spec) | 4 (session signers are documented; K2/K5 risk) | 3 ($2.5k single) | 5 (enables the no-pop-up thesis) | **4.35** | **Primary** |
 | **ENS (ENSv2)** | 4 (subnames as accounts, records as passbook, EAC as staff roles) | 3 (Sepolia beta; contract tutorial needed; K6) | 4 ($4.5k, four places) | 4 | **3.70** | **Primary** |
-| **Arc** | 4 (USDC bank, conditional payments, multi-step settlement) | 3 (unknown EVM compat; K3) | 4 ($10k pool, several bounties) | 4 (elevator = chain switch is a great beat) | **3.70** | **Third** |
-| Uniswap v4 | 3 (a bank FX desk is plausible, but swaps are not the thesis) | 2 (Permit2 + Universal Router encoding from a contract account; three guarded calls) | 3 | 3 | **2.70** | Swap-in if K3 fails; else S1 stretch |
-| Others considered (briefly): Circle Agent Stack, account-abstraction sponsors | 2 | 2 | — | 2 | — | No — dilutes the "governed account, not 4337" message |
+| **Uniswap v4** | 4 (FX desk = permissioned treasury swap through guards) | 3 (Permit2 + UR encoding; Sepolia pool) | 3 ($3k Start Fresh pool) | 4 | **3.55** | **Third (activated 2026-09-08)** — S1 / K7 |
+| **Arc** | 4 (USDC bank, conditional payments, multi-step settlement) | 2 (funded `ARC_*` blocked; deferred) | 4 | 4 (elevator beat) | **3.10** | **Deferred** — revive ARC.md §5b; do not claim as finished #3 |
+| Others considered (briefly): Circle Agent Stack, account-abstraction sponsors, Graph, Chainlink CRE | 2 | 2 | — | 2 | — | No — dilutes the "governed account, not 4337" message |
 
-Rule: max three sponsors in the submission unless S1 ships cleanly.
+Rule: max three sponsors in the submission pitch. Infra for a fourth (Arc elevator) may exist deferred.
 
 ---
 
@@ -257,5 +257,6 @@ Prior ETHGlobal "bank" / 3D projects mostly fall into: (a) DeFi dashboards skinn
 | Sep 7 (scrub) | Six craft lessons → GameDevOS wiki (pending≠reserve, outer≠completed, debug teleports, deferred wing, separable meshes, kickoff axes) | Polish + live Priority walk | Packaging after principal re-playtest |
 | Sep 7 (faucet) | Explicit Ines **Top up practice dollars** (`faucet`): bring `balanceOf` **up to** `OPENING_BALANCE_USDC` (500) via deployer transfer; keep provision `fundAccount` zero-only | Play/demo credit runs out; Re-check does not re-fund; NPCS §4.2 already named faucet | **Met** — desk `/faucet` + MockChain + `run_faucet_walk` + live `smoke:faucet` (`0x63bc6f51…`) |
 | Sep 7 (Lane B hygiene) | `/wire` balance preflight + `RECORD_FAILED` copy; HTTP **409** for settle conflicts; desk Ruth→Bob; InsufficientBalance points at Ines | Live underfunded Priority looked like auth failure; 500 looked like desk crash | Faucet shipped alongside |
+| Sep 8 (S1) | Activate Uniswap v4 FX Desk as sponsor **#3** while Arc stays deferred; end-to-end kickoff infra→viz; v4-only reset | Arc funding blocked; prize needs FEEDBACK.md + Sepolia K7 | Kickoff: `docs/KICKOFF-S1-uniswap-fx.md`; HANDOFF §5i |
 | Sep 8 | **Park** Privy Global Wallet / RainbowKit `@privy-io/cross-app-connect` in bloxchain.app | Would add non-general SaaS infra; Console stays RainbowKit/WC | Revisit only if Console product wants cross-app as a general feature |
 | Sep 8 | **Stretch:** terminal iframe of `bloxchain.app` + opt-in on-chain `OBSERVER` role (membership only) for MetaMask/ENS so permissioned views (`_validateAnyRole` / V10) work | Diegetic computer; no SaaS Privy change; empty permissions = view-only | Kickoff `KICKOFF-terminal-observer.md` (Luna); design `TERMINAL-CONSOLE.md` |

@@ -12,7 +12,7 @@
 | Dev chain | **Remote EVM** `1337` (`http://127.0.0.1:8545`) — [REMOTE-EVM.md](./REMOTE-EVM.md) |
 | Primary public chain | Ethereum Sepolia (ENSv2 beta and Uniswap v4 live there; Privy supports it) |
 | Secondary chain | Arc Testnet (chain id `5042002`, USDC-as-gas) — "Arc wing" of the bank |
-| Sponsor targets | **Privy** (B2B financial product), **ENS** (Best Use of ENSv2), **Arc** (DeFi / Onchain Finance) — Uniswap kept as a documented swap-in (see [REFLECTION.md](./REFLECTION.md) § Sponsor matrix) |
+| Sponsor targets | **Privy** (B2B financial product), **ENS** (Best Use of ENSv2), **Uniswap v4 FX** (S1 — activated while Arc deferred) — Arc kept as deferred wing ([ARC.md](./ARC.md) §5b); see [REFLECTION.md](./REFLECTION.md) § Sponsor matrix |
 | Planning date | Sunday Sep 6, 2026 — **10 build days** remain |
 
 ---

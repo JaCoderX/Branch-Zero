@@ -1,8 +1,10 @@
-# Uniswap v4 Integration — The FX Desk (stretch S1)
+# Uniswap v4 Integration — The FX Desk (S1)
 
-> Status: **documented swap-in, not on the critical path.** If Arc fails kill test K3 on Day 1, this replaces the Arc wing as sponsor #3. Otherwise it ships only if Day 8 has slack.
+> Status: **OPEN / activated 2026-09-08** as sponsor **#3** while Arc G7 stays deferred. Kickoff:
+> [`KICKOFF-S1-uniswap-fx.md`](./KICKOFF-S1-uniswap-fx.md) (infra → visualization). HANDOFF **§5i**.
+> Prize paperwork: `FEEDBACK.md` + [Uniswap hackathon feedback form](https://developers.uniswap.org/hackathon-feedback).
 
-Related: [PLAN.md](./PLAN.md) § 3 (tier S1) · [REFLECTION.md](./REFLECTION.md) § Sponsor matrix · [BLOXCHAIN-INTEGRATION.md](./BLOXCHAIN-INTEGRATION.md) § 3 (guard config batch)
+Related: [PLAN.md](./PLAN.md) § 3 (tier S1) · [REFLECTION.md](./REFLECTION.md) § Sponsor matrix · [BLOXCHAIN-INTEGRATION.md](./BLOXCHAIN-INTEGRATION.md) § 3 (guard config batch) · [HANDOFF-CC.md](./HANDOFF-CC.md) §5i
 
 Docs: [Universal Router](https://docs.uniswap.org/contracts/universal-router/overview) · [v4 swap via Universal Router](https://docs.uniswap.org/contracts/v4/quickstart/swap) · [v4 deployments](https://docs.uniswap.org/contracts/v4/deployments) · [Permit2](https://docs.uniswap.org/contracts/permit2/overview) · [v4 Quoter](https://docs.uniswap.org/contracts/v4/reference/periphery/lens/V4Quoter)
 
@@ -10,11 +12,13 @@ Docs: [Universal Router](https://docs.uniswap.org/contracts/universal-router/ove
 
 ## 1. Prize framing
 
-Uniswap Foundation prize wording (from the ETHOnline 2026 page) rewards products built on **v4 hooks, the Universal Router, or the v4 SDK** with real UX. Branch Zero's angle:
+ETHOnline 2026 **Best Uniswap Stack Contribution** (Start Fresh pool unless Continuity Track). Branch Zero's angle:
 
 > **A swap executed by a governed account through the bank's guard rails.** The Dealer NPC quotes with the v4 Quoter; the swap goes through `GuardController` as a whitelisted, selector-scoped call to the Universal Router. The player never approves a token spend in a wallet modal, and the account's policy caps what the Dealer can do.
 
-This is not "a swap UI"; it is "swaps as a permissioned treasury operation", which fits the bounty's interest in novel access/UX patterns.
+This is not "a swap UI"; it is "swaps as a permissioned treasury operation."
+
+**Reset:** v4 only · Sepolia for FX · no custom SwapHelper · no new Privy modal · K7 = live Sepolia evidence.
 
 ---
 
@@ -90,16 +94,16 @@ Quote → `minAmountOut = quote * (1 - 0.01)`, `deadline = now + 300`. The meta-
 
 ---
 
-## 5. Day-8 runbook (if activated)
+## 5. Runbook (activated)
 
 1. Resolve addresses from the deployments page; write to `infra/deployments/sepolia.json`.
 2. Ensure a `demoUSDC/WETH` pool with liquidity exists (create + seed via v4 `PositionManager` script if none).
-3. Add guard batch for the three selectors to the provisioner (flag `--fx`).
+3. Add guard batch for the three selectors to the provisioner (flag `--fx` / first FX visit).
 4. Implement `/quote` (V4Quoter via viem `simulateContract`) and `/swap` in Teller Desk.
-5. Dealer dialogue + quote board in Godot.
-6. QA a swap end-to-end; link tx on Etherscan in README.
+5. Bridge + Dealer dialogue + quote board + FX desk viz in Godot (see kickoff §F).
+6. QA a swap end-to-end; link tx on Etherscan in README; commit `FEEDBACK.md`; submit Uniswap form.
 
-Time estimate: 1 focused day. Do not start unless Days 1–7 are green.
+Time estimate: 1–2 focused days end-to-end (infra + viz). Prefer Fable 5.1. Do not start Arc revive from this unit.
 
 ---
 
