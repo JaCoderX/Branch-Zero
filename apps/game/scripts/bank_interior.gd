@@ -121,11 +121,11 @@ func _lobby_furniture() -> void:
 	for i in 4:
 		var x := -4.5 + i * 3.0
 		box("Bench%d" % i, Vector3(x, 0.25, 2.5), Vector3(1.8, 0.5, 0.6), WOOD)
-	for i in 3:
-		# Keep clear of the teller's vault escort (path passes ~x=6, z=-3.5). Plants stay on the
-		# lobby side of the north partition, west of the vault opening (x ∈ [6, 10]).
-		var x := -8.0 + i * 4.0
-		cylinder("LobbyPlant%d" % i, Vector3(x, 1.0, -3.6), 0.5, 1.4, PLANT)
+	# Lobby side of the north partition. Off the manager door (x ∈ [-9, -7]) and the vault
+	# opening (x ∈ [6, 10]); escort last lobby waypoint is ~(6, -3.5).
+	var plant_x := PackedFloat32Array([-5.0, -1.0, 3.0])
+	for i in plant_x.size():
+		cylinder("LobbyPlant%d" % i, Vector3(plant_x[i], 1.0, -3.2), 0.5, 1.4, PLANT)
 	box("WaterCooler", Vector3(8.0, 0.6, 4.5), Vector3(0.4, 1.2, 0.4), GLASS, false)
 	# ledger board backing on the north partition (the board itself is scenes/props ledger_board)
 	box("LedgerFrame", Vector3(0, 3.0, -4.8), Vector3(8.4, 2.4, 0.15), GRAPHITE)
@@ -175,6 +175,10 @@ func box(name: String, pos: Vector3, size: Vector3, color: Color, solid: bool = 
 		bs.size = size
 		shape.shape = bs
 		body.add_child(shape)
+		# Layer 1 so CharacterBody3D cannot walk through; mask 0 so Godot Physics on web
+		# cannot shove this body when something slides into it.
+		body.collision_layer = 1
+		body.collision_mask = 0
 		root = body
 	else:
 		root = Node3D.new()
@@ -190,10 +194,21 @@ func box(name: String, pos: Vector3, size: Vector3, color: Color, solid: bool = 
 	return root
 
 
-func cylinder(name: String, pos: Vector3, radius: float, height: float, color: Color) -> Node3D:
-	# Visual only. A physics body here gets shoved by CharacterBody3D.move_and_slide on the web
-	# export (Godot Physics): after a vault escort the lobby plants had walked off their spots.
-	var root := Node3D.new()
+func cylinder(name: String, pos: Vector3, radius: float, height: float, color: Color, solid: bool = true) -> Node3D:
+	var root: Node3D
+	if solid:
+		var body := StaticBody3D.new()
+		var shape := CollisionShape3D.new()
+		var cs := CylinderShape3D.new()
+		cs.radius = radius
+		cs.height = height
+		shape.shape = cs
+		body.add_child(shape)
+		body.collision_layer = 1
+		body.collision_mask = 0
+		root = body
+	else:
+		root = Node3D.new()
 	root.name = name
 	root.position = pos
 	var mi := MeshInstance3D.new()
