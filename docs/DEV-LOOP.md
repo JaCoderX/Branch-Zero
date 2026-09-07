@@ -8,7 +8,7 @@ updated: 2026-09-07
 
 How Branch Zero is built without turning GameDevOS into a second backlog or GameLab into the game.
 
-Related: [HANDOFF-CC.md](./HANDOFF-CC.md) · [PLAN.md](./PLAN.md) · [REMOTE-EVM.md](./REMOTE-EVM.md) · GameDevOS `OBJ-2026-0004` · GameLab `ENG-2026-0003`…`0008`
+Related: [PLAN.md](./PLAN.md) · [REMOTE-EVM.md](./REMOTE-EVM.md) · GameDevOS `OBJ-2026-0004` · GameLab `ENG-2026-0003`…`0008`
 
 ---
 
@@ -62,9 +62,9 @@ Ordered so that after U2 we can stop and still demo a coherent bank-on-a-chain (
 | **U4+ Priority release** | Ruth waits the clock; Okafor meta-bypass + Passkey before `releaseTime` | G5b | ENG-0012 + 0011 + 0013 — **met 2026-09-07** (ROLE_SET 3 split on chain, `/priority/*`, Passkey step-up in the overlay, policy pins the silent lane to `params.action`; kill tests Y0–Y9) |
 | **U5 ENS** | Subname + pay-by-name | G6 | **met** 2026-09-07 — UR V2 pin; live `u5-mtra3lb6…`; pay on 1337 |
 | **U6 Arc + manager role** | Elevator wing + runtime role (manager already in U4+ as Priority submitter) | G7 | ENG-0006 **yes** (K3); Lane/guard/meta on Arc unproven |
-| **U7 Feel / ship** | Art, video, submission | G8–G10 | ENG-0008 only if S1; staged art Stage 1–5 **met**; next visual [`KICKOFF-U7-ship-reel.md`](./KICKOFF-U7-ship-reel.md) when clear of U6 |
+| **U7 Feel / ship** | Art, video, submission | G8–G10 | ENG-0008 only if S1; staged art Stage 1–5 **met**; continuous demo reel when clear of U6 |
 
-Each unit ends with: commit, a line in `docs/progress/`, kill/decision log if anything changed.
+Each unit ends with: commit, a local note under `docs/progress/` (gitignored), and a kill/decision line in [REFLECTION.md](./REFLECTION.md) if anything changed.
 
 ### Daily rhythm (from PLAN)
 

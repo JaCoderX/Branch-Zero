@@ -415,7 +415,7 @@ Branch-Zero/
 
 - Structured logs (pino) with `jobId`, `owner`, `chainId`, `txId`, `hash`.
 - Every broadcast logged with explorer URL; every revert logged with decoded name via `decodeRevertReason`.
-- `docs/progress/` daily captures double as evidence for judges.
+- Kill-test results and decision log live in [REFLECTION.md](./REFLECTION.md); demo evidence is the submission video.
 
 ---
 

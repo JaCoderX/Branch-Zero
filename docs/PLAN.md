@@ -22,7 +22,6 @@
 | Doc | What it answers |
 |-----|-----------------|
 | **PLAN.md** (this file) | What we build, in what order, with what gates, and what "done" means |
-| [HANDOFF-CC.md](./HANDOFF-CC.md) | Cold-agent brief (Claude Code / Fable): constraints, U0 mission, file links |
 | [DEV-LOOP.md](./DEV-LOOP.md) | Craft / lab / product split; construction units U0–U7; OBJ-2026-0004 |
 | [REMOTE-EVM.md](./REMOTE-EVM.md) | Default local chain (Nethermind `1337`) — use before Sepolia |
 | [GAME-DESIGN.md](./GAME-DESIGN.md) | The player experience: core loop, protocol-to-game mapping, quests, HUD |
@@ -127,11 +126,11 @@ Mainnet, real money, custom Solidity (beyond deploy scripts), mobile export, mul
 
 ## 4. Ten-day schedule
 
-Dates are inclusive. Each day ends with a **commit + 30-second screen capture** into `docs/progress/` (for the Continuity-style "show your work" and the final video B-roll).
+Dates are inclusive. Each day ends with a **commit** plus a local progress note / capture under `docs/progress/` (gitignored — for Continuity-style "show your work" and final video B-roll, not the public repo).
 
 | Day | Date | Theme | Deliverable (Definition of Done) | Gate |
 |-----|------|-------|----------------------------------|------|
-| 1 | Sun Sep 6 | Spike & kill tests | Repo scaffold (`apps/game`, `apps/web`, `apps/teller-desk`, `packages/shared`). Godot 4.5 web export with a cube runs in browser single-threaded. `JavaScriptBridge` round-trip proven. `@bloxchain/sdk` installed; `AccountBlox` deployed on **Remote EVM 1337**; `owner()` read back. **Kill tests K1 + K4** logged in `REFLECTION.md`. Brief: [HANDOFF-CC.md](./HANDOFF-CC.md). | G1: K1 and K4 pass or have a fallback chosen |
+| 1 | Sun Sep 6 | Spike & kill tests | Repo scaffold (`apps/game`, `apps/web`, `apps/teller-desk`, `packages/shared`). Godot 4.5 web export with a cube runs in browser single-threaded. `JavaScriptBridge` round-trip proven. `@bloxchain/sdk` installed; `AccountBlox` deployed on **Remote EVM 1337**; `owner()` read back. **Kill tests K1 + K4** logged in `REFLECTION.md`. | G1: K1 and K4 pass or have a fallback chosen |
 | 2 | Mon Sep 7 | Signing lane | Privy app created; login in the HTML shell; session signer with policy added; server-side `eth_signTypedData_v4` of a Bloxchain meta-tx digest verified against `MetaTransactionSigner.verifySignature` path (recover == signer). Guard config batch executes. | G2: one `requestAndApproveExecution` USDC transfer lands on Sepolia with **zero** browser pop-ups after delegation |
 | 3 | Tue Sep 8 | Time-lock lane | `executeWithTimeLock` → PENDING → wait → `approveTimeLockExecution`; cancel path; `getTransaction` polling; error decode via `decodeRevertReason`. Teller Desk service exposes REST + SSE for tx status. | G3: both lanes green in a headless script and via bridge from a stub UI |
 | 4 | Wed Sep 9 | Bank shell (greybox) | Greybox interior with all zones, player controller, interact prompts, dialogue box, Teller + Vault + Manager interactions wired to bridge. Ledger board reads chain. | G4: end-to-end M1–M4 playable in browser, ugly |

@@ -40,3 +40,10 @@ apps/web/dist/
 
 # agent scratch probes (never committed)
 .scratch/
+
+# Cursor / Claude local launch configs
+.claude/
+
+# Progress captures / demo reels / probe logs (markdown notes stay tracked)
+docs/progress/captures/
+*.mp4

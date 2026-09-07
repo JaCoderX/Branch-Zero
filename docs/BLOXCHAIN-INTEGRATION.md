@@ -320,7 +320,7 @@ Approval before `releaseTime` reverts — the Vault Keeper's line "Still cooling
 > signer — in the browser, behind a Passkey (PRIVY.md §4, §5a). META bits are account-wide: any PENDING wire on a
 > Priority-enabled account can be bypassed this way; `PRIORITY_RELEASE=off` keeps the U2 shape for vault-only
 > branches. Implementation: `apps/teller-desk/src/lanes/provision.ts` (`desiredGrants`), `lanes/priority.ts`.
-> Evidence: `docs/progress/2026-09-07-u4-plus-priority-release.md` (kill tests Y0–Y9).
+> Evidence: kill tests Y0–Y9 in [REFLECTION.md](./REFLECTION.md) (G5b-priority).
 
 ---
 

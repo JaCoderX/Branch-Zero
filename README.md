@@ -4,10 +4,9 @@
 
 **Start here**
 
-- Cold agent / Claude Code: [`docs/HANDOFF-CC.md`](./docs/HANDOFF-CC.md) (**U5** mission)
 - Plan and gates: [`docs/PLAN.md`](./docs/PLAN.md) · construction units: [`docs/DEV-LOOP.md`](./docs/DEV-LOOP.md)
 - Doc index: [`docs/README.md`](./docs/README.md) · honest review + kill-test log: [`docs/REFLECTION.md`](./docs/REFLECTION.md)
-- Daily evidence: [`docs/progress/`](./docs/progress/)
+- Demo / submission: [`docs/DEMO-SCRIPT.md`](./docs/DEMO-SCRIPT.md)
 
 **Status:** U4 / G5 met 2026-09-07 — MVP frozen. The bank is walkable (Godot 4.5 web, single-threaded): Ines opens accounts,
 Dev takes payments and routes big ones to the vault, Ruth releases once the clock runs down, Mr. Okafor skips the
@@ -32,7 +31,7 @@ packages/shared/    viem chain configs (remoteEvm 1337, sepolia), dev-role addre
 infra/scripts/      probe / smoke / bootstrap-blox (one-time CopyBlox + demo ERC-20) / historical U0 compile+deploy
 infra/deployments/  remote-evm.json — AccountBlox fixture, CopyBlox, demo token. Never keys.
 scripts/            export-web.mjs — headless Godot import + Web export into apps/web/public/game/
-docs/               plan, architecture, integration notes, reflection, progress
+docs/               plan, architecture, integration notes, reflection (agent ops / daily progress are local-only)
 ```
 
 ## Run it (Windows, Node ≥ 20)
@@ -129,7 +128,7 @@ Two honest limits, stated because they are load-bearing:
 - `domain.name` is not a matchable policy field, so the policy pins `verifyingContract` + `chainId` instead —
   which is the stronger half of the intent anyway.
 
-## Hard rules (from `docs/HANDOFF-CC.md`)
+## Hard rules
 
 Public **`@bloxchain/sdk` + `viem`** only for product runtime (plus Privy for identity/signing). No custom Solidity. No path dependency on the protocol repo for runtime — `npm run chain:bootstrap` reads already-built artifacts out of band and only addresses are committed. Godot never holds keys / never talks RPC. No `JavaScriptBridge.eval`. Testnets + Remote EVM only; **do not wipe** the lab chain; live block gas limit is **16,777,216** (measured — `cloneBlox` already uses 99.2 % of it). Remote EVM dev keys never touch a public network.
 
@@ -137,6 +136,6 @@ Public **`@bloxchain/sdk` + `viem`** only for product runtime (plus Privy for id
 
 ## AI tools
 
-Planning and U0 construction: Claude Code (Fable 5.1). U1 construction: Claude Code (Opus 5). U2 construction: Claude Code (Fable 5.1 / Opus 5). Lessons scrubbed into GameDevOS `wiki/lessons/`. See `docs/progress/`.
+Planning and U0 construction: Claude Code (Fable 5.1). U1 construction: Claude Code (Opus 5). U2 construction: Claude Code (Fable 5.1 / Opus 5). Lessons scrubbed into GameDevOS `wiki/lessons/`. Kill-test decisions live in [`docs/REFLECTION.md`](./docs/REFLECTION.md).
 
 Licence: MIT. Bloxchain SDK is MPL-2.0.

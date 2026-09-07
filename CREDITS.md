@@ -1,7 +1,7 @@
 # Credits — third-party assets
 
-Every asset in `apps/game/assets/` and where it came from (docs/WORLD-3D-ENVIRONMENT.md §5 licence check;
-KICKOFF-U7-viz "Licence everything"). Nothing here needs attribution by licence; we credit anyway. Code is MIT
+Every asset in `apps/game/assets/` and where it came from (docs/WORLD-3D-ENVIRONMENT.md §5 licence check).
+Nothing here needs attribution by licence; we credit anyway. Code is MIT
 (repo `LICENSE`). Fonts (U7 viz Stage 5): two OFL faces under `apps/game/assets/fonts/`, licences beside the files —
 Inter for the UI and Cinzel for the plaque titles (WORLD-3D §5 named Inter / JetBrains Mono / a free serif; the
 boards keep Inter so the game ships one UI face and one plaque face).
