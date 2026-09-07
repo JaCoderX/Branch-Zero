@@ -146,9 +146,9 @@ cannot shove them) and sit at `x` = -5/-1/3 — clear of the manager door and th
 
 ## Still optional
 
-- Silent counter Pay immediately after a Passkey (no sheet) — kill test Y8b already covers the policy; a filmed beat is nice, not blocking.
-- Dismiss the Passkey sheet → `PRIORITY_CANCELLED` line.
-
+- Silent counter Pay immediately after a Passkey (no sheet) — kill test Y8b already covers the policy; a filmed beat is nice, not blocking. Steps: [`captures/README.md`](./captures/README.md).
+- Dismiss the Passkey sheet → `PRIORITY_CANCELLED` line — **covered in MockChain + `run_mock_walk.gd`**; human confirm on real bridge still nice.
+- Real-bridge 30 s vault-clock clip (tab visible) — checklist in captures README.
 ## Code pointers
 
 - `apps/teller-desk/src/lanes/provision.ts` — `ROLE_SET_VERSION` 3, `desiredGrants(priority)`, `retiredSelectors`, `ensureTypedDataPolicy`

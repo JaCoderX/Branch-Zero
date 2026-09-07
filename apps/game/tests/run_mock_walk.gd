@@ -87,6 +87,18 @@ func _run() -> void:
 	else:
 		_ok("manager_approve → MANAGER_NO_STAMP: \"%s\"" % gs.error_line(stamp["error"]))
 
+	# Passkey / sign-sheet dismiss → Okafor's PRIORITY_CANCELLED line (no chain write)
+	var dismiss: Dictionary = await gs.run_action("priority", {"txId": "dismiss", "dismiss": true})
+	var dcode := str(dismiss.get("error", {}).get("code", ""))
+	if dismiss.get("ok", false) or dcode != "PRIORITY_CANCELLED":
+		_fail("priority dismiss: ok=%s code=%s" % [str(dismiss.get("ok")), dcode])
+	else:
+		var dline: String = gs.error_line(dismiss["error"])
+		if not dline.contains("No hand scan"):
+			_fail("PRIORITY_CANCELLED line wrong: \"%s\"" % dline)
+		else:
+			_ok("priority dismiss → PRIORITY_CANCELLED: \"%s\"" % dline)
+
 	# Okafor Priority (mock) → COMPLETED before the clock
 	var before: int = gs.remaining(gs.wire_by_id(tx_id))
 	var pr: Dictionary = await gs.run_action("priority", {"txId": tx_id})

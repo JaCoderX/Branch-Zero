@@ -161,10 +161,13 @@ func _decide(args: Dictionary, kind: String) -> Dictionary:
 
 ## U4+ Okafor's Priority release, mocked: no Passkey, no signature, nothing on a chain — it only lets the greybox
 ## walk the desk. The real path is /priority/prepare → Privy MFA + user-signer sign sheet → /priority/submit.
+## Pass `dismiss: true` (or txId `dismiss`) to exercise the Passkey/sign-sheet cancel line without a browser.
 func _priority(args: Dictionary) -> Dictionary:
 	if account == "":
 		return _err("NO_ACCOUNT", "No account opened for this player")
 	var tx_id := str(args.get("txId", ""))
+	if bool(args.get("dismiss", false)) or tx_id == "dismiss":
+		return _err("PRIORITY_CANCELLED", "priority release not signed: mock dismiss")
 	var idx := _find(tx_id)
 	if idx < 0:
 		return _err("NOT_PENDING", "record %s is not PENDING" % tx_id)
