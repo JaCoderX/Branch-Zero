@@ -12,13 +12,17 @@ extends SceneTree
 ## characters: clips present, U3 capsules unchanged, head height, one shared atlas material, Petra's skin entry.
 ## Stage 4 adds the shell: the wall / ceiling modules exist and all went into the static batch, the skylight glass
 ## and NamesBoardQuad stayed out of it, and the pendant count is still eight shadowless omnis (a ninth is unlit
-## on the merged mesh under Compatibility).
+## on the merged mesh under Compatibility). Stage 5 adds the feel layer: at most two particle systems (CPU, shadowless,
+## unshaded billboards) whose materials still fit the 40, Inter installed as the default font with Cinzel on the title
+## plaques (both OFL, licences beside the files), the HUD anchored to the bottom band, and the spring arm off the shoulder.
 
 const MAX_MATERIALS := 40
 const MAX_TRIS := 400_000
 const MAX_SURFACES := 350
 const MAX_OMNIS := 8          # Compatibility lights ≤ 8 omnis per mesh and the merged interior sees them all
 const MIN_SHELL_PIECES := 300  # Stage 4 built 415 wall / ceiling modules; fewer means a build path was lost
+const MAX_PARTICLES := 2       # Stage 5: skylight dust + stamp ink — CPUParticles3D only, shadowless, unshaded
+const MIN_PLAQUES_DRESSED := 8 # Stage 5: title plaques carrying the Cinzel face
 
 var failures := 0
 
@@ -197,6 +201,74 @@ func _run() -> void:
 		_ok("%d shadowless omnis ≤ %d (no ninth on the merged interior)" % [omnis, MAX_OMNIS])
 	else:
 		_fail("%d omnis (%d shadowed) — budget is %d shadowless" % [omnis, omni_shadow, MAX_OMNIS])
+
+	# feel (U7 viz Stage 5): particles, fonts, HUD band, OTS arm
+	print("feel (Stage 5)")
+	var particles: Array[GeometryInstance3D] = []
+	for n in _all(main):
+		if n is CPUParticles3D or n is GPUParticles3D:
+			particles.append(n)
+	var p_names: PackedStringArray = []
+	var p_bad: PackedStringArray = []
+	var p_mats := {}
+	for p in particles:
+		p_names.append(p.name)
+		if p is GPUParticles3D:
+			p_bad.append("%s is GPUParticles3D (CPUParticles3D only on Compatibility web)" % p.name)
+		if p.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
+			p_bad.append("%s casts shadows" % p.name)
+		var pm := p.material_override as StandardMaterial3D
+		if pm == null or pm.shading_mode != BaseMaterial3D.SHADING_MODE_UNSHADED or pm.billboard_mode == BaseMaterial3D.BILLBOARD_DISABLED:
+			p_bad.append("%s is not an unshaded billboard" % p.name)
+		elif not mats.has(pm.get_instance_id()):
+			p_mats[pm.get_instance_id()] = pm
+		if p.get_parent() != null and p.get_parent().name == "BankInterior":
+			p_bad.append("%s sits under BankInterior (bake_static territory)" % p.name)
+	print("  %d particle system(s): %s · %d particle material(s) → %d unique materials with them" % [particles.size(), ", ".join(p_names), p_mats.size(), mats.size() + p_mats.size()])
+	if particles.size() <= MAX_PARTICLES and p_bad.is_empty():
+		_ok("%d particle systems ≤ %d, all CPU, shadowless, unshaded billboards" % [particles.size(), MAX_PARTICLES])
+	else:
+		_fail("particles: %d systems (max %d); %s" % [particles.size(), MAX_PARTICLES, "; ".join(p_bad)])
+	if mats.size() + p_mats.size() <= MAX_MATERIALS:
+		_ok("unique materials with particles %d ≤ %d" % [mats.size() + p_mats.size(), MAX_MATERIALS])
+	else:
+		_fail("unique materials with particles %d > %d" % [mats.size() + p_mats.size(), MAX_MATERIALS])
+	var df := ThemeDB.get_default_theme().default_font
+	var df_path := ""
+	if df is FontVariation and (df as FontVariation).base_font != null:
+		df_path = (df as FontVariation).base_font.resource_path
+	elif df != null:
+		df_path = df.resource_path
+	if df_path.ends_with("Inter.ttf"):
+		_ok("UI face is Inter (default theme font %s)" % df_path)
+	else:
+		_fail("default theme font is %s, not assets/fonts/Inter.ttf" % ("<built-in>" if df_path == "" else df_path))
+	var licences_ok := FileAccess.file_exists("res://assets/fonts/LICENSE-inter-OFL.txt") and FileAccess.file_exists("res://assets/fonts/LICENSE-cinzel-OFL.txt")
+	if ResourceLoader.exists("res://assets/fonts/Cinzel.ttf") and licences_ok:
+		_ok("Cinzel.ttf present; OFL licence files beside both fonts")
+	else:
+		_fail("Cinzel.ttf or an OFL licence file is missing under assets/fonts/")
+	var feel := main.get_node_or_null("Feel")
+	var dressed := int(feel.get_meta("plaques_dressed", 0)) if feel != null else 0
+	if dressed >= MIN_PLAQUES_DRESSED:
+		_ok("%d title plaques carry the plaque face (≥ %d); body signs keep Inter" % [dressed, MIN_PLAQUES_DRESSED])
+	else:
+		_fail("only %d plaques carry the plaque face (want ≥ %d) — Feel node missing or dress_plaques ran early" % [dressed, MIN_PLAQUES_DRESSED])
+	var hud_pass: Control = null
+	var hud_zone: Control = null
+	for c in main.get_children():
+		if c is CanvasLayer and c.has_node("Passbook"):
+			hud_pass = c.get_node("Passbook")
+			hud_zone = c.get_node_or_null("Zone")
+	if hud_pass != null and hud_zone != null and hud_pass.anchor_top == 1.0 and hud_pass.offset_bottom <= 0.0 and hud_zone.anchor_top == 1.0 and hud_zone.offset_bottom <= 0.0:
+		_ok("HUD passbook and zone chip anchor to the bottom band (ledger / frieze / vault repeater clear)")
+	else:
+		_fail("HUD passbook or zone chip is not anchored to the bottom band")
+	var arm := main.get_node_or_null("Player/CamPivot/Arm") as SpringArm3D
+	if arm != null and arm.position.x >= 0.4 and arm.rotation_degrees.x > -20.0 and arm.rotation_degrees.x < -8.0 and arm.collision_mask == 1:
+		_ok("spring arm %.2f m off the shoulder at %.0f°, still colliding on layer 1" % [arm.position.x, arm.rotation_degrees.x])
+	else:
+		_fail("spring arm is not the Stage 5 OTS arm (offset ≥ 0.4 m, pitch −8…−20°, mask 1)")
 
 	print("freeze rules")
 	var bad_layers: PackedStringArray = []

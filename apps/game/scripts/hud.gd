@@ -1,6 +1,14 @@
 extends CanvasLayer
-## HUD — passbook (top-left), zone chip (top-centre), interaction prompt (bottom-centre), stage line and
-## error toasts (top-right). Every string comes from dialogue/strings.json or the bridge (docs/GODOT.md §6).
+## HUD — a bottom band so the architecture stays clear (U7 viz Stage 5): passbook card bottom-left, help line along
+## the very bottom, interaction prompt bottom-centre, zone chip bottom-right. The passbook and chip step aside while a
+## dialogue or form is open (the box lands on the same band). Stage lines and error toasts are six-second notices in
+## the top-right corner, sized to their text, so they never sit on the dialogue box. Nothing persistent sits in the
+## top third, where the lobby camera holds the ledger board, the frieze and the vault repeater. Every string comes from
+## dialogue/strings.json or the bridge (docs/GODOT.md §6). Fonts: BankFonts (Inter) is installed here, before any label
+## is built, so every Control in the game inherits it.
+
+const HELP_SECONDS := 25.0    # the key legend fades once the player has had a look; F1 brings it back
+const BRASS := Color(0.86, 0.69, 0.32)
 
 var _passbook: Label
 var _zone: Label
@@ -10,37 +18,56 @@ var _toast: Label
 var _help: Label
 var _toast_until := 0.0
 var _stage_until := 0.0
+var _help_until := 0.0
+var _help_pinned := false
+var _help_tween: Tween
 
 
 func _ready() -> void:
 	layer = 5
+	BankFonts.install_ui()
 	# anchor (0..1 of the viewport) + pixel offsets; `position` after an anchor preset lands off-screen.
-	_passbook = _label(Vector2(0, 0), Vector4(16, 12, 540, 150), 18, Color(0.95, 0.95, 0.95))
-	_passbook.add_theme_stylebox_override("normal", _panel_style())
-	_zone = _label(Vector2(0.5, 0), Vector4(-200, 12, 200, 48), 20, Color(0.95, 0.80, 0.45))
-	_zone.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_passbook = _label("Passbook", Vector2(0, 1), Vector4(16, -54, 456, -54), 14, Color(0.95, 0.95, 0.95))
+	_passbook.grow_vertical = Control.GROW_DIRECTION_BEGIN   # zero-height box: the card hugs the help line and grows upward with its lines
+	_passbook.add_theme_stylebox_override("normal", _panel_style(true))
+	_zone = _label("Zone", Vector2(1, 1), Vector4(-236, -94, -16, -54), 17, BRASS)
+	_zone.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_zone.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_zone.add_theme_stylebox_override("normal", _panel_style())
-	_stage = _label(Vector2(1, 0), Vector4(-560, 12, -16, 80), 17, Color(0.85, 0.72, 1.0))
-	_stage.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_toast = _label(Vector2(1, 0), Vector4(-560, 88, -16, 156), 17, Color(1.0, 0.55, 0.5))
-	_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_prompt = _label(Vector2(0.5, 1), Vector4(-260, -150, 260, -106), 22, Color(1, 1, 1))
+	_zone.add_theme_font_override("font", BankFonts.ui_bold())
+	_stage = _label("Stage", Vector2(1, 0), Vector4(-16, 12, -16, 12), 16, Color(0.85, 0.72, 1.0))
+	_stage.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_stage.grow_vertical = Control.GROW_DIRECTION_END
+	_stage.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_stage.add_theme_stylebox_override("normal", _panel_style())
+	_toast = _label("Toast", Vector2(1, 0), Vector4(-16, 58, -16, 58), 16, Color(1.0, 0.55, 0.5))
+	_toast.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_toast.grow_vertical = Control.GROW_DIRECTION_END
+	_toast.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_toast.add_theme_stylebox_override("normal", _panel_style())
+	_prompt = _label("Prompt", Vector2(0.5, 1), Vector4(-180, -104, 180, -58), 20, Color(1, 1, 1))
 	_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_prompt.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_prompt.add_theme_stylebox_override("normal", _panel_style())
-	_help = _label(Vector2(0, 1), Vector4(16, -44, 900, -12), 15, Color(0.7, 0.75, 0.8))
+	_prompt.add_theme_font_override("font", BankFonts.ui_bold())
+	_help = _label("Help", Vector2(0, 1), Vector4(16, -46, -16, -8), 13, Color(0.72, 0.76, 0.80))
+	_help.anchor_right = 1.0
+	_help.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	_help.text = str(GameState.strings.get("help", ""))
+	_help_until = Time.get_unix_time_from_system() + HELP_SECONDS
 
 	GameState.changed.connect(_refresh)
 	GameState.stage.connect(_on_stage)
 	GameState.toast.connect(show_toast)
 	GameState.zone_changed.connect(func(z: String) -> void:
 		_zone.text = z
-		_zone.visible = z != "")
+		_zone.visible = z != "" and not GameState.ui_locked)
 	_refresh()
 
 
-func _label(anchor: Vector2, offsets: Vector4, font: int, color: Color) -> Label:
+func _label(name: String, anchor: Vector2, offsets: Vector4, font: int, color: Color) -> Label:
 	var l := Label.new()
+	l.name = name
 	l.anchor_left = anchor.x
 	l.anchor_right = anchor.x
 	l.anchor_top = anchor.y
@@ -51,22 +78,27 @@ func _label(anchor: Vector2, offsets: Vector4, font: int, color: Color) -> Label
 	l.offset_bottom = offsets.w
 	l.add_theme_font_size_override("font_size", font)
 	l.add_theme_color_override("font_color", color)
-	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART if name == "Help" else TextServer.AUTOWRAP_OFF
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(l)
 	return l
 
 
-func _panel_style() -> StyleBoxFlat:
+func _panel_style(brass_edge: bool = false) -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(0.04, 0.05, 0.08, 0.72)
 	sb.corner_radius_top_left = 6
 	sb.corner_radius_top_right = 6
 	sb.corner_radius_bottom_left = 6
 	sb.corner_radius_bottom_right = 6
-	sb.content_margin_left = 10
-	sb.content_margin_right = 10
-	sb.content_margin_top = 6
-	sb.content_margin_bottom = 6
+	sb.content_margin_left = 12
+	sb.content_margin_right = 12
+	sb.content_margin_top = 7
+	sb.content_margin_bottom = 7
+	if brass_edge:
+		sb.border_width_left = 3
+		sb.border_color = BRASS
+		sb.content_margin_left = 14
 	return sb
 
 
@@ -112,7 +144,25 @@ func set_prompt(text: String) -> void:
 	_prompt.visible = text != ""
 
 
+func _unhandled_input(event: InputEvent) -> void:
+	# F1 pins / unpins the key legend after it has faded (F5 is the browser's reload, F2–F8 are the teleports)
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F1:
+		_help_pinned = not _help_pinned
+		if not _help_pinned:
+			_help_until = 0.0
+		_fade_help(_help_pinned)
+		get_viewport().set_input_as_handled()
+
+
+func _fade_help(show: bool) -> void:
+	if _help_tween != null and _help_tween.is_valid():
+		_help_tween.kill()
+	_help_tween = create_tween()
+	_help_tween.tween_property(_help, "modulate:a", 1.0 if show else 0.0, 0.6)
+
+
 var _tick := 0.0
+var _help_shown := true
 
 
 func _process(delta: float) -> void:
@@ -125,4 +175,9 @@ func _process(delta: float) -> void:
 	var t := Time.get_unix_time_from_system()
 	_stage.visible = t < _stage_until and _stage.text != ""
 	_toast.visible = t < _toast_until and _toast.text != ""
-	_help.visible = not GameState.ui_locked
+	_passbook.visible = not GameState.ui_locked
+	_zone.visible = not GameState.ui_locked and _zone.text != ""
+	var want_help := not GameState.ui_locked and (_help_pinned or t < _help_until)
+	if want_help != _help_shown:
+		_help_shown = want_help
+		_fade_help(want_help)

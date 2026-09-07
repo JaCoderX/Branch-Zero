@@ -4,7 +4,7 @@ extends Node
 ##   godot --path apps/game tests/viz_shots.tscn -- <out_dir>
 ##
 ## Runs the main scene as a child, walks the camera through the DoD views (lobby → counter → vault, manager,
-## account opening, entrance, Stage 3 character two-shots, Stage 4 shell views), files a mock wire so the vault door shows PENDING, waits for the mock clock so it
+## account opening, entrance, Stage 3 character two-shots, Stage 4 shell views, Stage 5 talk two-shots + look-ups), files a mock wire so the vault door shows PENDING, waits for the mock clock so it
 ## shows OPEN, releases it (DONE), files and recalls another (CANCELLED), and saves a PNG per view into <out_dir>
 ## with the renderer's draw-call / primitive counters printed for each. Quits when done. Tester aid only; the
 ## product path is the walk.
@@ -29,6 +29,14 @@ const VIEWS := [
 	# along the partition's lobby face towards the counters. Both keep the spring arm (4.6 m behind) clear of walls.
 	["21_vault_west", Vector3(10.5, 0.1, -9.6), PI / 2],
 	["22_lobby_west", Vector3(5.5, 0.1, -2.5), PI / 2],
+	# Stage 5 feel views. Optional 4th element: {"talk": npc position} snaps the dialogue two-shot (player body
+	# visible — the *_close frames above hide it); {"pitch": deg} tilts the arm for a look-up at the coffers and the
+	# skylight dust. Same spots as the F-key teleports, so the spring arm keeps its clearance.
+	["23_mo_talk", Vector3(3.0, 0.1, 6.0), 0.0, {"talk": Vector3(2.0, 0.0, 4.5)}],
+	["24_dev_talk", Vector3(-9.5, 0.1, 3.0), PI / 2, {"talk": Vector3(-11.6, 0.0, 3.0)}],
+	["25_ruth_talk", Vector3(8.0, 0.1, -6.5), 0.0, {"talk": Vector3(10.0, 0.0, -7.5)}],
+	["26_lobby_ceiling", Vector3(3.0, 0.1, 6.0), 0.0, {"pitch": -2.0}],
+	["27_lobby_west_ceiling", Vector3(5.5, 0.1, -2.5), PI / 2, {"pitch": -6.0}],
 ]
 
 var out_dir := ""
@@ -78,13 +86,18 @@ func _ready() -> void:
 
 func _shots(suffix: String) -> void:
 	for v in VIEWS:
-		await _shot(str(v[0]) + suffix, v[1], v[2])
+		await _shot(str(v[0]) + suffix, v[1], v[2], v[3] if v.size() > 3 else {})
 
 
-func _shot(name: String, pos: Vector3, yaw: float) -> void:
+func _shot(name: String, pos: Vector3, yaw: float, opts: Dictionary = {}) -> void:
 	player.global_position = pos
 	player.velocity = Vector3.ZERO
 	player.set_view(yaw)
+	if opts.has("pitch"):
+		player.set_cam_pitch(float(opts["pitch"]))
+	if opts.has("talk"):
+		player.look_at_point(opts["talk"])
+		player.set_talk_framing(true, true)
 	# the *_close two-shots judge the NPC silhouette: hide the player's body for that frame (the spring arm always
 	# centres the player, so at two metres the body would cover the NPC)
 	var body := player.get_node("Body") as Node3D
@@ -94,6 +107,10 @@ func _shot(name: String, pos: Vector3, yaw: float) -> void:
 	await RenderingServer.frame_post_draw
 	var img := get_viewport().get_texture().get_image()
 	body.visible = true
+	if opts.has("talk"):
+		player.set_talk_framing(false, true)
+	if opts.has("pitch"):
+		player.set_cam_pitch(player.CAM_PITCH)
 	var path := out_dir.path_join(name + ".png")
 	img.save_png(path)
 	print("shot %-22s draw calls %5d · primitives %8d · objects %5d · %s" % [
