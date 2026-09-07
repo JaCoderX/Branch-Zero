@@ -425,11 +425,12 @@ Kickoff: [`docs/KICKOFF-U5.md`](./KICKOFF-U5.md). Design: [`docs/ENS.md`](./ENS.
 
 **U4+ / G5b met 2026-09-07** — this is the open mission.
 
-**Gate before code:** GameLab ENG-2026-0007 must say yes (registry, resolver, client). As of
-[2026-09-07](./progress/2026-09-07-pre-u5-closeout.md) the lab is **partial**: resolve + `isAvailable` proven on
-Sepolia (`branchzero.eth` free); **mint parked** until the principal registers the parent and sets
-`ENS_REGISTRAR_PK` + MockUSDC. U5 may scaffold `/ens/*` + resolve; do not claim G6 mint until the handoff mint
-step is filled. See GameLab `work/ENG-2026-0007-ensv2-subname-mint/handoff.md`.
+**Gate before code:** GameLab ENG-2026-0007 is **partial** ([pre-U5 closeout](./progress/2026-09-07-pre-u5-closeout.md)):
+viem resolve on Sepolia works; Universal Resolver answers `branchzero.eth` → `0xc4d7…`; **ENSv2**
+`ETHRegistry` owner is still zero and workspace `ENS_REGISTRAR_PK` was empty. Mainnet `branchzero.eth`
+is brand-only (separate wallet). U5 may scaffold `/ens/*` + resolve; **do not claim G6 mint** until
+`dig-parent` shows a non-zero ENSv2 owner and a lab mint of `test.branchzero.eth` resolves. See GameLab
+`work/ENG-2026-0007-ensv2-subname-mint/handoff.md`.
 
 ### Freedom envelope
 

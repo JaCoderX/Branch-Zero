@@ -37,6 +37,6 @@ Do these on `http://localhost:5173/` (not `127.0.0.1` — Privy origin). Tab mus
 
 ## Producer gate for ENG-0007 mint (blocks full G6)
 
-1. Set `SEPOLIA_RPC_URL` + `ENS_REGISTRAR_PK` in Branch-Zero `.env` (throwaway Sepolia key + MockUSDC).
-2. Register `branchzero.eth` (free as of probe 2026-09-07) via ENSv2 ETHRegistrar commit/reveal (≥60 s wait, ≥28 day duration).
-3. Re-open GameLab ENG-0007 mint script / product `ens-setup` — see GameLab `work/ENG-2026-0007-ensv2-subname-mint/handoff.md`.
+1. Set `ENS_REGISTRAR_PK` in Branch-Zero `.env` to a **Sepolia** throwaway (ETH + MockUSDC) — never mainnet, never commit. (As of 2026-09-07 dig the key line was empty.)
+2. Register label `branchzero` on **ENSv2** `ETHRegistrar` (commit/reveal ≥60 s). Confirm with `node scripts/dig-parent.mjs` in GameLab ENG-0007: `ownerOf` non-zero, `isAvailable=false`. A Universal Resolver address alone is **not** enough.
+3. Deploy UserRegistry + mint `test.branchzero.eth` — see GameLab `work/ENG-2026-0007-ensv2-subname-mint/handoff.md`.

@@ -56,7 +56,9 @@ The staff names make the roster **auditable by name**: the manager's office boar
 
 ## 3. Setup (Day 1 registration, Day 6 build)
 
-1. **Register `branchzero.eth` on Sepolia ENSv2** (commit/reveal via the Sepolia ENSv2 ETHRegistrar; if the label is taken, pick `branch-zero.eth` or similar). Do the commit on Day 1 because of the reveal wait.
+1. **Parent name `branchzero.eth`**
+   - **Mainnet:** owned by the bank in a **separate** wallet (brand / prize surface only — never in Teller Desk env).
+   - **Sepolia ENSv2 (product):** as of 2026-09-07 dig, Universal Resolver already answers `branchzero.eth` → `0xc4d7…49277`, but ENSv2 `ETHRegistry.ownerOf` is still **zero** and `ETHRegistrar.isAvailable("branchzero")` is **true**. Product mint requires a real ENSv2 commit/reveal with `ENS_REGISTRAR_PK` (testnet throwaway + MockUSDC) until dig shows non-zero owner. See GameLab ENG-2026-0007 `dig-parent.mjs`.
 2. **Deploy a `UserRegistry`** for customers (and one for staff) through the ENSv2 `VerifiableFactory` per the contract-developer tutorial; deploy a `PermissionedResolver` (UUPS proxy) via the same factory or use the parent's resolver initially.
 3. **Point the parent at the subregistry**: `ETHRegistry.setSubregistry(tokenId(branchzero), customersRegistry)` — we hold `ROLE_SET_SUBREGISTRY` from registration. Same for `staff` as a subname whose subregistry is the staff registry.
 4. **Registrar**: the tutorial's `SimpleRegistrar` pattern (availability, `register(label, owner, registry, resolver, roleBitmap, expiry)`). For the hackathon our Teller Desk holds the registrar key and mints on behalf of players (free, rate-limited per Privy user). The player becomes the **owner** of the ERC-1155 subname token.

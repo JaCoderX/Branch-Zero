@@ -18,8 +18,7 @@ Do not commit secrets, `.env`, or large binaries.
 | [2026-09-07 — U4+ Priority kickoff](./2026-09-07-u4-plus-kickoff.md) | U4+ | G5b | docs only — labs 0012/0011/0013 consumed; 0013 re-smoke aborted (no policy id) |
 | [2026-09-07 — U4+ Priority release](./2026-09-07-u4-plus-priority-release.md) | U4+ | G5b | met — ROLE_SET 3; Y3 102 s early on the rig; principal Passkey walk wire #9 `0xaa381c00…` `mfaPrompted: true` |
 | [2026-09-07 — U4+ checkpoint + scrub](./2026-09-07-u4-plus-checkpoint.md) | U4+ | G5b | accept — principal playtest green; four lessons scrubbed; **ENG-0007 still unrun → lab before U5** |
-| [2026-09-07 — Pre-U5 closeout](./2026-09-07-pre-u5-closeout.md) | pre-U5 | — | ENG-0007 resolve yes / mint parked; PRIORITY_CANCELLED mock walk; captures checklist |
-| [2026-09-07 — U7 early viz](./2026-09-07-u7-early-viz.md) | U7 (early art) | early viz DoD | met — kit + hero meshes in place, lighting recipe, CC0 characters, static merge (108–168 draw calls), `.pck` 0.14 → 0.97 MB, CREDITS.md; Name Desk dressed for U5 |
-| [KICKOFF-U5](../KICKOFF-U5.md) | U5 | G6 | **paste after parent registered** (or scaffold-only until mint) |
+| [2026-09-07 — Pre-U5 closeout](./2026-09-07-pre-u5-closeout.md) | pre-U5 | — | ENG-0007 still partial (resolve yes; ENSv2 owner zero; PK empty); PRIORITY_CANCELLED mock walk; captures checklist |
+| [KICKOFF-U5](../KICKOFF-U5.md) | U5 | G6 | **paste into cold agent** — scaffold resolve OK; finish ENSv2 mint in lab first for full G6 |
 
 The newest note carries the findings that will otherwise cost the next agent an afternoon. Read it first.

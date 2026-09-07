@@ -3,15 +3,17 @@
 Paste into a **new** Claude Code / Cursor agent session. Prefer **Fable 5.1**. Escalate to Opus only if stuck on
 ENSv2 Sepolia contract wiring after one honest attempt.
 
-**Before this unit:** U4+ Priority release (G5b) must be **met**. Kickoff for that unit: [`docs/KICKOFF-U4-plus.md`](./KICKOFF-U4-plus.md). GameLab **ENG-2026-0007** (ENSv2 subnames on Sepolia) must have a `handoff.md` with a yes. If it
-does not, the first task is to run that kill test — in the lab, not here. **Do not edit GameLab ENG-0010–0013.**
-Priority / Passkey / meta-bypass are **out of U5** (already a prior unit).
+**Before this unit:** U4+ Priority release (G5b) is **met**. GameLab **ENG-2026-0007** is **partial** (2026-09-07 dig):
+viem resolve works; Universal Resolver answers `branchzero.eth` → `0xc4d7…49277`; **ENSv2** `ETHRegistry.ownerOf`
+is still **zero** and product `ENS_REGISTRAR_PK` was empty. Mainnet `branchzero.eth` is brand-only (separate wallet).
 
-The MVP is frozen (U4 / G5, 2026-09-07) plus U4+ if G5b is met. Nothing in U5 may regress: one Account Opening
-modal, Priority Passkey only on Okafor’s bypass, canvas focus after any overlay, `desk.link` reconnect, NPC lines
-for every refusal, `.pck` + `.wasm` sizes as measured. Run
-`godot --headless --path apps/game -s tests/run_checks.gd`, `npm run typecheck` and the two kill-test scripts before
-you call G6.
+**First task if mint evidence is still missing:** finish K6 in GameLab (fill testnet `ENS_REGISTRAR_PK`, ENSv2
+`ETHRegistrar` commit/reveal until `npm run dig` shows non-zero owner, UserRegistry + mint `test.branchzero.eth`).
+Do **not** invent Sepolia ownership. **Do not edit GameLab ENG-0010–0013.** Priority / Passkey are out of U5.
+
+U5 may **scaffold** `/ens/*` + resolve + Petra in parallel once the dig/handoff shape is understood; **do not claim G6
+mint DoD** until ENG-0007 mint is yes. Freeze intact: one Account Opening modal, Priority Passkey only on Okafor,
+canvas focus, `desk.link`, error lines, measured `.pck`/`.wasm`.
 
 ```text
 You are a cold agent. No prior chat. Prefer docs over memory.
@@ -20,50 +22,43 @@ MISSION: Branch Zero construction unit U5 — ENS (gate G6) ONLY.
 Freedom on HOW. No freedom on constraints.
 
 BEFORE CODE — read in order:
-1. https://github.com/JaCoderX/Branch-Zero/blob/main/docs/HANDOFF-CC.md   (§5f is the mission; U4+ must already be met)
-2. https://github.com/JaCoderX/Branch-Zero/blob/main/docs/progress/2026-09-07-u4-mvp-freeze.md
+1. https://github.com/JaCoderX/Branch-Zero/blob/main/docs/HANDOFF-CC.md   (§5f; U4+ met; ENG-0007 partial)
+2. https://github.com/JaCoderX/Branch-Zero/blob/main/docs/progress/2026-09-07-pre-u5-closeout.md
 3. https://github.com/JaCoderX/Branch-Zero/blob/main/docs/ENS.md
-4. https://github.com/JaCoderX/Branch-Zero/blob/main/docs/DEV-LOOP.md   (chain policy: ENS lives on Sepolia)
-5. https://github.com/JaCoderX/Branch-Zero/blob/main/docs/GODOT.md   (§4 bridge table — ensAvailable / ensMint / ensSetText / resolveName, §4a, §5b canvas focus)
-6. https://github.com/JaCoderX/Branch-Zero/blob/main/docs/NPCS.md   (§4.6 Petra, §5 error lines)
-7. https://github.com/JaCoderX/Branch-Zero/blob/main/docs/SECURITY-AND-KEYS.md   (registrar key is a bank key, never a player key)
-8. https://github.com/JaCoderX/Branch-Zero/blob/main/docs/REFLECTION.md
-9. GameLab ENG-2026-0007 findings.md + handoff.md (behaviour, not files)
+4. https://github.com/JaCoderX/Branch-Zero/blob/main/docs/DEV-LOOP.md   (ENS = Sepolia; payments = 1337)
+5. https://github.com/JaCoderX/Branch-Zero/blob/main/docs/GODOT.md   (§4 ens* methods, §5b canvas focus)
+6. https://github.com/JaCoderX/Branch-Zero/blob/main/docs/NPCS.md   (§4.6 Petra, §5 errors)
+7. https://github.com/JaCoderX/Branch-Zero/blob/main/docs/SECURITY-AND-KEYS.md   (registrar = bank key; never mainnet key)
+8. https://github.com/JaCoderX/Branch-Zero/blob/main/docs/REFLECTION.md   (K6 partial row)
+9. GameLab ENG-2026-0007 findings.md + handoff.md + run `npm run dig` in that folder (behaviour)
 
 Local roots:
 - D:\My Git Projects\D9-Studio\Branch-Zero
+- D:\My Git Projects\D9-Studio\GameLab\work\ENG-2026-0007-ensv2-subname-mint
 - Remote EVM: D:\My Git Projects\ParticleCS\particle-tool-box\Docker Apps\Remote EVM  (Lane A/B stay here)
 
 HARD RULES:
-- Runtime deps: @bloxchain/sdk + viem ONLY, plus whatever ENS client ENG-0007 proved (note it in REFLECTION §8 — no
-  new dependency without a decision-log row).
-- ENS on Sepolia; payments stay on Remote EVM 1337. A name resolves to an address; the bank pays that address on 1337.
-  Never move Lane A/B to Sepolia for this.
-- Do NOT wipe Remote EVM. Do NOT touch lane semantics, role grants, Privy policy shapes, or the one-modal rule.
-- Godot 4.5 GDScript, web, threads OFF. Everything on-chain goes through window.BranchZero. New bridge methods
-  (ensAvailable / ensMint / ensSetText / resolveName) sit over NEW Teller Desk routes /ens/* — these are the routes
-  U2 left as 501 "planned U5"; scene scripts never touch the bridge (Dialogue → GameState.run_action → Chain.call_async).
-- The registrar key is the bank's (Teller Desk env), never the player's. The player's name points at THEIR account.
-- Every new error code gets a line in apps/game/dialogue/errors.json; run_checks.gd must stay green.
-- Never use Ganache-parity keys on Sepolia. No secrets in git.
-- Protect the frozen feel: no art/audio pass, no zone redesign (U7). Petra's Name Desk exists as signage — it becomes a
-  desk with an NPC and a name-claim form (payment_slip.gd is the pattern).
-- MockChain answers the new methods too (canned availability / mint), never for G6 evidence.
+- Runtime deps: @bloxchain/sdk + viem ONLY (+ ENS client already proven: viem getEnsAddress against Universal Resolver proxy 0xeEeE…EeEe). Note any new dep in REFLECTION §8.
+- ENS on Sepolia; payments stay on Remote EVM 1337. Resolve name → address → pay that address on 1337.
+- Parent label: branchzero. Mainnet ownership is brand-only — never put the mainnet wallet key in Teller Desk env.
+- ENSv2 parent must show non-zero ETHRegistry.ownerOf before claiming mint works (dig-parent). A Universal Resolver address alone is not ENSv2 ownership.
+- Do NOT wipe Remote EVM. Do NOT touch lane semantics, role grants, Privy policy, or the one-modal rule (Priority Passkey exception already shipped).
+- Godot 4.5 GDScript, web, threads OFF. Bridge only: ensAvailable / ensMint / ensSetText / resolveName over NEW /ens/* desk routes. Dialogue → GameState.run_action → Chain.call_async.
+- Registrar key = ENS_REGISTRAR_PK (Sepolia throwaway + MockUSDC). Never Ganache-parity keys on Sepolia. No secrets in git.
+- Every new error code → apps/game/dialogue/errors.json; run_checks.gd green. MockChain answers ens* for greybox only — never for G6 evidence.
+- No art/audio/zone redesign (U7). Petra Name Desk: NPC + name-claim form (payment_slip.gd pattern) + names board.
 
 SEQUENCE:
-0. Confirm ENG-0007 says yes and which registry / resolver / client it used. If no — run the lab, not the product.
-1. Teller Desk: /ens/available, /ens/claim (mint subname under the bank's parent → player's account), /ens/record
-   (setText bz.tier etc.), /ens/resolve. Sepolia RPC + registrar key in env.
-2. Bridge u5.0: the four methods over those routes; codes survive the fetch boundary.
-3. Godot: Petra at the Name Desk (NPCS.md §4.6), name-claim form, names board (SubViewport like the ledger board),
-   payment slip accepts a name (resolve → address; refuse with a line if it does not resolve).
-4. Kill tests: mint → resolve → pay-by-name on 1337; a taken name is refused with Petra's line.
+0. Run GameLab `npm run dig`. If ENSv2 owner is zero or ENS_REGISTRAR_PK empty: finish K6 in the lab first (register on ETHRegistrar, UserRegistry, mint test.branchzero.eth, resolve). Update ENG findings/handoff to yes. Then continue.
+1. Teller Desk: /ens/available, /ens/claim, /ens/record, /ens/resolve. Pin addresses from ENG handoff / infra/deployments/sepolia.json.
+2. Bridge u5.0: four methods; codes survive fetch boundary; focusCanvas after any overlay.
+3. Godot: Petra (§4.6), claim form, names board, slip accepts name (resolve → address; refuse with her line).
+4. Kill tests: mint → resolve → pay-by-name on 1337; taken name refused.
 5. Progress note + REFLECTION; HANDOFF → U6 + docs/KICKOFF-U6.md.
 
 DoD = HANDOFF-CC §5f (G6).
 
-OUT OF SCOPE: Arc (U6), Priority / Passkey / meta-bypass (U4+), Uniswap, art/audio, greybox redesign, wiping Remote EVM,
-editing GameLab ENG folders, ENS on mainnet.
+OUT OF SCOPE: Arc (U6), Priority/Passkey (U4+), Uniswap, art/audio, greybox redesign, wiping Remote EVM, editing ENG-0010–0013, ENS mainnet runtime, merging GameLab ENG trees.
 
-Stop when G6 met or a named blocker with fallback chosen (cut order: ENS EAC before ENS mint — see DEV-LOOP §5).
+Stop when G6 met or a named blocker with fallback chosen (cut order: ENS EAC before ENS mint — DEV-LOOP §5).
 ```
