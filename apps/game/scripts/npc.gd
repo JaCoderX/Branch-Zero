@@ -30,7 +30,7 @@ var _escort_back := false
 var _wait := 0.0
 var _escort_t := 0.0
 var _leg_t := 0.0
-var _escort_ignore: Node3D
+var _escort_ignore: Array[PhysicsBody3D] = []
 
 const _ESCORT_SPEED := 3.2
 const _ARRIVE := 0.45
@@ -157,6 +157,8 @@ func _say(text: String) -> void:
 
 func _physics_process(delta: float) -> void:
 	_t += delta
+	rotation.x = 0.0
+	rotation.z = 0.0
 	match state:
 		State.TALKING, State.WORKING, State.REFUSING:
 			if _player:
@@ -190,9 +192,12 @@ func _begin_escort() -> void:
 	_wait = 0.0
 	_escort_t = 0.0
 	_leg_t = 0.0
-	if _player:
-		_escort_ignore = _player
-		add_collision_exception_with(_player)
+	_clear_escort_ignore()
+	if _player is PhysicsBody3D:
+		_ignore_during_escort(_player as PhysicsBody3D)
+	for n in get_tree().get_nodes_in_group("npc"):
+		if n != self and n is PhysicsBody3D:
+			_ignore_during_escort(n as PhysicsBody3D)
 	_set_state(State.ESCORTING)
 	_say(str(GameState.strings.get("escort_bubble", "Walk with me.")))
 
@@ -206,16 +211,26 @@ func _escort_target() -> Vector3:
 
 
 func _finish_escort() -> void:
-	if _escort_ignore != null and is_instance_valid(_escort_ignore):
-		remove_collision_exception_with(_escort_ignore)
-	_escort_ignore = null
+	_clear_escort_ignore()
 	velocity = Vector3.ZERO
-	global_position = home
-	rotation.y = home_yaw
+	global_position = Vector3(home.x, home.y, home.z)
+	rotation = Vector3(0.0, home_yaw, 0.0)
 	_escort_i = -1
 	_escort_back = false
 	_bubble.visible = false
 	_set_state(State.IDLE)
+
+
+func _ignore_during_escort(body: PhysicsBody3D) -> void:
+	add_collision_exception_with(body)
+	_escort_ignore.append(body)
+
+
+func _clear_escort_ignore() -> void:
+	for body in _escort_ignore:
+		if is_instance_valid(body):
+			remove_collision_exception_with(body)
+	_escort_ignore.clear()
 
 
 func _advance_leg() -> void:

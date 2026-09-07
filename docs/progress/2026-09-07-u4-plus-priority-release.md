@@ -141,8 +141,9 @@ After a vault wire, Dev walked to the antechamber and stayed there: `ESCORTING` 
 gravity, leftover velocity was never zeroed, and standing on the last waypoint blocked arrival so the 5 s "walk home"
 never started. Fixed in `apps/game/scripts/npc.gd`: gravity, ignore the player while escorting, short pause, reverse
 the path back to the counter, skip a stuck leg, hard-home after 22 s. `E` only talks to NPCs in IDLE/TALKING, so Ruth
-is the vault desk while Dev is walking. Lobby plants shifted west of the vault opening so the green cylinder at ~(6,-3.5)
-no longer blocks the escort.
+is the vault desk while Dev is walking. Lobby plants are mesh-only (no collision) and sit west of the vault opening —
+a physics body on the escort path was getting shoved by `move_and_slide` after a release, which looked like the trees
+had walked off.
 
 ## Still optional
 

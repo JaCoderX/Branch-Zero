@@ -191,15 +191,11 @@ func box(name: String, pos: Vector3, size: Vector3, color: Color, solid: bool = 
 
 
 func cylinder(name: String, pos: Vector3, radius: float, height: float, color: Color) -> Node3D:
-	var body := StaticBody3D.new()
-	body.name = name
-	body.position = pos
-	var shape := CollisionShape3D.new()
-	var cs := CylinderShape3D.new()
-	cs.radius = radius
-	cs.height = height
-	shape.shape = cs
-	body.add_child(shape)
+	# Visual only. A physics body here gets shoved by CharacterBody3D.move_and_slide on the web
+	# export (Godot Physics): after a vault escort the lobby plants had walked off their spots.
+	var root := Node3D.new()
+	root.name = name
+	root.position = pos
 	var mi := MeshInstance3D.new()
 	var mesh := CylinderMesh.new()
 	mesh.top_radius = radius
@@ -207,9 +203,9 @@ func cylinder(name: String, pos: Vector3, radius: float, height: float, color: C
 	mesh.height = height
 	mi.mesh = mesh
 	mi.material_override = mat(color)
-	body.add_child(mi)
-	add_child(body)
-	return body
+	root.add_child(mi)
+	add_child(root)
+	return root
 
 
 func disc(name: String, pos: Vector3, radius: float, height: float, color: Color) -> Node3D:
