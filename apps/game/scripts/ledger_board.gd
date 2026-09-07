@@ -108,6 +108,7 @@ func _redraw() -> void:
 			var lane := str(r.get("lane", "?"))
 			var kind: String = str({"A": "PAY", "B": "WIRE", "PROVISION": "OPEN", "CONFIG": "DESK", "ENS": "NAME"}.get(lane, lane))
 			var h := str(r.get("hash", ""))
-			right.append("%-5s %-12s %s%s" % [kind, str(r.get("stage", "")).to_upper(), ("#" + str(r["txId"]) + " ") if r.has("txId") and r["txId"] != null else "", h.substr(0, 10) if h != "" else ""])
+			var fee := str(r.get("fee", ""))
+			right.append("%-5s %-12s %s%s%s" % [kind, str(r.get("stage", "")).to_upper(), ("#" + str(r["txId"]) + " ") if r.has("txId") and r["txId"] != null else "", h.substr(0, 10) if h != "" else "", ("  fee " + fee) if fee != "" else ""])
 	_right.text = "\n".join(right)
 	_vp.render_target_update_mode = SubViewport.UPDATE_ONCE

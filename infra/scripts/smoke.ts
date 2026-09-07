@@ -10,11 +10,12 @@ import type { Address } from 'viem';
 import { SecureOwnable, INTERFACE_IDS } from '@bloxchain/sdk';
 import { DeploymentFileSchema } from '@branch-zero/shared';
 import { loadEnv, DEPLOYMENTS_DIR } from './lib/env.ts';
-import { connect } from './lib/chain.ts';
+import { connect, targetFromArg } from './lib/chain.ts';
 
 loadEnv();
-const { chain, publicClient } = await connect();
-const file = path.join(DEPLOYMENTS_DIR, chain.id === 1337 ? 'remote-evm.json' : `chain-${chain.id}.json`);
+const target = targetFromArg();
+const { chain, publicClient } = await connect(target);
+const file = path.join(DEPLOYMENTS_DIR, target === 'arc' ? 'arc-testnet.json' : 'remote-evm.json');
 const dep = DeploymentFileSchema.parse(JSON.parse(fs.readFileSync(file, 'utf8')));
 if (dep.chainId !== chain.id) throw new Error(`deployments file is for chain ${dep.chainId}, RPC is ${chain.id}`);
 

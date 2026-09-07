@@ -2,9 +2,8 @@ class_name WingTheme
 extends Resource
 ## One wing's palette and lighting recipe (docs/WORLD-3D-ENVIRONMENT.md §1 palette, §3 theme resource, §7 lighting).
 ## `themes/wing_main.tres` is the Main wing (Sepolia / Remote EVM): warm marble cream, brass, deep green.
-## `themes/wing_arc.tres` is a U6 palette stub only — nothing loads it yet. The layout scene never changes per
-## wing; scripts/bank_interior.gd reads colours from here and scripts/props.gd maps hero-prop material names
-## (Marble, Brass, …) onto the same palette so a wing swap is one resource.
+## `themes/wing_arc.tres` is the U6 Arc palette. The layout stays fixed; scripts/bank_interior.gd reads colours
+## from the selected resource and scripts/props.gd maps hero-prop material names (Marble, Brass, …) onto it.
 
 @export var wing_name: String = "main"
 

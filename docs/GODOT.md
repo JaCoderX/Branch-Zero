@@ -220,8 +220,10 @@ boots the autoloads by hand and walks Ruth's and Okafor's desks against it (U4+)
 autoloads, so the test adds `Chain` / `GameState` / `Dialogue` to the root itself. It is used automatically on desktop, and on web when the shell URL carries `?mock` (`?mock=account`
 starts as a signed-in, delegated player with an open, funded account). The real bridge stays installed; only Godot's
 `Chain` routes calls to the mock. It exists to walk the greybox without an inbox and proves nothing about the chain —
-kill tests run against the Teller Desk (REMOTE-EVM.md §5). Tester keys: **F2 / F3 / F4 / F6 / F7** teleport to Account Opening /
-Counter 1 / Vault / Lobby / Manager (F5 is the browser's reload and is left alone); **1–9** pick a dialogue choice; **Enter** in the payment slip hands it in.
+kill tests run against the Teller Desk (REMOTE-EVM.md §5). Tester keys: **F2 / F3 / F4 / F6 / F7 / F8** teleport to Account Opening /
+Counter 1 / Vault / Lobby / Manager / Name Desk (F5 is the browser's reload and is left alone); **1–9** pick a dialogue choice; **Enter** in the payment slip hands it in.
+
+**Walking demo reel (MockChain):** `godot --path apps/game -- --demo=walk` (or `BRANCH_ZERO_DEMO=walk`, or web `?mock=account&demo=walk`) runs `scripts/demo_walk.gd` — walks the desk circuit with pauses instead of teleports. Record it with `powershell -File .\scripts\record-demo-walk.ps1` (uses GameLab `runtimes/capture`; keep the Godot window maximized).
 
 ---
 

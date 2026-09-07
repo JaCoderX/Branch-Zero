@@ -13,6 +13,10 @@ const MANAGER := "0xE11BA2b4D45Eaed5996Cd0823791E0C93114882d"
 const TIMELOCK_SEC := 30
 const INSTANT_LIMIT := "100"
 
+## Cooling period the mock writes into new wires. The demo autopilot stretches it so the vault beats
+## (Ruth refuses early, Okafor's Priority release) still happen at a human reading pace.
+var timelock_sec: int = TIMELOCK_SEC
+
 var logged_in := false
 var delegated := false
 var account := ""
@@ -24,6 +28,7 @@ var ens_tier := "Silver"
 var ens_names: Array = []
 var _next_tx_id := 1
 var _job := 0
+var chain_id := 1337
 
 
 ## `?mock=account`: start as a signed-in, delegated player with an open, funded account.
@@ -51,6 +56,8 @@ func call_method(method: String, args: Dictionary) -> Dictionary:
 			logged_in = false
 			delegated = false
 			return _ok({"ok": true})
+		"switchWing":
+			return _switch_wing(int(args.get("chainId", 1337)))
 		"addSessionSigner":
 			if not logged_in:
 				return _err("AUTH", "not signed in")
@@ -194,7 +201,7 @@ func _wire(args: Dictionary) -> Dictionary:
 	await get_tree().create_timer(0.7).timeout
 	var tx_id := _next_tx_id
 	_next_tx_id += 1
-	var release := _now() + TIMELOCK_SEC
+	var release := _now() + timelock_sec
 	var rec := {
 		"txId": str(tx_id), "status": "PENDING", "releaseTime": str(release), "released": false,
 		"to": str(args.get("to", "")), "amount": _fmt(amount), "requester": OWNER,
@@ -284,9 +291,9 @@ func _session() -> Dictionary:
 	return {
 		"loggedIn": true, "ready": true, "userId": "did:privy:mock", "owner": OWNER,
 		"account": account if account != "" else null, "delegated": delegated, "ensName": ens_name if ens_name != "" else null,
-		"signingMode": "session" if delegated else "client", "chainId": 1337,
-		"timeLockSec": TIMELOCK_SEC, "instantLimit": INSTANT_LIMIT, "manager": MANAGER, "priority": true,
-		"token": {"address": "0xM0CK00000000000000000000000000000000dUSD", "symbol": "dUSDC", "decimals": 18},
+		"signingMode": "session" if delegated else "client", "chainId": chain_id,
+		"timeLockSec": timelock_sec, "instantLimit": INSTANT_LIMIT, "manager": MANAGER, "priority": true,
+		"token": {"address": "0xM0CK00000000000000000000000000000000dUSD", "symbol": "USDC" if chain_id == 5042002 else "dUSDC", "decimals": 6 if chain_id == 5042002 else 18},
 	}
 
 
@@ -294,11 +301,20 @@ func _status() -> Dictionary:
 	for w in wires:
 		w["released"] = int(w["releaseTime"]) <= _now()
 	return {
-		"owner": OWNER, "chainId": 1337, "signingMode": "session" if delegated else "client",
-		"account": account if account != "" else null, "balance": _fmt(balance), "symbol": "dUSDC",
+		"owner": OWNER, "chainId": chain_id, "signingMode": "session" if delegated else "client",
+		"account": account if account != "" else null, "balance": _fmt(balance), "symbol": "USDC" if chain_id == 5042002 else "dUSDC",
 		"pending": wires.size(), "wires": wires.duplicate(true), "serverNow": _now_str(),
-		"timeLockSec": TIMELOCK_SEC, "receipts": receipts.duplicate(true),
+		"timeLockSec": timelock_sec, "receipts": receipts.duplicate(true),
 	}
+
+
+func _switch_wing(target: int) -> Dictionary:
+	if not logged_in:
+		return _err("AUTH", "sign in before taking the elevator")
+	if target != 1337 and target != 5042002:
+		return _err("BAD_ARGS", "the elevator only serves Main 1337 and Arc 5042002")
+	chain_id = target
+	return _ok({"wing": "arc" if chain_id == 5042002 else "main", "chainId": chain_id, "account": account if account != "" else null, "owner": OWNER})
 
 
 func _stage(job: String, lane: String, stage: String, bank_line: String, extra: Dictionary = {}) -> void:

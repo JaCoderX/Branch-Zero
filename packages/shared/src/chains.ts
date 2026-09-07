@@ -4,6 +4,11 @@ import { sepolia } from 'viem/chains';
 /** Default dev chain — particle-tool-box `Docker Apps/Remote EVM` (Nethermind, NethDev instant mining). */
 export const REMOTE_EVM_CHAIN_ID = 1337;
 export const DEFAULT_REMOTE_EVM_RPC_URL = 'http://127.0.0.1:8545';
+export const ARC_TESTNET_CHAIN_ID = 5042002;
+export const DEFAULT_ARC_RPC_URL = 'https://rpc.testnet.arc.io';
+/** Arc's native USDC ERC-20-compatible interface. Its token units are 6 decimals; native gas is 18. */
+export const ARC_USDC_ADDRESS = '0x3600000000000000000000000000000000000000' as const;
+export type ChainTarget = 'remote' | 'arc';
 
 export const remoteEvm = defineChain({
   id: REMOTE_EVM_CHAIN_ID,
@@ -20,11 +25,25 @@ export function remoteEvmWithRpc(rpcUrl: string): Chain {
 
 export { sepolia };
 
-// Arc Testnet (5042002) is added in U6 (ENG-2026-0006 / K3). Native-USDC decimals are VERIFY — not defined here on purpose.
+/** Arc Testnet: native balance and gas are USDC in 18-decimal EVM units. */
+export const arcTestnet = defineChain({
+  id: ARC_TESTNET_CHAIN_ID,
+  name: 'Arc Testnet',
+  nativeCurrency: { name: 'USDC', symbol: 'USDC', decimals: 18 },
+  rpcUrls: { default: { http: [DEFAULT_ARC_RPC_URL] } },
+  blockExplorers: { default: { name: 'Arcscan', url: 'https://testnet.arcscan.app' } },
+  contracts: { multicall3: { address: '0xcA11bde05977b3631167028862bE2a173976CA11' } },
+  testnet: true,
+});
+
+export function arcTestnetWithRpc(rpcUrl: string): Chain {
+  return defineChain({ ...arcTestnet, rpcUrls: { default: { http: [rpcUrl] } } });
+}
 
 export const SUPPORTED_CHAINS: Record<number, Chain> = {
   [remoteEvm.id]: remoteEvm,
   [sepolia.id]: sepolia,
+  [arcTestnet.id]: arcTestnet,
 };
 
 export function chainById(chainId: number, rpcUrl?: string): Chain {

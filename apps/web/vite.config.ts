@@ -8,6 +8,7 @@ import react from '@vitejs/plugin-react';
  *
  * Proxies keep the browser same-origin:
  *   /api  -> Teller Desk (apps/teller-desk, :8787)
+ *   /arc-api -> Arc Teller Desk (:8788)
  *   /rpc  -> Remote EVM JSON-RPC (127.0.0.1:8545) for read-only bridge calls in dev
  */
 export default defineConfig({
@@ -22,6 +23,7 @@ export default defineConfig({
     },
     proxy: {
       '/api': { target: process.env.TELLER_DESK_URL ?? 'http://127.0.0.1:8787', changeOrigin: true, rewrite: (p) => p.replace(/^\/api/, '') },
+      '/arc-api': { target: process.env.ARC_TELLER_DESK_URL ?? 'http://127.0.0.1:8788', changeOrigin: true, rewrite: (p) => p.replace(/^\/arc-api/, '') },
       '/rpc': { target: process.env.REMOTE_EVM_RPC_URL ?? 'http://127.0.0.1:8545', changeOrigin: true, rewrite: () => '/' },
     },
     fs: {

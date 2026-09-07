@@ -1,5 +1,5 @@
 import { PrivyProvider } from '@privy-io/react-auth';
-import { remoteEvm } from '@branch-zero/shared';
+import { arcTestnet, remoteEvm } from '@branch-zero/shared';
 import { App } from './App';
 
 /**
@@ -7,9 +7,8 @@ import { App } from './App';
  *
  * - `createOnLogin: 'off'` matches the dashboard and we call `createWallet()` ourselves after login, so
  *   the wallet appears at the Account Opening desk rather than invisibly during sign-in.
- * - Remote EVM (1337) is declared as a supported chain. Privy signs typed data for whatever `chainId`
- *   the domain carries regardless, but declaring it keeps the client-side fallback honest about which
- *   chain the player is on.
+ * - Both payment wings are declared. Privy signs typed data for either exact chain id, while the
+ *   Teller Desk policy and the server-side chain guard remain the actual boundary.
  */
 export function Providers({ engineState }: { engineState: string }) {
   return (
@@ -20,7 +19,7 @@ export function Providers({ engineState }: { engineState: string }) {
         loginMethods: ['email'],
         embeddedWallets: { ethereum: { createOnLogin: 'off' } },
         defaultChain: remoteEvm,
-        supportedChains: [remoteEvm],
+        supportedChains: [remoteEvm, arcTestnet],
       }}
     >
       <App engineState={engineState} />

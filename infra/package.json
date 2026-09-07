@@ -9,6 +9,7 @@
     "compile": "tsx scripts/compile.ts",
     "deploy": "tsx scripts/deploy-account.ts",
     "smoke": "tsx scripts/smoke.ts",
+    "arc:kill": "tsx scripts/arc-kill.ts",
     "typecheck": "tsc -p tsconfig.json",
     "bootstrap": "tsx scripts/bootstrap-blox.ts"
   },

@@ -1,0 +1,62 @@
+{
+  "chainId": 5042002,
+  "chainName": "Arc Testnet",
+  "updatedAt": "2026-09-06T17:44:25.293Z",
+  "deployer": "0x107e7288A4c6aAA1ECF0a9C88b2c2d06eC359079",
+  "compiler": {
+    "solc": "0.8.35+commit.47b9dedd.Emscripten.clang",
+    "evmVersion": "prague",
+    "optimizerRuns": 200,
+    "viaIR": true
+  },
+  "sources": {
+    "contractsPackage": "@bloxchain/contracts@1.0.0",
+    "sdkPackage": "@bloxchain/sdk@1.0.0",
+    "accountBloxTemplate": {
+      "url": "https://raw.githubusercontent.com/PracticalParticle/Bloxchain-Protocol/99beac2d6e6d7567c23b25cecaf6f4053f31c987/contracts/examples/templates/AccountBlox.sol",
+      "commit": "99beac2d6e6d7567c23b25cecaf6f4053f31c987",
+      "sha256": "a1c2d7c19f59969fb4bf717b15146121a1c68ddc7d802412e0cc023cddbd74c1"
+    }
+  },
+  "libraries": {
+    "EngineBlox": {
+      "address": "0xf8263d6390a9c68822be7934246a2d7eb521a647",
+      "txHash": "0xa1e978d6c619171052a7ff8323c7e9acf5aabf697be044e9e36d911874e1478f"
+    },
+    "SecureOwnableDefinitions": {
+      "address": "0x37af8ff678e79f7098542309af0aeff2734d01a7",
+      "txHash": "0x6c8cb013ba4da349df4f4e18b56d7ade8f804757cbbfa7621caf9cf334b26f01"
+    },
+    "RuntimeRBACDefinitions": {
+      "address": "0xc8c79676d1a87ea1df34fd801f010c0365f5912f",
+      "txHash": "0xb7ee99537aa27e5728ad2ad4abfc0417b92e2d324ae5db57334be07dcd9b4704"
+    },
+    "GuardControllerDefinitions": {
+      "address": "0x6d25c70486395cfc603f53ea75430112afef355a",
+      "txHash": "0x6a77e8c993bb2de618e3ebac5e81acd74a35dda271759fcebf97f37a44a64a24"
+    }
+  },
+  "tokens": {
+    "usdc": {
+      "address": "0x3600000000000000000000000000000000000000",
+      "symbol": "USDC",
+      "decimals": 6,
+      "note": "Arc's native USDC ERC-20-compatible view; native balance and gas use 18 decimals."
+    }
+  },
+  "accounts": [
+    {
+      "label": "k3-arc-account",
+      "address": "0x07fb4b5d6b91f78163649d563b84eeff7d7b7bfb",
+      "owner": "0x8CF026a2cD40E89f76200168A1b38148B8E0d25C",
+      "broadcaster": "0x85AF34E0f57b85B518e32c5Cd53d0B704d672710",
+      "recovery": "0xD62598294ebBAEefb224c70d66DEa50E3AA857A5",
+      "timeLockPeriodSec": 120,
+      "eventForwarder": "0x0000000000000000000000000000000000000000",
+      "deployTxHash": "0x624d72ef674dae1fea828caec0ef658da21402841ddc400be50d2ef292da2063",
+      "initializeTxHash": "0xf7e7517708bbe2b9311f3a298145dd6fcb2c2ba4cf9c9afd35e9a86b953b37f4",
+      "block": 60782496,
+      "explorer": "https://testnet.arcscan.app/address/0x07fb4b5d6b91f78163649d563b84eeff7d7b7bfB"
+    }
+  ]
+}

@@ -1,14 +1,15 @@
 /**
- * One-time chain bootstrap for Remote EVM 1337 — CopyBlox (wallet factory) + a demo ERC-20.
+ * One-time chain bootstrap — CopyBlox (wallet factory) plus the payment-token fixture.
  *
- * This is the "out of band" step described in docs/HANDOFF-CC.md §1/§3.6: the product runtime depends on
+ * This is the out-of-band bootstrap step: the product runtime depends on
  * `@bloxchain/sdk` + `viem` only, but *somebody* has to put the published bytecode on the lab chain once.
  * We do not compile anything here and we do not import from the protocol repo — we read two already-built
  * Hardhat artifacts from a directory the operator names in `BLOXCHAIN_PROTOCOL_DIR`, record their sha256,
  * and deploy them unchanged. Nothing in `apps/` ever touches this path; the product reads only the
  * addresses written back into `infra/deployments/remote-evm.json` and the ABIs shipped by the SDK.
  *
- *   BLOXCHAIN_PROTOCOL_DIR="D:/My Git Projects/ParticleCS/Bloxchain-protocol" npm run chain:bootstrap
+ *   BLOXCHAIN_PROTOCOL_DIR="D:/My Git Projects/ParticleCS/Bloxchain-protocol" npm run chain:bootstrap -- --chain remote
+ *   BLOXCHAIN_PROTOCOL_DIR="D:/My Git Projects/ParticleCS/Bloxchain-protocol" npm run chain:bootstrap -- --chain arc
  *
  * Idempotent: contracts already recorded in the deployments file (and still carrying code) are skipped.
  * Never wipes anything. Refuses to send a transaction whose estimate does not fit the live block gas limit.
@@ -17,12 +18,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { encodeDeployData, formatEther, getAddress, parseUnits, type Abi, type Address, type Hex } from 'viem';
-import { connect, deployerWallet } from './lib/chain.ts';
+import { ARC_USDC_ADDRESS, type ChainTarget } from '@branch-zero/shared';
+import { connect, deployerWallet, targetFromArg } from './lib/chain.ts';
 import { loadEnv, env, DEPLOYMENTS_DIR } from './lib/env.ts';
 
 loadEnv();
-
-const DEPLOYMENTS_FILE = path.join(DEPLOYMENTS_DIR, 'remote-evm.json');
 
 /** Artifacts we consume, relative to BLOXCHAIN_PROTOCOL_DIR. Hardhat layout, already built upstream. */
 const ARTIFACTS = {
@@ -62,16 +62,19 @@ function linkBytecode(bytecode: Hex, linkReferences: Artifact['linkReferences'],
 }
 
 async function main() {
+  const target: ChainTarget = targetFromArg();
   const protocolDir = env('BLOXCHAIN_PROTOCOL_DIR');
-  const { chain, publicClient, clientVersion } = await connect();
-  const { account: deployer, walletClient } = deployerWallet(chain);
+  const { chain, publicClient, clientVersion } = await connect(target);
+  const { account: deployer, walletClient } = deployerWallet(chain, target);
+  const deploymentsFile = path.join(DEPLOYMENTS_DIR, target === 'arc' ? 'arc-testnet.json' : 'remote-evm.json');
 
   const block = await publicClient.getBlock();
   const gasCeiling = block.gasLimit;
   console.log(`chain ${chain.id} · ${clientVersion} · head #${block.number} · block gasLimit ${gasCeiling.toLocaleString()}`);
-  console.log(`deployer ${deployer.address} · ${formatEther(await publicClient.getBalance({ address: deployer.address }))} ETH`);
+  console.log(`deployer ${deployer.address} · ${formatEther(await publicClient.getBalance({ address: deployer.address }))} ${chain.nativeCurrency.symbol}`);
 
-  const file = JSON.parse(fs.readFileSync(DEPLOYMENTS_FILE, 'utf8'));
+  const file = JSON.parse(fs.readFileSync(deploymentsFile, 'utf8'));
+  if (file.chainId !== chain.id) throw new Error(`deployments file is for chain ${file.chainId}, RPC is ${chain.id}`);
   file.applications ??= {};
   file.tokens ??= {};
   file.sources.protocolArtifacts ??= {};
@@ -118,12 +121,26 @@ async function main() {
   const copyBloxSrc = readArtifact(protocolDir, ARTIFACTS.CopyBlox);
   const copyBlox = await deployOnce('CopyBlox', file.applications, copyBloxSrc, [], { EngineBlox: engineBlox });
 
-  // --- Demo money for Lane A. Not protocol code: a plain OZ ERC-20 used as a faucet token. ---
-  const erc20Src = readArtifact(protocolDir, ARTIFACTS.BasicERC20);
-  const supply = parseUnits('1000000', 18);
-  const demoUsdc = await deployOnce('demoUsdc', file.tokens, erc20Src, ['USD Coin (demo)', 'dUSDC', supply, deployer.address]);
-  if (!file.tokens.demoUsdc.decimals) {
-    file.tokens.demoUsdc = { ...file.tokens.demoUsdc, name: 'USD Coin (demo)', symbol: 'dUSDC', decimals: 18, treasury: deployer.address };
+  let paymentToken: Address;
+  if (target === 'arc') {
+    // Arc's native USDC also exposes this ERC-20-compatible interface. Never deploy a fake token on Arc.
+    paymentToken = getAddress(ARC_USDC_ADDRESS);
+    file.tokens.usdc = {
+      ...file.tokens.usdc,
+      address: paymentToken,
+      name: 'USDC',
+      symbol: 'USDC',
+      decimals: 6,
+      note: 'Arc native USDC interface; native gas uses 18-decimal units.',
+    };
+  } else {
+    // --- Demo money for Lane A. Not protocol code: a plain OZ ERC-20 used as a faucet token. ---
+    const erc20Src = readArtifact(protocolDir, ARTIFACTS.BasicERC20);
+    const supply = parseUnits('1000000', 18);
+    paymentToken = await deployOnce('demoUsdc', file.tokens, erc20Src, ['USD Coin (demo)', 'dUSDC', supply, deployer.address]);
+    if (!file.tokens.demoUsdc.decimals) {
+      file.tokens.demoUsdc = { ...file.tokens.demoUsdc, name: 'USD Coin (demo)', symbol: 'dUSDC', decimals: 18, treasury: deployer.address };
+    }
   }
 
   file.applications.CopyBlox = {
@@ -134,10 +151,10 @@ async function main() {
   };
 
   file.updatedAt = new Date().toISOString();
-  fs.writeFileSync(DEPLOYMENTS_FILE, `${JSON.stringify(file, null, 2)}\n`);
-  console.log(`\nwrote ${path.relative(process.cwd(), DEPLOYMENTS_FILE)}`);
+  fs.writeFileSync(deploymentsFile, `${JSON.stringify(file, null, 2)}\n`);
+  console.log(`\nwrote ${path.relative(process.cwd(), deploymentsFile)}`);
   console.log(`  CopyBlox   ${copyBlox}  (clone implementation: ${accountBloxImpl})`);
-  console.log(`  demo token ${demoUsdc}  (treasury: ${deployer.address})`);
+  console.log(`  payment   ${paymentToken}${target === 'remote' ? `  (treasury: ${deployer.address})` : '  (Arc native USDC)'}`);
 }
 
 main().catch((e) => {

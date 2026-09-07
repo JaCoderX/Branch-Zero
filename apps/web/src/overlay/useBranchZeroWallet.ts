@@ -26,7 +26,7 @@ import {
   useSignTypedData,
   useWallets,
 } from '@privy-io/react-auth';
-import type { PriorityTypedData, SigningMode } from '@branch-zero/shared';
+import { ARC_TESTNET_CHAIN_ID, REMOTE_EVM_CHAIN_ID, type PriorityTypedData, type SigningMode } from '@branch-zero/shared';
 
 export interface Session {
   privyUserId: string;
@@ -76,7 +76,9 @@ export interface PriorityResult {
   mfaPrompted: boolean;
 }
 
-const TELLER = import.meta.env.VITE_TELLER_DESK_URL || '/api';
+const MAIN_TELLER = import.meta.env.VITE_TELLER_DESK_URL || '/api';
+const ARC_TELLER = import.meta.env.VITE_ARC_TELLER_DESK_URL || '/arc-api';
+const tellerFor = (chainId: number) => (chainId === ARC_TESTNET_CHAIN_ID ? ARC_TELLER : MAIN_TELLER);
 
 export function useBranchZeroWallet() {
   const { ready, authenticated, getAccessToken, user } = usePrivy();
@@ -98,16 +100,17 @@ export function useBranchZeroWallet() {
   const { addSessionSigners, removeSessionSigners } = useSessionSigners();
 
   const [session, setSession] = useState<Session | undefined>();
+  const [activeChainId, setActiveChainId] = useState(REMOTE_EVM_CHAIN_ID);
   const [busy, setBusy] = useState<string | undefined>();
   const [error, setError] = useState<string | undefined>();
 
   const embedded = useMemo(() => wallets.find((w) => w.walletClientType === 'privy'), [wallets]);
 
   /** Authenticated call to the Teller Desk. The owner address rides along so the server can prove it is ours. */
-  const call = useCallback(
-    async <T>(path: string, body?: unknown, owner?: string): Promise<T> => {
+  const callOnChain = useCallback(
+    async <T>(chainId: number, path: string, body?: unknown, owner?: string): Promise<T> => {
       const token = await getAccessToken();
-      const res = await fetch(`${TELLER}${path}`, {
+      const res = await fetch(`${tellerFor(chainId)}${path}`, {
         method: body === undefined ? 'GET' : 'POST',
         headers: {
           'content-type': 'application/json',
@@ -136,6 +139,8 @@ export function useBranchZeroWallet() {
     [getAccessToken, embedded?.address, session?.owner],
   );
 
+  const call = useCallback(<T>(path: string, body?: unknown, owner?: string) => callOnChain<T>(activeChainId, path, body, owner), [activeChainId, callOnChain]);
+
   /** The app creates embedded wallets on demand rather than on login, so make sure one exists. */
   const ensureWallet = useCallback(async (): Promise<string> => {
     if (embedded?.address) return embedded.address;
@@ -163,6 +168,24 @@ export function useBranchZeroWallet() {
       setBusy(undefined);
     }
   }, [ensureWallet, call]);
+
+  /** Switch only the payment wing. ENS stays on Sepolia and the user's single Privy consent is reused. */
+  const switchWing = useCallback(
+    async (chainId: number): Promise<Session> => {
+      if (chainId !== REMOTE_EVM_CHAIN_ID && chainId !== ARC_TESTNET_CHAIN_ID) throw new Error(`unsupported wing chain ${chainId}`);
+      const owner = session?.owner ?? embedded?.address ?? (await ensureWallet());
+      setBusy(chainId === ARC_TESTNET_CHAIN_ID ? 'Taking the elevator to Arc…' : 'Taking the elevator to Main…');
+      try {
+        const s = await callOnChain<Session>(chainId, '/session', {}, owner);
+        setActiveChainId(chainId);
+        setSession(s);
+        return s;
+      } finally {
+        setBusy(undefined);
+      }
+    },
+    [session?.owner, embedded?.address, ensureWallet, callOnChain],
+  );
 
   /** The one consent. Grants the Teller Desk's key quorum the right to sign, bounded by this policy.
    * Idempotent: if Privy already has our signer (reload / second "Let tellers act for me"), treat that as
@@ -307,6 +330,11 @@ export function useBranchZeroWallet() {
     priority,
     mfaEnrolled: (user?.mfaMethods?.length ?? 0) > 0,
     call,
+    callOnChain,
+    activeChainId,
+    activeWing: activeChainId === ARC_TESTNET_CHAIN_ID ? 'arc' : 'main',
+    tellerBase: tellerFor(activeChainId),
+    switchWing,
     getAccessToken,
   };
 }

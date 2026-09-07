@@ -85,6 +85,7 @@ export function embeddedWalletOf(user: User, address?: string): { ownerAddress: 
  * player's account, and pinning `chainId` stops a Remote EVM signature being solicited for a public chain.
  */
 const RULE_NAME = 'Bloxchain meta-tx for this account';
+const chainRuleName = (base: string, chainId: number) => (chainId === 1337 ? base : `${base} · ${chainId}`);
 
 /**
  * U4+ — shape of the typed-data rule, recorded per player (`player.typedDataRule`) so an older rule is re-written.
@@ -126,6 +127,15 @@ export interface PlayerPolicy {
   ruleId: string;
 }
 
+function typedDataRuleSpec(chainId: number, name = chainRuleName(RULE_NAME, chainId)) {
+  return {
+    name,
+    method: 'eth_signTypedData_v4' as const,
+    action: 'ALLOW' as const,
+    conditions: [{ field_source: 'ethereum_typed_data_domain' as const, field: 'chainId' as const, operator: 'eq' as const, value: String(chainId) }, silentActionCondition()],
+  };
+}
+
 /** Created at sign-in, before the account exists: allow Bloxchain typed data on our chain only. */
 export async function createPlayerPolicy(chainId: number, label: string): Promise<PlayerPolicy> {
   const policy = await privy.policies().create({
@@ -134,7 +144,7 @@ export async function createPlayerPolicy(chainId: number, label: string): Promis
     name: `bz-${label}`.slice(0, 48),
     rules: [
       {
-        name: RULE_NAME,
+        name: chainRuleName(RULE_NAME, chainId),
         method: 'eth_signTypedData_v4',
         action: 'ALLOW',
         conditions: [{ field_source: 'ethereum_typed_data_domain', field: 'chainId', operator: 'eq', value: String(chainId) }, silentActionCondition()],
@@ -166,7 +176,7 @@ export async function pinPolicyToAccount(
   await privy.policies().updateRule(policy.ruleId, {
     policy_id: policy.policyId,
     authorization_context: authorizationContext,
-    name: RULE_NAME,
+    name: chainRuleName(RULE_NAME, chainId),
     method: 'eth_signTypedData_v4',
     action: 'ALLOW',
     conditions: [
@@ -216,7 +226,7 @@ function txRuleSpecs(mode: TxPolicyMode, chainId: number, token: Address, accoun
     ...(account ? [{ field_source: 'ethereum_transaction', field: 'to', operator: 'eq', value: account }] : []),
   ];
   if (mode === 'to-only') {
-    return [{ name: TX_RULE_TO_ONLY, method: 'eth_signTransaction', action: 'ALLOW', conditions: base }];
+    return [{ name: chainRuleName(TX_RULE_TO_ONLY, chainId), method: 'eth_signTransaction', action: 'ALLOW', conditions: base }];
   }
   const calldata = (field: string, operator: string, value: string) => ({
     field_source: 'ethereum_calldata',
@@ -226,9 +236,9 @@ function txRuleSpecs(mode: TxPolicyMode, chainId: number, token: Address, accoun
     value,
   });
   return [
-    { name: TX_RULES_CALLDATA[0], method: 'eth_signTransaction', action: 'ALLOW', conditions: [...base, calldata('executeWithTimeLock.target', 'eq', token)] },
-    { name: TX_RULES_CALLDATA[1], method: 'eth_signTransaction', action: 'ALLOW', conditions: [...base, calldata('approveTimeLockExecution.txId', 'gt', '0')] },
-    { name: TX_RULES_CALLDATA[2], method: 'eth_signTransaction', action: 'ALLOW', conditions: [...base, calldata('cancelTimeLockExecution.txId', 'gt', '0')] },
+    { name: chainRuleName(TX_RULES_CALLDATA[0], chainId), method: 'eth_signTransaction', action: 'ALLOW', conditions: [...base, calldata('executeWithTimeLock.target', 'eq', token)] },
+    { name: chainRuleName(TX_RULES_CALLDATA[1], chainId), method: 'eth_signTransaction', action: 'ALLOW', conditions: [...base, calldata('approveTimeLockExecution.txId', 'gt', '0')] },
+    { name: chainRuleName(TX_RULES_CALLDATA[2], chainId), method: 'eth_signTransaction', action: 'ALLOW', conditions: [...base, calldata('cancelTimeLockExecution.txId', 'gt', '0')] },
   ];
 }
 
@@ -264,11 +274,23 @@ export async function pinTxRulesToAccount(policyId: string, rules: TxRules, acco
   }
 }
 
+/** Add the active wing's typed-data rule to an already-consented policy; app-owned rules need no second modal. */
+export async function ensureTypedDataRule(policyId: string, chainId: number): Promise<string> {
+  const policy = (await privy.policies().get(policyId)) as { rules?: Array<{ id: string; name: string }> };
+  const name = chainRuleName(RULE_NAME, chainId);
+  const existing = policy.rules?.find((r) => r.name === name)?.id;
+  if (existing) return existing;
+  const created = await privy.policies().createRule(policyId, { authorization_context: authorizationContext, ...typedDataRuleSpec(chainId) } as never);
+  const ruleId = (created as { id?: string }).id;
+  if (!ruleId) throw new Error(`Privy returned no typed-data rule id for chain ${chainId}`);
+  return ruleId;
+}
+
 /**
  * Recover a player's policy handles from Privy after a Teller Desk restart or a code upgrade: the wallet
  * record names the policy the player consented to, and the policy lists its rules by name.
  */
-export async function recoverPolicy(walletId: string): Promise<{ policyId?: string; ruleId?: string; txRules?: TxRules } | undefined> {
+export async function recoverPolicy(walletId: string, chainId = config.chainId): Promise<{ policyId?: string; ruleId?: string; txRules?: TxRules } | undefined> {
   const wallet = (await privy.wallets().get(walletId)) as {
     policy_ids?: string[];
     additional_signers?: Array<{ signer_id?: string; override_policy_ids?: string[] }>;
@@ -278,9 +300,9 @@ export async function recoverPolicy(walletId: string): Promise<{ policyId?: stri
   if (!policyId) return undefined;
   const policy = (await privy.policies().get(policyId)) as { rules?: Array<{ id: string; name: string }> };
   const rules = policy.rules ?? [];
-  const ruleId = rules.find((r) => r.name === RULE_NAME)?.id;
-  const calldata = TX_RULES_CALLDATA.map((n) => rules.find((r) => r.name === n)?.id);
-  const toOnly = rules.find((r) => r.name === TX_RULE_TO_ONLY)?.id;
+  const ruleId = rules.find((r) => r.name === chainRuleName(RULE_NAME, chainId))?.id;
+  const calldata = TX_RULES_CALLDATA.map((n) => rules.find((r) => r.name === chainRuleName(n, chainId))?.id);
+  const toOnly = rules.find((r) => r.name === chainRuleName(TX_RULE_TO_ONLY, chainId))?.id;
   const txRules: TxRules | undefined = calldata.every(Boolean)
     ? { ruleIds: calldata as string[], mode: 'calldata' }
     : toOnly

@@ -21,7 +21,7 @@
  */
 import { createPublicClient, http, type Address } from 'viem';
 import { SecureOwnable } from '@bloxchain/sdk';
-import { remoteEvmWithRpc, type BranchZeroBridge, type BridgeError, type BridgeMessage, type BridgeResponse, type DeskSession, type StageEvent } from '@branch-zero/shared';
+import { ARC_TESTNET_CHAIN_ID, REMOTE_EVM_CHAIN_ID, remoteEvmWithRpc, type BranchZeroBridge, type BridgeError, type BridgeMessage, type BridgeResponse, type DeskSession, type StageEvent } from '@branch-zero/shared';
 import deployments from '../../../../infra/deployments/remote-evm.json';
 import type { DeskLink } from '../shell/deskEvents';
 import { focusCanvas } from '../shell/focus';
@@ -39,6 +39,9 @@ export const MOCK_MODE: false | string = (() => {
   return v === null ? false : v || 'fresh'; // `?mock=account` starts the mock with an open, funded account
 })();
 
+/** `?demo=walk` — Godot reading window.BranchZero.demoWalk starts the walking autopilot (MockChain reel). */
+export const DEMO_WALK: boolean = new URLSearchParams(location.search).get('demo') === 'walk';
+
 type Handler = (args: Record<string, unknown>) => Promise<unknown>;
 type Listener = (m: BridgeMessage | { type: 'request'; id: string; method: string; args: Record<string, unknown> }) => void;
 
@@ -50,6 +53,8 @@ export interface WalletAdapter {
   openSession(): Promise<DeskSessionSource>;
   delegate(): Promise<void>;
   revoke(): Promise<void>;
+  /** U6: change only the active payment wing; the existing Privy consent is reused. */
+  switchWing(chainId: number): Promise<DeskSessionSource>;
   /** U4+: prepare → Passkey + user-signer typed data (UI shown) → submit. The only second Privy surface. */
   priority(txId: string): Promise<unknown>;
   call<T>(path: string, body?: unknown): Promise<T>;
@@ -181,6 +186,16 @@ const handlers: Record<string, Handler> = {
   },
   async provision() {
     return requireAdapter().call('/provision', {});
+  },
+
+  // --- U6: elevator ---
+  async switchWing(args) {
+    const chainId = Number(args.chainId);
+    if (chainId !== REMOTE_EVM_CHAIN_ID && chainId !== ARC_TESTNET_CHAIN_ID) {
+      throw bridgeError('BAD_ARGS', `unsupported wing chain ${args.chainId}`, 'That elevator only serves Main and Arc.');
+    }
+    const s = await requireAdapter().switchWing(chainId);
+    return { wing: chainId === ARC_TESTNET_CHAIN_ID ? 'arc' : 'main', chainId, account: s.account, owner: s.owner };
   },
 
   // --- U5: Petra's ENSv2 Name Desk (Sepolia only) ---
@@ -367,5 +382,7 @@ export function installBridge(): BranchZeroBridge {
   });
 
   window.BranchZero = bridge;
+  // Extra flag for Godot DemoWalk.wanted() — not part of the JSON bridge contract.
+  (window.BranchZero as BranchZeroBridge & { demoWalk?: boolean }).demoWalk = DEMO_WALK;
   return bridge;
 }

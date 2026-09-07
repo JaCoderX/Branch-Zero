@@ -1,9 +1,16 @@
 import { createPublicClient, createWalletClient, http, type Address, type Chain, type PublicClient, type WalletClient } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { REMOTE_EVM_CHAIN_ID, isGanacheParityAddress, remoteEvmWithRpc } from '@branch-zero/shared';
+import { ARC_TESTNET_CHAIN_ID, REMOTE_EVM_CHAIN_ID, arcTestnetWithRpc, isGanacheParityAddress, remoteEvmWithRpc } from '@branch-zero/shared';
 import { config } from './config.ts';
 
-export const chain: Chain = remoteEvmWithRpc(config.rpcUrl);
+export const chain: Chain = config.chainId === ARC_TESTNET_CHAIN_ID ? arcTestnetWithRpc(config.rpcUrl) : remoteEvmWithRpc(config.rpcUrl);
+
+/** Fail closed if an operator points the service at the wrong network. */
+const chainProbe = createPublicClient({ transport: http(config.rpcUrl) });
+const configuredChainId = await chainProbe.getChainId();
+if (configuredChainId !== config.chainId) {
+  throw new Error(`Teller Desk RPC reports chainId ${configuredChainId}; expected ${config.chainId} (${config.target})`);
+}
 
 export const publicClient = createPublicClient({ chain, transport: http(config.rpcUrl) }) as PublicClient;
 

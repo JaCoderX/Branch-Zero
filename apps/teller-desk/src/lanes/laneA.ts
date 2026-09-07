@@ -18,6 +18,7 @@ import { broadcaster, broadcasterAddress, chain, metaTxDuration, publicClient } 
 import { deployments } from '../config.ts';
 import { signMetaTx, type AuditSink } from '../signing/privySigner.ts';
 import { emitStage, type Player } from '../store.ts';
+import { receiptFee } from '../fees.ts';
 
 /**
  * Meta-transaction validity window. Re-exported for the kill tests; `metaTxDuration()` is what the lanes
@@ -90,7 +91,8 @@ export async function pay(player: Player, to: Address, amount: string, jobId: st
     args: [account],
   })) as bigint;
 
-  stage('mined', `Paid ${amount} ${token.symbol}.`, { hash: res.hash, txId });
+  const fee = await receiptFee(res.hash as Hex);
+  stage('mined', `Paid ${amount} ${token.symbol}.`, { hash: res.hash, txId, fee });
   return { hash: res.hash as Hex, txId, to, amount, balanceAfter: formatUnits(balanceAfter, token.decimals) };
 }
 

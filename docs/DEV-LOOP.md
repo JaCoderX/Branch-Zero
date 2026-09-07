@@ -61,7 +61,7 @@ Ordered so that after U2 we can stop and still demo a coherent bank-on-a-chain (
 | **U4 MVP freeze** | Error UX, reconnect, canvas focus, rough capture | G5 | No — **met 2026-09-07** (canvas re-focus, `RPC`/`AUTH`/`NOT_CONFIGURED` paths, SSE reconnect + `desk.link`, first load measured; real 30 s capture owed by the human walk) |
 | **U4+ Priority release** | Ruth waits the clock; Okafor meta-bypass + Passkey before `releaseTime` | G5b | ENG-0012 + 0011 + 0013 — **met 2026-09-07** (ROLE_SET 3 split on chain, `/priority/*`, Passkey step-up in the overlay, policy pins the silent lane to `params.action`; kill tests Y0–Y9) |
 | **U5 ENS** | Subname + pay-by-name | G6 | **met** 2026-09-07 — UR V2 pin; live `u5-mtra3lb6…`; pay on 1337 |
-| **U6 Arc + manager role** | Elevator wing + runtime role (manager already in U4+ as Priority submitter) | G7 | ENG-0006 **yes** (K3); Lane/guard/meta on Arc unproven |
+| **U6 Arc + manager role** | Elevator wing + runtime role (manager already in U4+ as Priority submitter) | G7 | **PARTIAL** 2026-09-07 — ENG-0006 readback yes; live CopyBlox/manager kill awaits funded `ARC_*` |
 | **U7 Feel / ship** | Art, video, submission | G8–G10 | ENG-0008 only if S1; staged art Stage 1–5 **met**; continuous demo reel when clear of U6 |
 
 Each unit ends with: commit, a local note under `docs/progress/` (gitignored), and a kill/decision line in [REFLECTION.md](./REFLECTION.md) if anything changed.

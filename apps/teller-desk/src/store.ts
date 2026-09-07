@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { Address, Hex } from 'viem';
 import type { JobStage, SigningMode, StageEvent } from '@branch-zero/shared';
-import { REPO_ROOT } from './config.ts';
+import { config, REPO_ROOT } from './config.ts';
 
 /**
  * The player index: which Privy user owns which account, plus the Privy policy handles we need to keep
@@ -56,14 +56,17 @@ export interface Receipt {
   txId?: string;
   payee?: Address;
   amount?: string;
+  /** Human-readable gas fee; Arc is native USDC (18 contract units → 6 display decimals). */
+  fee?: string;
   reason?: string;
   releaseTime?: string;
   updatedAt: number;
 }
 
 const DATA_DIR = path.join(REPO_ROOT, 'apps', 'teller-desk', '.data');
-const PLAYERS_FILE = path.join(DATA_DIR, 'players.json');
-const RECEIPTS_FILE = path.join(DATA_DIR, 'receipts.json');
+const DATA_SUFFIX = config.chainId === 1337 ? '' : `-${config.chainId}`;
+const PLAYERS_FILE = path.join(DATA_DIR, `players${DATA_SUFFIX}.json`);
+const RECEIPTS_FILE = path.join(DATA_DIR, `receipts${DATA_SUFFIX}.json`);
 
 const players = new Map<string, Player>();
 const receipts = new Map<string, Receipt[]>();
@@ -170,6 +173,7 @@ export function emitStage(privyUserId: string, e: StageEvent): void {
     stage: e.stage,
     hash: (e.hash as Hex | undefined) ?? (prev as Receipt).hash,
     txId: e.txId ?? (prev as Receipt).txId,
+    fee: e.fee ?? (prev as Receipt).fee,
     reason: e.reason,
     releaseTime: e.releaseTime ?? (prev as Receipt).releaseTime,
     updatedAt: Date.now(),

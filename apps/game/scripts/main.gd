@@ -17,18 +17,11 @@ var interior: Node3D
 var player: CharacterBody3D
 var hud: CanvasLayer
 var _near: Array[Npc] = []
+var _near_elevator := false
 
 
 func _ready() -> void:
-	interior = Node3D.new()
-	interior.name = "BankInterior"
-	interior.set_script(load("res://scripts/bank_interior.gd"))
-	add_child(interior)
-	interior.zone_entered.connect(func(z: String) -> void:
-		GameState.set_zone(z))
-	interior.zone_exited.connect(func(z: String) -> void:
-		if GameState.current_zone == z:
-			GameState.set_zone(""))
+	interior = _make_interior()
 
 	var door := Node3D.new()
 	door.set_script(load("res://scripts/vault_door.gd"))
@@ -95,6 +88,47 @@ func _ready() -> void:
 		hud.set_prompt(""))
 	print("Branch Zero U5 · Godot %s · %s · bridge %s" % [Engine.get_version_info().string, "web" if Chain.is_web else "desktop", "MockChain" if Chain.use_mock else Chain.bridge_version])
 
+	if DemoWalk.wanted():
+		var demo := Node.new()
+		demo.set_script(load("res://scripts/demo_walk.gd"))
+		add_child(demo)
+
+
+func _make_interior() -> Node3D:
+	var next := Node3D.new()
+	next.name = "BankInterior"
+	next.set_script(load("res://scripts/bank_interior.gd"))
+	add_child(next)
+	next.zone_entered.connect(func(z: String) -> void:
+		GameState.set_zone(z))
+	next.zone_exited.connect(func(z: String) -> void:
+		if GameState.current_zone == z:
+			GameState.set_zone(""))
+	return next
+
+
+## U6 smallest wing beat: the shell/props are rebuilt from the selected WingTheme; the player, account and desks stay.
+func _apply_wing_theme() -> void:
+	PropKit.set_wing_theme(GameState.active_wing())
+	if is_instance_valid(interior):
+		interior.queue_free()
+	await get_tree().process_frame
+	interior = _make_interior()
+	var lighting := get_node_or_null("Lighting")
+	if lighting != null and lighting.has_method("apply_theme"):
+		lighting.apply_theme()
+	interior.refresh_signs()
+
+
+func _take_elevator(target_chain: int) -> void:
+	if GameState.busy:
+		return
+	var r := await GameState.switch_wing(target_chain)
+	if r.get("ok", false):
+		await _apply_wing_theme()
+		GameState.toast.emit("Now serving the %s wing." % ("Arc" if target_chain == 5042002 else "Main"), "info")
+	_update_prompt()
+
 
 func _on_player_near(npc: Npc, near: bool) -> void:
 	if near and not _near.has(npc):
@@ -102,6 +136,15 @@ func _on_player_near(npc: Npc, near: bool) -> void:
 	elif not near:
 		_near.erase(npc)
 	_update_prompt()
+
+
+func _process(_delta: float) -> void:
+	if player == null:
+		return
+	var near := player.global_position.distance_to(Vector3(11.0, 0.0, 0.5)) < 2.6
+	if near != _near_elevator:
+		_near_elevator = near
+		_update_prompt()
 
 
 func _nearest() -> Npc:
@@ -118,6 +161,9 @@ func _nearest() -> Npc:
 
 
 func _update_prompt() -> void:
+	if _near_elevator and not Dialogue.active:
+		hud.set_prompt("[E] Take elevator to %s" % ("Main" if GameState.active_wing() == "arc" else "Arc"))
+		return
 	var n := _nearest()
 	if n == null or Dialogue.active:
 		hud.set_prompt("")
@@ -139,6 +185,10 @@ const TELEPORTS := {
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("interact") and not Dialogue.active and not GameState.ui_locked:
+		if _near_elevator:
+			_take_elevator(1337 if GameState.active_wing() == "arc" else 5042002)
+			get_viewport().set_input_as_handled()
+			return
 		var n := _nearest()
 		if n != null:
 			player.look_at_point(n.global_position)

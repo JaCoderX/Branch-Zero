@@ -71,7 +71,9 @@ export type BridgeMethod =
   | 'ensAvailable'
   | 'ensMint'
   | 'ensSetText'
-  | 'resolveName';
+  | 'resolveName'
+  // U6 — elevator: swaps the active Teller Desk wing without touching ENS identity.
+  | 'switchWing';
 
 /** How the owner's signature is obtained for meta-transactions. */
 export type SigningMode = 'session' | 'client';
@@ -120,6 +122,8 @@ export interface StageEvent {
   status?: RecordStatus;
   /** U4+: which way the wire left the vault. `priority` = owner Passkey + manager meta-approve before the clock. */
   via?: 'priority';
+  /** Human-readable receipt gas fee; Arc renders native 18-decimal USDC as display 6 decimals. */
+  fee?: string;
 }
 
 /** One time-locked record as the vault board shows it. Strings only (bigint → decimal). */

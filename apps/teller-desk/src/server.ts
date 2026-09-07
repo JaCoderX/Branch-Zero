@@ -1,5 +1,5 @@
 /**
- * Teller Desk — U4+ (Priority release on top of the frozen U4 MVP).
+ * Teller Desk — U6 (Arc wing + the existing U4+ Priority manager role).
  *
  * Holds the two keys the browser must never see: the Privy P-256 authorization key (which lets it *ask*
  * a delegated wallet for a signature) and the broadcaster key (which pays gas). Neither can move a
@@ -17,7 +17,7 @@ import { formatEther, getAddress, isAddress, type Address, type Hex } from 'viem
 import type { StageEvent } from '@branch-zero/shared';
 import { broadcasterAddress, chain, deployerAddress, managerAddress, publicClient } from './chain.ts';
 import { config, deployments, redact } from './config.ts';
-import { createPlayerPolicy, identify, recoverPolicy } from './privy.ts';
+import { createPlayerPolicy, ensureTypedDataRule, identify, recoverPolicy } from './privy.ts';
 import { pay, passbook } from './lanes/laneA.ts';
 import { approve, cancel, listPending, resumeWatchers, wire, type Actor } from './lanes/laneB.ts';
 import { preparePriority, submitPriority } from './lanes/priority.ts';
@@ -79,19 +79,20 @@ app.get('/healthz', async () => {
     ]);
     return {
       ok: chainId === chain.id,
-      unit: 'U5',
+      unit: 'U6',
+      wing: config.target,
       priorityRelease: config.priorityRelease,
       roleSetVersion: ROLE_SET_VERSION,
-      chains: { remoteEvm: { chainId, expected: chain.id, block: block.toString(), reachable: true } },
-      broadcaster: { address: broadcasterAddress, balanceEth: formatEther(broadcasterBal) },
-      deployer: { address: deployerAddress, balanceEth: formatEther(deployerBal) },
-      manager: managerAddress ? { address: managerAddress, balanceEth: formatEther(managerBal) } : null,
+      chains: { [config.target]: { chainId, expected: chain.id, block: block.toString(), reachable: true } },
+      broadcaster: { address: broadcasterAddress, balanceNative: formatEther(broadcasterBal), nativeSymbol: chain.nativeCurrency.symbol },
+      deployer: { address: deployerAddress, balanceNative: formatEther(deployerBal), nativeSymbol: chain.nativeCurrency.symbol },
+      manager: managerAddress ? { address: managerAddress, balanceNative: formatEther(managerBal), nativeSymbol: chain.nativeCurrency.symbol } : null,
       privy: { appId: config.privy.appId, signerId: config.privy.signerId, authorizationKey: redact(config.privy.authorizationKey) },
       contracts: { copyBlox: d.copyBlox, accountBloxImplementation: d.accountBloxImplementation, token: d.token },
       timeLockSec: Number(config.timeLockSec),
     };
   } catch (e) {
-    return { ok: false, unit: 'U5', chains: { remoteEvm: { reachable: false, error: (e as Error).message } } };
+    return { ok: false, unit: 'U6', wing: config.target, chains: { [config.target]: { reachable: false, error: (e as Error).message } } };
   }
 });
 
@@ -110,11 +111,12 @@ app.post('/session', async (req, reply) => {
   try {
     let player = await requirePlayer(req as never);
     if (!player.policyId) {
-      const recovered = await recoverPolicy(player.walletId).catch(() => undefined);
+      const recovered = await recoverPolicy(player.walletId, chain.id).catch(() => undefined);
       if (recovered?.policyId) {
+        const policyRuleId = recovered.ruleId ?? (await ensureTypedDataRule(recovered.policyId, chain.id));
         player = patchPlayer(player.privyUserId, {
           policyId: recovered.policyId,
-          policyRuleId: recovered.ruleId,
+          policyRuleId,
           ...(recovered.txRules ? { txRuleIds: recovered.txRules.ruleIds, txPolicyMode: recovered.txRules.mode } : {}),
         });
       } else {
@@ -441,7 +443,7 @@ deployments();
 app.listen({ port: config.port, host: '127.0.0.1' }).then((addr) => {
   app.log.info(
     { rpc: config.rpcUrl, broadcaster: broadcasterAddress, deployer: deployerAddress, manager: managerAddress ?? null, priorityRelease: config.priorityRelease, roleSet: ROLE_SET_VERSION, privyApp: config.privy.appId, signerId: config.privy.signerId },
-    `Teller Desk (U5) listening on ${addr}`,
+    `Teller Desk (U6 ${config.target}) listening on ${addr}`,
   );
 });
 

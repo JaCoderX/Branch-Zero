@@ -298,7 +298,7 @@ func _east_column() -> void:
 	# hall lantern (floor indicator) + call panel: hero props (Stage 2), U6 wires the behaviour
 	PropKit.hero(self, "ElevatorLantern", "prop_elevator_lantern", Vector3(11.46, 2.58, 0.5), -PI / 2)
 	PropKit.hero(self, "ElevatorPanel", "prop_elevator_panel", Vector3(11.46, 1.25, -0.6), -PI / 2)
-	plaque("ELEVATOR\nMAIN / ARC\n(Arc wing opens with U6)", Vector3(11.45, 3.3, 0.5), -PI / 2, 0.28, theme.wall_color)
+	plaque("ELEVATOR\nMAIN / ARC\n(live payment wings)", Vector3(11.45, 3.3, 0.5), -PI / 2, 0.28, theme.wall_color)
 	plaque("FX DESK\n(stretch)", Vector3(14.8, 2.2, -3.0), -PI / 2, 0.3, theme.graphite_color)
 	plaque("SECURITY\nside door (lore)", Vector3(14.8, 2.2, 3.5), -PI / 2, 0.3, theme.graphite_color)
 	PropKit.kit(self, "SideDoor", "doorwayFront", Vector3(14.85, 0, 3.5), -PI / 2, {"fit": Vector3(1.0, 2.2, 0.16)}, Vector3(0.1, 2.2, 1.0), Vector3(0, 1.1, 0))

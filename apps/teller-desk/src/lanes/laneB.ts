@@ -34,6 +34,7 @@ import { broadcaster, chain, manager, managerAddress, publicClient, tickChain } 
 import { deployments } from '../config.ts';
 import { ownerWalletClient, type TxAuditSink } from '../signing/privySigner.ts';
 import { emitStage, hasSubscribers, type Player } from '../store.ts';
+import { receiptFee } from '../fees.ts';
 
 /** Operation type registered by the default guard schema for ERC-20 transfers. */
 const ERC20_TRANSFER_OPERATION = keccak256(toBytes('ERC20_TRANSFER'));
@@ -57,6 +58,7 @@ export interface DecisionResult {
   status: RecordStatus;
   actor: Actor;
   balanceAfter?: string;
+  fee?: string;
 }
 
 const STATUS_NAMES: Record<number, RecordStatus> = {
@@ -244,9 +246,11 @@ export async function wire(player: Player, to: Address, amount: string, jobId: s
   const rec = await readWire(account, txId);
   const now = await chainNow();
 
+  const fee = await receiptFee(res.hash as Hex);
   stage('pending', `Wire of ${amount} ${token.symbol} is in the vault. The clock is running.`, {
     hash: res.hash,
     txId: rec.txId,
+    fee,
     releaseTime: rec.releaseTime,
     chainNow: now,
     status: rec.status,
@@ -309,12 +313,14 @@ async function decide(player: Player, txId: bigint, actor: Actor, kind: 'approve
         )
       : undefined;
 
+  const fee = await receiptFee(res.hash as Hex);
   stage(kind === 'approve' ? 'mined' : 'cancelled', kind === 'approve' ? `Wire released: ${after.amount ?? ''} ${token.symbol} sent.` : 'Wire recalled. Nothing left the vault.', {
     hash: res.hash,
     txId: String(txId),
     status: after.status,
+    fee,
   });
-  return { hash: res.hash as Hex, txId: String(txId), status: after.status, actor, balanceAfter };
+  return { hash: res.hash as Hex, txId: String(txId), status: after.status, actor, balanceAfter, fee };
 }
 
 // ============ watcher ============

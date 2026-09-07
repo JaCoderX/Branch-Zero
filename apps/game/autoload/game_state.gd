@@ -111,6 +111,18 @@ func owner() -> String:
 	return str(session.get("owner", ""))
 
 
+func active_chain_id() -> int:
+	return int(session.get("chainId", 1337))
+
+
+func active_wing() -> String:
+	return "arc" if active_chain_id() == 5042002 else "main"
+
+
+func switch_wing(chain_id: int) -> Dictionary:
+	return await run_action("switch_wing", {"chainId": chain_id})
+
+
 func instant_limit() -> float:
 	return float(str(session.get("instantLimit", "100")))
 
@@ -199,6 +211,7 @@ func facts() -> Dictionary:
 		"ens_name": ens_name(),
 		"mock": Chain.use_mock,
 		"web": Chain.is_web,
+		"arc": active_wing() == "arc",
 	}
 
 
@@ -216,8 +229,8 @@ func vars(extra: Dictionary = {}) -> Dictionary:
 		"released": str(released_count()),
 		"cooling": str(cooling_count()),
 		"release_in": fmt_duration(soonest_remaining()),
-		"wing": "main",
-		"chain": "Remote EVM 1337" if not Chain.use_mock else "MockChain",
+		"wing": active_wing(),
+		"chain": ("Arc Testnet 5042002" if active_wing() == "arc" else "Remote EVM 1337") if not Chain.use_mock else "MockChain",
 		"manager_name": "Mr. Okafor",
 		"priority_copy": str(strings.get("priority_copy", "Skip the cooling period — hand scan required.")),
 		"ens_name": ens_name() if has_ens_name() else "no name yet",
@@ -318,6 +331,12 @@ func run_action(action: String, args: Dictionary = {}) -> Dictionary:
 			r = await Chain.call_async("removeSessionSigner", {}, 60.0)
 		"logout":
 			r = await Chain.call_async("logout", {}, 30.0)
+		"switch_wing":
+			var target_chain := int(args.get("chainId", 1337))
+			if target_chain != 1337 and target_chain != 5042002:
+				r = {"ok": false, "error": {"code": "BAD_ARGS", "message": "the elevator only serves Main 1337 and Arc 5042002"}}
+			else:
+				r = await Chain.call_async("switchWing", {"chainId": target_chain}, 60.0)
 		"provision":
 			r = await Chain.call_async("provision", {}, 300.0)         # clone + config batches + funding
 		"ens_available":

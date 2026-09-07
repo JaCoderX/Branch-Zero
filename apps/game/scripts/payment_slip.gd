@@ -181,6 +181,19 @@ func _submit() -> void:
 	Dialogue.submit_form({"to": to, "name": ens_name if use_name else "", "amount": amount, "memo": _memo.text.strip_edges()})
 
 
+## Demo autopilot: fill the slip (florist / amount) and hand it over. Call only while the form is open.
+func demo_fill_and_submit(amount: String, memo: String = "demo walk") -> void:
+	if not visible:
+		return
+	_name_toggle.button_pressed = false
+	_toggle_name(false)
+	_payee.select(0)
+	_address.text = PAYEES[0][1]
+	_amount.text = amount
+	_memo.text = memo
+	_submit()
+
+
 func _toggle_name(enabled: bool) -> void:
 	_payee.visible = not enabled
 	_address.visible = not enabled

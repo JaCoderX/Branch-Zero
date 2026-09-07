@@ -27,6 +27,7 @@ import { EIP712_DOMAIN_TYPE, META_TX_DOMAIN_NAME, META_TX_PRIMARY_TYPE, META_TX_
 import { broadcaster, chain, manager, managerAddress, metaTxDuration, publicClient } from '../chain.ts';
 import { config, deployments } from '../config.ts';
 import { emitStage, type Player } from '../store.ts';
+import { receiptFee } from '../fees.ts';
 import { explainRevert, readWire, statusName } from './laneB.ts';
 
 type Unsigned = Awaited<ReturnType<GuardController['generateUnsignedMetaTransactionForExisting']>>;
@@ -65,6 +66,7 @@ export interface PriorityResult {
   /** Latest block timestamp after mining — for the record: strictly below `releaseTime` on a real Priority. */
   chainNow: string;
   balanceAfter: string;
+  fee?: string;
 }
 
 /** Prepared payloads waiting for a Passkey. Small, in memory: a signature is worth nothing after its deadline. */
@@ -243,12 +245,14 @@ export async function submitPriority(player: Player, priorityId: string, signatu
   }
   const block = await publicClient.getBlock({ blockHash: receipt.blockHash });
   const balanceAfter = formatUnits((await publicClient.readContract({ address: token.address, abi: erc20Abi, functionName: 'balanceOf', args: [p.account] })) as bigint, token.decimals);
+  const fee = await receiptFee(res.hash as Hex);
   stage('mined', `Priority release: ${after.amount ?? ''} ${token.symbol} sent before the clock — hand scan on file.`, {
     hash: res.hash,
     txId: String(p.txId),
     status: after.status,
     releaseTime: before.releaseTime,
     chainNow: block.timestamp.toString(),
+    fee,
   });
   return {
     hash: res.hash as Hex,
@@ -258,6 +262,7 @@ export async function submitPriority(player: Player, priorityId: string, signatu
     releaseTime: before.releaseTime,
     chainNow: block.timestamp.toString(),
     balanceAfter,
+    fee,
   };
 }
 

@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getAddress, type Address, type Hex } from 'viem';
+import { ARC_TESTNET_CHAIN_ID, DEFAULT_ARC_RPC_URL, REMOTE_EVM_CHAIN_ID, type ChainTarget } from '@branch-zero/shared';
 
 export const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
@@ -21,16 +22,17 @@ export function redact(v: string): string {
 
 export const config = {
   port: Number(opt('PORT', '8787')),
-  rpcUrl: opt('REMOTE_EVM_RPC_URL', 'http://127.0.0.1:8545'),
-  /** Remote EVM. The only chain the Teller Desk serves until U6. */
-  chainId: 1337,
+  /** One Teller Desk process serves one wing. `CHAIN_ID=5042002` is the Arc process. */
+  chainId: Number(opt('CHAIN_ID', String(REMOTE_EVM_CHAIN_ID))),
+  target: (Number(opt('CHAIN_ID', String(REMOTE_EVM_CHAIN_ID))) === ARC_TESTNET_CHAIN_ID ? 'arc' : 'remote') as ChainTarget,
+  rpcUrl: Number(opt('CHAIN_ID', String(REMOTE_EVM_CHAIN_ID))) === ARC_TESTNET_CHAIN_ID ? opt('ARC_RPC_URL', DEFAULT_ARC_RPC_URL) : opt('REMOTE_EVM_RPC_URL', 'http://127.0.0.1:8545'),
   allowedOrigins: opt('ALLOWED_ORIGINS', 'http://localhost:5173').split(',').map((s) => s.trim()),
 
-  broadcasterPk: req('BROADCASTER_PK') as Hex,
-  deployerPk: req('DEPLOYER_PK') as Hex,
+  broadcasterPk: req(Number(opt('CHAIN_ID', String(REMOTE_EVM_CHAIN_ID))) === ARC_TESTNET_CHAIN_ID ? 'ARC_BROADCASTER_PK' : 'BROADCASTER_PK') as Hex,
+  deployerPk: req(Number(opt('CHAIN_ID', String(REMOTE_EVM_CHAIN_ID))) === ARC_TESTNET_CHAIN_ID ? 'ARC_DEPLOYER_PK' : 'DEPLOYER_PK') as Hex,
   /** Optional (U2). Branch Manager: a runtime `BRANCH_MANAGER` role holder who may approve / cancel wires directly. */
-  managerPk: (opt('MANAGER_PK') || undefined) as Hex | undefined,
-  recoveryAddress: getAddress(req('RECOVERY_ADDRESS')) as Address,
+  managerPk: (opt(Number(opt('CHAIN_ID', String(REMOTE_EVM_CHAIN_ID))) === ARC_TESTNET_CHAIN_ID ? 'ARC_MANAGER_PK' : 'MANAGER_PK') || undefined) as Hex | undefined,
+  recoveryAddress: getAddress(req(Number(opt('CHAIN_ID', String(REMOTE_EVM_CHAIN_ID))) === ARC_TESTNET_CHAIN_ID ? 'ARC_RECOVERY_ADDRESS' : 'RECOVERY_ADDRESS')) as Address,
 
   timeLockSec: BigInt(opt('TIMELOCK_SEC', '120')),
   /** Lane A soft cap. Off-chain policy only — see docs/REFLECTION.md §2.2 "partial" invariant. */
@@ -51,7 +53,7 @@ export const config = {
    * `desiredGrants()`; the next Re-check re-syncs every player. META bits are account-wide: once granted, any
    * PENDING wire on that account can be bypassed — Okafor says so in his "Ask why".
    */
-  priorityRelease: opt('PRIORITY_RELEASE', opt('MANAGER_PK') ? 'on' : 'off').toLowerCase() === 'on' && Boolean(opt('MANAGER_PK')),
+  priorityRelease: opt('PRIORITY_RELEASE', opt(Number(opt('CHAIN_ID', String(REMOTE_EVM_CHAIN_ID))) === ARC_TESTNET_CHAIN_ID ? 'ARC_MANAGER_PK' : 'MANAGER_PK') ? 'on' : 'off').toLowerCase() === 'on' && Boolean(opt(Number(opt('CHAIN_ID', String(REMOTE_EVM_CHAIN_ID))) === ARC_TESTNET_CHAIN_ID ? 'ARC_MANAGER_PK' : 'MANAGER_PK')),
 
   /** U5: ENS identity is always read/written on Sepolia; it is never the payment chain. */
   sepoliaRpcUrl: opt('SEPOLIA_RPC_URL'),
@@ -71,14 +73,19 @@ export const config = {
   },
 } as const;
 
+if (config.chainId !== REMOTE_EVM_CHAIN_ID && config.chainId !== ARC_TESTNET_CHAIN_ID) {
+  throw new Error(`Unsupported Teller Desk CHAIN_ID=${config.chainId}; use 1337 (Remote EVM) or 5042002 (Arc Testnet)`);
+}
+
 /** Addresses written by `npm run chain:bootstrap` / `chain:deploy`. Public data, committed. */
 export function deployments() {
-  const file = path.join(REPO_ROOT, 'infra', 'deployments', 'remote-evm.json');
+  const file = path.join(REPO_ROOT, 'infra', 'deployments', config.target === 'arc' ? 'arc-testnet.json' : 'remote-evm.json');
   const d = JSON.parse(fs.readFileSync(file, 'utf8'));
+  if (d.chainId !== config.chainId) throw new Error(`deployment ${file} is for chain ${d.chainId}, service is configured for ${config.chainId}`);
   const copyBlox = d.applications?.CopyBlox;
-  const token = d.tokens?.demoUsdc;
-  if (!copyBlox?.address) throw new Error('CopyBlox missing from infra/deployments/remote-evm.json — run `npm run chain:bootstrap`');
-  if (!token?.address) throw new Error('demoUsdc missing from infra/deployments/remote-evm.json — run `npm run chain:bootstrap`');
+  const token = config.target === 'arc' ? d.tokens?.usdc : d.tokens?.demoUsdc;
+  if (!copyBlox?.address) throw new Error(`CopyBlox missing from ${path.basename(file)} — run the chain bootstrap first`);
+  if (!token?.address) throw new Error(`${config.target === 'arc' ? 'usdc' : 'demoUsdc'} missing from ${path.basename(file)} — run the chain bootstrap first`);
   return {
     chainId: d.chainId as number,
     copyBlox: getAddress(copyBlox.address) as Address,
@@ -95,5 +102,6 @@ export function deployments() {
       symbol: (token.symbol ?? 'dUSDC') as string,
       decimals: (token.decimals ?? 18) as number,
     },
+    native: { symbol: config.target === 'arc' ? 'USDC' : 'ETH', decimals: 18 },
   };
 }

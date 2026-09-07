@@ -1,22 +1,24 @@
 /**
- * Deploy (or attach) the four foundation libraries and one AccountBlox on Remote EVM 1337, initialise it, and read back
- * owner / broadcaster / recovery / timelock through @bloxchain/sdk. Writes infra/deployments/remote-evm.json (addresses only).
+ * Deploy (or attach) the four foundation libraries and one AccountBlox on the selected chain, initialise it, and read back
+ * owner / broadcaster / recovery / timelock through @bloxchain/sdk. Arc uses only its target-specific keys and 5042002.
  *
  *   npm run chain:compile            # once, or after bumping the package
- *   npm run chain:deploy             # reuse libraries already on chain
+ *   npm run chain:deploy             # reuse libraries already on Remote EVM 1337
+ *   npm run chain:deploy -- --chain arc # Arc Testnet 5042002 (requires ARC_* keys)
  *   npm run chain:deploy -- --fresh  # redeploy libraries too (after a Remote EVM wipe)
  *   npm run chain:deploy -- --label alice
  *
- * Env: DEPLOYER_PK (acct0 on 1337), OWNER_ADDRESS (acct4), BROADCASTER_ADDRESS (acct1), RECOVERY_ADDRESS (acct2), TIMELOCK_SEC=120.
+ * Env: DEPLOYER_PK/OWNER_ADDRESS/BROADCASTER_ADDRESS/RECOVERY_ADDRESS on 1337;
+ * ARC_DEPLOYER_PK/ARC_OWNER_ADDRESS/ARC_BROADCASTER_ADDRESS/ARC_RECOVERY_ADDRESS on Arc; TIMELOCK_SEC=120.
  * Deploy + initialize are two transactions seconds apart (documented window; no factory in the public package — see REFLECTION.md).
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { type Address, type Hex, formatEther, zeroAddress } from 'viem';
 import { SecureOwnable } from '@bloxchain/sdk';
-import { DeploymentFileSchema, REMOTE_EVM_DEV_ROLES, type DeploymentFile } from '@branch-zero/shared';
+import { DeploymentFileSchema, REMOTE_EVM_DEV_ROLES, type DeploymentFile, type ChainTarget } from '@branch-zero/shared';
 import { loadEnv, env, ARTIFACTS_DIR, DEPLOYMENTS_DIR, INFRA_DIR } from './lib/env.ts';
-import { connect, deployerWallet, asAddress } from './lib/chain.ts';
+import { connect, deployerWallet, asAddress, targetFromArg } from './lib/chain.ts';
 
 loadEnv();
 const argv = process.argv.slice(2);
@@ -75,20 +77,21 @@ function link(bytecode: Hex, linkReferences: Artifact['linkReferences'], libs: R
 }
 
 async function main() {
-  const { chain, publicClient, clientVersion } = await connect();
-  const { account: deployer, walletClient, label: deployerLabel } = deployerWallet(chain);
+  const target: ChainTarget = targetFromArg();
+  const { chain, publicClient, clientVersion } = await connect(target);
+  const { account: deployer, walletClient, label: deployerLabel } = deployerWallet(chain, target);
   const balance = await publicClient.getBalance({ address: deployer.address });
   console.log(`chain      ${chain.id} · ${clientVersion}`);
-  console.log(`deployer   ${deployerLabel}  ${formatEther(balance)} ETH`);
-  if (balance === 0n) throw new Error('deployer has no ETH');
+  console.log(`deployer   ${deployerLabel}  ${formatEther(balance)} ${chain.nativeCurrency.symbol}`);
+  if (balance === 0n) throw new Error(`deployer has no ${chain.nativeCurrency.symbol}`);
 
-  const owner = asAddress(env('OWNER_ADDRESS', REMOTE_EVM_DEV_ROLES.playerOwner), 'OWNER_ADDRESS');
-  const broadcaster = asAddress(env('BROADCASTER_ADDRESS', REMOTE_EVM_DEV_ROLES.broadcaster), 'BROADCASTER_ADDRESS');
-  const recovery = asAddress(env('RECOVERY_ADDRESS', REMOTE_EVM_DEV_ROLES.recovery), 'RECOVERY_ADDRESS');
+  const owner = asAddress(env(target === 'arc' ? 'ARC_OWNER_ADDRESS' : 'OWNER_ADDRESS', target === 'arc' ? undefined : REMOTE_EVM_DEV_ROLES.playerOwner), target === 'arc' ? 'ARC_OWNER_ADDRESS' : 'OWNER_ADDRESS');
+  const broadcaster = asAddress(env(target === 'arc' ? 'ARC_BROADCASTER_ADDRESS' : 'BROADCASTER_ADDRESS', target === 'arc' ? undefined : REMOTE_EVM_DEV_ROLES.broadcaster), target === 'arc' ? 'ARC_BROADCASTER_ADDRESS' : 'BROADCASTER_ADDRESS');
+  const recovery = asAddress(env(target === 'arc' ? 'ARC_RECOVERY_ADDRESS' : 'RECOVERY_ADDRESS', target === 'arc' ? undefined : REMOTE_EVM_DEV_ROLES.recovery), target === 'arc' ? 'ARC_RECOVERY_ADDRESS' : 'RECOVERY_ADDRESS');
   const eventForwarder = asAddress(env('EVENT_FORWARDER', zeroAddress), 'EVENT_FORWARDER');
   const timeLockSec = BigInt(env('TIMELOCK_SEC', '120'));
 
-  const outFile = path.join(DEPLOYMENTS_DIR, chain.id === 1337 ? 'remote-evm.json' : `chain-${chain.id}.json`);
+  const outFile = path.join(DEPLOYMENTS_DIR, target === 'arc' ? 'arc-testnet.json' : 'remote-evm.json');
   let existing: DeploymentFile | undefined;
   if (fs.existsSync(outFile)) {
     const parsed = DeploymentFileSchema.safeParse(JSON.parse(fs.readFileSync(outFile, 'utf8')));
@@ -174,8 +177,11 @@ async function main() {
       contractsPackage: acct.sources.contractsPackage,
       sdkPackage: sdkVersion(),
       accountBloxTemplate: acct.sources.accountBloxTemplate!,
+      protocolArtifacts: existing?.sources.protocolArtifacts,
     },
     libraries: libRecords,
+    applications: existing?.applications,
+    tokens: existing?.tokens,
     accounts: [
       ...(existing?.accounts.filter((a) => a.label !== LABEL) ?? []),
       {
@@ -195,7 +201,7 @@ async function main() {
   fs.mkdirSync(DEPLOYMENTS_DIR, { recursive: true });
   fs.writeFileSync(outFile, JSON.stringify(DeploymentFileSchema.parse(record), null, 2) + '\n');
   console.log(`wrote      ${path.relative(process.cwd(), outFile)}`);
-  console.log('K4 (local): PASS — AccountBlox deployed + initialised on chain 1337; owner() read back via @bloxchain/sdk');
+  console.log(`K4 (${target}): PASS — AccountBlox deployed + initialised on chain ${chain.id}; owner() read back via @bloxchain/sdk`);
 }
 
 main().catch((e) => {

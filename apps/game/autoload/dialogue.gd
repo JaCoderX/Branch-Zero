@@ -98,6 +98,24 @@ func choose(index: int) -> void:
 	_goto(str(c.get("next", "end")))
 
 
+## Labels currently on screen (interpolated). Used by the demo autopilot.
+func choice_labels() -> Array:
+	var labels: Array = []
+	for c in _choices:
+		labels.append(interpolate(str(c.get("text", "…")), GameState.vars(_ctx)))
+	return labels
+
+
+## First choice whose label contains `needle` (case-insensitive), or -1.
+func find_choice(needle: String) -> int:
+	var n := needle.to_lower()
+	var labels := choice_labels()
+	for i in range(labels.size()):
+		if str(labels[i]).to_lower().find(n) >= 0:
+			return i
+	return -1
+
+
 ## The payment slip came back. Route by the branch's instant limit (an off-chain policy the Teller Desk also
 ## enforces — docs/REFLECTION.md §2.2); the actual call is still the node's action.
 func submit_form(values: Dictionary) -> void:

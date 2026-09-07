@@ -3,7 +3,7 @@ import { onBridgeTraffic, pushLink, pushStage, setWalletAdapter } from '../bridg
 import { connectDeskEvents, type DeskLink } from '../shell/deskEvents';
 import { focusCanvas } from '../shell/focus';
 import { useBranchZeroWallet } from './useBranchZeroWallet';
-import type { PendingWire } from '@branch-zero/shared';
+import { ARC_TESTNET_CHAIN_ID, REMOTE_EVM_CHAIN_ID, type PendingWire } from '@branch-zero/shared';
 
 interface Line {
   t: string;
@@ -12,8 +12,6 @@ interface Line {
 }
 
 const MAX = 10;
-const TELLER = import.meta.env.VITE_TELLER_DESK_URL || '/api';
-
 interface Passbook {
   balance: string;
   symbol: string;
@@ -74,6 +72,7 @@ export function App({ engineState }: { engineState: string }) {
       openSession: () => latest.current.openSession(),
       delegate: () => latest.current.delegate(),
       revoke: () => latest.current.revoke(),
+      switchWing: (chainId) => latest.current.switchWing(chainId),
       priority: (txId) => latest.current.priority(txId),
       call: (path, body) => latest.current.call(path, body),
       isAuthenticated: () => latest.current.authenticated,
@@ -112,7 +111,7 @@ export function App({ engineState }: { engineState: string }) {
     if (!w.session) return;
     const owner = w.session.owner;
     return connectDeskEvents({
-      url: async () => `${TELLER}/events?token=${encodeURIComponent((await latest.current.getAccessToken()) ?? '')}&owner=${owner}`,
+      url: async () => `${latest.current.tellerBase}/events?token=${encodeURIComponent((await latest.current.getAccessToken()) ?? '')}&owner=${owner}`,
       onEvent: (e) => {
         setStage(e.bankLine);
         pushStage(e);
@@ -125,7 +124,7 @@ export function App({ engineState }: { engineState: string }) {
         if (l.connected && l.attempt > 0) void refreshRef.current();
       },
     });
-  }, [w.session?.owner]);
+  }, [w.session?.owner, w.activeChainId, w.tellerBase]);
 
   // Drop stale passbook when Privy auth ends (Sign out used to leave 500 dUSDC on screen).
   useEffect(() => {
@@ -203,6 +202,20 @@ export function App({ engineState }: { engineState: string }) {
           <div style={row}>
             <span style={label}>owner</span>
             <code style={{ color: '#8ab4f8' }}>{s?.owner ?? w.embedded?.address ?? '—'}</code>
+          </div>
+          <div style={row}>
+            <span style={label}>wing</span>
+            <span style={{ color: w.activeWing === 'arc' ? '#7ee787' : '#8ab4f8' }}>
+              {w.activeWing === 'arc' ? 'Arc Testnet · 5042002 · native USDC gas' : 'Main wing · Remote EVM · 1337'}
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', margin: '6px 0' }}>
+            <button style={{ ...btn, borderColor: w.activeWing === 'main' ? '#8ab4f8' : '#2a3140' }} onClick={() => run('Taking the elevator to Main…', () => w.switchWing(REMOTE_EVM_CHAIN_ID))}>
+              Main wing
+            </button>
+            <button style={{ ...btn, borderColor: w.activeWing === 'arc' ? '#7ee787' : '#2a3140' }} onClick={() => run('Taking the elevator to Arc…', () => w.switchWing(ARC_TESTNET_CHAIN_ID))}>
+              Arc wing
+            </button>
           </div>
           <div style={row}>
             <span style={label}>account</span>
