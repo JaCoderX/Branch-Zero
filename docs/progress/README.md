@@ -17,6 +17,7 @@ Do not commit secrets, `.env`, or large binaries.
 | [2026-09-07 — U4 MVP freeze](./2026-09-07-u4-mvp-freeze.md) | U4 | G5 | met — canvas focus, `RPC`/`AUTH`/`NOT_CONFIGURED`, SSE reconnect + `desk.link`, first load measured; real 30 s clip owed by the human walk |
 | [2026-09-07 — U4+ Priority kickoff](./2026-09-07-u4-plus-kickoff.md) | U4+ | G5b | docs only — labs 0012/0011/0013 consumed; 0013 re-smoke aborted (no policy id) |
 | [2026-09-07 — U4+ Priority release](./2026-09-07-u4-plus-priority-release.md) | U4+ | G5b | met — ROLE_SET 3; Y3 102 s early on the rig; principal Passkey walk wire #9 `0xaa381c00…` `mfaPrompted: true` |
-| [KICKOFF-U5](../KICKOFF-U5.md) | U5 | G6 | **paste into new cold agent** |
+| [2026-09-07 — U4+ checkpoint + scrub](./2026-09-07-u4-plus-checkpoint.md) | U4+ | G5b | accept — principal playtest green; four lessons scrubbed; **ENG-0007 still unrun → lab before U5** |
+| [KICKOFF-U5](../KICKOFF-U5.md) | U5 | G6 | **paste into new cold agent after ENG-0007 says yes** |
 
 The newest note carries the findings that will otherwise cost the next agent an afternoon. Read it first.

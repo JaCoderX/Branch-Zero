@@ -89,32 +89,30 @@ Not: a wallet UI, DeFi protocol, Bloxchain fork, mainnet, Tactical-AI, GameLab m
 
 ## 2. Read order (before code)
 
-1. **This file**
-2. [`docs/DEV-LOOP.md`](./DEV-LOOP.md) — U4+ row
-3. [`docs/progress/2026-09-07-u4-mvp-freeze.md`](./progress/2026-09-07-u4-mvp-freeze.md) — newest findings (canvas
-   focus, reconnect, tsx watch); then [`…u3-bank-shell.md`](./progress/2026-09-06-u3-bank-shell.md) for the web-Godot
-   findings and [`…u2-timelock-lane.md`](./progress/2026-09-06-u2-timelock-lane.md) for the two chain findings
-3a. GameLab ENG-0012 / 0011 / 0013 `handoff.md` (behaviour). [`docs/NPCS.md`](./NPCS.md) §4.4–4.5. Do **not** read
-    [`docs/ENS.md`](./ENS.md) as this mission.
-4. [`docs/REMOTE-EVM.md`](./REMOTE-EVM.md) — **do not wipe**; gasLimit **16,777,216**; § 1a frozen block clock
-5. [`docs/GAME-DESIGN.md`](./GAME-DESIGN.md) + [`docs/WORLD-3D-ENVIRONMENT.md`](./WORLD-3D-ENVIRONMENT.md) — zones, NPCs, the ledger board
-6. [`docs/GODOT.md`](./GODOT.md) §4–5 — bridge method table (now `u4.0`, §4a), MockChain and tester keys (§5a), canvas focus (§5b), the background-tab rules
-7. [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) §1–3, §5–6 (§3.3 is Lane B as built)
-8. [`docs/BLOXCHAIN-INTEGRATION.md`](./BLOXCHAIN-INTEGRATION.md) §6–7 — Lane B + roles
-9. [`docs/PRIVY.md`](./PRIVY.md) — session signer and the two policy shapes
-10. [`docs/SECURITY-AND-KEYS.md`](./SECURITY-AND-KEYS.md)
-11. [`docs/REFLECTION.md`](./REFLECTION.md) — kill log + principal decisions
-12. [`docs/progress/2026-09-06-u1-signing-lane.md`](./progress/2026-09-06-u1-signing-lane.md) and [`…u1-human-path.md`](./progress/2026-09-06-u1-human-path.md)
-13. Craft lessons (do not re-author):  
-    https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/sdk-runtime-factory-clones.md  
-    https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/delegated-signing-consent-belongs-to-the-key-owner.md  
+1. **This file** (§5f is the open mission)
+2. [`docs/DEV-LOOP.md`](./DEV-LOOP.md) — U5 row; lab-first for ENG-0007
+3. [`docs/progress/2026-09-07-u4-plus-checkpoint.md`](./progress/2026-09-07-u4-plus-checkpoint.md) — process scrub +
+   "ENG-0007 still unrun"; then [`…u4-plus-priority-release.md`](./progress/2026-09-07-u4-plus-priority-release.md) and
+   [`…u4-mvp-freeze.md`](./progress/2026-09-07-u4-mvp-freeze.md) for Priority / freeze findings
+4. [`docs/ENS.md`](./ENS.md) §2–4 + [`docs/NPCS.md`](./NPCS.md) §4.6 — Name Desk. GameLab ENG-2026-0007 `findings.md` /
+   `handoff.md` must be filled **before** product routes; if empty, run the lab first (not here)
+5. [`docs/REMOTE-EVM.md`](./REMOTE-EVM.md) — **do not wipe**; payments stay on 1337; gasLimit **16,777,216**; § 1a frozen block clock
+6. [`docs/GAME-DESIGN.md`](./GAME-DESIGN.md) + [`docs/WORLD-3D-ENVIRONMENT.md`](./WORLD-3D-ENVIRONMENT.md) — zones, NPCs, the ledger board
+7. [`docs/GODOT.md`](./GODOT.md) §4–5 — bridge method table (`u4.1` now; U5 adds `ens*`), MockChain (§5a), canvas focus (§5b)
+8. [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) §1–3, §5–6 (§3.3 is Lane B as built)
+9. [`docs/BLOXCHAIN-INTEGRATION.md`](./BLOXCHAIN-INTEGRATION.md) §6–7 — Lane B + roles (do not regress ROLE_SET 3)
+10. [`docs/PRIVY.md`](./PRIVY.md) — session signer, action pin, Priority Passkey exception
+11. [`docs/SECURITY-AND-KEYS.md`](./SECURITY-AND-KEYS.md) — registrar key is a bank key
+12. [`docs/REFLECTION.md`](./REFLECTION.md) — kill log + principal decisions
+13. Craft lessons (do not re-author) — especially the U4+ scrub:
+    https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/lab-gate-before-product-unit.md  
+    https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/pin-delegated-signer-to-allowed-payload.md  
+    https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/headless-cannot-prove-user-held-credential.md  
+    https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/colliders-that-block-must-not-listen.md  
     https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/prefer-timed-path-over-untimed-sibling.md  
     https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/on-demand-mining-freezes-view-time.md  
     https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/dual-selector-permission-checks.md  
-    https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/refresh-client-session-after-server-mutation.md  
     https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/hidden-browser-tab-stops-engine-loop.md  
-    https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/bind-keycode-and-physical-keycode-on-web.md  
-    https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/anchors-and-offsets-for-code-built-ui-roots.md  
     https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/preserve-error-codes-across-fetch-boundary.md
 
 GitHub mirrors under `https://github.com/JaCoderX/Branch-Zero/blob/main/docs/…`.
@@ -424,7 +422,9 @@ Kickoff: [`docs/KICKOFF-U5.md`](./KICKOFF-U5.md). Design: [`docs/ENS.md`](./ENS.
 
 **U4+ / G5b met 2026-09-07** — this is the open mission.
 
-**Gate before code:** GameLab ENG-2026-0007 must say yes (registry, resolver, client). If it has not run, run it there.
+**Gate before code:** GameLab ENG-2026-0007 must say yes (registry, resolver, client). As of the
+[2026-09-07 checkpoint](./progress/2026-09-07-u4-plus-checkpoint.md) that ENG is still **unrun** (`findings.md` /
+`handoff.md` empty) — run it in GameLab first; do not invent Sepolia wiring in this repo until the handoff is filled.
 
 ### Freedom envelope
 
