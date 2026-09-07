@@ -1,7 +1,14 @@
-# secrets
+﻿# secrets
 .env
 .env.*
 !.env.example
+*.pem
+*.key
+*.p12
+*.jks
+*.secret
+credentials*.json
+secrets*.json
 
 # teller desk local player index (dev only, no secrets — but per-machine)
 apps/teller-desk/.data/
