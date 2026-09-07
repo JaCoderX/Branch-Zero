@@ -112,5 +112,5 @@ Stop when Stage 4 DoD is met or a named budget blocker needs a principal cut.
 
 ## After this pass
 
-Next art: **Stage 5 / full U7** (HUD layout, camera OTS offset, particles, fonts, demo video). Product mission stays
-**U5 ENS** until HANDOFF says otherwise.
+Next art unit: **Stage 5** — [`docs/KICKOFF-U7-viz-stage5.md`](./KICKOFF-U7-viz-stage5.md) (HUD / camera / particles /
+fonts / demo). Product mission stays **U6 Arc** until HANDOFF says otherwise.

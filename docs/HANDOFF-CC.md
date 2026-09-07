@@ -15,11 +15,13 @@ prior_mission: U5 ENS (G6) — met 2026-09-07
 You are a **cold agent** unless the human says you are continuing a prior session. Prefer reading this file over chat memory. You have **freedom on how**. You do **not** have freedom on constraints, scope, or protocol semantics.
 
 **Current mission: U6 Arc + manager role (G7)** — U5 Petra's Name Desk is met and frozen. Kickoff:
-[`docs/KICKOFF-U6.md`](./KICKOFF-U6.md). Do not start **full** U7 ship (video / submission). Early art: Stage 1–3 met
+[`docs/KICKOFF-U6.md`](./KICKOFF-U6.md). Do not start **full** U7 ship (video / submission packaging) unless the
+principal opens it. Early art: Stage 1–4 met
 ([`progress/2026-09-07-u7-early-viz.md`](./progress/2026-09-07-u7-early-viz.md),
 [`progress/2026-09-07-u7-viz-stage2.md`](./progress/2026-09-07-u7-viz-stage2.md),
-[`progress/2026-09-07-u7-viz-stage3.md`](./progress/2026-09-07-u7-viz-stage3.md)); next art unit is
-[`docs/KICKOFF-U7-viz-stage4.md`](./KICKOFF-U7-viz-stage4.md) (wall shell) when the principal schedules it clear of
+[`progress/2026-09-07-u7-viz-stage3.md`](./progress/2026-09-07-u7-viz-stage3.md),
+[`progress/2026-09-07-u7-viz-stage4.md`](./progress/2026-09-07-u7-viz-stage4.md)); next art unit is
+[`docs/KICKOFF-U7-viz-stage5.md`](./KICKOFF-U7-viz-stage5.md) (feel / juice) when the principal schedules it clear of
 U6. Do not regress the U4 freeze, the U4+ Priority desk, or the U5 ENS Name Desk.
 
 > **U5 met 2026-09-07 — ENS Name Desk / G6.** Read
@@ -505,9 +507,9 @@ do not invent a second Priority path. Kickoff: [`docs/KICKOFF-U6.md`](./KICKOFF-
 | U7 Feel / ship | G8–G10 |
 
 **Parallel (principal-scheduled, not the open mission):** staged U7 art —
-Stage 1–3 met; next is [`docs/KICKOFF-U7-viz-stage4.md`](./KICKOFF-U7-viz-stage4.md) (wall shell only). Do not touch
-Name Desk interactables or bridge/desk work from an art pass. Do not advance the **construction** HANDOFF from a viz-only
-session.
+Stage 1–4 met; next is [`docs/KICKOFF-U7-viz-stage5.md`](./KICKOFF-U7-viz-stage5.md) (feel / juice only). Do not touch
+Name Desk interactables, bridge/desk work, or Arc wing scripts from an art pass. Do not advance the **construction**
+HANDOFF from a viz-only session.
 
 Cut order unchanged: Uniswap → Manager → Arc → ENS EAC → ENS mint. **Never cut Privy or Lane B.**
 
