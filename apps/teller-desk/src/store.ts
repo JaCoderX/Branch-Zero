@@ -57,6 +57,7 @@ export interface Receipt {
 
 const DATA_DIR = path.join(REPO_ROOT, 'apps', 'teller-desk', '.data');
 const PLAYERS_FILE = path.join(DATA_DIR, 'players.json');
+const RECEIPTS_FILE = path.join(DATA_DIR, 'receipts.json');
 
 const players = new Map<string, Player>();
 const receipts = new Map<string, Receipt[]>();
@@ -69,28 +70,62 @@ function load(): void {
   } catch {
     /* first run */
   }
+  try {
+    const raw = JSON.parse(fs.readFileSync(RECEIPTS_FILE, 'utf8')) as Record<string, Receipt[]>;
+    for (const [id, list] of Object.entries(raw)) receipts.set(id, list);
+  } catch {
+    /* first run */
+  }
 }
-let flushTimer: NodeJS.Timeout | undefined;
+
+/**
+ * Write the player index now, not later. U2 debounced this by 50 ms; `tsx watch` restarts the process the
+ * instant a source file is saved, and the U4 playtest found a player whose `account` had been written but
+ * whose `configured` / `roleSet` never landed — Wire then failed `NoPermission` until a Re-check. The file is
+ * a few KB and changes a handful of times per session; a synchronous write is the cheaper guarantee.
+ */
 function flush(): void {
-  if (flushTimer) return;
-  flushTimer = setTimeout(() => {
-    flushTimer = undefined;
+  try {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+    // Merge with what is on disk: the dev server and the kill-test scripts share this file, and each
+    // process only knows its own players. In-memory entries win for the ids this process has touched.
+    const merged = new Map<string, Player>();
+    try {
+      for (const p of JSON.parse(fs.readFileSync(PLAYERS_FILE, 'utf8')) as Player[]) merged.set(p.privyUserId, p);
+    } catch {
+      /* no file yet */
+    }
+    for (const [id, p] of players) merged.set(id, p);
+    writeAtomic(PLAYERS_FILE, JSON.stringify([...merged.values()], null, 2));
+  } catch (e) {
+    console.error('player index not persisted:', (e as Error).message);
+  }
+}
+
+/**
+ * Receipts are the ledger board's right-hand column. U3 kept them in memory, so a Teller Desk restart
+ * mid-wire blanked the board while the chain still had the record. Same file discipline as the players,
+ * debounced because a job emits several stages a second.
+ */
+let receiptsTimer: NodeJS.Timeout | undefined;
+function flushReceipts(): void {
+  if (receiptsTimer) return;
+  receiptsTimer = setTimeout(() => {
+    receiptsTimer = undefined;
     try {
       fs.mkdirSync(DATA_DIR, { recursive: true });
-      // Merge with what is on disk: the dev server and the kill-test scripts share this file, and each
-      // process only knows its own players. In-memory entries win for the ids this process has touched.
-      const merged = new Map<string, Player>();
-      try {
-        for (const p of JSON.parse(fs.readFileSync(PLAYERS_FILE, 'utf8')) as Player[]) merged.set(p.privyUserId, p);
-      } catch {
-        /* no file yet */
-      }
-      for (const [id, p] of players) merged.set(id, p);
-      fs.writeFileSync(PLAYERS_FILE, JSON.stringify([...merged.values()], null, 2));
+      writeAtomic(RECEIPTS_FILE, JSON.stringify(Object.fromEntries(receipts), null, 2));
     } catch (e) {
-      console.error('player index not persisted:', (e as Error).message);
+      console.error('receipts not persisted:', (e as Error).message);
     }
-  }, 50);
+  }, 200);
+}
+
+/** Never leave a half-written index behind: write beside, then rename over. */
+function writeAtomic(file: string, data: string): void {
+  const tmp = `${file}.${process.pid}.tmp`;
+  fs.writeFileSync(tmp, data);
+  fs.renameSync(tmp, file);
 }
 load();
 
@@ -136,6 +171,7 @@ export function emitStage(privyUserId: string, e: StageEvent): void {
   if (idx >= 0) list[idx] = receipt;
   else list.push(receipt);
   receipts.set(privyUserId, list.slice(-25));
+  if (e.lane !== 'CONFIG') flushReceipts(); // the SSE "hello" is not a receipt worth a disk write
   for (const l of listeners.get(privyUserId) ?? []) l(e);
 }
 

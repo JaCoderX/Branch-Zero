@@ -11,7 +11,10 @@
       #canvas { display: block; width: 100%; height: 100%; outline: none; }
       #overlay { position: fixed; inset: 0; pointer-events: none; }
       #overlay > * { pointer-events: auto; }
-      #boot { position: fixed; inset: 0; display: grid; place-items: center; font-size: 14px; color: #9aa4b2; }
+      /* Status text while the engine loads. Never a hit target: it sits over #game, and a full-viewport div that
+         takes clicks is exactly what kept Godot from re-focusing its canvas after the overlay was used (U4). */
+      #boot { position: fixed; inset: 0; display: grid; place-items: center; font-size: 14px; color: #9aa4b2; pointer-events: none; }
+      #boot[hidden] { display: none; }
     </style>
   </head>
   <body>

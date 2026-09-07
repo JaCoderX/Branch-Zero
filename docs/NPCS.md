@@ -257,8 +257,14 @@ Decoded via the SDK's `decodeRevertReason` / `getUserFriendlyErrorMessage`, then
 | Deadline passed | "That slip expired — let's write a new one." |
 | Insufficient balance (ERC-20) | "Not enough practice dollars in the account." |
 | Nonce mismatch | "Someone already used that slip number — writing a fresh one." |
+| Teller Desk unreachable (`RPC`; a dead desk answers 5xx with no JSON through the proxy) | "The branch can't reach the ledger right now." |
+| No answer within the call's timeout (`TIMEOUT`, raised by `Chain.gd`) | "The desk is taking longer than usual — the board will catch up when it answers." |
+| Expired / invalid Privy token (`AUTH`, 401) | "I'll need you signed in for that — Ines can help at Account Opening." |
+| Account on file but provisioning never recorded its end (`NOT_CONFIGURED`, 409 on `/pay` `/wire`) | "Your account is on file, but the desks aren't authorised for it yet — ask Ines to re-check your account." |
 
-Populate the exact error names from `ERROR_SIGNATURES` in `@bloxchain/sdk` on Day 3 (`VERIFY`).
+The exact names are the keys of `apps/game/dialogue/errors.json` (86 entries as of U4: every SDK `ERROR_SIGNATURES` name,
+every Teller Desk / bridge / Privy code); `tests/run_checks.gd` fails the build if a required code has no line. The link
+state itself is not an error: `desk.link` transitions are HUD toasts (`strings.json` `desk_link_lost` / `desk_link_back`).
 
 ---
 

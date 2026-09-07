@@ -267,8 +267,8 @@ async function decide(player: Player, txId: bigint, actor: Actor, kind: 'approve
   }
 
   const { gc, from } = actor === 'manager' ? asManager(account) : { gc: asOwner(player, account, txAudit), from: player.ownerAddress };
-  const who = actor === 'manager' ? 'The manager' : 'You';
-  stage('signing', kind === 'approve' ? `${who} are opening the vault…` : `${who} are recalling the wire…`, { txId: String(txId), releaseTime: before.releaseTime });
+  const who = actor === 'manager' ? 'The manager is' : 'You are';
+  stage('signing', kind === 'approve' ? `${who} opening the vault…` : `${who} recalling the wire…`, { txId: String(txId), releaseTime: before.releaseTime });
 
   let res;
   try {

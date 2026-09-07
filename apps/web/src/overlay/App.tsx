@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { onBridgeTraffic, pushStage, setWalletAdapter } from '../bridge/branchZero';
+import { onBridgeTraffic, pushLink, pushStage, setWalletAdapter } from '../bridge/branchZero';
+import { connectDeskEvents, type DeskLink } from '../shell/deskEvents';
+import { focusCanvas } from '../shell/focus';
 import { useBranchZeroWallet } from './useBranchZeroWallet';
-import type { PendingWire, StageEvent } from '@branch-zero/shared';
+import type { PendingWire } from '@branch-zero/shared';
 
 interface Line {
   t: string;
@@ -39,7 +41,7 @@ export function App({ engineState }: { engineState: string }) {
   const [wireAmount, setWireAmount] = useState('250');
   const [clockOffset, setClockOffset] = useState(0); // serverNow - localNow, seconds
   const [, setTick] = useState(0);
-  const esRef = useRef<EventSource | undefined>(undefined);
+  const [link, setLink] = useState<DeskLink | undefined>();
 
   useEffect(() => {
     const push = (l: Line) => setLines((prev) => [...prev.slice(-(MAX - 1)), l]);
@@ -101,28 +103,27 @@ export function App({ engineState }: { engineState: string }) {
 
   // Teller Desk stages arrive over SSE and are forwarded straight into the bridge, so the NPC lines the
   // game shows and the lines this panel shows are the same events. Vault transitions refresh the passbook.
+  //
+  // U4: the stream reconnects on its own (fresh token each time — `shell/deskEvents.ts`). U3 closed it on the
+  // first error, so a Teller Desk restart ended the stage feed until reload. Every transition is pushed to
+  // Godot as `desk.link`; after an outage the passbook is re-read here and the game reconciles its board.
   useEffect(() => {
     if (!w.session) return;
-    let closed = false;
-    void (async () => {
-      const token = await w.getAccessToken();
-      if (closed) return;
-      const es = new EventSource(`${TELLER}/events?token=${encodeURIComponent(token ?? '')}&owner=${w.session!.owner}`);
-      es.onmessage = (ev) => {
-        const e = JSON.parse(ev.data) as StageEvent;
+    const owner = w.session.owner;
+    return connectDeskEvents({
+      url: async () => `${TELLER}/events?token=${encodeURIComponent((await latest.current.getAccessToken()) ?? '')}&owner=${owner}`,
+      onEvent: (e) => {
         setStage(e.bankLine);
         pushStage(e);
         if (e.serverNow) setClockOffset(Number(e.serverNow) - Math.floor(Date.now() / 1000));
         if (e.lane === 'B' && (e.stage === 'released' || e.stage === 'mined' || e.stage === 'cancelled' || (e.stage === 'pending' && e.hash))) void refreshRef.current();
-      };
-      es.onerror = () => es.close();
-      esRef.current = es;
-    })();
-    return () => {
-      closed = true;
-      esRef.current?.close();
-      esRef.current = undefined;
-    };
+      },
+      onLink: (l) => {
+        setLink(l);
+        pushLink(l);
+        if (l.connected && l.attempt > 0) void refreshRef.current();
+      },
+    });
   }, [w.session?.owner]);
 
   // Drop stale passbook when Privy auth ends (Sign out used to leave 500 dUSDC on screen).
@@ -173,7 +174,13 @@ export function App({ engineState }: { engineState: string }) {
         <strong>Branch Zero · desk debug</strong>
         <span style={{ color: '#9aa4b2' }}>
           engine: {engineState}{' '}
-          <button style={{ ...btn, padding: '1px 8px', marginLeft: 6 }} onClick={() => setDebugOpen(false)}>
+          <button
+            style={{ ...btn, padding: '1px 8px', marginLeft: 6 }}
+            onClick={() => {
+              setDebugOpen(false);
+              focusCanvas(); // the player is going back to the bank
+            }}
+          >
             hide
           </button>
         </span>
@@ -300,6 +307,11 @@ export function App({ engineState }: { engineState: string }) {
         </>
       )}
 
+      {link && !link.connected && (
+        <div style={{ color: '#e3b341', marginBottom: 6 }}>
+          desk link down ({link.reason ?? '…'}) — reconnecting, attempt {link.attempt + 1}
+        </div>
+      )}
       {(stage || w.busy) && <div style={{ color: '#d2a8ff', marginBottom: 6 }}>{w.busy ?? stage}</div>}
       {w.error && <div style={{ color: '#ff7b72', marginBottom: 6, wordBreak: 'break-word' }}>{w.error}</div>}
 

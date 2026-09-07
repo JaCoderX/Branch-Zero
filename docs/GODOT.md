@@ -145,7 +145,9 @@ Events pushed to Godot (`type: "event"`), as built through U3: `bridge.ready` `{
 `setGodotCallback`; `mock` is `false`, `"fresh"` or `"account"` — see §5a), `stage` (a Teller Desk `StageEvent`
 relayed verbatim from SSE; carries `lane`, `stage`, `bankLine`, `txId`, `releaseTime`, `serverNow`, `chainNow`),
 and `tab.visible` `{ visible }` (from `visibilitychange`, so Godot reconciles the board with `listPending` once the tab
-is back). The finer-grained `tx.*` / `balance.changed` / `session.changed` names from the plan were not needed: the
+is back). U4 adds `desk.link` `{ connected, attempt, reason? }` — the state of the Teller Desk SSE stream as the shell's
+reconnecting `EventSource` sees it (`apps/web/src/shell/deskEvents.ts`); `GameState` toasts the transition and reconciles
+the board on every reconnect, because the server re-reads the vault and re-arms its watchers on each `/events` connect. The finer-grained `tx.*` / `balance.changed` / `session.changed` names from the plan were not needed: the
 game derives them from `stage`.
 
 Rules:
@@ -153,9 +155,10 @@ Rules:
 - Every call has a timeout (15 s) and returns `{ error: { code, message } }` on failure; NPCs have a line for each `code` (see [NPCS.md](./NPCS.md) § 5).
 - On desktop (editor) `MockChain.gd` implements the same API with fake latency and canned data so gameplay can be iterated offline.
 
-### 4a. Bridge version `u3.0` (as built)
+### 4a. Bridge version `u4.0` (as built; `u3.0` + U4)
 
-`apps/web/src/bridge/branchZero.ts`. Godot's side is `autoload/chain.gd`, with `call_async(method, args, timeout_sec)`
+`apps/web/src/bridge/branchZero.ts`. `u4.0` adds **no methods**: the `desk.link` event above, and `login` /
+`addSessionSigner` hand DOM focus back to the canvas when the Privy modal closes (`shell/focus.ts`, see §5b). Godot's side is `autoload/chain.gd`, with `call_async(method, args, timeout_sec)`
 — the timeout is **per call**: `login` waits up to 600 s for a human OTP, `provision` 300 s, lane calls 120 s, reads 20 s.
 Teller Desk error codes (`NO_ACCOUNT`, `NOT_PENDING`, `BeforeReleaseTime`, `policy_violation`, …) travel unchanged in
 `error.code`; the game maps them to NPC lines in `apps/game/dialogue/errors.json` (NPCS.md §5). Every desk action
@@ -182,6 +185,22 @@ Browsers throttle `requestAnimationFrame` in background tabs, so Godot's `_proce
   once the tab is visible again. Nothing in Godot may therefore be *required* to happen while hidden; the Teller Desk
   watcher and SSE carry the state in the meantime.
 - Audio: resume `AudioServer` on first input after focus (browser autoplay policy).
+
+### 5b. Canvas focus (U4)
+
+Godot's web export listens for `keydown` **on the canvas element**, not on `document`. The game therefore only hears
+keys while `#canvas` is `document.activeElement`; any click on a React control or a finished Privy modal moves focus
+off it and WASD / `E` go dead. Rules that follow:
+
+- Nothing may sit over the canvas as a hit target when it is not meant to be one. The U4 playtest bug was the
+  full-viewport `#boot` status div (`position: fixed; inset: 0`) left in the DOM after loading: every click on the
+  bank hit it, so Godot's own `mousedown → canvas.focus()` never ran. It is `pointer-events: none` and `hidden` once
+  the engine runs (`apps/web/index.html`, `src/main.ts`).
+- The shell calls `focusCanvas()` (`src/shell/focus.ts`) after the interactions it owns: the debug panel's *hide*,
+  and the bridge's `login` / `addSessionSigner` once the Privy flow settles. It focuses now and again on two
+  timers — not `requestAnimationFrame`, which a background tab never runs — because React unmounts the clicked button
+  in the same commit and an unmounted focused element drops focus to `<body>`.
+- Verified 2026-09-07 in the shell: pill → `body`; click bank → `canvas`; *hide* → `canvas`; `F6` teleports, `E` opens Mo.
 
 ### 5a. MockChain and the `?mock` flag (U3)
 
@@ -245,3 +264,5 @@ npm run export:web
 | Audio autoplay blocked | Start music on first click (the "Enter branch" button) |
 | `JavaScriptBridge.eval` string escaping | Never use `eval`; only `get_interface` + JSON |
 | Text input focus stolen by canvas | The React overlay handles text entry (names, amounts); Godot receives the result via a bridge call |
+| Keyboard dead after clicking the overlay / closing Privy | Godot listens on the canvas; see §5b — no full-viewport hit targets over `#game`, `focusCanvas()` after overlay interactions |
+| `tsx watch` does not respawn a *killed* Teller Desk | It waits for a file change. To drill a restart use Ctrl+C + `npm run dev:teller` (or save a source file); a second `npm run dev:teller` in another terminal crashes on `EADDRINUSE` and then races the first on every save |

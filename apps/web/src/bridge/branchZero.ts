@@ -19,8 +19,11 @@ import { createPublicClient, http, type Address } from 'viem';
 import { SecureOwnable } from '@bloxchain/sdk';
 import { remoteEvmWithRpc, type BranchZeroBridge, type BridgeError, type BridgeMessage, type BridgeResponse, type DeskSession, type StageEvent } from '@branch-zero/shared';
 import deployments from '../../../../infra/deployments/remote-evm.json';
+import type { DeskLink } from '../shell/deskEvents';
+import { focusCanvas } from '../shell/focus';
 
-export const BRIDGE_VERSION = 'u3.0';
+/** u4.0: no new methods; adds the `desk.link` event and gives the canvas focus back after the Privy modals. */
+export const BRIDGE_VERSION = 'u4.0';
 
 /**
  * `?mock=1` on the shell URL tells Godot to answer every desk call from its own MockChain (canned data,
@@ -94,6 +97,17 @@ export function pushStage(e: StageEvent): void {
   godotCallback?.(JSON.stringify({ type: 'event', kind: 'stage', payload: e }));
 }
 
+/**
+ * U4: the SSE link's state (`shell/deskEvents.ts`). `connected:false` means the stage feed is down and the
+ * overlay is reconnecting; `connected:true` after an outage means the server has just re-read the vault and
+ * re-armed its watchers, so Godot reconciles the board once (`GameState`).
+ */
+export function pushLink(l: DeskLink): void {
+  const payload = l as unknown as Record<string, unknown>;
+  emit({ type: 'event', kind: 'desk.link', payload });
+  godotCallback?.(JSON.stringify({ type: 'event', kind: 'desk.link', payload }));
+}
+
 // Reads go through the Vite `/rpc` proxy so the browser stays same-origin and the RPC URL never reaches Godot.
 const chain = remoteEvmWithRpc(`${location.origin}/rpc`);
 const publicClient = createPublicClient({ chain, transport: http(`${location.origin}/rpc`) });
@@ -128,7 +142,13 @@ const handlers: Record<string, Handler> = {
   async login() {
     const a = requireAdapter();
     if (!a.isAuthenticated()) {
-      const ok = await a.login();
+      // The one wallet modal. Whatever happens in it, the keyboard goes back to the bank afterwards.
+      let ok = false;
+      try {
+        ok = await a.login();
+      } finally {
+        focusCanvas();
+      }
       if (!ok) throw bridgeError('LOGIN_CANCELLED', 'the sign-in was dismissed', 'No rush — come back when you are ready to sign in.');
     }
     const session = await a.openSession();
@@ -139,7 +159,12 @@ const handlers: Record<string, Handler> = {
     return { ok: true };
   },
   async addSessionSigner() {
-    await requireAdapter().delegate();
+    // The consent is part of the same Privy flow (docs/GODOT.md §4); it also leaves DOM focus behind.
+    try {
+      await requireAdapter().delegate();
+    } finally {
+      focusCanvas();
+    }
     return { ok: true };
   },
   async removeSessionSigner() {

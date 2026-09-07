@@ -139,8 +139,8 @@ func _decide(args: Dictionary, kind: String) -> Dictionary:
 	var rec: Dictionary = wires[idx]
 	var job := _new_job()
 	var actor := "manager" if str(args.get("as", "owner")) == "manager" else "owner"
-	var who := "The manager" if actor == "manager" else "You"
-	_stage(job, "B", "signing", ("%s are opening the vault…" if kind == "approve" else "%s are recalling the wire…") % who, {"txId": tx_id, "releaseTime": rec["releaseTime"]})
+	var who := "The manager is" if actor == "manager" else "You are"
+	_stage(job, "B", "signing", ("%s opening the vault…" if kind == "approve" else "%s recalling the wire…") % who, {"txId": tx_id, "releaseTime": rec["releaseTime"]})
 	await get_tree().create_timer(0.6).timeout
 	if kind == "approve" and int(rec["releaseTime"]) > _now():
 		_stage(job, "B", "failed", "Still cooling — the vault clock has not run down yet.", {"txId": tx_id, "reason": "BeforeReleaseTime", "releaseTime": rec["releaseTime"]})

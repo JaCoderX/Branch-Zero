@@ -3,20 +3,33 @@ type: handoff
 title: Handoff — Claude Code / Fable 5.1
 audience: cold agent
 created: 2026-09-06
-updated: 2026-09-06
+updated: 2026-09-07
 product: Branch-Zero
 objective: OBJ-2026-0004
-first_mission: U4 MVP freeze (G5)
-prior_mission: U3 Bank shell (G4) — met 2026-09-06
+first_mission: U5 ENS (G6)
+prior_mission: U4 MVP freeze (G5) — met 2026-09-07
 ---
 
 # Handoff — Claude Code (Fable 5.1)
 
 You are a **cold agent** unless the human says you are continuing a prior session. Prefer reading this file over chat memory. You have **freedom on how**. You do **not** have freedom on constraints, scope, or protocol semantics.
 
-**Current mission: U4 MVP freeze (G5)** — error UX, reconnect, first-load budget, a rough 30-second capture.
-Do not start U5–U7.
+**Current mission: U5 ENS (G6)** — Petra's Name Desk: subnames under the bank's parent on Sepolia, pay-by-name at
+the counter. Kickoff: [`docs/KICKOFF-U5.md`](./KICKOFF-U5.md). Do not start U6–U7. Do not regress the freeze.
 
+> **U4 met 2026-09-07 — the MVP is frozen.** Read
+> [`docs/progress/2026-09-07-u4-mvp-freeze.md`](./progress/2026-09-07-u4-mvp-freeze.md) **first**. What it fixed
+> and why: the keyboard died after any overlay click because a full-viewport `#boot` div sat over the canvas
+> (Godot listens for keys on the canvas, GODOT.md §5b); a dead Teller Desk came back as `INTERNAL`, now `RPC`; an
+> expired Privy token came back as 500 `INTERNAL`, now 401 `AUTH`; the SSE stream closed for good on its first error,
+> now it reconnects with a fresh token and Godot hears `desk.link`; half-provisioned players are refused with
+> `NOT_CONFIGURED` (Ines re-checks) instead of the chain's `NoPermission`; the player index is written synchronously
+> and receipts survive a restart. Bridge is `u4.0` (no new methods). First load measured: `.wasm` 36.3 MB raw /
+> 7.05 MB brotli, `.pck` 127 KB, shell entry 2.6 MB raw / 0.53 MB brotli. The principal's real-bridge walk (pay,
+> wire, manager release) is on chain and recorded there with hashes; **still owed by a human:** the door-clock
+> release at Ruth's window on the real bridge *with the tab visible* for the 30 s clip (the committed clip is the mock).
+> `tsx watch` does **not** respawn a killed desk — save a file or restart it.
+>
 > **U3 met 2026-09-06.** The bank is walkable: five NPCs drive the existing lanes through
 > `Dialogue → GameState.run_action → Chain.call_async`; the vault door's clock is the record's `releaseTime`
 > against the desk clock; the ledger board reconciles on tab focus; 85 error codes have bank lines. Read
@@ -59,12 +72,14 @@ Not: a wallet UI, DeFi protocol, Bloxchain fork, mainnet, Tactical-AI, GameLab m
 ## 2. Read order (before code)
 
 1. **This file**
-2. [`docs/DEV-LOOP.md`](./DEV-LOOP.md) — U4 row
-3. [`docs/progress/2026-09-06-u3-bank-shell.md`](./progress/2026-09-06-u3-bank-shell.md) — newest findings; then
-   [`…u2-timelock-lane.md`](./progress/2026-09-06-u2-timelock-lane.md) for the two chain findings
+2. [`docs/DEV-LOOP.md`](./DEV-LOOP.md) — U5 row
+3. [`docs/progress/2026-09-07-u4-mvp-freeze.md`](./progress/2026-09-07-u4-mvp-freeze.md) — newest findings (canvas
+   focus, reconnect, tsx watch); then [`…u3-bank-shell.md`](./progress/2026-09-06-u3-bank-shell.md) for the web-Godot
+   findings and [`…u2-timelock-lane.md`](./progress/2026-09-06-u2-timelock-lane.md) for the two chain findings
+3a. [`docs/ENS.md`](./ENS.md) — the U5 design
 4. [`docs/REMOTE-EVM.md`](./REMOTE-EVM.md) — **do not wipe**; gasLimit **16,777,216**; § 1a frozen block clock
 5. [`docs/GAME-DESIGN.md`](./GAME-DESIGN.md) + [`docs/WORLD-3D-ENVIRONMENT.md`](./WORLD-3D-ENVIRONMENT.md) — zones, NPCs, the ledger board
-6. [`docs/GODOT.md`](./GODOT.md) §4–5 — bridge method table (now `u3.0`, §4a), MockChain and tester keys (§5a), the background-tab rules
+6. [`docs/GODOT.md`](./GODOT.md) §4–5 — bridge method table (now `u4.0`, §4a), MockChain and tester keys (§5a), canvas focus (§5b), the background-tab rules
 7. [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) §1–3, §5–6 (§3.3 is Lane B as built)
 8. [`docs/BLOXCHAIN-INTEGRATION.md`](./BLOXCHAIN-INTEGRATION.md) §6–7 — Lane B + roles
 9. [`docs/PRIVY.md`](./PRIVY.md) — session signer and the two policy shapes
@@ -244,7 +259,9 @@ Make the bank walkable and make the desks the operations. Everything the lanes n
 
 ---
 
-## 5d. Mission U4 — MVP freeze (G5)
+## 5d. Mission U4 — MVP freeze (G5) — **MET 2026-09-07**
+
+Kept as the record of what G5 required. The next mission is §5e.
 
 Nothing new to build on the chain or in the bank's shape; U4 makes what exists survive a judge's laptop. Kickoff:
 [`docs/KICKOFF-U4.md`](./KICKOFF-U4.md).
@@ -270,15 +287,23 @@ Promote only after lab handoffs + principal OK (likely U6+).
 
 - ENS, Arc, Uniswap; art passes; Express desk / Privy step-up productization; new lanes, roles or policy shapes; wiping Remote EVM; editing GameLab ENG folders
 
-### Definition of Done (G5)
+### Definition of Done (G5) — met, with one human-owed item
 
-- [ ] Human walk on the real bridge: sign in → consent → open → pay → wire → door clock → release; **one modal**, recorded in the progress note with account, txIds, hashes
-- [ ] Error UX: every refusal the walk produces shows its NPC line (no raw error on screen); `TIMEOUT` and `RPC` lines verified by killing the Teller Desk mid-session
-- [ ] Reconnect: SSE drop → reconnect → board reconciles; Teller Desk restart mid-wire → watcher re-arms, clock continues from `releaseTime`
-- [ ] First load measured (wasm + pck + shell) and written down against WORLD-3D §6; obvious wins taken (compression, no debug template)
-- [ ] 30-second capture of the vault clock counting down and the door opening
-- [ ] **Canvas re-focus:** after interacting with the React debug overlay (or Privy UI), click back into the bank and keyboard/mouse drive Godot again without reload
-- [ ] Progress note + REFLECTION; HANDOFF advanced to U5
+- [x] Human walk on the real bridge: the principal's 2026-09-07 playtest is on chain — account `0x9C01…5Cb9`, pay
+      records #3 / #4, wire #6 (112.5 dUSDC, `0x6f94c24f…`), released by the manager's stamp at block 99
+      (`0x5b4be600…`); one modal (the Privy sign-in at Ines) per the playtest report. Recorded with hashes in the progress
+      note (`npm -w apps/teller-desk run evidence` regenerates it)
+- [x] Error UX: dead desk → `RPC` (was `INTERNAL`), bad token → `AUTH` (was 500), half-provisioned → `NOT_CONFIGURED`;
+      86 codes have lines, `run_checks.gd` green. `TIMEOUT` / `RPC` verified at the bridge layer by killing the desk;
+      the in-game rendering of those two lines on the real bridge is part of the owed human walk
+- [x] Reconnect: the shell's stream reconnects with backoff (2 → 4 → 8 → 16 → 30 s, measured) and a fresh token;
+      Godot toasts `desk.link` and reconciles on reconnect; the desk re-arms watchers on every connect (U2) and now
+      keeps receipts across a restart
+- [x] First load measured (progress note "First load") — `.wasm` 36.3 MB / 8.9 gzip / 7.05 brotli; `.pck` 127 KB;
+      shell entry 2.6 MB / 0.75 gzip / 0.53 brotli. Release template confirmed; the win is transfer compression at the host
+- [x] 30-second capture: mock clip committed (`docs/progress/captures/`); the real-bridge clip is owed with the human walk
+- [x] **Canvas re-focus** verified in the shell: pill → `body`; click bank → `canvas`; *hide* → `canvas`; `F6` + `E` drive Godot
+- [x] Progress note + REFLECTION; HANDOFF advanced to U5
 
 ### Suggested sequence
 
@@ -289,12 +314,43 @@ Promote only after lab handoffs + principal OK (likely U6+).
 
 ---
 
-## 6. After U4
+## 5e. Mission U5 — ENS (G6)
+
+Petra's Name Desk becomes a desk. A player claims a subname under the bank's parent on Sepolia; the name points at
+their account; the counter pays by name. Payments stay on Remote EVM 1337 — ENS only answers "which address".
+Kickoff: [`docs/KICKOFF-U5.md`](./KICKOFF-U5.md). Design: [`docs/ENS.md`](./ENS.md) §2–4; NPC: [`docs/NPCS.md`](./NPCS.md) §4.6.
+
+**Gate before code:** GameLab ENG-2026-0007 must say yes (registry, resolver, client). If it has not run, run it there.
+
+### Freedom envelope
+
+- Which ENSv2 client / contract calls the Teller Desk uses, as long as ENG-0007 proved them and REFLECTION §8 records the dependency
+- Name-claim form shape (payment_slip.gd is the pattern); how the names board is drawn (SubViewport like the ledger board)
+- Whether reverse names show on receipts in U5 or wait for U7
+
+### Out of scope
+
+- Arc (U6); Express desk / Privy step-up; Uniswap; art/audio; greybox redesign; wiping Remote EVM; ENS on mainnet;
+  moving Lane A/B off 1337; any change to the one-modal rule, lane semantics, role grants or policy shapes
+
+### Definition of Done (G6)
+
+- [ ] Teller Desk `/ens/available`, `/ens/claim`, `/ens/record`, `/ens/resolve` (the 501 stubs from U2 become real); registrar key from env, never a player key
+- [ ] Bridge `u5.0`: `ensAvailable` / `ensMint` / `ensSetText` / `resolveName` over those routes; codes survive the fetch boundary; MockChain answers them
+- [ ] Petra at the Name Desk claims a name for the player's account; a taken or invalid name is refused with her line
+- [ ] Counter 1 accepts a name on the slip: resolve → address → Lane A / Lane B on 1337 unchanged
+- [ ] Names board on the Name Desk wall lists recent claims
+- [ ] Freeze intact: `run_checks.gd`, `npm run typecheck`, both kill-test scripts green; canvas focus and `desk.link` unchanged; one modal
+- [ ] Progress note + REFLECTION; HANDOFF advanced to U6 + `docs/KICKOFF-U6.md`
+
+---
+
+## 6. After U5
 
 | Next | Gate |
 |------|------|
-| U5 ENS | G6 |
 | U6 Arc + manager role | G7 |
+| U7 Feel / ship | G8–G10 |
 
 Cut order unchanged: Uniswap → Manager → Arc → ENS EAC → ENS mint. **Never cut Privy or Lane B.**
 
@@ -307,4 +363,4 @@ Cut order unchanged: Uniswap → Manager → Arc → ENS EAC → ENS mint. **Nev
 - Scope drifts to greybox/ENS/Arc/Uniswap
 - Lane B blocked and PLAN fallback not chosen
 
-Leave: commands, file pointers, kill-test log, next agent can resume from the G5 checklist.
+Leave: commands, file pointers, kill-test log, next agent can resume from the G6 checklist.

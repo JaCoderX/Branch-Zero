@@ -28,7 +28,14 @@ export interface PlayerIdentity {
  * point the Teller Desk at someone else's wallet by passing a different address.
  */
 export async function identify(accessToken: string, claimedAddress?: string): Promise<PlayerIdentity> {
-  const claims = await privy.utils().auth().verifyAccessToken(accessToken);
+  let claims;
+  try {
+    claims = await privy.utils().auth().verifyAccessToken(accessToken);
+  } catch (e) {
+    // An expired or malformed token is the caller's problem, not ours: 401 `AUTH` gives the clerk her
+    // "I'll need you signed in" line instead of a 500 `INTERNAL` (U4 — seen as "Failed to verify authentication token").
+    throw Object.assign(new Error(`access token rejected: ${(e as Error).message}`), { statusCode: 401, code: 'AUTH' });
+  }
   const address = claimedAddress?.trim();
   if (!address) {
     throw Object.assign(new Error('wallet address required alongside the access token'), { statusCode: 400, code: 'BAD_ARGS' });

@@ -25,6 +25,7 @@ var last_stage: Dictionary = {}
 var busy: bool = false
 var ui_locked: bool = false            # dialogue / form open → player does not move
 var current_zone: String = ""
+var desk_linked: bool = true        # Teller Desk SSE stream up (bridge `desk.link`); false while reconnecting
 var errors: Dictionary = {}
 var strings: Dictionary = {}
 
@@ -162,6 +163,7 @@ func facts() -> Dictionary:
 		"released": released_count(),
 		"cooling": cooling_count(),
 		"busy": busy,
+		"desk_linked": desk_linked,
 		"mock": Chain.use_mock,
 		"web": Chain.is_web,
 	}
@@ -342,8 +344,26 @@ func _on_chain_event(kind: String, payload: Dictionary) -> void:
 		"tab.visible":
 			if bool(payload.get("visible", false)):
 				reconcile_pending("tab.visible")
+		"desk.link":
+			_on_desk_link(payload)
 		"bridge.ready":
 			pass
+
+
+## The Teller Desk SSE stream came or went (U4). Both lines come from real link state: the shell pushes this
+## only on a transition of its EventSource. On reconnect the server has re-read the vault and re-armed its
+## watchers, so the board is reconciled once here as well.
+func _on_desk_link(p: Dictionary) -> void:
+	var connected := bool(p.get("connected", false))
+	if connected == desk_linked:
+		return
+	desk_linked = connected
+	if connected:
+		toast.emit(str(strings.get("desk_link_back", "Back in touch with the branch.")), "info")
+		reconcile_pending("desk reconnect")
+	else:
+		toast.emit(str(strings.get("desk_link_lost", "Lost the branch for a moment — reconnecting…")), "error")
+	changed.emit()
 
 
 ## A Teller Desk stage event. The vault board is updated from what the event carries; the chain's

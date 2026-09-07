@@ -10,6 +10,7 @@ import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { installBridge, onBridgeTraffic } from './bridge/branchZero';
 import { Providers } from './overlay/Providers';
+import { focusCanvas } from './shell/focus';
 
 const GAME_BASE = '/game/index';
 
@@ -28,9 +29,18 @@ function setState(s: string) {
   engineState = s;
   render();
   const boot = document.getElementById('boot');
-  if (boot) boot.textContent = s.startsWith('running') ? '' : `Branch Zero — ${s}`;
+  if (boot) {
+    // Once the engine runs the status div goes away entirely (it is `pointer-events: none` regardless — an
+    // invisible full-viewport div over the canvas is what broke canvas re-focus in the U4 playtest).
+    boot.hidden = s.startsWith('running');
+    boot.textContent = boot.hidden ? '' : `Branch Zero — ${s}`;
+  }
 }
 render();
+
+// Clicking the bank gives Godot the keyboard back. Godot's own mousedown handler focuses the canvas too; this
+// covers the pointerdown that lands on #game around it and anything a future overlay child lets through.
+document.getElementById('game')?.addEventListener('pointerdown', () => focusCanvas());
 
 function loadScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {

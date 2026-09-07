@@ -101,8 +101,9 @@ func _on_stage(ev: Dictionary) -> void:
 	_stage_until = Time.get_unix_time_from_system() + 6.0
 
 
-func show_toast(text: String, _kind: String = "error") -> void:
+func show_toast(text: String, kind: String = "error") -> void:
 	_toast.text = text
+	_toast.add_theme_color_override("font_color", Color(0.55, 0.9, 0.6) if kind == "info" else Color(1.0, 0.55, 0.5))
 	_toast_until = Time.get_unix_time_from_system() + 6.0
 
 

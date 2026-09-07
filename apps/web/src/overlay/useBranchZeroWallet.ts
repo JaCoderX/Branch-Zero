@@ -68,11 +68,20 @@ export function useBranchZeroWallet() {
         },
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       });
-      const json = await res.json();
+      // A dead Teller Desk does not answer JSON: the Vite proxy (or a host's gateway) answers 5xx with an
+      // empty or HTML body. That is the branch failing to reach the ledger — `RPC`, not `INTERNAL` (U4).
+      const text = await res.text();
+      let json: { error?: string; code?: string } | undefined;
+      try {
+        json = text ? (JSON.parse(text) as { error?: string; code?: string }) : undefined;
+      } catch {
+        json = undefined;
+      }
       if (!res.ok) {
+        if (!json) throw Object.assign(new Error(`Teller Desk unreachable (${res.status} from ${path})`), { code: 'RPC', status: res.status });
         // Keep the Teller Desk's `code` (NO_ACCOUNT, NOT_PENDING, BeforeReleaseTime, policy_violation, ...):
         // the bridge forwards it unchanged and the NPC picks its line by that code (NPCS.md §5).
-        throw Object.assign(new Error(json?.error ?? `${path} failed (${res.status})`), { code: json?.code ?? (res.status === 401 || res.status === 403 ? 'AUTH' : 'INTERNAL'), status: res.status });
+        throw Object.assign(new Error(json.error ?? `${path} failed (${res.status})`), { code: json.code ?? (res.status === 401 || res.status === 403 ? 'AUTH' : 'INTERNAL'), status: res.status });
       }
       return json as T;
     },

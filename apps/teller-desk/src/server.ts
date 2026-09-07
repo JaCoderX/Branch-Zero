@@ -18,7 +18,7 @@ import { config, deployments, redact } from './config.ts';
 import { createPlayerPolicy, identify, recoverPolicy } from './privy.ts';
 import { pay, passbook } from './lanes/laneA.ts';
 import { approve, cancel, listPending, resumeWatchers, wire, type Actor } from './lanes/laneB.ts';
-import { ensureTxPolicy, provision, recoverAccount } from './lanes/provision.ts';
+import { ROLE_SET_VERSION, ensureTxPolicy, provision, recoverAccount } from './lanes/provision.ts';
 import { emitStage, getPlayer, listReceipts, newJobId, patchPlayer, serialize, subscribe, upsertPlayer, type Player } from './store.ts';
 import type { SignatureAudit, TxAudit } from './signing/privySigner.ts';
 
@@ -158,6 +158,22 @@ app.post('/provision', async (req, reply) => {
   }
 });
 
+/**
+ * U4: a player whose account is on file but whose provisioning never recorded its end (`configured` /
+ * `roleSet`) has no guarantee the counter and vault role grants landed — the 2026-09-07 playtest hit
+ * `NoPermission` on `executeWithTimeLock` in exactly that state. Refuse with a code the clerk has a line for
+ * ("ask Ines to re-check") instead of letting the chain refuse with a less helpful one. `/provision` is the
+ * re-check: it reads the chain first and sends only what is missing.
+ */
+function requireConfigured(player: Player): void {
+  if (!player.account) return; // the lanes answer NO_ACCOUNT themselves
+  if (player.configured && (player.roleSet ?? 0) >= ROLE_SET_VERSION) return;
+  throw Object.assign(new Error(`account ${player.account} is on file but its desk permissions are not confirmed (roleSet ${player.roleSet ?? 'none'}, want ${ROLE_SET_VERSION}) — run /provision (Re-check)`), {
+    statusCode: 409,
+    code: 'NOT_CONFIGURED',
+  });
+}
+
 function parseTransfer(body: { to?: string; amount?: string }) {
   if (!body.to || !isAddress(body.to)) throw Object.assign(new Error('`to` must be an address'), { statusCode: 400, code: 'BAD_ARGS' });
   if (!body.amount || !/^\d+(\.\d+)?$/.test(body.amount)) throw Object.assign(new Error('`amount` must be a decimal string'), { statusCode: 400, code: 'BAD_ARGS' });
@@ -174,6 +190,7 @@ app.post('/pay', async (req, reply) => {
     }
     const jobId = newJobId();
     const current = getPlayer(player.privyUserId)!;
+    requireConfigured(current);
     const result = await serialize(player.privyUserId, () => pay(current, to, amount, jobId, auditFor(player)));
     return { jobId, ...result };
   } catch (e) {
@@ -190,6 +207,7 @@ app.post('/wire', async (req, reply) => {
     const { to, amount } = parseTransfer((req.body ?? {}) as { to?: string; amount?: string });
     const jobId = newJobId();
     const current = getPlayer(player.privyUserId)!;
+    requireConfigured(current);
     const result = await serialize(player.privyUserId, () => wire(current, to, amount, jobId, txAuditFor(player)));
     return { jobId, ...result };
   } catch (e) {

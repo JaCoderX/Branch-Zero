@@ -4,17 +4,19 @@
 
 **Start here**
 
-- Cold agent / Claude Code: [`docs/HANDOFF-CC.md`](./docs/HANDOFF-CC.md) (**U4** mission)
+- Cold agent / Claude Code: [`docs/HANDOFF-CC.md`](./docs/HANDOFF-CC.md) (**U5** mission)
 - Plan and gates: [`docs/PLAN.md`](./docs/PLAN.md) · construction units: [`docs/DEV-LOOP.md`](./docs/DEV-LOOP.md)
 - Doc index: [`docs/README.md`](./docs/README.md) · honest review + kill-test log: [`docs/REFLECTION.md`](./docs/REFLECTION.md)
 - Daily evidence: [`docs/progress/`](./docs/progress/)
 
-**Status:** U3 / G4 met 2026-09-06. The bank is walkable (Godot 4.5 web, single-threaded): Ines opens accounts,
+**Status:** U4 / G5 met 2026-09-07 — MVP frozen. The bank is walkable (Godot 4.5 web, single-threaded): Ines opens accounts,
 Dev takes payments and routes big ones to the vault, Ruth releases, Mr. Okafor stamps or shreds — every desk a call
-through `window.BranchZero` (`u3.0`) to the same Teller Desk lanes that passed **K2, K5, K8, V6, Lane A, Lane B**
+through `window.BranchZero` (`u4.0`) to the same Teller Desk lanes that passed **K2, K5, K8, V6, Lane A, Lane B**
 in U1–U2 on Remote EVM 1337. The vault door's clock is the record's own `releaseTime`, counted against the desk
 clock; the lobby board lists what is cooling and the last receipts. Walk it without an inbox at
-`http://localhost:5173/?mock=account`. **U4 (MVP freeze) is next.**
+`http://localhost:5173/?mock=account`. U4 made it survive a judge's laptop: the canvas takes the keyboard back after
+any overlay or Privy interaction, a dead or restarting Teller Desk shows as NPC lines and a reconnecting board, the
+first load is measured (36 MB `.wasm` → 7 MB brotli). **U5 (ENS) is next.**
 
 ---
 

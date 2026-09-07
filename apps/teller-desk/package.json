@@ -9,7 +9,8 @@
     "start": "tsx --env-file-if-exists=../../.env src/server.ts",
     "typecheck": "tsc -p tsconfig.json",
     "killtests": "tsx --env-file-if-exists=../../.env scripts/kill-tests.ts",
-    "killtests:u2": "tsx --env-file-if-exists=../../.env scripts/kill-tests-u2.ts"
+    "killtests:u2": "tsx --env-file-if-exists=../../.env scripts/kill-tests-u2.ts",
+    "evidence": "tsx --env-file-if-exists=../../.env scripts/vault-evidence.ts"
   },
   "dependencies": {
     "@bloxchain/sdk": "1.0.0",

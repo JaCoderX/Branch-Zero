@@ -81,6 +81,7 @@
   "Unknown": { "line": "The vault would not accept that.", "why": "The revert data could not be decoded." },
 
   "NO_ACCOUNT": { "line": "You don't have an account here yet — Ines at Account Opening will sort you out.", "why": "The Teller Desk has no AccountBlox on file for your wallet. Open one first." },
+  "NOT_CONFIGURED": { "line": "Your account is on file, but the desks aren't authorised for it yet — ask Ines to re-check your account.", "why": "The Teller Desk knows your account address but never recorded the end of provisioning (`configured` / `roleSet`), so the role grants the counter and the vault need may be missing. Ines's \"Re-check my account\" runs the provisioner again: it reads the chain first and only sends what is missing." },
   "NO_WALLET": { "line": "Your sign-in has no wallet attached yet — try the desk again.", "why": "The Privy user has no embedded EVM wallet; the overlay creates one at Account Opening." },
   "NO_MANAGER": { "line": "The manager isn't in today — release it yourself at the vault window.", "why": "The Teller Desk has no `MANAGER_PK`, so the BRANCH_MANAGER runtime role has no holder on this branch (T3 lore mode)." },
   "AUTH": { "line": "I'll need you signed in for that — Ines can help at Account Opening.", "why": "The Teller Desk rejected the request: no Privy access token, or the wallet address does not belong to the authenticated user." },

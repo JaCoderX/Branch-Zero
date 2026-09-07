@@ -143,8 +143,12 @@ export interface DeskSession {
   token?: { address: string; symbol: string; decimals: number };
 }
 
-/** Events the bridge pushes to Godot besides `stage`: `bridge.ready` {version, mock} and `tab.visible` {visible}. */
-export type BridgeEventKind = 'bridge.ready' | 'stage' | 'tab.visible';
+/**
+ * Events the bridge pushes to Godot besides `stage`: `bridge.ready` {version, mock}, `tab.visible` {visible} and
+ * (U4) `desk.link` {connected, attempt, reason?} — the state of the Teller Desk SSE stream, so the game can say
+ * "reconnecting…" from real link state and reconcile the board when the link comes back.
+ */
+export type BridgeEventKind = 'bridge.ready' | 'stage' | 'tab.visible' | 'desk.link';
 
 export interface BranchZeroBridge {
   /** Godot registers its `JavaScriptBridge.create_callback` here; JS calls it with one JSON string. */
