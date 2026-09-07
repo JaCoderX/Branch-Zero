@@ -128,6 +128,7 @@ JS side (`apps/web/src/bridge.ts`) exposes a **flat, JSON-only** API. All values
 | `login` | — | `{ owner }` | Privy modal (only pop-up in the game) |
 | `delegate` | — | `{ ok }` | Privy session-signer consent (part of the same modal flow) |
 | `provision` | `{ chainId }` | `{ account, txHash }` | Teller `/provision` |
+| `faucet` | — | `{ ok, balance, hash? }` | Teller `/faucet` — Main-wing deployer transfer up to `OPENING_BALANCE_USDC`; already-full is a no-op and it never opens Privy |
 | `getBalances` | `{ chainId }` | `{ native, usdc }` | viem reads |
 | `resolveName` | `{ name }` | `{ address, chainId, avatar? }` | ENS (Sepolia) |
 | `pay` | `{ chainId, to, amount, memo }` | `{ txId, txHash }` | Teller `/pay` (Lane A) |
