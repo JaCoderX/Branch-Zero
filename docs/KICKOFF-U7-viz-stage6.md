@@ -6,8 +6,11 @@ Paste into a **new** Claude Code / Cursor agent session. Prefer **Fable 5.1**. E
 
 **Craft backing (read first if cold):** GameDevOS card
 [`public-repo-asset-intake`](../../GameDevOS/wiki/cards/public-repo-asset-intake.md) and lessons
-`product-use-is-not-repo-redistribution`, `asset-must-fit-the-world-not-just-the-licence`,
-`pack-page-badge-is-not-the-licence`, `upgrade-one-asset-class-under-hard-gates`.
+`product-use-is-not-repo-redistribution`, `nyop-is-not-a-free-licence`,
+`asset-must-fit-the-world-not-just-the-licence`, `pack-page-badge-is-not-the-licence`,
+`upgrade-one-asset-class-under-hard-gates`, `split-flat-colour-atlas-by-uv-cell`,
+`remap-kit-materials-as-materials-not-colors`, `decorated-kit-mesh-is-not-the-current-class`,
+`snapshot-kit-meta-before-static-bake`, `nested-yaw-inflates-aabb`.
 
 **Ladder:**
 
@@ -17,7 +20,7 @@ Paste into a **new** Claude Code / Cursor agent session. Prefer **Fable 5.1**. E
 | 6a | KayKit furniture fill (palette remap) | **met** |
 | 6b | MrEliptik desk clutter | **skipped** (NYOP) |
 | 6c | ambientCG albedo on existing palette slots | **met** |
-| 6d | Kenney Nature Kit plants | **met** 2026-09-07 — [`KICKOFF-U7-viz-stage6d.md`](./KICKOFF-U7-viz-stage6d.md) |
+| 6d | Kenney Nature Kit plants + KayKit cabinet consistency | **met** 2026-09-07 — [`KICKOFF-U7-viz-stage6d.md`](./KICKOFF-U7-viz-stage6d.md); consistency `58b5761` |
 
 ---
 
