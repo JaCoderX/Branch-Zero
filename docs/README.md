@@ -17,7 +17,7 @@ Start with **[PLAN.md](./PLAN.md)**. Read order for a new contributor:
 | 7 | [NPCS.md](./NPCS.md) | Before writing dialogue or NPC logic |
 | 8 | [PRIVY.md](./PRIVY.md) | Account Opening desk — login, embedded wallet, session signer, policy |
 | 9 | [ENS.md](./ENS.md) | Name Desk — ENSv2 subnames, records, Enhanced Access Control |
-| 10 | [ARC.md](./ARC.md) | Arc wing — Arc Testnet, USDC-as-gas, bounty requirements |
+| 10 | [ARC.md](./ARC.md) | Arc wing — network facts, bounties; **§5b deferred revive checklist** (G7 parked) |
 | 11 | [UNISWAP.md](./UNISWAP.md) | FX Desk — stretch / swap-in only |
 | 12 | [SECURITY-AND-KEYS.md](./SECURITY-AND-KEYS.md) | Before handling any key or env var |
 | 13 | [DEMO-SCRIPT.md](./DEMO-SCRIPT.md) | Day 9–10 — video storyboard, submission checklist |

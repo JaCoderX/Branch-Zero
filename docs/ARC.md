@@ -92,6 +92,75 @@ The game presents this as the **Arc wing**: identical layout, cool palette, sign
 
 ---
 
+## 5b. Deferred revive checklist (G7) — **parked 2026-09-07**
+
+Principal deferred live Arc execution. Product code for the wing (pins, chain guards, elevator, provision path, fee `$` formatting, Priority reuse) stays in tree. **Do not claim G7** until this checklist is finished. Do not invent a CopyBlox address or reuse Remote / Ganache / ENG-0006 keys.
+
+### Already true (leave alone)
+
+- [x] ENG-2026-0006 K3 **yes**; libraries + fixture AccountBlox read back on `5042002`
+- [x] `infra/deployments/arc-testnet.json` seeded from ENG-0006 (CopyBlox field intentionally empty)
+- [x] `probe.ts` / `arc-kill.ts` / `smoke.ts --chain arc` green for **readback**
+- [x] Main wing `1337` + Sepolia ENS regressions green; bridge stays `u5.0`
+- [x] Manager beat = existing `ROLE_SET_VERSION=3` Priority (no second manager path)
+
+### Env names (`.env` only — see `.env.example`)
+
+| Role | Private key | Address |
+|------|-------------|---------|
+| Deployer | `ARC_DEPLOYER_PK` | (derived) |
+| Broadcaster | `ARC_BROADCASTER_PK` | `ARC_BROADCASTER_ADDRESS` |
+| Manager | `ARC_MANAGER_PK` | (derived) |
+| Owner (demo) | — | `ARC_OWNER_ADDRESS` |
+| Recovery | — | `ARC_RECOVERY_ADDRESS` |
+| RPC | — | `ARC_RPC_URL` (default `https://rpc.testnet.arc.io`) |
+
+Hard rules: product-controlled keys only; never paste Ganache-parity or ENG lab keys onto Arc.
+
+### Fund (human — Circle faucet is reCAPTCHA-gated)
+
+On Arc, **gas is native USDC** (18 decimals on-chain; display as 6).
+
+1. [ ] Generate **new** wallets for deployer, broadcaster, manager (+ owner/recovery addresses).
+2. [ ] Open https://faucet.circle.com → network **Arc Testnet** → request USDC per address that must send txs.
+3. [ ] Confirm balances on https://testnet.arcscan.app (deployer + broadcaster + manager at minimum).
+4. [ ] If faucet-capped: fund one wallet, then send small native transfers to the others.
+5. [ ] Write keys/addresses into local `.env` (never commit).
+
+Practical order when drips are slow: **deployer → broadcaster → manager → owner/recovery**.
+
+### Revive commands
+
+From `Branch-Zero` root (network required):
+
+```text
+# 1) Chain sanity — expect chainId 5042002
+node --experimental-strip-types infra/scripts/probe.ts --chain arc
+
+# 2) Readback still green (CopyBlox may still report PARTIAL until step 3)
+node --experimental-strip-types infra/scripts/arc-kill.ts
+
+# 3) Deploy product CopyBlox; pin into arc-testnet.json (needs built protocol + ARC_DEPLOYER_PK)
+BLOXCHAIN_PROTOCOL_DIR="D:/My Git Projects/ParticleCS/Bloxchain-protocol" node --experimental-strip-types infra/scripts/bootstrap-blox.ts --chain arc
+
+# 4) Arc Teller Desk
+CHAIN_ID=5042002 PORT=8788 node --experimental-strip-types apps/teller-desk/src/server.ts
+```
+
+### Live kills to close G7
+
+- [ ] CopyBlox address pinned in `arc-testnet.json` (not invented)
+- [ ] Per-player provision / `cloneBlox` under product deployer
+- [ ] One Lane A pay on Arc; receipt fee renders as `$…`
+- [ ] Optional: Priority (owner signs, `ARC_MANAGER_PK` submits) — same ROLE_SET 3 split
+- [ ] Re-run `arc-kill.ts` + 1337 pay + Sepolia ENS regressions
+- [ ] Godot 4.5 host: `godot --headless --path apps/game -s tests/run_checks.gd` (U5 follow-up; owed regardless)
+- [ ] Local progress note + HANDOFF §5g → G7 met; only then advance construction past U6
+
+Kickoff paste when reviving: local `docs/KICKOFF-U6.md`. Evidence template: local `docs/progress/2026-09-07-u6-arc-g7.md`.
+
+---
+
 ## 6. Risks
 
 | Risk | Mitigation |
