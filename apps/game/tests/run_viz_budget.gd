@@ -270,6 +270,61 @@ func _run() -> void:
 	else:
 		_fail("spring arm is not the Stage 5 OTS arm (offset ≥ 0.4 m, pitch −8…−20°, mask 1)")
 
+	# fill (U7 viz Stage 6a): KayKit Furniture Bits (CC0) replace the Kenney fill in the high-traffic zones. Every pick
+	# must have loaded, been split into palette materials (no textured / white KayKit material survives), and merged
+	# into the static batch; the licence file sits beside the models; the retired Kenney files are gone; the bench,
+	# chair and bookcase colliders those props used to sit on are still exactly where U3 / U7 put them.
+	print("fill (Stage 6a)")
+	var kk_dir := "res://assets/models/kaykit_furniture/"
+	var kk_files: PackedStringArray = []
+	var kk_missing: PackedStringArray = []
+	for f in ["couch", "chair_A", "chair_stool", "table_small", "lamp_table", "lamp_standing", "cabinet_medium", "cabinet_medium_decorated", "shelf_B_large_decorated", "book_set", "rug_rectangle_stripes_B", "rug_oval_B", "pictureframe_large_A", "pictureframe_large_B", "pictureframe_medium"]:
+		kk_files.append(f)
+		if not ResourceLoader.exists(kk_dir + f + ".glb"):
+			kk_missing.append(f)
+	var kk_nodes := 0
+	for n in _all(interior4):
+		if n.has_meta("glb") and str(n.get_meta("glb")).begins_with(kk_dir):
+			kk_nodes += 1
+	var kk_split := int(interior4.get_meta("kaykit_split_meshes", 0))
+	var kk_tris := int(interior4.get_meta("kaykit_tris", 0))
+	print("  %d KayKit picks · %d instances asked for · %d meshes split into palette surfaces (%d tris)" % [kk_files.size(), int(interior4.get_meta("kaykit_instances", 0)), kk_split, kk_tris])
+	if kk_missing.is_empty() and FileAccess.file_exists(kk_dir + "LICENSE-kaykit-furniture-bits.txt"):
+		_ok("all %d KayKit .glb present with LICENSE-kaykit-furniture-bits.txt beside them" % kk_files.size())
+	else:
+		_fail("KayKit files missing: %s (licence %s)" % [", ".join(kk_missing), "present" if FileAccess.file_exists(kk_dir + "LICENSE-kaykit-furniture-bits.txt") else "MISSING"])
+	if int(interior4.get_meta("kaykit_instances", 0)) >= 20 and kk_split >= 20 and kk_nodes == 0:
+		_ok("%d KayKit props placed, every mesh split by UV cell and baked (no KayKit root left standing)" % int(interior4.get_meta("kaykit_instances", 0)))
+	else:
+		_fail("KayKit fill: %d placed, %d split, %d roots left outside the batch" % [int(interior4.get_meta("kaykit_instances", 0)), kk_split, kk_nodes])
+	var white_mats: PackedStringArray = []
+	for id in mats.keys():
+		var m: Material = mats[id]
+		if m is StandardMaterial3D and (m as StandardMaterial3D).albedo_color.is_equal_approx(Color.WHITE) and (m as StandardMaterial3D).albedo_texture == null:
+			white_mats.append(m.resource_name)
+	if white_mats.is_empty():
+		_ok("no plain-white untextured material in the scene (every KayKit surface took a palette material)")
+	else:
+		_fail("plain-white materials survive: %s" % ", ".join(white_mats))
+	var retired: PackedStringArray = []
+	for f in ["benchCushion", "lampRoundTable"]:
+		if ResourceLoader.exists("res://assets/models/kenney_furniture/" + f + ".glb"):
+			retired.append(f)
+	if retired.is_empty():
+		_ok("retired Kenney files gone (benchCushion, lampRoundTable)")
+	else:
+		_fail("retired Kenney files still in the tree: %s" % ", ".join(retired))
+	var seats := {"Bench0Collider": Vector3(-4.5, 0.25, 2.5), "Bench3Collider": Vector3(4.5, 0.25, 2.5), "VaultBenchCollider": Vector3(3.0, 0.25, -8.0), "MgrChairA": Vector3(-8.8, 0.0, -7.6), "MgrBookcase": Vector3(-4.2, 0.0, -10.6)}
+	var seat_bad: PackedStringArray = []
+	for sn in seats.keys():
+		var b := interior4.get_node_or_null(sn) as StaticBody3D
+		if b == null or not b.position.is_equal_approx(seats[sn]):
+			seat_bad.append(sn)
+	if seat_bad.is_empty():
+		_ok("bench, guest-chair and bookcase colliders still where U3 / U7 put them")
+	else:
+		_fail("fill colliders moved or missing: %s" % ", ".join(seat_bad))
+
 	print("freeze rules")
 	var bad_layers: PackedStringArray = []
 	for b in bodies:

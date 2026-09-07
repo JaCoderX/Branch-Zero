@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://c0rbqm6atwj1"
-path="res://.godot/imported/benchCushion.glb-18bbfdee8aced48d892b5a14456d96b3.scn"
+uid="uid://cv8vqeyrm2xu6"
+path="res://.godot/imported/shelf_B_large_decorated.glb-19b7d0215426e75304cad41b951b20c5.scn"
 
 [deps]
 
-source_file="res://assets/models/kenney_furniture/benchCushion.glb"
-dest_files=["res://.godot/imported/benchCushion.glb-18bbfdee8aced48d892b5a14456d96b3.scn"]
+source_file="res://assets/models/kaykit_furniture/shelf_B_large_decorated.glb"
+dest_files=["res://.godot/imported/shelf_B_large_decorated.glb-19b7d0215426e75304cad41b951b20c5.scn"]
 
 [params]
 

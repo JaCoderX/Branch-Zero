@@ -8,12 +8,17 @@ extends RefCounted
 ##  - Kenney Furniture Kit props (assets/models/kenney_furniture, CC0) carry 1–4 flat-colour materials each; identical
 ##    colours collapse into one shared StandardMaterial3D, and `recolor` re-tints named kit colours into the bank palette;
 ##  - Kenney Blocky Characters (assets/characters/kenney_blocky, CC0, Stage 3) all sample one atlas written by
-##    tools/character_atlas.py, so every NPC and the player share a single nearest-filtered textured material.
+##    tools/character_atlas.py, so every NPC and the player share a single nearest-filtered textured material;
+##  - KayKit Furniture Bits (assets/models/kaykit_furniture, CC0, U7 viz Stage 6a) were authored against one flat-colour
+##    palette atlas that tools/kaykit_pack.py strips out of the .glb: at load `_split_kaykit` reads each triangle's UV
+##    cell and hands it the matching WingTheme palette material, so the denser fill costs zero new materials and
+##    recolours with the wing like every hero prop.
 ## Anything that blocks the player gets a StaticBody3D on layer 1 / mask 0 — colliders that block must not listen
 ## (U4+ lesson: Godot Physics on web shoves listening bodies).
 
 const HERO := "res://assets/models/hero/"
 const KIT := "res://assets/models/kenney_furniture/"
+const KAYKIT := "res://assets/models/kaykit_furniture/"
 const CHARACTERS := "res://assets/characters/kenney_blocky/"
 
 static var theme: WingTheme = null
@@ -48,6 +53,8 @@ static func palette(name: String) -> StandardMaterial3D:
 			return color(t.trim_color.darkened(0.4), 0.85, 0.4)
 		"Wood":
 			return color(t.wood_color, 0.0, 0.7)
+		"WoodDark":
+			return color(t.wood_color.darkened(0.25), 0.0, 0.7)
 		"Graphite":
 			return color(t.graphite_color, 0.1, 0.8)
 		"Steel":
@@ -77,7 +84,7 @@ static func palette(name: String) -> StandardMaterial3D:
 
 
 static func is_palette_name(name: String) -> bool:
-	return name in ["Marble", "MarbleDark", "Brass", "BrassDark", "Wood", "Graphite", "Steel", "SteelDark", "Glass", "LED", "Bulb", "Cream", "Paper", "Plant", "Rope", "Ceiling", "Floor"]
+	return name in ["Marble", "MarbleDark", "Brass", "BrassDark", "Wood", "WoodDark", "Graphite", "Steel", "SteelDark", "Glass", "LED", "Bulb", "Cream", "Paper", "Plant", "Rope", "Ceiling", "Floor"]
 
 
 ## One shared material per (colour, metallic, roughness, emission) — quantised so near-identical kit colours merge.
@@ -157,7 +164,9 @@ static func instance(path: String, opts: Dictionary = {}) -> Node3D:
 	var root := packed.instantiate() as Node3D
 	root.name = path.get_file().get_basename()
 	root.set_meta("glb", path)
-	if not bool(opts.get("keep_materials", false)):
+	if path.begins_with(KAYKIT):
+		_split_kaykit(root)
+	elif not bool(opts.get("keep_materials", false)):
 		retarget(root, opts.get("recolor", {}))
 	var bb := aabb(root)
 	var s: Vector3 = Vector3.ONE
@@ -212,6 +221,80 @@ static func kit(parent: Node, name: String, file: String, pos: Vector3, yaw: flo
 
 static func hero(parent: Node, name: String, file: String, pos: Vector3, yaw: float = 0.0, opts: Dictionary = {}, collider: Vector3 = Vector3.ZERO, collider_offset: Vector3 = Vector3.ZERO) -> Node3D:
 	return place(parent, name, HERO + file + ".glb", pos, yaw, opts, collider, collider_offset)
+
+
+## KayKit Furniture Bits are authored at 1 unit = 1 m with a centred footprint and face +z; `fit` / `scale` as for `place`.
+static func kaykit(parent: Node, name: String, file: String, pos: Vector3, yaw: float = 0.0, opts: Dictionary = {}, collider: Vector3 = Vector3.ZERO, collider_offset: Vector3 = Vector3.ZERO) -> Node3D:
+	var o := {"center": true, "ground": true}
+	o.merge(opts, true)
+	return place(parent, name, KAYKIT + file + ".glb", pos, yaw, o, collider, collider_offset)
+
+
+## The KayKit atlas is an 8 × 4 grid of flat colours (each cell a gentle top-to-bottom gradient, 128 × 256 px of the
+## 1024² sheet); the mesh picks its colour by which cell a face's UVs sit in. This table says what each cell means in
+## the bank: wood tones stay wood (the tan drawer fronts too, so cabinets read as two-tone wood), the blue upholstery
+## becomes the deep green of the wainscot, the yellow accent (book spines, pillows) becomes the rope's oxblood, lamp
+## shades glow as the Bulb, and the picture canvas is a deep-green panel rather than a blank white sheet.
+const KAYKIT_CELLS: Array = [
+	["WoodDark", "WoodDark", "WoodDark", "Wood", "Wood", "Wood", "Brass", "MarbleDark"],
+	["Rope", "Rope", "MarbleDark", "MarbleDark", "Paper", "Paper", "Paper", "Graphite"],
+	["Cream", "Bulb", "Graphite", "Paper", "Cream", "WoodDark", "Plant", "Plant"],
+	["Steel", "Steel", "Steel", "Steel", "Steel", "Steel", "Steel", "Steel"],
+]
+
+
+static func kaykit_cell(uv: Vector2) -> String:
+	var col := clampi(int(floor(uv.x * 8.0)), 0, 7)
+	var row := clampi(int(floor(uv.y * 4.0)), 0, 3)
+	return KAYKIT_CELLS[row][col]
+
+
+## Rebuild every mesh under a KayKit .glb root as one surface per palette material: each triangle goes to the
+## palette name of its UV-centroid cell (KAYKIT_CELLS). The mesh keeps its vertices, normals and UVs, so bake_static
+## merges it with everything else in the same materials — no atlas texture, no new material, +0 draw calls.
+static func _split_kaykit(root: Node) -> void:
+	for mi in _meshes(root):
+		var src := mi.mesh
+		if src == null:
+			continue
+		var groups: Dictionary = {}
+		var order: Array[String] = []
+		for s in src.get_surface_count():
+			var arrays: Array = src.surface_get_arrays(s)
+			var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+			var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+			var uvs: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV]
+			var idx: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+			if idx.is_empty():
+				idx = PackedInt32Array(range(verts.size()))
+			var has_uv := uvs.size() == verts.size()
+			var has_n := normals.size() == verts.size()
+			for i in range(0, idx.size() - 2, 3):
+				var a := idx[i]
+				var b := idx[i + 1]
+				var c := idx[i + 2]
+				var uv := (uvs[a] + uvs[b] + uvs[c]) / 3.0 if has_uv else Vector2.ZERO
+				var nm := kaykit_cell(uv)
+				if not groups.has(nm):
+					var st0 := SurfaceTool.new()
+					st0.begin(Mesh.PRIMITIVE_TRIANGLES)
+					groups[nm] = st0
+					order.append(nm)
+				var st: SurfaceTool = groups[nm]
+				for v in [a, b, c]:
+					if has_n:
+						st.set_normal(normals[v])
+					if has_uv:
+						st.set_uv(uvs[v])
+					st.add_vertex(verts[v])
+		var out := ArrayMesh.new()
+		for nm in order:
+			var st: SurfaceTool = groups[nm]
+			st.index()
+			out.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, st.commit_to_arrays())
+			out.surface_set_material(out.get_surface_count() - 1, palette(nm))
+		mi.mesh = out
+		mi.set_meta("kaykit_split", order.size())
 
 
 ## Kenney Furniture Kit material names → bank palette. The kit's own names (read from the .glb files): wood, woodDark,

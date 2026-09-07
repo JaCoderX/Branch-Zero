@@ -7,6 +7,10 @@ extends Node3D
 ## U7 viz Stage 4 dresses the visible wall faces and the ceiling in place (`_shell`, `_coffers`): pilasters, frieze,
 ## framed panels, wainscot stiles and coffer beams, all BoxMesh pieces in existing palette materials with no collider,
 ## so they merge into the static batch at zero extra draw calls and zero new materials.
+## U7 viz Stage 6a swaps the Kenney *fill* in the high-traffic zones (lobby seating, vault antechamber, manager's office,
+## behind the counters) for denser KayKit Furniture Bits (CC0) split into the same palette materials (PropKit.kaykit):
+## couches where the bench pairs were, side tables + lamps, credenzas, a dressed cabinet, framed pictures, rugs. Every
+## pre-existing collider keeps its size and place; the few new solids stand behind counters or against the north wall.
 ##
 ## Rules kept from U4+: props that block the player collide on layer 1 and listen on mask 0 (Godot Physics on web
 ## shoves listening bodies); nothing sits in the manager door (x ∈ [-9, -7] at z = -5), the vault opening
@@ -49,8 +53,26 @@ func _ready() -> void:
 	_shell()
 	_coffers()
 	_zones()
+	_count_fill()
 	# one merged mesh per material for everything static (WORLD-3D §6); colliders, zones and labels stay as they are
 	PropKit.bake_static(self)
+
+
+## Stage 6a bookkeeping for tests/run_viz_budget.gd, taken before the bake frees the KayKit roots: how many KayKit
+## props were placed, how many of their meshes were split into palette surfaces, and their triangle count.
+func _count_fill() -> void:
+	var instances := 0
+	var split := 0
+	var tris := 0
+	for n in PropKit._all_nodes(self):
+		if n.has_meta("glb") and str(n.get_meta("glb")).begins_with(PropKit.KAYKIT):
+			instances += 1
+		if n is MeshInstance3D and n.has_meta("kaykit_split") and (n as MeshInstance3D).mesh != null:
+			split += 1
+			tris += (n as MeshInstance3D).mesh.get_faces().size() / 3
+	set_meta("kaykit_instances", instances)
+	set_meta("kaykit_split_meshes", split)
+	set_meta("kaykit_tris", tris)
 
 
 # ---------------------------------------------------------------- shell
@@ -259,12 +281,20 @@ func _north_strip() -> void:
 	PropKit.hero(self, "MgrStamp", "prop_stamp", Vector3(-7.0, 0.78, -8.6))
 	PropKit.kit(self, "MgrScreen", "computerScreen", Vector3(-8.6, 0.78, -8.95), PI)
 	PropKit.kit(self, "MgrKeyboard", "computerKeyboard", Vector3(-8.6, 0.78, -8.5), PI)
-	PropKit.kit(self, "MgrLamp", "lampRoundTable", Vector3(-9.3, 0.78, -8.95))
+	# Stage 6a: KayKit fill — shaded table lamp, padded guest chairs (they face +z, so yaw PI turns them to the desk),
+	# striped rug, a dressed cabinet on the old bookcase collider, a credenza with ledgers west of the poster, pictures
+	# in the north-wall panels either side of it, a standing lamp in the south-west corner
+	PropKit.kaykit(self, "MgrLamp", "lamp_table", Vector3(-9.3, 0.78, -8.95), 0.0, {"fit": Vector3(0.34, 0.46, 0.34)})
 	PropKit.kit(self, "MgrPlant", "plantSmall2", Vector3(-6.7, 0.78, -9.0))
-	PropKit.kit(self, "MgrChairA", "chairCushion", Vector3(-8.8, 0, -7.6), 0.0, {}, Vector3(0.5, 0.5, 0.5), Vector3(0, 0.25, 0))
-	PropKit.kit(self, "MgrChairB", "chairCushion", Vector3(-7.2, 0, -7.6), 0.0, {}, Vector3(0.5, 0.5, 0.5), Vector3(0, 0.25, 0))
-	PropKit.kit(self, "MgrRug", "rugRectangle", Vector3(-8.0, 0.004, -8.4), 0.0, {"fit": Vector3(3.8, 0.01, 2.8)})
-	PropKit.kit(self, "MgrBookcase", "bookcaseOpen", Vector3(-4.2, 0, -10.6), 0.0, {"fit": Vector3(1.0, 1.8, 0.4)}, Vector3(1.0, 1.8, 0.4), Vector3(0, 0.9, 0))
+	PropKit.kaykit(self, "MgrChairA", "chair_A", Vector3(-8.8, 0, -7.6), PI, {"scale": 0.68}, Vector3(0.5, 0.5, 0.5), Vector3(0, 0.25, 0))
+	PropKit.kaykit(self, "MgrChairB", "chair_A", Vector3(-7.2, 0, -7.6), PI, {"scale": 0.68}, Vector3(0.5, 0.5, 0.5), Vector3(0, 0.25, 0))
+	PropKit.kaykit(self, "MgrRug", "rug_rectangle_stripes_B", Vector3(-8.0, 0.004, -8.4), 0.0, {"fit": Vector3(3.8, 0.02, 2.8)})
+	PropKit.kaykit(self, "MgrBookcase", "cabinet_medium_decorated", Vector3(-4.2, 0, -10.6), 0.0, {"fit": Vector3(1.2, 1.8, 0.45)}, Vector3(1.0, 1.8, 0.4), Vector3(0, 0.9, 0))
+	PropKit.kaykit(self, "MgrCredenza", "cabinet_medium", Vector3(-11.8, 0, -10.6), 0.0, {"fit": Vector3(1.8, 0.85, 0.5)}, Vector3(1.8, 0.85, 0.5), Vector3(0, 0.425, 0))
+	PropKit.kaykit(self, "MgrLedgers", "book_set", Vector3(-12.3, 0.85, -10.6), 0.0, {"fit": Vector3(0.6, 0.34, 0.28)})
+	PropKit.kaykit(self, "MgrPictureW", "pictureframe_medium", Vector3(-12.6, 2.25, -10.82), 0.0, {"fit": Vector3(0.7, 0.9, 0.06), "ground": false})
+	PropKit.kaykit(self, "MgrPictureE", "pictureframe_large_A", Vector3(-3.45, 2.3, -10.82), 0.0, {"fit": Vector3(1.0, 1.2, 0.06), "ground": false})
+	PropKit.kaykit(self, "MgrFloorLamp", "lamp_standing", Vector3(-14.4, 0, -10.4), 0.0, {"fit": Vector3(0.45, 1.75, 0.45)}, Vector3(0.35, 1.75, 0.35), Vector3(0, 0.875, 0))
 	PropKit.hero(self, "Shredder", "prop_shredder", Vector3(-12.5, 0, -9.5), 0.0, {}, Vector3(0.6, 0.9, 0.5), Vector3(0, 0.45, 0))
 	plaque("SHREDDER", Vector3(-12.5, 1.2, -9.2), 0.0, 0.22, theme.graphite_color)
 	plaque("Branch limits\nover the counter: up to {limit} {symbol}\nabove that: the vault, cooling {timelock}", Vector3(-8.0, 2.4, -10.8), 0.0, 0.2, theme.graphite_color, "LimitsPoster")
@@ -275,10 +305,16 @@ func _north_strip() -> void:
 	box("VaultLintel", Vector3(8.0, WALL_H - 0.5, z), Vector3(4.3, 1.0, T), theme.trim_color)
 	# on the lintel, above the opening, so it never sits in front of the door clock from the lobby
 	plaque("VAULT", Vector3(8.0, 4.05, z + 0.2), 0.0, 0.5, theme.graphite_color)
-	PropKit.kit(self, "VaultBenchA", "benchCushion", Vector3(2.6, 0, -8.0), PI)
-	PropKit.kit(self, "VaultBenchB", "benchCushion", Vector3(3.4, 0, -8.0), PI)
+	# Stage 6a: a green couch on the bench collider, an oval rug under it, a standing lamp beside it, a set of ledgers
+	# on the magazine rack, pictures in the two north-wall panels west of the door
+	PropKit.kaykit(self, "VaultCouch", "couch", Vector3(3.0, 0, -8.0), PI, {"fit": Vector3(1.8, 0.8, 0.75)})
 	solid_box("VaultBench", Vector3(3.0, 0.25, -8.0), Vector3(1.8, 0.5, 0.6))
+	PropKit.kaykit(self, "VaultRug", "rug_oval_B", Vector3(3.0, 0.004, -8.1), 0.0, {"fit": Vector3(2.8, 0.02, 1.9)})
+	PropKit.kaykit(self, "VaultFloorLamp", "lamp_standing", Vector3(1.5, 0, -7.4), 0.0, {"fit": Vector3(0.45, 1.75, 0.45)}, Vector3(0.35, 1.75, 0.35), Vector3(0, 0.875, 0))
 	PropKit.kit(self, "MagazineRack", "bookcaseOpenLow", Vector3(1.6, 0, -9.5), 0.0, {"fit": Vector3(0.5, 1.2, 0.4)}, Vector3(0.5, 1.2, 0.4), Vector3(0, 0.6, 0))
+	PropKit.kaykit(self, "MagazineRackBooks", "book_set", Vector3(1.6, 1.2, -9.5), PI / 2, {"fit": Vector3(0.4, 0.26, 0.28)})
+	PropKit.kaykit(self, "VaultPictureW", "pictureframe_large_B", Vector3(1.0, 2.2, -10.82), 0.0, {"fit": Vector3(2.0, 1.2, 0.06), "ground": false})
+	PropKit.kaykit(self, "VaultPictureE", "pictureframe_large_A", Vector3(3.6, 2.2, -10.82), 0.0, {"fit": Vector3(1.0, 1.2, 0.06), "ground": false})
 	plaque("Why do banks wait?", Vector3(1.6, 1.4, -9.2), 0.0, 0.18, theme.graphite_color)
 	box_m("VaultWindow", Vector3(13.5, 1.6, -10.85), Vector3(2.0, 1.2, 0.1), glass, false)
 	box_m("VaultWindowFrame", Vector3(13.5, 1.6, -10.83), Vector3(2.16, 1.36, 0.06), brass, false)
@@ -295,6 +331,12 @@ func _west_column() -> void:
 	# window — the engraver replaces its stamp and the wall sign behind it lists the name services. The old Name
 	# Desk table north of it stays as her records annex, under the names board on the west wall.
 	_counter("Counter2", -1.0, "COUNTER 2 · NAME DESK", "prop_engraver")
+	# Stage 6a fill behind the tellers (unreachable for the player, so the two solids change no walkable footprint):
+	# a credenza under the payee list, a ledger shelf under the service menu, a stool behind each teller
+	PropKit.kaykit(self, "Counter1Credenza", "cabinet_medium", Vector3(-14.55, 0, 3.0), PI / 2, {"fit": Vector3(2.0, 0.85, 0.5)}, Vector3(0.5, 0.85, 2.0), Vector3(0, 0.425, 0))
+	PropKit.kaykit(self, "Counter1Stool", "chair_stool", Vector3(-12.5, 0, 3.0), 0.0, {"fit": Vector3(0.45, 0.6, 0.45)})
+	PropKit.kaykit(self, "Counter2Shelf", "shelf_B_large_decorated", Vector3(-14.6, 0.9, -1.0), PI / 2, {"fit": Vector3(2.0, 0.82, 0.5)})
+	PropKit.kaykit(self, "Counter2Stool", "chair_stool", Vector3(-12.5, 0, -1.0), 0.0, {"fit": Vector3(0.45, 0.6, 0.45)})
 	PropKit.kit(self, "NameDesk", "desk", Vector3(-12.5, 0, -4.0), PI, {"fit": Vector3(2.4, 0.8, 1.0)}, Vector3(2.4, 0.8, 1.0), Vector3(0, 0.4, 0))
 	PropKit.kit(self, "NameDeskPlant", "plantSmall1", Vector3(-13.4, 0.8, -4.1))
 	box_m("NameDeskLedger", Vector3(-12.0, 0.82, -4.0), Vector3(0.36, 0.04, 0.26), PropKit.palette("Paper"), false)
@@ -355,11 +397,16 @@ func _account_opening() -> void:
 # ---------------------------------------------------------------- lobby
 
 func _lobby_furniture() -> void:
+	# Stage 6a: a green couch on each bench collider (facing the entrance like the benches did), a side table with a
+	# shaded lamp in the three gaps between them
 	for i in 4:
 		var x := -4.5 + i * 3.0
-		PropKit.kit(self, "Bench%dA" % i, "benchCushion", Vector3(x - 0.4, 0, 2.5), 0.0)
-		PropKit.kit(self, "Bench%dB" % i, "benchCushion", Vector3(x + 0.4, 0, 2.5), 0.0)
+		PropKit.kaykit(self, "Couch%d" % i, "couch", Vector3(x, 0, 2.5), 0.0, {"fit": Vector3(1.8, 0.8, 0.75)})
 		solid_box("Bench%d" % i, Vector3(x, 0.25, 2.5), Vector3(1.8, 0.5, 0.6))
+	for i in 3:
+		var x := -3.0 + i * 3.0
+		PropKit.kaykit(self, "SideTable%d" % i, "table_small", Vector3(x, 0, 2.5), 0.0, {"fit": Vector3(0.55, 0.55, 0.55)}, Vector3(0.55, 0.55, 0.55), Vector3(0, 0.275, 0))
+		PropKit.kaykit(self, "SideLamp%d" % i, "lamp_table", Vector3(x, 0.55, 2.5), 0.0, {"fit": Vector3(0.32, 0.44, 0.32)})
 	# Lobby side of the north partition. Off the manager door (x ∈ [-9, -7]) and the vault
 	# opening (x ∈ [6, 10]); escort last lobby waypoint is ~(6, -3.5).
 	var plant_x := PackedFloat32Array([-5.0, -1.0, 3.0])
