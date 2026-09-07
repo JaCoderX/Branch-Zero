@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { onBridgeTraffic, pushLink, pushStage, setWalletAdapter } from '../bridge/branchZero';
+import { onBridgeTraffic, pushLink, pushStage, pushTerminalClosed, setTerminalHost, setWalletAdapter } from '../bridge/branchZero';
 import { connectDeskEvents, type DeskLink } from '../shell/deskEvents';
 import { focusCanvas } from '../shell/focus';
+import { Terminal } from './Terminal';
 import { useBranchZeroWallet } from './useBranchZeroWallet';
 import { ARC_TESTNET_CHAIN_ID, REMOTE_EVM_CHAIN_ID, type PendingWire } from '@branch-zero/shared';
 
@@ -40,6 +41,11 @@ export function App({ engineState }: { engineState: string }) {
   const [clockOffset, setClockOffset] = useState(0); // serverNow - localNow, seconds
   const [, setTick] = useState(0);
   const [link, setLink] = useState<DeskLink | undefined>();
+  /**
+   * The bank computer's overlay (docs/TERMINAL-CONSOLE.md). `undefined` means *not rendered at all* — the panel
+   * must never linger as an invisible full-viewport hit target over the canvas (GODOT.md §5b).
+   */
+  const [console_, setConsole] = useState<{ url: string; account?: string | null; mode: 'iframe' | 'tab' } | undefined>();
 
   useEffect(() => {
     const push = (l: Line) => setLines((prev) => [...prev.slice(-(MAX - 1)), l]);
@@ -79,6 +85,25 @@ export function App({ engineState }: { engineState: string }) {
       isReady: () => latest.current.ready,
     });
     return () => setWalletAdapter(undefined);
+  }, []);
+
+  // The same lending pattern for the terminal overlay: the bridge asks, React renders. Stable object, one
+  // registration — bridge traffic re-renders this panel, so a fresh host each render would re-register forever.
+  const consoleOpen = useRef(false);
+  consoleOpen.current = Boolean(console_);
+  useEffect(() => {
+    setTerminalHost({
+      open: async ({ url, account }) => {
+        setConsole({ url, account, mode: 'iframe' });
+        return { mode: 'iframe', url };
+      },
+      close: (reason) => {
+        setConsole(undefined);
+        pushTerminalClosed(reason ?? 'closed');
+      },
+      isOpen: () => consoleOpen.current,
+    });
+    return () => setTerminalHost(undefined);
   }, []);
 
   // U3: the greybox is the product surface now; this panel is the debug view of the same bridge traffic.
@@ -159,17 +184,37 @@ export function App({ engineState }: { engineState: string }) {
   const delegated = Boolean(s?.delegated);
   const now = Math.floor(Date.now() / 1000) + clockOffset;
 
+  const terminal = console_ ? (
+    <Terminal
+      url={console_.url}
+      account={console_.account}
+      mode={console_.mode}
+      loggedIn={Boolean(s)}
+      onMode={(mode) => setConsole((c) => (c ? { ...c, mode } : c))}
+      onClose={(reason) => {
+        setConsole(undefined);
+        pushTerminalClosed(reason);
+      }}
+      call={(method, args) => window.BranchZero.call(method, args)}
+    />
+  ) : null;
+
   if (!debugOpen) {
     return (
-      <button style={pill} onClick={() => setDebugOpen(true)} title="Show the desk debug panel (bridge traffic, session, vault board)">
-        desk debug · {engineState.startsWith('running') ? 'engine running' : engineState}
-        {lines.length ? ` · ${lines.length} msgs` : ''}
-      </button>
+      <>
+        {terminal}
+        <button style={pill} onClick={() => setDebugOpen(true)} title="Show the desk debug panel (bridge traffic, session, vault board)">
+          desk debug · {engineState.startsWith('running') ? 'engine running' : engineState}
+          {lines.length ? ` · ${lines.length} msgs` : ''}
+        </button>
+      </>
     );
   }
 
   return (
-    <div style={panel}>
+    <>
+      {terminal}
+      <div style={panel}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, gap: 8 }}>
         <strong>Branch Zero · desk debug</strong>
         <span style={{ color: '#9aa4b2' }}>
@@ -270,6 +315,11 @@ export function App({ engineState }: { engineState: string }) {
                 {s.account ? 'Re-check account' : 'Open my account'}
               </button>
             )}
+            {s?.account && (
+              <button style={{ ...btn, borderColor: '#8ab4f8' }} title="The bank computer: viewing wallets (OBSERVER) + the hosted Console" onClick={() => void window.BranchZero.call('openConsole')}>
+                Terminal
+              </button>
+            )}
             <button style={btn} onClick={() => w.logout()}>
               Sign out
             </button>
@@ -351,7 +401,8 @@ export function App({ engineState }: { engineState: string }) {
           {l.text}
         </div>
       ))}
-    </div>
+      </div>
+    </>
   );
 }
 

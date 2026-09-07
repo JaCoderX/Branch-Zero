@@ -143,12 +143,15 @@ JS side (`apps/web/src/bridge.ts`) exposes a **flat, JSON-only** API. All values
 | `ensAvailable` / `ensMint` / `ensSetText` | see [ENS.md](./ENS.md) | — | Teller `/ens/*` |
 | `quote` / `swap` | see [UNISWAP.md](./UNISWAP.md) | — | S1 only |
 | `switchWing` | `{ chainId }` | `{ ok }` | local state + Privy chain switch |
+| `openConsole` (stretch) | — | `{ opened, mode: "iframe" \| "tab", url, account }` | The bank computer's terminal overlay (`apps/web/src/overlay/Terminal.tsx`): an iframe of `bloxchain.app/accounts` plus the viewing-wallet form. Resolves when the **panel mounts**, not when it closes — the game unlocks movement on the `terminal.closed` event instead, because a player may read the Console for minutes and no bridge call should be held open that long. MockChain refuses it (`CONSOLE_UNAVAILABLE`): the panel is the shell's, and claiming to open one it cannot produce would be a lie the player can see |
+| `observerGrant` / `observerRevoke` / `observerList` (stretch) | `{ address }` (grant also takes an ENS `name`) | `{ role, roleName, exists, maxWallets, wallets, changed, address, hash? }` | Teller `/observer/*` — the `OBSERVER` runtime role: membership only, **zero** function permissions, so a wallet the player already holds can pass `_validateAnyRole()` on the permissioned registry views (V10) and nothing else. Idempotent; a name is resolved through the existing `/ens/resolve` first. See [TERMINAL-CONSOLE.md](./TERMINAL-CONSOLE.md) |
 
 Events pushed to Godot (`type: "event"`), as built through U3: `bridge.ready` `{ version, mock }` (first message after
 `setGodotCallback`; `mock` is `false`, `"fresh"` or `"account"` — see §5a), `stage` (a Teller Desk `StageEvent`
 relayed verbatim from SSE; carries `lane`, `stage`, `bankLine`, `txId`, `releaseTime`, `serverNow`, `chainNow`),
 and `tab.visible` `{ visible }` (from `visibilitychange`, so Godot reconciles the board with `listPending` once the tab
-is back). U4 adds `desk.link` `{ connected, attempt, reason? }` — the state of the Teller Desk SSE stream as the shell's
+is back), plus (stretch) `terminal.closed` `{ reason }` — the player shut the Console overlay, so `GameState` clears
+`terminal_open` and hands movement back. U4 adds `desk.link` `{ connected, attempt, reason? }` — the state of the Teller Desk SSE stream as the shell's
 reconnecting `EventSource` sees it (`apps/web/src/shell/deskEvents.ts`); `GameState` toasts the transition and reconciles
 the board on every reconnect, because the server re-reads the vault and re-arms its watchers on each `/events` connect. The finer-grained `tx.*` / `balance.changed` / `session.changed` names from the plan were not needed: the
 game derives them from `stage`.
@@ -158,9 +161,12 @@ Rules:
 - Every call has a timeout (15 s) and returns `{ error: { code, message } }` on failure; NPCs have a line for each `code` (see [NPCS.md](./NPCS.md) § 5).
 - On desktop (editor) `MockChain.gd` implements the same API with fake latency and canned data so gameplay can be iterated offline.
 
-### 4a. Bridge version `u4.1` (as built; `u4.0` + U4+)
+### 4a. Bridge version `u5.1` (as built)
 
-`apps/web/src/bridge/branchZero.ts`. `u4.1` adds one method, **`priority`** (Okafor's desk, U4+): the overlay
+`apps/web/src/bridge/branchZero.ts`. `u5.1` (Terminal Console stretch) adds **`openConsole`** and the three
+**`observer*`** methods above, and the **`terminal.closed`** event; every overlay exit path calls `focusCanvas()` and
+the panel renders nothing while closed, so no hit target is ever left over `#canvas` (§5b). `u5.0` added the ENS Name
+Desk verbs. `u4.1` added one method, **`priority`** (Okafor's desk, U4+): the overlay
 prepares the owner's `SIGN_META_APPROVE` payload at the Teller Desk, asks the player's *own* Privy signer to sign it
 with the wallet UI shown — preceded by a fresh Passkey (`useMfa().clear()` + `promptMfa()`) when the player has MFA
 enrolled — and hands the signature back for the Branch Manager to submit. It is the only bridge method allowed to open a

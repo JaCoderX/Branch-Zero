@@ -175,6 +175,54 @@ func _run() -> void:
 			_fail("underfunded Priority did not map to RECORD_FAILED: %s" % str(failed_priority))
 		else:
 			_ok("underfunded Priority → RECORD_FAILED: \"%s\"" % priority_line)
+
+	# Terminal Console (stretch): the bank computer's viewing list, and the honest refusal for the panel itself.
+	var viewer := "0xd03ea8624C8C5987235048901fB614fDcA89b117"   # Ganache acct 5 — a wallet, no role
+	var panel: Dictionary = await gs.run_action("open_console", {})
+	if panel.get("ok", false) or str(panel.get("error", {}).get("code", "")) != "CONSOLE_UNAVAILABLE" or gs.terminal_open:
+		_fail("MockChain claimed to open the Console panel: %s (terminal_open=%s)" % [str(panel), str(gs.terminal_open)])
+	else:
+		_ok("open_console under MockChain → CONSOLE_UNAVAILABLE: \"%s\"" % gs.error_line(panel["error"]))
+	var granted: Dictionary = await gs.run_action("observer_grant", {"address": viewer})
+	if not granted.get("ok", false) or not bool(granted["result"].get("changed", false)):
+		_fail("mock observer grant refused: %s" % str(granted))
+	elif granted["result"].get("permissions", []).size() != 0:
+		_fail("mock OBSERVER carries permissions: %s" % str(granted["result"]["permissions"]))
+	elif gs.observers.size() != 1 or str(gs.observers[0]).to_lower() != viewer.to_lower():
+		_fail("GameState did not mirror the viewing list: %s" % str(gs.observers))
+	else:
+		_ok("viewing wallet granted: OBSERVER holds %d wallet(s), 0 function permissions" % gs.observers.size())
+	var again: Dictionary = await gs.run_action("observer_grant", {"address": viewer})
+	if not again.get("ok", false) or bool(again["result"].get("changed", true)) or gs.observers.size() != 1:
+		_fail("re-granting the same wallet was not a quiet no-op: %s" % str(again))
+	else:
+		_ok("re-grant is idempotent — changed=false, still %d wallet(s)" % gs.observers.size())
+	var house: Dictionary = await gs.run_action("observer_grant", {"address": chain._mock.MANAGER})
+	if str(house.get("error", {}).get("code", "")) != "OBSERVER_SELF":
+		_fail("granting a wallet that already holds a role was not refused: %s" % str(house))
+	else:
+		_ok("granting the branch manager → OBSERVER_SELF: \"%s\"" % gs.error_line(house["error"]))
+	var term: Dictionary = dlg.load_npc("terminal")
+	var v_choices: Array = dlg._resolve_choices(term["nodes"]["viewers"])
+	var v_actions := []
+	for c in v_choices:
+		if c.has("action"):
+			v_actions.append("%s#%s" % [c["action"], c.get("args", {}).get("address", "")])
+	if not v_actions.has("observer_revoke#" + viewer):
+		_fail("the terminal does not offer to remove the viewing wallet: %s" % str(v_actions))
+	else:
+		_ok("terminal lists observer_revoke#%s" % gs.short_address(viewer))
+	var revoked: Dictionary = await gs.run_action("observer_revoke", {"address": viewer})
+	if not revoked.get("ok", false) or not gs.observers.is_empty():
+		_fail("mock observer revoke failed: %s (list %s)" % [str(revoked), str(gs.observers)])
+	else:
+		_ok("viewing wallet revoked — nobody can read the account again")
+	var twice: Dictionary = await gs.run_action("observer_revoke", {"address": viewer})
+	if str(twice.get("error", {}).get("code", "")) != "NOT_OBSERVER":
+		_fail("revoking a wallet that is not on the list: %s" % str(twice))
+	else:
+		_ok("second revoke → NOT_OBSERVER: \"%s\"" % gs.error_line(twice["error"]))
+
 	_finish()
 
 

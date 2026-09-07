@@ -17,6 +17,14 @@ const NPCS := [
 	["manager", "Mr. Okafor", "Branch Manager", Color(0.25, 0.30, 0.55), Vector3(-8.0, 0, -9.8), PI, []],
 ]
 
+## The bank computers that are worth walking up to (docs/TERMINAL-CONSOLE.md §3). Both sit on `computerScreen`
+## props bank_interior.gd already places; the player leans over the keyboard side of the desk.
+## [id, position (the screen), display name]
+const TERMINALS := [
+	["manager", Vector3(-8.6, 0.4, -8.95), "the manager's terminal"],
+	["opening", Vector3(-8.6, 0.4, 7.85), "the account desk terminal"],
+]
+
 const ARC_CHAIN_ID := 5042002
 const MAIN_CHAIN_ID := 1337
 
@@ -25,8 +33,10 @@ var player: CharacterBody3D
 var hud: CanvasLayer
 var debug_tools: bool = false          # F-key teleports + their legend; see debug_wanted()
 var _near: Array[Npc] = []
+var _near_terminals: Array[BankTerminal] = []
 var _near_elevator := false
 var _prompt_npc: Npc = null
+var _prompt_terminal: BankTerminal = null
 
 
 ## Tester aids (the F2–F8 teleports and their legend line) are opt-in: web `?debug=1`, desktop `-- --debug` or
@@ -83,6 +93,17 @@ func _ready() -> void:
 		n.player_near.connect(_on_player_near)
 		n.duty_changed.connect(_update_prompt)
 		npcs.add_child(n)
+
+	var terminals := Node3D.new()
+	terminals.name = "Terminals"
+	add_child(terminals)
+	for spec in TERMINALS:
+		var t := BankTerminal.new()
+		t.terminal_id = spec[0]
+		t.position = spec[1]
+		t.display_name = spec[2]
+		t.player_near.connect(_on_terminal_near)
+		terminals.add_child(t)
 
 	player = CharacterBody3D.new()
 	player.set_script(load("res://scripts/player.gd"))
@@ -176,6 +197,14 @@ func _on_player_near(npc: Npc, near: bool) -> void:
 	_update_prompt()
 
 
+func _on_terminal_near(t: BankTerminal, near: bool) -> void:
+	if near and not _near_terminals.has(t):
+		_near_terminals.append(t)
+	elif not near:
+		_near_terminals.erase(t)
+	_update_prompt()
+
+
 func _process(_delta: float) -> void:
 	if player == null:
 		return
@@ -185,8 +214,10 @@ func _process(_delta: float) -> void:
 		_update_prompt()
 	# Interact zones overlap (Petra at Counter 2 is four metres from Dev): re-pick the nearest talkable NPC every
 	# frame so the prompt follows the player instead of sticking to whoever's zone was entered first.
-	elif _nearest() != _prompt_npc:
-		_update_prompt()
+	else:
+		var pick := _pick()
+		if pick[0] != _prompt_npc or pick[1] != _prompt_terminal:
+			_update_prompt()
 
 
 func _nearest() -> Npc:
@@ -202,21 +233,58 @@ func _nearest() -> Npc:
 	return best
 
 
+## Nearest terminal in reach; `_pick` decides whether it or the NPC gets the prompt.
+func _nearest_terminal() -> BankTerminal:
+	var best: BankTerminal = null
+	var best_d := INF
+	for t in _near_terminals:
+		if not t.can_talk():
+			continue
+		var d := t.global_position.distance_to(player.global_position)
+		if d < best_d:
+			best_d = d
+			best = t
+	return best
+
+
+## Who the [Space] prompt belongs to right now: `[npc, terminal]`, at most one of them non-null. A screen shares a
+## desk with its NPC (Okafor stands 1 m from his), so the closer of the two wins — lean over the keyboard and you
+## get the terminal, stand back and you get the clerk.
+func _pick() -> Array:
+	var n := _nearest()
+	var t := _nearest_terminal()
+	if n == null:
+		return [null, t]
+	if t == null:
+		return [n, null]
+	var dn := n.global_position.distance_to(player.global_position)
+	var dt := t.global_position.distance_to(player.global_position)
+	return [null, t] if dt < dn else [n, null]
+
+
 func _update_prompt() -> void:
 	var s: Dictionary = GameState.strings
 	if _near_elevator and not Dialogue.active:
 		_prompt_npc = null
+		_prompt_terminal = null
 		if GameState.active_wing() == "arc":
 			hud.set_prompt(str(s.get("prompt_elevator_main", "[Space] Elevator — back to the Main wing")))
 		else:
 			hud.set_prompt(str(s.get("prompt_elevator_arc", "[Space] Elevator — ARC floor (coming soon)")))
 		return
-	var n := _nearest()
+	var pick := _pick()
+	var n: Npc = pick[0]
+	var t: BankTerminal = pick[1]
 	_prompt_npc = n
-	if n == null or Dialogue.active:
+	_prompt_terminal = t
+	if Dialogue.active or GameState.terminal_open:
 		hud.set_prompt("")
-	else:
+	elif t != null:
+		hud.set_prompt(Dialogue.interpolate(str(s.get("prompt_terminal", "[Space] Use {terminal}")), {"terminal": t.display_name}))
+	elif n != null:
 		hud.set_prompt(Dialogue.interpolate(str(s.get("prompt_talk", "[Space] Talk to {npc}")), {"npc": n.display_name}))
+	else:
+		hud.set_prompt("")
 
 
 ## F2–F4, F6–F8 jump the player to a desk — a tester aid, live only with the debug flag (debug_wanted()); the walk is
@@ -235,6 +303,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("interact") and not Dialogue.active and not GameState.ui_locked:
 		if _near_elevator:
 			_take_elevator(MAIN_CHAIN_ID if GameState.active_wing() == "arc" else ARC_CHAIN_ID)
+			get_viewport().set_input_as_handled()
+			return
+		if _prompt_terminal != null and _prompt_terminal.can_talk():
+			player.look_at_point(_prompt_terminal.global_position)
+			_prompt_terminal.interact()
 			get_viewport().set_input_as_handled()
 			return
 		var n := _nearest()

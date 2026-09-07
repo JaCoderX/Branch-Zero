@@ -3,6 +3,7 @@
   "help": "WASD move · Shift jog · Q/E or ←/→ orbit (or drag) · right-click / hold to walk there · Space talk · 1–9 choose · Esc close",
   "help_debug": "debug: F2 opening · F3 counter · F4 vault · F6 lobby · F7 manager · F8 name desk · F1 legend",
   "prompt_talk": "[Space] Talk to {npc}",
+  "prompt_terminal": "[Space] Use {terminal}",
   "prompt_elevator_arc": "[Space] Elevator — ARC floor (coming soon)",
   "prompt_elevator_main": "[Space] Elevator — back to the Main wing",
   "elevator_arc_deferred": "ARC floor — coming soon. The Arc wing is under construction; the Main wing keeps serving.",

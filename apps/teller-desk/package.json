@@ -12,6 +12,7 @@
     "killtests:u2": "tsx --env-file-if-exists=../../.env scripts/kill-tests-u2.ts",
     "killtests:u4plus": "tsx --env-file-if-exists=../../.env scripts/kill-tests-u4plus.ts",
     "killtests:u5": "tsx --env-file-if-exists=../../.env scripts/kill-tests-u5.ts",
+    "killtests:observer": "tsx --env-file-if-exists=../../.env scripts/kill-tests-observer.ts",
     "smoke:faucet": "tsx --env-file-if-exists=../../.env scripts/smoke-faucet.ts",
     "upgrade-players": "tsx --env-file-if-exists=../../.env scripts/upgrade-players.ts",
     "probe:policy": "tsx --env-file-if-exists=../../.env scripts/probe-typed-data-policy.ts",

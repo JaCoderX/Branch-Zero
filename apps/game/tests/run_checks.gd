@@ -9,6 +9,8 @@ extends SceneTree
 ## the condition evaluator and interpolation behave.
 
 const NPCS := ["greeter", "clerk", "teller", "vault_keeper", "manager", "registrar"]
+## Dialogue files that are not NPCs. The bank computer runs the same format (docs/TERMINAL-CONSOLE.md §3).
+const PROPS := ["terminal"]
 
 ## NPCS.md §5 rows, the SDK names behind them, plus every code the Teller Desk and the bridge can return.
 const REQUIRED_CODES := [
@@ -28,6 +30,8 @@ const REQUIRED_CODES := [
 	"INVALID_NAME", "NAME_TAKEN", "NAME_NOT_FOUND", "NAME_NOT_OWNED", "ENS_NOT_CONFIGURED", "ENS_RPC", "ENS_TX_FAILED", "ENS_RECORD_FAILED",
 	# U4+ Priority release (Okafor) — desk + overlay codes
 	"MANAGER_NO_STAMP", "NOT_COOLING", "PRIORITY_OFF", "PRIORITY_CANCELLED", "MFA_FAILED", "PRIORITY_EXPIRED",
+	# Terminal Console stretch — the bank computer and the OBSERVER viewing role
+	"CONSOLE_UNAVAILABLE", "OBSERVER_SELF", "OBSERVER_FULL", "NOT_OBSERVER", "RoleWalletLimitReached",
 	"default",
 ]
 
@@ -39,7 +43,10 @@ func _initialize() -> void:
 	_check_errors()
 	for id in NPCS:
 		_check_npc(id)
+	for id in PROPS:
+		_check_npc(id)
 	_check_faucet_choice()
+	_check_terminal()
 	_check_vault_desks()
 	_check_polish()
 	_check_eval(Dlg)
@@ -201,6 +208,45 @@ func _check_faucet_choice() -> void:
 		_fail("clerk done has no faucet choice")
 	else:
 		_ok("Ines offers Top up practice dollars from the done/passbook node")
+
+
+## Terminal Console stretch: the bank computer opens the Console panel and edits the viewing list — and it must never
+## grow a write verb. The OBSERVER role is membership only; a terminal that could pay or approve would be the whole
+## point of the unit, undone (docs/TERMINAL-CONSOLE.md §5).
+func _check_terminal() -> void:
+	print("terminal console (OBSERVER)")
+	var t := _load("res://dialogue/terminal.json")
+	var actions := _actions_in(t)
+	var allowed := ["open_console", "observer_list", "observer_grant", "observer_revoke"]
+	var bad: PackedStringArray = []
+	for a in actions.keys():
+		if not allowed.has(str(a)):
+			bad.append("terminal.json runs '%s' — the terminal may only open the Console and edit the viewing list" % str(a))
+	if not actions.has("open_console"):
+		bad.append("terminal.json never opens the Console")
+	if not actions.has("observer_revoke"):
+		bad.append("terminal.json cannot remove a viewing wallet")
+	var text := FileAccess.get_file_as_string("res://dialogue/terminal.json")
+	if text.find("choices_from") >= 0 and text.find("\"observers\"") < 0:
+		bad.append("terminal.json lists choices from something other than the viewing wallets")
+	if text.find("read") < 0:
+		bad.append("terminal.json never tells the player a viewing wallet only reads")
+	# The words the player is given have to match the grant: membership, no permissions.
+	var why := str(t.get("nodes", {}).get("why_viewing", {}).get("text", ""))
+	if why.find("OBSERVER") < 0 or why.to_lower().find("no permission") < 0:
+		bad.append("terminal.json 'why' does not say OBSERVER carries no permissions")
+	var strings := _load("res://dialogue/strings.json")
+	if not str(strings.get("prompt_terminal", "")).begins_with("[Space]"):
+		bad.append("prompt_terminal missing or not a [Space] prompt")
+	# The Console is a browser panel; a MockChain walk must be told so rather than shown an empty screen.
+	var errors := _load("res://dialogue/errors.json")
+	if str(errors.get("CONSOLE_UNAVAILABLE", {}).get("line", "")).find("shell") < 0:
+		bad.append("CONSOLE_UNAVAILABLE does not say the panel needs the bank shell")
+	if bad.is_empty():
+		_ok("terminal: open_console + viewing list only, no write verbs · [Space] prompt · read-only copy present")
+	else:
+		for b in bad:
+			_fail(b)
 
 
 ## U7 polish (principal playtest findings 7 · 8 · 10): the vault keeper is Bob everywhere a player can read it, the

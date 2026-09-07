@@ -23,6 +23,7 @@ import { approve, cancel, listPending, resumeWatchers, wire, type Actor } from '
 import { preparePriority, submitPriority } from './lanes/priority.ts';
 import { ROLE_SET_VERSION, ensureTxPolicy, ensureTypedDataPolicy, faucetAccount, provision, recoverAccount } from './lanes/provision.ts';
 import { available as ensAvailable, mint as ensMint, resolve as ensResolve, setText as ensSetText } from './ens.ts';
+import { grantObserver, listObservers, observerPermissions, revokeObserver } from './lanes/observer.ts';
 import { emitStage, getPlayer, listReceipts, newJobId, patchPlayer, serialize, subscribe, upsertPlayer, type Player } from './store.ts';
 import type { SignatureAudit, TxAudit } from './signing/privySigner.ts';
 
@@ -324,6 +325,60 @@ app.post('/cancel', async (req, reply) => {
     const current = getPlayer(player.privyUserId)!;
     const result = await serialize(player.privyUserId, () => cancel(current, txId, actor, jobId, txAuditFor(player)));
     return { jobId, ...result };
+  } catch (e) {
+    return fail(reply, e);
+  }
+});
+
+// ============ Stretch — Terminal Console: the OBSERVER viewing role (docs/TERMINAL-CONSOLE.md) ============
+
+/**
+ * The bank computer's three verbs. A viewing wallet is a member of the runtime `OBSERVER` role with **zero**
+ * function permissions: it satisfies the `_validateAnyRole()` gate on the permissioned registry views (V10) so
+ * the hosted Console can show this account, and it holds no `TxAction` bit on any selector, so it cannot pay,
+ * wire, release, recall or reconfigure. Signed on the existing silent role-config lane — the terminal never
+ * opens a second Privy surface.
+ *
+ * `requireConfigured` applies for the same reason the payment lanes use it: a half-provisioned account has no
+ * guarantee its role machinery landed, and "ask Ines to re-check" is a better answer than a chain revert.
+ */
+app.post('/observer/grant', async (req, reply) => {
+  try {
+    const player = await requirePlayer(req as never);
+    const body = (req.body ?? {}) as { address?: string; wallet?: string };
+    const jobId = newJobId();
+    const current = getPlayer(player.privyUserId)!;
+    requireConfigured(current);
+    const result = await serialize(player.privyUserId, () => grantObserver(current, body.address ?? body.wallet, jobId, auditFor(player)));
+    app.log.info({ owner: current.ownerAddress, account: current.account, observer: result.address, changed: result.changed, hash: result.hash, wallets: result.wallets.length }, 'terminal console: viewing wallet granted (OBSERVER, no function permissions)');
+    return { jobId, ...result };
+  } catch (e) {
+    return fail(reply, e);
+  }
+});
+
+app.post('/observer/revoke', async (req, reply) => {
+  try {
+    const player = await requirePlayer(req as never);
+    const body = (req.body ?? {}) as { address?: string; wallet?: string };
+    const jobId = newJobId();
+    const current = getPlayer(player.privyUserId)!;
+    requireConfigured(current);
+    const result = await serialize(player.privyUserId, () => revokeObserver(current, body.address ?? body.wallet, jobId, auditFor(player)));
+    app.log.info({ owner: current.ownerAddress, account: current.account, observer: result.address, hash: result.hash, wallets: result.wallets.length }, 'terminal console: viewing wallet revoked');
+    return { jobId, ...result };
+  } catch (e) {
+    return fail(reply, e);
+  }
+});
+
+/** Who can read this account, and proof that the role carries no permissions. */
+app.get('/observer/list', async (req, reply) => {
+  try {
+    const player = await requirePlayer(req as never);
+    const current = getPlayer(player.privyUserId)!;
+    const list = await listObservers(current);
+    return { ...list, permissions: list.exists && current.account ? await observerPermissions(current.account) : [] };
   } catch (e) {
     return fail(reply, e);
   }

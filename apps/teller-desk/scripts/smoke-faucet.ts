@@ -8,7 +8,7 @@
  * still zero-only after a deliberate underfund (re-check path is not exercised here — MockChain covers it).
  */
 import { erc20Abi, formatUnits, parseUnits, type Address } from 'viem';
-import { publicClient } from '../src/chain.ts';
+import { deployerAddress, publicClient } from '../src/chain.ts';
 import { config, deployments } from '../src/config.ts';
 import { embeddedWalletOf, privy } from '../src/privy.ts';
 import { pay } from '../src/lanes/laneA.ts';

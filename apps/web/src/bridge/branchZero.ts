@@ -14,6 +14,9 @@
  *             signer signs the meta-approve bypass behind a Passkey, the Branch Manager submits it before the clock.
  * U5 methods: ensAvailable / ensMint / ensSetText / resolveName — ENSv2 identity on Sepolia; payments remain 1337.
  *             `approve` is owner-only from here (Bob's wait path); `as: 'manager'` is refused by the desk.
+ * Terminal Console (stretch): openConsole (asks the shell for the terminal overlay — an iframe of bloxchain.app, or
+ *             a top-level tab if the Console ever refuses framing) and observerGrant / observerRevoke / observerList
+ *             (the OBSERVER viewing role: membership only, no function permissions — docs/TERMINAL-CONSOLE.md).
  *
  * Everything that needs a Privy identity is delegated to the React overlay through a small adapter it
  * registers at mount: the bridge itself holds no token and no key, and a method that needs one before the
@@ -26,8 +29,19 @@ import deployments from '../../../../infra/deployments/remote-evm.json';
 import type { DeskLink } from '../shell/deskEvents';
 import { focusCanvas } from '../shell/focus';
 
-/** u4.1: `priority` (U4+). u4.0 added the `desk.link` event and gave the canvas focus back after the Privy modals. */
-export const BRIDGE_VERSION = 'u5.0';
+/**
+ * u5.1: the Terminal Console stretch — `openConsole` plus the three `observer*` methods. `u5.0` (ENS Name Desk) and
+ * `u4.1` (`priority`, Okafor's hand scan) are unchanged and must stay that way.
+ */
+export const BRIDGE_VERSION = 'u5.1';
+
+/**
+ * Where the bank computer points. `/accounts` is the Console screen that matters: it is where the player imports
+ * their AccountBlox by address and connects the wallet the terminal has just made a viewing clerk.
+ * Framing was verified from this origin on 2026-09-08 (no `X-Frame-Options`, no `frame-ancestors`); the overlay
+ * still falls back to a top-level tab if the frame never loads, because a SaaS may harden its headers any day.
+ */
+export const CONSOLE_URL: string = import.meta.env.VITE_CONSOLE_URL || 'https://bloxchain.app/accounts';
 
 /**
  * `?mock=1` on the shell URL tells Godot to answer every desk call from its own MockChain (canned data,
@@ -79,7 +93,36 @@ export interface DeskSessionSource {
   token?: { address: string; symbol: string; decimals: number };
 }
 
+/**
+ * The terminal overlay, lent to the bridge by React the same way the wallet is. It is a *shell* surface, not a
+ * chain one: opening it signs nothing and reads nothing. `open` resolves once the panel is mounted and says
+ * which way it went — `iframe` when bloxchain.app frames, `tab` when the overlay had to hand the player a
+ * top-level link instead.
+ */
+export interface TerminalHost {
+  open(opts: { url: string; account?: string | null }): Promise<{ mode: 'iframe' | 'tab'; url: string }>;
+  close(reason?: string): void;
+  isOpen(): boolean;
+}
+
 let adapter: WalletAdapter | undefined;
+let terminal: TerminalHost | undefined;
+
+/** Registered once by the overlay, like `setWalletAdapter`: it must be a stable object across renders. */
+export function setTerminalHost(t: TerminalHost | undefined): void {
+  if (terminal === t) return;
+  terminal = t;
+}
+
+/**
+ * The player closed the Console. Godot unlocks movement on this event rather than on the `openConsole` promise,
+ * so nothing in the bridge has to stay pending while somebody reads a ledger (docs/GODOT.md §4).
+ */
+export function pushTerminalClosed(reason: string = 'closed'): void {
+  const payload = { reason };
+  emit({ type: 'event', kind: 'terminal.closed', payload });
+  godotCallback?.(JSON.stringify({ type: 'event', kind: 'terminal.closed', payload }));
+}
 
 /**
  * Registered once by the overlay. It must be a *stable* object: emitting bridge traffic re-renders the
@@ -233,6 +276,47 @@ const handlers: Record<string, Handler> = {
     const name = typeof args.name === 'string' ? args.name.trim() : '';
     if (!name) throw bridgeError('BAD_ARGS', 'ENS name is required', 'Write a customer name, like alice.branchzero.eth.');
     return requireAdapter().call(`/ens/resolve?name=${encodeURIComponent(name)}`);
+  },
+
+  // --- Terminal Console (stretch): the bank computer and the OBSERVER viewing role ---
+
+  /**
+   * Open the terminal overlay. The panel is the shell's, not the game's: Godot only asks for it and then waits
+   * for `terminal.closed`. Every exit path from the overlay calls `focusCanvas()` itself, and the overlay
+   * renders nothing at all while closed, so no hit target is ever left sitting over `#canvas` (GODOT.md §5b).
+   */
+  async openConsole() {
+    const host = terminal;
+    if (!host) throw bridgeError('CONSOLE_UNAVAILABLE', 'no terminal overlay is mounted', 'The screen is dark — this branch terminal only runs in the bank shell.');
+    const account = adapter?.isAuthenticated() ? ((await adapter.openSession().catch(() => undefined))?.account ?? null) : null;
+    const opened = await host.open({ url: CONSOLE_URL, account });
+    return { opened: true, ...opened, account };
+  },
+
+  /**
+   * Add a viewing wallet. Accepts a `0x` address or an ENS name, which is resolved through the Name Desk's
+   * existing `/ens/resolve` (Sepolia) before the address is handed to the role batch on 1337 — the same
+   * two-step Lane A already uses for pay-by-name; no second resolver was invented for the terminal.
+   */
+  async observerGrant(args) {
+    const raw = String(args.address ?? args.name ?? args.wallet ?? '').trim();
+    if (!raw) throw bridgeError('BAD_ARGS', 'a viewing wallet is required', 'Write an address or a customer name to add.');
+    let address = raw;
+    if (!/^0x[0-9a-fA-F]{40}$/.test(raw)) {
+      if (!raw.includes('.')) throw bridgeError('BAD_ARGS', `not an address or a name: ${raw.slice(0, 64)}`, 'That is not an address or a customer name.');
+      const resolved = await requireAdapter().call<{ address?: string }>(`/ens/resolve?name=${encodeURIComponent(raw)}`);
+      if (!resolved.address) throw bridgeError('NAME_NOT_FOUND', `${raw} has no address record`, 'That name has no address on file at the Name Desk.');
+      address = resolved.address;
+    }
+    return requireAdapter().call('/observer/grant', { address });
+  },
+  async observerRevoke(args) {
+    const address = String(args.address ?? args.wallet ?? '').trim();
+    if (!/^0x[0-9a-fA-F]{40}$/.test(address)) throw bridgeError('BAD_ARGS', `not an address: ${address.slice(0, 64)}`, 'That is not one of the viewing wallets on your file.');
+    return requireAdapter().call('/observer/revoke', { address });
+  },
+  async observerList() {
+    return requireAdapter().call('/observer/list');
   },
 
   // --- U1: the counter ---

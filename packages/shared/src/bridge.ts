@@ -74,7 +74,14 @@ export type BridgeMethod =
   | 'ensSetText'
   | 'resolveName'
   // U6 — elevator: swaps the active Teller Desk wing without touching ENS identity.
-  | 'switchWing';
+  | 'switchWing'
+  // Stretch — Terminal Console (docs/TERMINAL-CONSOLE.md): the bank computer and the OBSERVER viewing role.
+  // `openConsole` asks the shell for the terminal overlay (iframe of bloxchain.app, or a top-level tab when
+  // framing is refused); the three `observer*` methods are ordinary Teller Desk calls on the silent role lane.
+  | 'openConsole'
+  | 'observerGrant'
+  | 'observerRevoke'
+  | 'observerList';
 
 /** How the owner's signature is obtained for meta-transactions. */
 export type SigningMode = 'session' | 'client';
@@ -168,8 +175,13 @@ export interface DeskSession {
  * Events the bridge pushes to Godot besides `stage`: `bridge.ready` {version, mock}, `tab.visible` {visible} and
  * (U4) `desk.link` {connected, attempt, reason?} — the state of the Teller Desk SSE stream, so the game can say
  * "reconnecting…" from real link state and reconcile the board when the link comes back.
+ *
+ * The Terminal Console stretch adds `terminal.closed` {reason} — the player shut the Console overlay, so the
+ * game unlocks movement again. `openConsole` resolves as soon as the panel is up; it deliberately does not
+ * wait for the close, because a player may read the Console for minutes and no bridge call should be held
+ * open that long (docs/GODOT.md §4, per-call timeouts).
  */
-export type BridgeEventKind = 'bridge.ready' | 'stage' | 'tab.visible' | 'desk.link';
+export type BridgeEventKind = 'bridge.ready' | 'stage' | 'tab.visible' | 'desk.link' | 'terminal.closed';
 
 export interface BranchZeroBridge {
   /** Godot registers its `JavaScriptBridge.create_callback` here; JS calls it with one JSON string. */

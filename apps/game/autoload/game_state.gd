@@ -27,6 +27,8 @@ var busy: bool = false
 var ui_locked: bool = false            # dialogue / form open → player does not move
 var current_zone: String = ""
 var desk_linked: bool = true        # Teller Desk SSE stream up (bridge `desk.link`); false while reconnecting
+var observers: Array = []           # viewing wallets on the OBSERVER role (addresses, strings only)
+var terminal_open: bool = false     # the bank computer's Console overlay is up in the shell (bridge `terminal.closed` clears it)
 var errors: Dictionary = {}
 var strings: Dictionary = {}
 
@@ -54,6 +56,8 @@ func boot() -> void:
 	# Read the board after the bridge/session boot is complete. Anonymous users still get a silent board read,
 	# while a real adapter can no longer race its initial ready event here.
 	await refresh_names()
+	if logged_in():
+		await refresh_observers()
 	print("GameState: booted — bridge ready after %d ms, session after %d ms (%s)" % [t1 - t0, Time.get_ticks_msec() - t1, "MockChain" if Chain.use_mock else "bridge " + Chain.bridge_version])
 	changed.emit()
 
@@ -208,6 +212,8 @@ func facts() -> Dictionary:
 		"cooling": cooling_count(),
 		"busy": busy,
 		"desk_linked": desk_linked,
+		"observers": observers.size(),
+		"terminal_open": terminal_open,
 		"ens_name": ens_name(),
 		"mock": Chain.use_mock,
 		"web": Chain.is_web,
@@ -234,6 +240,7 @@ func vars(extra: Dictionary = {}) -> Dictionary:
 		"manager_name": "Mr. Okafor",
 		"priority_copy": str(strings.get("priority_copy", "Skip the cooling period — hand scan required.")),
 		"ens_name": ens_name() if has_ens_name() else "no name yet",
+		"observers": str(observers.size()),
 	}
 	v.merge(extra, true)
 	return v
@@ -264,6 +271,21 @@ func refresh_names() -> void:
 	var result: Dictionary = r.get("result", {})
 	if result.get("recent") is Array:
 		ens_names = result["recent"]
+	changed.emit()
+
+
+## Who may read this account from the public Console — the OBSERVER role's wallet list, read from the chain.
+## Silent on failure: the terminal is a side path, and a refused read must never break Account Opening or the lanes.
+func refresh_observers() -> void:
+	if not has_account():
+		observers = []
+		return
+	var r := await Chain.call_async("observerList", {}, 20.0)
+	if not r.get("ok", false):
+		return
+	var res: Dictionary = r.get("result", {})
+	if res.get("wallets") is Array:
+		observers = res["wallets"]
 	changed.emit()
 
 
@@ -366,6 +388,20 @@ func run_action(action: String, args: Dictionary = {}) -> Dictionary:
 			r = await Chain.call_async("priority", {"txId": str(args.get("txId", ""))}, 300.0)
 		"cancel", "manager_cancel":
 			r = await Chain.call_async("cancel", {"txId": str(args.get("txId", "")), "as": "manager" if action.begins_with("manager") else "owner"}, 120.0)
+		"open_console":
+			# The bank computer. Asks the shell for its Console overlay; the panel then outlives this call, and
+			# movement stays locked until the shell pushes `terminal.closed` (docs/TERMINAL-CONSOLE.md §4).
+			r = await Chain.call_async("openConsole", {}, 30.0)
+			if r.get("ok", false):
+				terminal_open = true
+				ui_locked = true
+		"observer_list":
+			r = await Chain.call_async("observerList", {}, 20.0)
+		"observer_grant":
+			# Kept for completeness and for the desk tests: in the bank the address is typed on the Console overlay.
+			r = await Chain.call_async("observerGrant", {"address": str(args.get("address", args.get("name", "")))}, 180.0)
+		"observer_revoke":
+			r = await Chain.call_async("observerRevoke", {"address": str(args.get("address", ""))}, 180.0)
 		"refresh":
 			r = {"ok": true, "result": {}}
 		_:
@@ -375,6 +411,8 @@ func run_action(action: String, args: Dictionary = {}) -> Dictionary:
 	await refresh_all()
 	if action.begins_with("ens"):
 		await refresh_names()
+	if action.begins_with("observer"):
+		await refresh_observers()
 	busy = false
 	changed.emit()
 	return r
@@ -451,8 +489,23 @@ func _on_chain_event(kind: String, payload: Dictionary) -> void:
 				reconcile_pending("tab.visible")
 		"desk.link":
 			_on_desk_link(payload)
+		"terminal.closed":
+			_on_terminal_closed(payload)
 		"bridge.ready":
 			pass
+
+
+## The player shut the Console overlay. The panel is the shell's, so this is the only signal that the bank is
+## walkable again — `open_console` resolved the moment the panel mounted, deliberately not when it closes
+## (docs/GODOT.md §4: no bridge call is held open while somebody reads a ledger).
+func _on_terminal_closed(_p: Dictionary) -> void:
+	if not terminal_open:
+		return
+	terminal_open = false
+	if not Dialogue.active:
+		ui_locked = false
+	refresh_observers()
+	changed.emit()
 
 
 ## The Teller Desk SSE stream came or went (U4). Both lines come from real link state: the shell pushes this

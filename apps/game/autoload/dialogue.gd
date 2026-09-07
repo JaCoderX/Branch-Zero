@@ -10,6 +10,8 @@ extends Node
 ##                       "action", "args", "as", "working",        run through GameState.run_action
 ##                       "on_ok", "on_error", "escort"} ],
 ##         "choices_from": "pending" | "pending_released" | "pending_cooling",   one choice per wire, using
+##         "choices_from": "observers",                                          one choice per viewing wallet
+##                                        ({observer} {short_observer} in text, args.address on the action),
 ##         "choice_template": { ...same fields; text may use {txId} {amount} {payee} {release_in} {status} },
 ##         "form": "payment_slip", "on_instant": "<id>", "on_vault": "<id>",   open the slip; route by amount
 ##         "enter_action": {"action", "args", "working", "on_ok", "on_error", "escort"},   run on entry
@@ -78,7 +80,9 @@ func close() -> void:
 		return
 	active = false
 	is_working = false
-	GameState.ui_locked = false
+	# The Console overlay outlives the dialogue that opened it: while it is up the player types in the DOM
+	# instead of walking the bank, so movement stays locked until the shell reports `terminal.closed`.
+	GameState.ui_locked = GameState.terminal_open
 	var id := npc_id
 	npc_id = ""
 	closed.emit(id)
@@ -185,15 +189,29 @@ func _resolve_choices(node: Dictionary) -> Array:
 	var facts := GameState.facts()
 	if node.has("choices_from"):
 		var tpl: Dictionary = node.get("choice_template", {})
-		for w in _wires_for(str(node["choices_from"])):
-			var c := tpl.duplicate(true)
-			var wv := _wire_vars(w)
-			c["text"] = interpolate(str(tpl.get("text", "#{txId}")), GameState.vars(wv))
-			var args: Dictionary = c.get("args", {}).duplicate()
-			args["txId"] = str(w.get("txId", ""))
-			c["args"] = args
-			c["ctx"] = wv
-			out.append(c)
+		var source := str(node["choices_from"])
+		if source == "observers":
+			# Terminal Console: one choice per viewing wallet on the OBSERVER role. Adding one is typing an
+			# address, which belongs to the shell overlay; removing one is picking from a list, which belongs here.
+			for a in GameState.observers:
+				var oc := tpl.duplicate(true)
+				var ov := {"observer": str(a), "short_observer": GameState.short_address(str(a))}
+				oc["text"] = interpolate(str(tpl.get("text", "{short_observer}")), GameState.vars(ov))
+				var oargs: Dictionary = oc.get("args", {}).duplicate()
+				oargs["address"] = str(a)
+				oc["args"] = oargs
+				oc["ctx"] = ov
+				out.append(oc)
+		else:
+			for w in _wires_for(source):
+				var c := tpl.duplicate(true)
+				var wv := _wire_vars(w)
+				c["text"] = interpolate(str(tpl.get("text", "#{txId}")), GameState.vars(wv))
+				var args: Dictionary = c.get("args", {}).duplicate()
+				args["txId"] = str(w.get("txId", ""))
+				c["args"] = args
+				c["ctx"] = wv
+				out.append(c)
 	for c in node.get("choices", []):
 		if c.has("if") and not eval_condition(str(c["if"]), facts):
 			continue
@@ -232,7 +250,7 @@ func _run(c: Dictionary) -> void:
 	if c.has("ctx"):
 		_ctx.merge(c["ctx"], true)
 	var args: Dictionary = c.get("args", {}).duplicate()
-	for k in ["to", "amount", "memo", "txId", "label", "name", "key", "value"]:
+	for k in ["to", "amount", "memo", "txId", "label", "name", "key", "value", "address"]:
 		if not args.has(k) and _ctx.has(k):
 			args[k] = _ctx[k]
 	var action := str(c.get("action", ""))

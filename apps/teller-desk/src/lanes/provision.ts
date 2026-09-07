@@ -119,7 +119,7 @@ export async function recoverAccount(owner: Address): Promise<Address | undefine
 }
 
 /** Owner signs, broadcaster executes: the one meta-transaction shape every configuration change uses. */
-async function ownerSignedBatch(
+export async function ownerSignedBatch(
   player: Player,
   account: Address,
   kind: 'guard' | 'role',

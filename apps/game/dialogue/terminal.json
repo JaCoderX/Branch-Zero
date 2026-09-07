@@ -1,0 +1,81 @@
+{
+  "id": "terminal",
+  "name": "Branch terminal",
+  "role": "Back-office computer",
+  "start": [
+    { "if": "!booted", "node": "booting" },
+    { "if": "!logged_in", "node": "locked" },
+    { "if": "!has_account", "node": "no_account" },
+    { "node": "idle" }
+  ],
+  "nodes": {
+    "booting": {
+      "text": "The screen is still warming up.",
+      "choices": [ { "text": "Wait.", "next": "end" } ]
+    },
+    "locked": {
+      "text": "BRANCH ZERO — BACK OFFICE\n\nNo account holder signed in at this workstation. See Ines at Account Opening first.",
+      "choices": [
+        { "text": "Ask why", "next": "why_locked" },
+        { "text": "Step away.", "next": "end" }
+      ]
+    },
+    "why_locked": {
+      "text": "The terminal shows one account: yours. Everything it can do — adding a viewing wallet, opening the public Console on your file — is signed by your account holder key, so it needs you signed in at the branch first.",
+      "choices": [ { "text": "OK.", "next": "end" } ]
+    },
+    "no_account": {
+      "text": "BRANCH ZERO — BACK OFFICE\n\nSigned in as {name}. No account on file yet, so there is nothing here to look at. Ines opens one at Account Opening.",
+      "choices": [
+        { "text": "Ask why", "next": "why_locked" },
+        { "text": "Step away.", "next": "end" }
+      ]
+    },
+    "idle": {
+      "text": "BRANCH ZERO — BACK OFFICE\n\nAccount {short_address} · {chain}\nViewing wallets on file: {observers}\n\nThis screen opens the public Console, and it can let a wallet you already carry read this account.",
+      "choices": [
+        { "text": "Open the Console", "action": "open_console", "working": "Waking the screen…", "on_ok": "console_open", "on_error": "refused" },
+        { "text": "Who can view my account?", "action": "observer_list", "working": "Reading the file…", "on_ok": "viewers", "on_error": "refused" },
+        { "text": "Ask why", "next": "why_viewing" },
+        { "text": "Step away.", "next": "end" }
+      ]
+    },
+    "console_open": {
+      "text": "The Console is up on the screen. Add a viewing wallet there, then import this account by its address and connect that wallet. Close the panel when you are done.",
+      "choices": [ { "text": "OK.", "next": "end" } ]
+    },
+    "viewers": {
+      "text": "Viewing wallets on file: {observers}\n\nThey can read this account's records. They cannot move a penny of it.",
+      "choices_from": "observers",
+      "choice_template": { "text": "Remove {short_observer}", "action": "observer_revoke", "working": "Striking it off the file…", "on_ok": "revoked", "on_error": "refused" },
+      "choices": [
+        { "text": "Add one on the Console", "action": "open_console", "working": "Waking the screen…", "on_ok": "console_open", "on_error": "refused" },
+        { "text": "Ask why", "next": "why_viewing" },
+        { "text": "Back", "next": "idle" }
+      ]
+    },
+    "revoked": {
+      "text": "Struck off. {short_observer} can no longer read this account. Viewing wallets on file: {observers}.",
+      "choices": [
+        { "text": "Ask why", "next": "why_viewing" },
+        { "text": "Done.", "next": "end" }
+      ]
+    },
+    "why_viewing": {
+      "text": "The account's own registry — its records, its pending wires, who holds which role — is not public. Every one of those reads asks the caller for a role first, so an outside wallet with no role reads nothing, even knowing the address. A viewing wallet is added to a role called OBSERVER that carries no permissions at all: membership is enough to pass the read check, and there is no permission on it to sign, request, approve, cancel or reconfigure anything. Removing it takes the reading right straight back.",
+      "choices": [ { "text": "OK.", "next": "end" } ]
+    },
+    "refused": {
+      "text": "{reason_line}",
+      "choices": [
+        { "text": "Ask why", "next": "refused_why" },
+        { "text": "Back", "next": "idle" },
+        { "text": "Step away.", "next": "end" }
+      ]
+    },
+    "refused_why": {
+      "text": "{reason_why}",
+      "choices": [ { "text": "OK.", "next": "end" } ]
+    }
+  }
+}

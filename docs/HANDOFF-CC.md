@@ -6,8 +6,8 @@ created: 2026-09-06
 updated: 2026-09-08
 product: Branch-Zero
 objective: OBJ-2026-0004
-first_mission: S1 Uniswap v4 FX Desk (docs/KICKOFF-S1-uniswap-fx.md) — sponsor #3 while Arc deferred; Terminal Console stretch still open (Codex Luna); U7 ship packaging owed after principal polish re-playtest; U6 Arc G7 deferred — revive via docs/ARC.md §5b
-prior_mission: U7 polish met 2026-09-07; U7 ship reel met; practice faucet met; U5 ENS (G6) — met 2026-09-07; Terminal Console kickoff filed 2026-09-08
+first_mission: S1 Uniswap v4 FX Desk (docs/KICKOFF-S1-uniswap-fx.md) — sponsor #3 while Arc deferred; U7 ship packaging owed after principal polish re-playtest; U6 Arc G7 deferred — revive via docs/ARC.md §5b
+prior_mission: Terminal Console + OBSERVER stretch met 2026-09-08 (§5h); U7 polish met 2026-09-07; U7 ship reel met; practice faucet met; U5 ENS (G6) — met 2026-09-07
 ---
 
 # Handoff — Claude Code (Fable 5.1)
@@ -20,10 +20,18 @@ You are a **cold agent** unless the human says you are continuing a prior sessio
 Arc stays **DEFERRED**; Uniswap is the activated **sponsor #3** for submission unless Arc revives first.
 Official pitch still names at most three sponsors (Privy + ENS + Uniswap **or** Arc).
 
-**Also open: Terminal Console + OBSERVER** — prefer **Codex Luna**. Design:
-[`docs/TERMINAL-CONSOLE.md`](./TERMINAL-CONSOLE.md). Kickoff:
-[`docs/KICKOFF-terminal-observer.md`](./KICKOFF-terminal-observer.md). Mission record: **§5h**.
-Privy Global Wallet / RainbowKit cross-app in bloxchain.app is **parked** — do not reopen.
+> **Terminal Console + OBSERVER met 2026-09-08** (local `docs/progress/2026-09-08-terminal-observer.md`; **§5h**).
+> The bank computers in the manager's office and at Account Opening open a terminal overlay: an iframe of
+> `bloxchain.app/accounts` plus the account's **viewing wallets**. A viewing wallet is the runtime `OBSERVER` role —
+> `CREATE_ROLE` + `ADD_WALLET`, **never** `ADD_FUNCTION_TO_ROLE` — so it passes `_validateAnyRole()` on the
+> permissioned registry views (V10) and holds no `TxAction` bit anywhere. Deliberately **outside** `desiredGrants()` /
+> `ROLE_SET_VERSION`: Account Opening never grants it and Re-check never touches it. Bridge is now **`u5.1`**
+> (`openConsole` / `observerGrant` / `observerRevoke` / `observerList` + the `terminal.closed` event); ENS `u5.0`,
+> Priority, the faucet, `desk.link` and canvas focus are unchanged. Live on 1337:
+> `npm -w apps/teller-desk run killtests:observer` **9/9**, including a **valid owner-signed Lane A slip** refused
+> `NoPermission` when the viewing wallet submits it. `bloxchain.app` frames today; a *refused* frame turns out to be
+> undetectable from the parent, so the new-tab fallback is permanent rather than auto-triggered (TERMINAL-CONSOLE §6).
+> Privy Global Wallet / RainbowKit cross-app in bloxchain.app stays **parked** — do not reopen.
 
 **Also open: U7 ship packaging** — polish findings 1–10 are **built** ([`KICKOFF-U7-polish.md`](./KICKOFF-U7-polish.md));
 **owed** before packaging starts: the principal's cold re-playtest. Kickoff:
@@ -127,7 +135,7 @@ Not: a wallet UI, DeFi protocol, Bloxchain fork, mainnet, Tactical-AI, GameLab m
 
 ## 2. Read order (before code)
 
-1. **This file** (§5i Uniswap FX is authorized; §5h Terminal stretch; packaging §6; U6 §5g deferred)
+1. **This file** (§5i Uniswap FX is authorized; §5h Terminal stretch **met**; packaging §6; U6 §5g deferred)
 2. [`docs/DEV-LOOP.md`](./DEV-LOOP.md) — U6 row; ENG-0006 **yes** (K3); U5 / G6 **met**
 3. [`docs/progress/2026-09-07-u5-ens-g6.md`](./progress/2026-09-07-u5-ens-g6.md) — Name Desk frozen; then
    [`…k6-yes.md`](./progress/2026-09-07-k6-yes.md) only if you need Sepolia address pins
@@ -136,7 +144,7 @@ Not: a wallet UI, DeFi protocol, Bloxchain fork, mainnet, Tactical-AI, GameLab m
    — attach library fixtures; CopyBlox-style clone; never Ganache keys on Arc
 5. [`docs/REMOTE-EVM.md`](./REMOTE-EVM.md) — **do not wipe**; Main-wing payments stay on 1337
 6. [`docs/GAME-DESIGN.md`](./GAME-DESIGN.md) + [`docs/WORLD-3D-ENVIRONMENT.md`](./WORLD-3D-ENVIRONMENT.md) — Arc wing / elevator
-7. [`docs/GODOT.md`](./GODOT.md) §4–5 — bridge is **`u5.0`** (preserve ENS methods); MockChain (§5a), canvas focus (§5b)
+7. [`docs/GODOT.md`](./GODOT.md) §4–5 — bridge is **`u5.1`** (preserve the ENS `u5.0` and terminal methods); MockChain (§5a), canvas focus (§5b)
 8. [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) §1–3, §5–6 (§3.5 wing switch)
 9. [`docs/BLOXCHAIN-INTEGRATION.md`](./BLOXCHAIN-INTEGRATION.md) §6–7 — do not regress ROLE_SET 3 / Priority
 10. [`docs/PRIVY.md`](./PRIVY.md) — Arc policy must include Arc `verifyingContract` when provisioning Arc accounts
@@ -530,18 +538,22 @@ Evidence: [`docs/progress/2026-09-07-u6-arc-g7.md`](./progress/2026-09-07-u6-arc
 
 ---
 
-## 5h. Mission stretch — Terminal Console + OBSERVER — **OPEN**
+## 5h. Mission stretch — Terminal Console + OBSERVER — **MET 2026-09-08**
 
 Diegetic computer → overlay with iframe of `bloxchain.app` + opt-in **OBSERVER** runtime role (empty permissions)
 for a MetaMask/EOA or ENS so permissioned registry views work under Console’s existing RainbowKit connect.
-Design: [`docs/TERMINAL-CONSOLE.md`](./TERMINAL-CONSOLE.md). Kickoff:
-[`docs/KICKOFF-terminal-observer.md`](./KICKOFF-terminal-observer.md). Prefer **Codex Luna**.
+Design: [`docs/TERMINAL-CONSOLE.md`](./TERMINAL-CONSOLE.md) (§9 DoD ticked). Kickoff:
+[`docs/KICKOFF-terminal-observer.md`](./KICKOFF-terminal-observer.md). Built by **Codex Luna**, 2026-09-08.
 
 **Parked (do not build):** Privy Global Wallet / `@privy-io/cross-app-connect` inside the SaaS Console.
 
-### Freedom envelope
+**Do not regress:** OBSERVER stays membership-only and stays out of `desiredGrants()`; the terminal's dialogue may
+only run `open_console` / `observer_*` (`run_checks.gd` `_check_terminal()` fails the build otherwise); every overlay
+exit calls `focusCanvas()` and the panel unmounts.
 
-- Which existing `computerScreen` becomes the interactable (manager, AO, or both)
+### Freedom envelope (as used)
+
+- Which existing `computerScreen` becomes the interactable (manager, AO, or both) — **both**
 - Overlay chrome / CRT framing (HTML overlay only — not a live SubViewport texture)
 - Bridge version label (`u5.1` vs `u7.t` etc.) as long as ENS + Priority methods remain
 - Iframe vs top-level-tab fallback when CSP blocks framing
@@ -551,14 +563,20 @@ Design: [`docs/TERMINAL-CONSOLE.md`](./TERMINAL-CONSOLE.md). Kickoff:
 - SaaS Privy connector; Arc revive; ship packaging; default OBSERVER on every `/provision`; any write bits on OBSERVER; custom Solidity; merging GameLab ENG trees
 - **Do not block on Uniswap** — S1 is a parallel authorized mission (§5i); do not merge FX desk work into Terminal commits
 
-### Definition of Done
+### Definition of Done — **met**
 
-- [ ] Terminal overlay from in-world computer; close returns canvas focus
-- [ ] `/observer/grant` + `/observer/revoke` (names flexible) via roleConfigBatch; OBSERVER has **no** function permissions
-- [ ] Bridge + MockChain methods; ENS or `0x` input
-- [ ] Iframe loads bloxchain.app **or** documented fallback (new tab) if framed
-- [ ] Kill tests: observer can read a permissioned view; observer cannot pay/wire/config; revoke works; live 1337 evidence in progress note
-- [ ] REFLECTION row; this §5h DoD updated
+Evidence: local `docs/progress/2026-09-08-terminal-observer.md`.
+
+- [x] Terminal overlay from in-world computer; close returns canvas focus — `MgrScreen` (manager) + `AOScreen` (Account Opening) via `apps/game/scripts/terminal.gd`; after close `document.activeElement` and `elementFromPoint(centre)` are both `#canvas`, and the panel renders nothing at all while closed
+- [x] `/observer/grant` + `/observer/revoke` + `/observer/list` via `roleConfigBatch`; OBSERVER has **no** function permissions — `getActiveRolePermissions(OBSERVER)` reads back empty on chain, and the panel prints that list to the player
+- [x] Bridge + MockChain methods; ENS or `0x` input — bridge **`u5.1`**; names resolve through the existing `/ens/resolve`; MockChain answers the three observer verbs and refuses `openConsole` (`CONSOLE_UNAVAILABLE`) rather than faking a panel it cannot produce
+- [x] Iframe loads bloxchain.app **and** a documented fallback — it frames today (no `X-Frame-Options`, no `frame-ancestors`; `load` in ~150 ms). A *refused* frame is undetectable from the parent, so the new-tab link is permanent instead of auto-triggered (TERMINAL-CONSOLE §6)
+- [x] Kill tests — `npm -w apps/teller-desk run killtests:observer` **9/9** on 1337: reads pass with the role (O2) and `NoPermission` without it (O2b control); three direct writes refused (O3); a **valid owner-signed Lane A slip** submitted by the viewing wallet refused (O3b); grant `0xdcb6c95f…badfe`, revoke `0xcfe66118…de8a8`; Re-check leaves it alone (O6)
+- [x] REFLECTION row; this §5h DoD updated
+
+**Not owed, not done:** no human has driven grant → Import → Connect *inside* the framed Console end to end (it needs
+an OTP sign-in and a MetaMask). The grant half is on chain, the frame half is screenshotted. Which chain the Console
+itself can reach stays a Console-side **VERIFY** (TERMINAL-CONSOLE §7) — grant on the account the iframe can see.
 
 ---
 
@@ -601,14 +619,14 @@ MockChain for greybox only — **K7 evidence must be live Sepolia**.
 
 | Next | Gate |
 |------|------|
-| **Terminal Console + OBSERVER** | Stretch — **open** ([`KICKOFF-terminal-observer.md`](./KICKOFF-terminal-observer.md); Luna) |
+| **Terminal Console + OBSERVER** | Stretch — **met** 2026-09-08 (§5h; local `docs/progress/2026-09-08-terminal-observer.md`) |
 | U7 polish | Principal playtest — **met** 2026-09-07 ([`KICKOFF-U7-polish.md`](./KICKOFF-U7-polish.md); owed: principal re-playtest) |
 | **U7 ship packaging** | G8–G10 — **open** after re-playtest ([`KICKOFF-U7-ship-package.md`](./KICKOFF-U7-ship-package.md)) |
 | U6 Arc + manager role | G7 — **deferred** (revive ARC.md §5b) |
 
-**Now:** staged art Stage 1–5 **met**; ship reel **met**; polish **met** (code); practice faucet **met**.
-Terminal/OBSERVER stretch is authorized in parallel with packaging. Do not reopen Arc funding; elevator refuses
-with coming-soon. Packaging waits on the principal's re-walk of the ten findings.
+**Now:** staged art Stage 1–5 **met**; ship reel **met**; polish **met** (code); practice faucet **met**;
+Terminal/OBSERVER stretch **met**. Do not reopen Arc funding; elevator refuses with coming-soon. Packaging waits on
+the principal's re-walk of the ten findings.
 
 Cut order unchanged: Uniswap → Manager → Arc → ENS EAC → ENS mint. **Never cut Privy or Lane B.**
 
@@ -620,8 +638,7 @@ Cut order unchanged: Uniswap → Manager → Arc → ENS EAC → ENS mint. **Nev
 - Would wipe Remote EVM or re-add contracts compile as default
 - Scope drifts to greybox redesign / ENS rework / Uniswap without a gate
 - Lane B blocked and PLAN fallback not chosen
-- Stretch tries to add Privy cross-app or write permissions on OBSERVER
+- A change would add Privy cross-app, or any write permission on OBSERVER
 
-Leave: commands, file pointers, kill-test log. Stretch resumes from
-[`docs/KICKOFF-terminal-observer.md`](./KICKOFF-terminal-observer.md). Packaging resumes from
+Leave: commands, file pointers, kill-test log. Packaging resumes from
 [`docs/KICKOFF-U7-ship-package.md`](./KICKOFF-U7-ship-package.md) after the principal's polish re-playtest.

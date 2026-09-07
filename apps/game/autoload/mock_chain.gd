@@ -13,6 +13,8 @@ const MANAGER := "0xE11BA2b4D45Eaed5996Cd0823791E0C93114882d"
 const TIMELOCK_SEC := 30
 const INSTANT_LIMIT := "100"
 const OPENING_BALANCE := 500.0
+## Terminal Console (stretch): how many viewing wallets the mock account will carry.
+const OBSERVER_MAX_WALLETS := 3
 
 ## Cooling period the mock writes into new wires. The demo autopilot stretches it so the vault beats
 ## (Bob refuses early, Okafor's Priority release) still happen at a human reading pace.
@@ -27,6 +29,7 @@ var receipts: Array = []     # Receipt dictionaries
 var ens_name := ""
 var ens_tier := "Silver"
 var ens_names: Array = []
+var observers: Array = []    # viewing wallets on the mock OBSERVER role (addresses, strings only)
 var _next_tx_id := 1
 var _job := 0
 var chain_id := 1337
@@ -111,8 +114,82 @@ func call_method(method: String, args: Dictionary) -> Dictionary:
 			return await _decide(args, "cancel")
 		"priority":
 			return await _priority(args)
+		"openConsole":
+			# The Console panel belongs to the browser shell, and MockChain is what answers when there is no shell
+			# (desktop) or when the shell was told to stand down (`?mock`). Saying "opened" here would be a lie the
+			# player could see through — an empty screen — so it refuses with a line the terminal has.
+			return _err("CONSOLE_UNAVAILABLE", "MockChain has no browser panel to open")
+		"observerList":
+			return _ok(_observer_list())
+		"observerGrant":
+			return await _observer_grant(args)
+		"observerRevoke":
+			return await _observer_revoke(args)
 		_:
 			return _err("UNKNOWN_METHOD", "unknown bridge method %s" % method)
+
+
+## Terminal Console (stretch) — the OBSERVER viewing role, mocked. Membership only: the permission list this
+## returns is always empty, because that is the whole invariant the real lane keeps (docs/TERMINAL-CONSOLE.md §5).
+func _observer_list() -> Dictionary:
+	return {
+		"role": "0xM0CK0B5E", "roleName": "OBSERVER", "exists": not observers.is_empty(),
+		"maxWallets": OBSERVER_MAX_WALLETS, "wallets": observers.duplicate(), "permissions": [],
+	}
+
+
+func _observer_grant(args: Dictionary) -> Dictionary:
+	if account == "":
+		return _err("NO_ACCOUNT", "No account opened for this player")
+	var address := str(args.get("address", args.get("wallet", ""))).strip_edges()
+	if not address.begins_with("0x") or address.length() != 42:
+		return _err("BAD_ARGS", "not an address: %s" % address)
+	if address.to_lower() == OWNER.to_lower() or address.to_lower() == MANAGER.to_lower():
+		return _err("OBSERVER_SELF", "%s already holds a role on this account" % address)
+	for w in observers:
+		if str(w).to_lower() == address.to_lower():
+			var same := _observer_list()
+			same["address"] = address
+			same["changed"] = false
+			return _ok(same)
+	if observers.size() >= OBSERVER_MAX_WALLETS:
+		return _err("OBSERVER_FULL", "this account already carries %d viewing wallet(s)" % observers.size())
+	var job := _new_job()
+	_stage(job, "CONFIG", "signing", "Writing the viewing wallet onto your file…")
+	await get_tree().create_timer(0.7).timeout
+	observers.append(address)
+	var h := _hash()
+	_stage(job, "CONFIG", "mined", "Viewing wallet added. It can read this account and nothing else.", {"hash": h})
+	var res := _observer_list()
+	res["address"] = address
+	res["changed"] = true
+	res["jobId"] = job
+	res["hash"] = h
+	return _ok(res)
+
+
+func _observer_revoke(args: Dictionary) -> Dictionary:
+	if account == "":
+		return _err("NO_ACCOUNT", "No account opened for this player")
+	var address := str(args.get("address", args.get("wallet", ""))).strip_edges()
+	var idx := -1
+	for i in observers.size():
+		if str(observers[i]).to_lower() == address.to_lower():
+			idx = i
+	if idx < 0:
+		return _err("NOT_OBSERVER", "%s is not a viewing wallet on this account" % address)
+	var job := _new_job()
+	_stage(job, "CONFIG", "signing", "Striking the viewing wallet off your file…")
+	await get_tree().create_timer(0.6).timeout
+	observers.remove_at(idx)
+	var h := _hash()
+	_stage(job, "CONFIG", "mined", "Viewing wallet removed. That address can no longer read your account.", {"hash": h})
+	var res := _observer_list()
+	res["address"] = address
+	res["changed"] = true
+	res["jobId"] = job
+	res["hash"] = h
+	return _ok(res)
 
 
 func _pay(args: Dictionary) -> Dictionary:
