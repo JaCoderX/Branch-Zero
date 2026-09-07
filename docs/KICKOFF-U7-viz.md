@@ -114,5 +114,6 @@ Stop when the early DoD is met or a named budget blocker needs a principal cut.
 
 ## After this pass
 
-Resume construction units from HANDOFF: **U5 ENS** → U6 Arc → **full U7** Feel / ship (G8–G10). This kickoff does
-not replace [`docs/DEV-LOOP.md`](./DEV-LOOP.md) U7; it front-loads art so Day-8 ship is polish + video, not first mesh.
+**Stage 1 met** ([`docs/progress/2026-09-07-u7-early-viz.md`](./progress/2026-09-07-u7-early-viz.md)). Next art unit:
+[`docs/KICKOFF-U7-viz-stage2.md`](./KICKOFF-U7-viz-stage2.md) (hero polish). Product units stay on HANDOFF:
+**U5 ENS** → U6 Arc → **full U7** Feel / ship (G8–G10).
