@@ -110,4 +110,5 @@ Stop when Stage 3 DoD is met or a named budget/licence blocker needs a principal
 
 ## After this pass
 
-Next art: **Stage 4** (wall shell / MultiMesh fill). Product mission stays **U5 ENS**.
+Next art unit: **Stage 4** — [`docs/KICKOFF-U7-viz-stage4.md`](./KICKOFF-U7-viz-stage4.md) (wall shell). Product
+mission stays **U5 ENS** until HANDOFF says otherwise. Full U7 Feel / ship remains G8–G10.
