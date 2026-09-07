@@ -125,5 +125,5 @@ Stop when Stage 5 DoD is met or a named budget/licence blocker needs a principal
 
 ## After this pass
 
-Art ladder complete for staged viz. Product mission stays **U6 Arc** until HANDOFF opens full U7 ship /
-submission (G8–G10 packaging). Any remaining ship tasks (store page, final video edit) are principal-scheduled.
+Staged viz ladder complete (Stages 1–5). Next visual unit: [`docs/KICKOFF-U7-ship-reel.md`](./KICKOFF-U7-ship-reel.md)
+(continuous demo reel). Product mission stays **U6 Arc** until HANDOFF opens full U7 ship packaging.
