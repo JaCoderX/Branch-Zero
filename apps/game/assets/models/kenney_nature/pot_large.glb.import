@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://doyxmlvr8fmui"
-path="res://.godot/imported/plantSmall3.glb-828d67f09fbc9d956683c8f57773301b.scn"
+uid="uid://rybioxddy6v1"
+path="res://.godot/imported/pot_large.glb-597753f1e0d0101f414c2762a64cc5a0.scn"
 
 [deps]
 
-source_file="res://assets/models/kenney_furniture/plantSmall3.glb"
-dest_files=["res://.godot/imported/plantSmall3.glb-828d67f09fbc9d956683c8f57773301b.scn"]
+source_file="res://assets/models/kenney_nature/pot_large.glb"
+dest_files=["res://.godot/imported/pot_large.glb-597753f1e0d0101f414c2762a64cc5a0.scn"]
 
 [params]
 

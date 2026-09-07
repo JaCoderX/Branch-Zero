@@ -17,7 +17,7 @@ Paste into a **new** Claude Code / Cursor agent session. Prefer **Fable 5.1**. E
 | 6a | KayKit furniture fill (palette remap) | **met** |
 | 6b | MrEliptik desk clutter | **skipped** (NYOP) |
 | 6c | ambientCG albedo on existing palette slots | **met** |
-| 6d | Kenney Nature Kit plants | optional — [`KICKOFF-U7-viz-stage6d.md`](./KICKOFF-U7-viz-stage6d.md) |
+| 6d | Kenney Nature Kit plants | **met** 2026-09-07 — [`KICKOFF-U7-viz-stage6d.md`](./KICKOFF-U7-viz-stage6d.md) |
 
 ---
 

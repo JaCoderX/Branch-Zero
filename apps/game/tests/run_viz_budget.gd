@@ -15,6 +15,10 @@ extends SceneTree
 ## on the merged mesh under Compatibility). Stage 5 adds the feel layer: at most two particle systems (CPU, shadowless,
 ## unshaded billboards) whose materials still fit the 40, Inter installed as the default font with Cinzel on the title
 ## plaques (both OFL, licences beside the files), the HUD anchored to the bottom band, and the spring arm off the shoulder.
+## Stage 6d adds the plants: the Kenney Nature Kit picks and their licence are present, the eight planters stand where
+## the Furniture Kit plants stood with the same colliders, every kit material was replaced by a palette Material (no
+## metallic-1 teal survives, +0 unique materials), all of it baked, the arrangements are denser than the 60-tri
+## pottedPlant they replace, and no planter reaches the ledger-board rows or the vault repeater / clock sightlines.
 
 const MAX_MATERIALS := 40
 const MAX_TRIS := 400_000
@@ -23,6 +27,8 @@ const MAX_OMNIS := 8          # Compatibility lights ≤ 8 omnis per mesh and th
 const MIN_SHELL_PIECES := 300  # Stage 4 built 415 wall / ceiling modules; fewer means a build path was lost
 const MAX_PARTICLES := 2       # Stage 5: skylight dust + stamp ink — CPUParticles3D only, shadowless, unshaded
 const MIN_PLAQUES_DRESSED := 8 # Stage 5: title plaques carrying the Cinzel face
+const MIN_PLANTERS := 8        # Stage 6d: LobbyPlant0..2, AOPlant, AODeskPlant, MgrPlant, NameDeskPlant, VaultLedgePlant
+const MIN_NATURE_TRIS := 1200  # Stage 6d: the eight Furniture Kit plants were ~640 tris together; denser or it is not an upgrade
 
 var failures := 0
 
@@ -345,6 +351,95 @@ func _run() -> void:
 		_ok("Marble / Wood / Ceiling / Paper palette slots carry albedo textures (no new material class)")
 	else:
 		_fail("only %d/4 Stage 6c palette slots textured" % textured_slots)
+
+	# plants (U7 viz Stage 6d): Kenney Nature Kit (CC0) planters replace the Furniture Kit plants in place.
+	print("plants (Stage 6d)")
+	var nk_dir := "res://assets/models/kenney_nature/"
+	var nk_files: PackedStringArray = ["pot_large", "pot_small", "tree_thin", "tree_small_dark", "tree_palmShort", "plant_bushDetailed", "plant_bushSmall", "plant_flatShort", "plant_flatTall", "flower_redA"]
+	var nk_missing: PackedStringArray = []
+	for f in nk_files:
+		if not ResourceLoader.exists(nk_dir + f + ".glb"):
+			nk_missing.append(f)
+	var nk_roots := 0
+	var planters: Dictionary = {}
+	for n in _all(interior4):
+		if n.has_meta("glb") and str(n.get_meta("glb")).begins_with(nk_dir):
+			nk_roots += 1
+		if n.has_meta("planter"):
+			planters[n.name] = n.get_meta("planter_aabb")
+	var nk_instances := int(interior4.get_meta("nature_instances", 0))
+	var nk_tris := int(interior4.get_meta("nature_tris", 0))
+	print("  %d Nature Kit picks · %d instances in %d planters (%d tris) · %d kit roots left outside the batch" % [nk_files.size(), nk_instances, planters.size(), nk_tris, nk_roots])
+	if nk_missing.is_empty() and FileAccess.file_exists(nk_dir + "LICENSE-kenney-nature-kit.txt"):
+		_ok("all %d Nature Kit .glb present with LICENSE-kenney-nature-kit.txt beside them" % nk_files.size())
+	else:
+		_fail("Nature Kit files missing: %s (licence %s)" % [", ".join(nk_missing), "present" if FileAccess.file_exists(nk_dir + "LICENSE-kenney-nature-kit.txt") else "MISSING"])
+	var want_planters: PackedStringArray = ["LobbyPlant0", "LobbyPlant1", "LobbyPlant2", "AOPlant", "AODeskPlant", "MgrPlant", "NameDeskPlant", "VaultLedgePlant"]
+	var planter_missing: PackedStringArray = []
+	for pn in want_planters:
+		if not planters.has(pn):
+			planter_missing.append(pn)
+	if planters.size() >= MIN_PLANTERS and planter_missing.is_empty() and nk_instances >= 2 * MIN_PLANTERS and nk_roots == 0:
+		_ok("%d planters (pot + foliage, %d kit instances), every Nature Kit mesh baked (no kit root left standing)" % [planters.size(), nk_instances])
+	else:
+		_fail("planters: %d built (missing %s), %d kit instances, %d kit roots outside the batch" % [planters.size(), ", ".join(planter_missing), nk_instances, nk_roots])
+	if nk_tris >= MIN_NATURE_TRIS:
+		_ok("plants are %d tris (≥ %d; the Furniture Kit plants were ~640) — denser silhouettes" % [nk_tris, MIN_NATURE_TRIS])
+	else:
+		_fail("plants are only %d tris (< %d) — not denser than the Furniture Kit plants" % [nk_tris, MIN_NATURE_TRIS])
+	var kit_mats: PackedStringArray = []
+	for id in mats.keys():
+		var m: Material = mats[id]
+		if m is StandardMaterial3D and (m as StandardMaterial3D).metallic >= 0.95 and (m as StandardMaterial3D).roughness >= 0.95:
+			kit_mats.append(m.resource_name)   # the Nature Kit's own factors — nothing in the palette is metallic 1 / rough 1
+	if kit_mats.is_empty() and mats.size() <= 36:
+		_ok("no Nature Kit material survives (metallic 1 / roughness 1); %d unique mesh materials ≤ 36 (Stage 6c had 36 — plants cost +0)" % mats.size())
+	else:
+		_fail("Nature Kit remap leaked: raw kit materials %s; %d unique mesh materials (Stage 6c: 36)" % [", ".join(kit_mats), mats.size()])
+	var retired6d: PackedStringArray = []
+	for f in ["pottedPlant", "plantSmall1", "plantSmall2", "plantSmall3"]:
+		if ResourceLoader.exists("res://assets/models/kenney_furniture/" + f + ".glb"):
+			retired6d.append(f)
+	if retired6d.is_empty():
+		_ok("retired Furniture Kit plants gone (pottedPlant, plantSmall1–3)")
+	else:
+		_fail("retired Furniture Kit plant files still in the tree: %s" % ", ".join(retired6d))
+	# colliders under the plants that block: the three lobby cylinders and the Account Opening landmark box (U3 places)
+	var plant_bodies := {"LobbyPlant0BodyCollider": Vector3(-5.0, 1.0, -3.2), "LobbyPlant1BodyCollider": Vector3(-1.0, 1.0, -3.2), "LobbyPlant2BodyCollider": Vector3(3.0, 1.0, -3.2), "AOPlantCollider": Vector3(-11.6, 1.1, 9.6)}
+	var plant_body_bad: PackedStringArray = []
+	for bn in plant_bodies.keys():
+		var b := interior4.get_node_or_null(bn) as StaticBody3D
+		if b == null or not b.position.is_equal_approx(plant_bodies[bn]):
+			plant_body_bad.append(bn)
+	if plant_body_bad.is_empty():
+		_ok("lobby plant cylinders and the Account Opening landmark box still where U3 put them")
+	else:
+		_fail("plant colliders moved or missing: %s" % ", ".join(plant_body_bad))
+	# sightlines: from the lobby eye points the ledger-board rows (y ≥ 2.2 at z = -4.7), the vault repeater
+	# (8, 3.58, -4.78) and the door clock (8, 3.62, -10.08) must not cross a planter's tight AABB (vertex extents);
+	# floor planters stay within 1.4 m of footprint (the 1 m colliders + frond overhang above shoulder height) and
+	# under 2.0 m; desk pots stay under 0.6 m
+	var eyes: Array[Vector3] = [Vector3(3.0, 1.7, 6.0), Vector3(8.0, 1.7, 1.0), Vector3(5.0, 1.7, 9.0), Vector3(-1.0, 1.7, 0.5)]
+	var targets := {"ledger rows": Vector3(0.0, 2.3, -4.7), "ledger rows west": Vector3(-3.5, 2.3, -4.7), "vault repeater": Vector3(8.0, 3.58, -4.78), "vault clock": Vector3(8.0, 3.62, -10.08)}
+	var sight_bad: PackedStringArray = []
+	var tall: PackedStringArray = []
+	for pn in planters.keys():
+		var bb: AABB = planters[pn]
+		var floor_planter: bool = str(pn).begins_with("LobbyPlant") or str(pn) == "AOPlant"
+		if floor_planter and bb.end.y > 2.0:
+			tall.append("%s %.2f m" % [pn, bb.end.y])
+		if floor_planter and (bb.size.x > 1.4 or bb.size.z > 1.4):
+			tall.append("%s footprint %.2f × %.2f m" % [pn, bb.size.x, bb.size.z])
+		if not floor_planter and bb.size.y > 0.6:
+			tall.append("%s desk pot %.2f m" % [pn, bb.size.y])
+		for e in eyes:
+			for tn in targets.keys():
+				if bb.intersects_segment(e, targets[tn]):
+					sight_bad.append("%s blocks %s from %s" % [pn, tn, str(e)])
+	if sight_bad.is_empty() and tall.is_empty():
+		_ok("no planter crosses the ledger-board, repeater or clock sightlines; floor planters ≤ 2.0 m, desk pots ≤ 0.6 m")
+	else:
+		_fail("planters: %s" % "; ".join(sight_bad + tall))
 
 	print("freeze rules")
 	var bad_layers: PackedStringArray = []

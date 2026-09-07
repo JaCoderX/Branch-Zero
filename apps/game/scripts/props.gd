@@ -16,12 +16,17 @@ extends RefCounted
 ##  - Stage 6c surface grain (assets/textures/surfaces, ambientCG CC0 albedo only): Marble / Wood / Ceiling sample
 ##    512² JPEGs tinted by the WingTheme colour. Same material slots — zero new unique materials. Floor stays the
 ##    procedural terrazzo (no photoreal floor map). Stage 6b (MrEliptik office pack) was skipped: itch NYOP, not free.
+##  - Kenney Nature Kit props (assets/models/kenney_nature, CC0, U7 viz Stage 6d) are the lobby / desk plants: flat
+##    teal-green kit colours with metallic 1 / roughness 1 in the .glb, so `nature_recolor` replaces every kit material
+##    outright with a palette Material (foliage → Plant, trunks and soil → WoodDark, pot body → MarbleDark or Cream)
+##    and the mesh carries shape only — zero new materials, and the plants bake with everything else.
 ## Anything that blocks the player gets a StaticBody3D on layer 1 / mask 0 — colliders that block must not listen
 ## (U4+ lesson: Godot Physics on web shoves listening bodies).
 
 const HERO := "res://assets/models/hero/"
 const KIT := "res://assets/models/kenney_furniture/"
 const KAYKIT := "res://assets/models/kaykit_furniture/"
+const NATURE := "res://assets/models/kenney_nature/"
 const CHARACTERS := "res://assets/characters/kenney_blocky/"
 const SURFACES := "res://assets/textures/surfaces/"
 
@@ -252,6 +257,31 @@ static func kaykit(parent: Node, name: String, file: String, pos: Vector3, yaw: 
 	var o := {"center": true, "ground": true}
 	o.merge(opts, true)
 	return place(parent, name, KAYKIT + file + ".glb", pos, yaw, o, collider, collider_offset)
+
+
+## Kenney Nature Kit props (U7 viz Stage 6d, CC0) are authored at 1 unit = 1 m around a centred footprint. Their
+## materials are flat teal greens and terracotta with metallic 1 / roughness 1, so none of them may reach `color()`:
+## `nature_recolor` hands every kit material name a palette Material and the mesh carries shape only. opts `pot`
+## (a palette name, default MarbleDark) picks the pot body's colour; foliage always lands on the Plant slot.
+static func nature(parent: Node, name: String, file: String, pos: Vector3, yaw: float = 0.0, opts: Dictionary = {}, collider: Vector3 = Vector3.ZERO, collider_offset: Vector3 = Vector3.ZERO) -> Node3D:
+	var o := {"center": true, "ground": true, "recolor": nature_recolor(str(opts.get("pot", "MarbleDark")))}
+	o.merge(opts, true)
+	return place(parent, name, NATURE + file + ".glb", pos, yaw, o, collider, collider_offset)
+
+
+## Nature Kit material names → palette Materials (names read from the .glb files): grass / leafsGreen / leafsDark are
+## the foliage (→ Plant); woodBark / woodBarkDark the trunks and the soil disc inside the pots (→ WoodDark); wood the
+## pot body (→ `pot`); _defaultMat the pot's hidden inner disc (→ WoodDark); colorRed the one flower accent (→ Rope,
+## oxblood). Every value is a Material, never a Color — `retarget` then never sees the kit's metallic-1 factors.
+static func nature_recolor(pot: String = "MarbleDark") -> Dictionary:
+	var plant := palette("Plant")
+	var dark := palette("WoodDark")
+	return {
+		"grass": plant, "leafsGreen": plant, "leafsDark": plant,
+		"woodBark": dark, "woodBarkDark": dark, "_defaultMat": dark,
+		"wood": palette(pot),
+		"colorRed": palette("Rope"), "colorYellow": palette("Brass"), "colorPurple": palette("MarbleDark"), "colorWhite": palette("Cream"),
+	}
 
 
 ## The KayKit atlas is an 8 × 4 grid of flat colours (each cell a gentle top-to-bottom gradient, 128 × 256 px of the

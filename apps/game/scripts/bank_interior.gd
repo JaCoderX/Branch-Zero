@@ -11,6 +11,9 @@ extends Node3D
 ## behind the counters) for denser KayKit Furniture Bits (CC0) split into the same palette materials (PropKit.kaykit):
 ## couches where the bench pairs were, side tables + lamps, credenzas, a dressed cabinet, framed pictures, rugs. Every
 ## pre-existing collider keeps its size and place; the few new solids stand behind counters or against the north wall.
+## U7 viz Stage 6d swaps the eight Kenney Furniture Kit plants for Kenney Nature Kit planters (CC0, PropKit.nature): a
+## deep-green marble bowl with a small tree / bush arrangement on the lobby partition and at Account Opening, cream
+## desk pots elsewhere (`_planter`). Same positions, same colliders; every mesh takes an existing palette material.
 ##
 ## Rules kept from U4+: props that block the player collide on layer 1 and listen on mask 0 (Godot Physics on web
 ## shoves listening bodies); nothing sits in the manager door (x ∈ [-9, -7] at z = -5), the vault opening
@@ -64,15 +67,24 @@ func _count_fill() -> void:
 	var instances := 0
 	var split := 0
 	var tris := 0
+	var nature := 0
+	var nature_tris := 0
 	for n in PropKit._all_nodes(self):
 		if n.has_meta("glb") and str(n.get_meta("glb")).begins_with(PropKit.KAYKIT):
 			instances += 1
+		if n.has_meta("glb") and str(n.get_meta("glb")).begins_with(PropKit.NATURE):
+			nature += 1
+			for mi in PropKit._meshes(n):
+				if mi.mesh != null:
+					nature_tris += mi.mesh.get_faces().size() / 3
 		if n is MeshInstance3D and n.has_meta("kaykit_split") and (n as MeshInstance3D).mesh != null:
 			split += 1
 			tris += (n as MeshInstance3D).mesh.get_faces().size() / 3
 	set_meta("kaykit_instances", instances)
 	set_meta("kaykit_split_meshes", split)
 	set_meta("kaykit_tris", tris)
+	set_meta("nature_instances", nature)
+	set_meta("nature_tris", nature_tris)
 
 
 # ---------------------------------------------------------------- shell
@@ -285,7 +297,7 @@ func _north_strip() -> void:
 	# striped rug, a dressed cabinet on the old bookcase collider, a credenza with ledgers west of the poster, pictures
 	# in the north-wall panels either side of it, a standing lamp in the south-west corner
 	PropKit.kaykit(self, "MgrLamp", "lamp_table", Vector3(-9.3, 0.78, -8.95), 0.0, {"fit": Vector3(0.34, 0.46, 0.34)})
-	PropKit.kit(self, "MgrPlant", "plantSmall2", Vector3(-6.7, 0.78, -9.0))
+	_planter("MgrPlant", Vector3(-6.7, 0.78, -9.0), 0.4, ["pot_small", Vector3(0.24, 0.2, 0.24)], [["plant_bushSmall", Vector3(0.36, 0.22, 0.36)], ["plant_flatTall", Vector3(0.2, 0.3, 0.2), Vector3(0.04, 0.0, -0.03)]], "Cream")
 	PropKit.kaykit(self, "MgrChairA", "chair_A", Vector3(-8.8, 0, -7.6), PI, {"scale": 0.68}, Vector3(0.5, 0.5, 0.5), Vector3(0, 0.25, 0))
 	PropKit.kaykit(self, "MgrChairB", "chair_A", Vector3(-7.2, 0, -7.6), PI, {"scale": 0.68}, Vector3(0.5, 0.5, 0.5), Vector3(0, 0.25, 0))
 	PropKit.kaykit(self, "MgrRug", "rug_rectangle_stripes_B", Vector3(-8.0, 0.004, -8.4), 0.0, {"fit": Vector3(3.8, 0.02, 2.8)})
@@ -319,7 +331,7 @@ func _north_strip() -> void:
 	box_m("VaultWindow", Vector3(13.5, 1.6, -10.85), Vector3(2.0, 1.2, 0.1), glass, false)
 	box_m("VaultWindowFrame", Vector3(13.5, 1.6, -10.83), Vector3(2.16, 1.36, 0.06), brass, false)
 	box_m("VaultWindowLedge", Vector3(13.5, 1.0, -10.65), Vector3(2.2, 0.08, 0.4), PropKit.palette("MarbleDark"), false)
-	PropKit.kit(self, "VaultLedgePlant", "plantSmall3", Vector3(14.3, 1.04, -10.65))
+	_planter("VaultLedgePlant", Vector3(14.3, 1.04, -10.65), 0.0, ["pot_small", Vector3(0.24, 0.2, 0.24)], [["plant_flatTall", Vector3(0.28, 0.36, 0.28)]], "Cream")
 	plaque("VAULT WINDOW", Vector3(13.5, 2.5, -10.7), 0.0, 0.3, theme.trim_color)
 
 
@@ -338,7 +350,7 @@ func _west_column() -> void:
 	PropKit.kaykit(self, "Counter2Shelf", "shelf_B_large_decorated", Vector3(-14.6, 0.9, -1.0), PI / 2, {"fit": Vector3(2.0, 0.82, 0.5)})
 	PropKit.kaykit(self, "Counter2Stool", "chair_stool", Vector3(-12.5, 0, -1.0), 0.0, {"fit": Vector3(0.45, 0.6, 0.45)})
 	PropKit.kit(self, "NameDesk", "desk", Vector3(-12.5, 0, -4.0), PI, {"fit": Vector3(2.4, 0.8, 1.0)}, Vector3(2.4, 0.8, 1.0), Vector3(0, 0.4, 0))
-	PropKit.kit(self, "NameDeskPlant", "plantSmall1", Vector3(-13.4, 0.8, -4.1))
+	_planter("NameDeskPlant", Vector3(-13.4, 0.8, -4.1), 0.7, ["pot_small", Vector3(0.24, 0.2, 0.24)], [["flower_redA", Vector3(0.22, 0.34, 0.24)]], "Cream")
 	box_m("NameDeskLedger", Vector3(-12.0, 0.82, -4.0), Vector3(0.36, 0.04, 0.26), PropKit.palette("Paper"), false)
 	PropKit.hero(self, "NamesBoardFrame", "prop_names_board_frame", Vector3(-14.65, 2.3, -3.8), PI / 2)
 	var quad := MeshInstance3D.new()
@@ -379,12 +391,14 @@ func _account_opening() -> void:
 	solid_box("AODesk", Vector3(-9.0, 0.4, 8.0), Vector3(2.6, 0.8, 1.1))
 	PropKit.kit(self, "AOScreen", "computerScreen", Vector3(-8.6, 0.78, 7.85), PI)
 	PropKit.kit(self, "AOKeyboard", "computerKeyboard", Vector3(-8.6, 0.78, 8.3), PI)
-	PropKit.kit(self, "AODeskPlant", "plantSmall3", Vector3(-9.9, 0.78, 8.3))
+	_planter("AODeskPlant", Vector3(-9.9, 0.78, 8.3), 0.0, ["pot_small", Vector3(0.26, 0.2, 0.26)], [["plant_flatShort", Vector3(0.34, 0.3, 0.34)]], "Cream")
 	box_m("AOLeaflet", Vector3(-8.0, 0.79, 7.75), Vector3(0.2, 0.006, 0.28), PropKit.palette("Paper"), false)
 	PropKit.kit(self, "AOChairA", "chairCushion", Vector3(-10.0, 0, 6.7), 0.0, {}, Vector3(0.5, 0.5, 0.5), Vector3(0, 0.25, 0))
 	PropKit.kit(self, "AOChairB", "chairCushion", Vector3(-8.0, 0, 6.7), 0.0, {}, Vector3(0.5, 0.5, 0.5), Vector3(0, 0.25, 0))
-	# the landmark plant ("the desk with the plant")
-	PropKit.kit(self, "AOPlant", "pottedPlant", Vector3(-11.6, 0, 9.6), 0.3, {"scale": 4.0}, Vector3(1.0, 2.2, 1.0), Vector3(0, 1.1, 0))
+	# the landmark plant ("the desk with the plant"): Stage 6d makes it a parlour palm in a deep-green marble bowl with
+	# a low bush at its foot; the U3 1 × 2.2 × 1 m collider stays where it was (the fronds spread above head height)
+	_planter("AOPlant", Vector3(-11.6, 0, 9.6), 0.3, ["pot_large", Vector3(1.05, 0.5, 1.05)], [["tree_palmShort", Vector3(1.2, 1.5, 1.2)], ["plant_bushSmall", Vector3(0.7, 0.3, 0.7), Vector3(0.12, 0.0, 0.1)], ["plant_flatTall", Vector3(0.35, 0.4, 0.35), Vector3(-0.28, 0.0, -0.2)]])
+	solid_box("AOPlant", Vector3(-11.6, 1.1, 9.6), Vector3(1.0, 2.2, 1.0))
 	PropKit.kit(self, "BrochureRack", "bookcaseOpen", Vector3(-6.0, 0, 10.6), 0.0, {"fit": Vector3(1.0, 1.6, 0.3)}, Vector3(1.0, 1.6, 0.3), Vector3(0, 0.8, 0))
 	PropKit.kit(self, "AORug", "rugRectangle", Vector3(-9.0, 0.004, 8.4), 0.0, {"fit": Vector3(3.6, 0.01, 3.0)})
 	plaque("ACCOUNT OPENING", Vector3(-9.0, 3.0, 10.8), PI, 0.35, theme.graphite_color)
@@ -409,9 +423,16 @@ func _lobby_furniture() -> void:
 		PropKit.kaykit(self, "SideLamp%d" % i, "lamp_table", Vector3(x, 0.55, 2.5), 0.0, {"fit": Vector3(0.32, 0.44, 0.32)})
 	# Lobby side of the north partition. Off the manager door (x ∈ [-9, -7]) and the vault
 	# opening (x ∈ [6, 10]); escort last lobby waypoint is ~(6, -3.5).
+	# Stage 6d: three Nature Kit planters on the same 0.5 m cylinder colliders — a bushy small tree at each end and a
+	# lower dark tree in a bush ring in the middle, so the ledger board rows (y ≥ 2.2) stay clear from the lobby.
 	var plant_x := PackedFloat32Array([-5.0, -1.0, 3.0])
+	var lobby_planters := [
+		[["tree_thin", Vector3(1.15, 1.45, 1.15)]],
+		[["tree_small_dark", Vector3(0.7, 1.25, 0.7)], ["plant_bushDetailed", Vector3(0.85, 0.4, 0.85)]],
+		[["tree_thin", Vector3(1.1, 1.4, 1.1), Vector3.ZERO, 2.2]],
+	]
 	for i in plant_x.size():
-		PropKit.kit(self, "LobbyPlant%d" % i, "pottedPlant", Vector3(plant_x[i], 0, -3.2), i * 1.1, {"scale": 3.0})
+		_planter("LobbyPlant%d" % i, Vector3(plant_x[i], 0, -3.2), i * 1.1, ["pot_large", Vector3(0.9, 0.42, 0.9)], lobby_planters[i])
 		solid_cylinder("LobbyPlant%dBody" % i, Vector3(plant_x[i], 1.0, -3.2), 0.5, 1.4)
 	PropKit.hero(self, "WaterCooler", "prop_water_cooler", Vector3(8.0, 0, 4.5))
 	# split-flap housing on the north partition; the rows are scripts/ledger_board.gd's SubViewport quad at z = -4.7
@@ -792,6 +813,41 @@ func solid_cylinder(name: String, pos: Vector3, radius: float, height: float) ->
 	body.add_child(shape)
 	add_child(body)
 	return body
+
+
+## Stage 6d planter: one Nature Kit pot with foliage picks standing in it, all under one Node3D so the arrangement yaws
+## together. `pot` = [file, fit] (world size of the pot); each `foliage` entry is [file, fit, offset, yaw] (offset and
+## yaw optional) — offsets are measured from the pot's centre at soil height. The kit's pots are open bowls with the
+## soil disc at ~¾ of the pot height, so foliage is grounded there and the rim hides its base. `pot_mat` is the
+## palette name of the pot body (MarbleDark bowls on the floor, Cream pots on desks). No collider here: the callers
+## keep the U3 / U7 colliders under the plants that block. The world AABB is stored on the node and counted, so
+## tests/run_viz_budget.gd can check every planter's height against the ledger-board and vault sightlines.
+func _planter(name: String, pos: Vector3, yaw: float, pot: Array, foliage: Array, pot_mat: String = "MarbleDark") -> Node3D:
+	var root := Node3D.new()
+	root.name = name
+	root.position = pos
+	root.rotation.y = yaw
+	root.set_meta("planter", true)
+	add_child(root)
+	var pot_fit: Vector3 = pot[1]
+	PropKit.nature(root, name + "Pot", pot[0], Vector3.ZERO, 0.0, {"fit": pot_fit, "pot": pot_mat})
+	var soil_y := pot_fit.y * 0.75
+	for i in foliage.size():
+		var f: Array = foliage[i]
+		var off: Vector3 = f[2] if f.size() > 2 else Vector3.ZERO
+		var fyaw: float = f[3] if f.size() > 3 else 0.0
+		PropKit.nature(root, "%sFoliage%d" % [name, i], f[0], Vector3(off.x, soil_y + off.y, off.z), fyaw, {"fit": f[1]})
+	# tight world AABB from the vertices themselves (a rotated box's AABB would inflate twice: foliage yaw, then root yaw)
+	var bb := AABB(root.position, Vector3.ZERO)
+	for mi in PropKit._meshes(root):
+		if mi.mesh == null:
+			continue
+		var xf := root.transform * PropKit.rel_xform(mi, root)
+		for v in mi.mesh.get_faces():
+			bb = bb.expand(xf * v)
+	root.set_meta("planter_aabb", bb)
+	set_meta("planters", int(get_meta("planters", 0)) + 1)
+	return root
 
 
 func box(name: String, pos: Vector3, size: Vector3, color: Color, solid: bool = true) -> Node3D:

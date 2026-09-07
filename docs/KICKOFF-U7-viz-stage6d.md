@@ -17,7 +17,7 @@ Paste into a **new** Claude Code / Cursor agent session. Prefer **Fable 5.1**. E
 | 6a | KayKit furniture fill (palette remap) | **met** (`9a00f8b`) |
 | 6b | MrEliptik desk clutter | **skipped** (itch NYOP — not free intake) |
 | 6c | ambientCG albedo on existing Marble/Wood/Ceiling/Paper | **met** (`3abe152`) |
-| **6d** | **Kenney Nature Kit plants — denser silhouettes** | **this kickoff** |
+| **6d** | **Kenney Nature Kit plants — denser silhouettes** | **met** 2026-09-07 (local `docs/progress/2026-09-07-u7-viz-stage6d.md`) |
 
 **Baselines after 6c (do not regress):** worst draws ~290 / prims ~167k / materials **36 mesh · 38 with particles** (≤ 40) / `.pck` ~2 MB. **Material headroom is 2** — Nature Kit must collapse into PropKit `Plant` (+ existing wood/pot colours). Prefer **zero** new unique materials; one shared plant atlas material only if the kit forces it and you stay ≤ 40.
 
