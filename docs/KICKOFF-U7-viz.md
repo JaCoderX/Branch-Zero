@@ -10,6 +10,11 @@ the full U7 ship unit (video, submission, G9–G10). It is **not** U5 ENS and mu
 same window. Sequence U5 Name Desk wiring and this art pass so they do not overlap in code or calendar. No
 dedicated git branch is required if that scheduling holds.
 
+**Ports (when U5 is also running):** day-to-day art in the Godot editor (MockChain). For a web export check only:
+`npm -w apps/web run dev -- --port 5174 --strictPort` → `http://localhost:5174/?mock=account`. Leave `:5173` and
+Teller Desk `:8787` to U5 — do not start a second desk. Do not change `vite.config.ts` defaults (`5173` /
+`strictPort: true` will `EADDRINUSE` if you fight for the primary port).
+
 **Base:** U4+ checkpoint — [`docs/progress/2026-09-07-u4-plus-checkpoint.md`](./progress/2026-09-07-u4-plus-checkpoint.md)
 (principal playtest green; layout + desks frozen). Art direction and budgets:
 [`docs/WORLD-3D-ENVIRONMENT.md`](./WORLD-3D-ENVIRONMENT.md).
@@ -55,6 +60,9 @@ HARD RULES:
   U5 can attach NPC + name-claim form + SubViewport names board without a second layout pass. Soft-finish only.
 - Do not run or edit GameLab ENG folders. Do not wipe Remote EVM. Do not touch apps/teller-desk or apps/web bridge
   except if a prop somehow breaks canvas focus (then fix focus only — see GODOT.md §5b).
+- Ports: if another agent owns the primary stack, do NOT bind :5173 or :8787. Prefer Godot editor play. Web check
+  only: `npm -w apps/web run dev -- --port 5174 --strictPort` and open `http://localhost:5174/?mock=account`.
+  Never start `dev:teller` for this mission. Do not edit vite.config.ts port defaults.
 
 OWN (preferred files):
 - apps/game assets: meshes, materials, textures, WingTheme / Environment, Lighting
@@ -73,7 +81,8 @@ SEQUENCE:
    (keep SubViewport texture path). Lobby must still read as a bank in one glance.
 3. CC0 character bases for existing NPCs (silhouette + idle); do not re-author lines or escort paths.
 4. Optional: stamp / printer / split-flap SFX placeholders (CC0) — volume low; no music pass required.
-5. Export web; hard-refresh; measure vs WORLD-3D §6; fix budget breaches before more props.
+5. Export web; preview on :5174 with ?mock=account (not :5173); measure vs WORLD-3D §6; fix budget breaches
+   before more props.
 6. Progress note (what changed, sizes before/after, licence list). Do NOT advance HANDOFF past U5.
    Full U7 (G8–G10 video + submission) stays a later unit.
 
@@ -100,6 +109,7 @@ Stop when the early DoD is met or a named budget blocker needs a principal cut.
 | Name Desk dress (static props only) | Soft | Owns interactables + Petra |
 | `payment_slip` / forms / dialogue / errors | No | Yes |
 | Bridge / Teller Desk / Privy | No | Yes |
+| Vite `:5174` + `?mock=account` | Yes (preview only) | No — keeps `:5173` / `:8787` |
 | `CREDITS.md` / materials / `.glb` | Yes | No |
 
 ## After this pass
