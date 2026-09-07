@@ -62,7 +62,7 @@ Ordered so that after U2 we can stop and still demo a coherent bank-on-a-chain (
 | **U4+ Priority release** | Ruth waits the clock; Okafor meta-bypass + Passkey before `releaseTime` | G5b | ENG-0012 + 0011 + 0013 — **met 2026-09-07** (ROLE_SET 3 split on chain, `/priority/*`, Passkey step-up in the overlay, policy pins the silent lane to `params.action`; kill tests Y0–Y9) |
 | **U5 ENS** | Subname + pay-by-name | G6 | **met** 2026-09-07 — UR V2 pin; live `u5-mtra3lb6…`; pay on 1337 |
 | **U6 Arc + manager role** | Elevator wing + runtime role (manager already in U4+ as Priority submitter) | G7 | **DEFERRED** 2026-09-07 — PARTIAL kept; revive via [ARC.md §5b](./ARC.md#5b-deferred-revive-checklist-g7--parked-2026-09-07) |
-| **U7 Feel / ship** | Art, video, submission | G8–G10 | ENG-0008 only if S1; staged art Stage 1–5 **met**; continuous demo reel is the open construction lane while Arc is parked |
+| **U7 Feel / ship** | Art, video, submission | G8–G10 | ENG-0008 only if S1; staged art Stage 1–5 **met**; ship reel **met** 2026-09-07 (laptop-local mp4); next = packaging / submission ([DEMO-SCRIPT.md](./DEMO-SCRIPT.md); local `KICKOFF-U7-ship-package.md`) |
 
 Each unit ends with: commit, a local note under `docs/progress/` (gitignored), and a kill/decision line in [REFLECTION.md](./REFLECTION.md) if anything changed.
 

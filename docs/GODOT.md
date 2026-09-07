@@ -223,7 +223,12 @@ starts as a signed-in, delegated player with an open, funded account). The real 
 kill tests run against the Teller Desk (REMOTE-EVM.md §5). Tester keys: **F2 / F3 / F4 / F6 / F7 / F8** teleport to Account Opening /
 Counter 1 / Vault / Lobby / Manager / Name Desk (F5 is the browser's reload and is left alone); **1–9** pick a dialogue choice; **Enter** in the payment slip hands it in.
 
-**Walking demo reel (MockChain):** `godot --path apps/game -- --demo=walk` (or `BRANCH_ZERO_DEMO=walk`, or web `?mock=account&demo=walk`) runs `scripts/demo_walk.gd` — walks the desk circuit with pauses instead of teleports. Record it with `powershell -File .\scripts\record-demo-walk.ps1` (uses GameLab `runtimes/capture`; keep the Godot window maximized).
+**Walking demo reel (MockChain):** `godot --path apps/game -- --demo=walk` (or `BRANCH_ZERO_DEMO=walk`, or web
+`?mock=account&demo=walk`) runs `scripts/demo_walk.gd` — full desk circuit with pauses. Record with
+`powershell -File .\scripts\record-demo-walk.ps1` (default: ffmpeg **ddagrab** client-rect grab + go marker so Mo is
+on film; `-Encoder x264` falls back to GameLab `runtimes/capture`). Keep the Godot window maximized on the primary
+monitor; leave the desktop alone for ~4 minutes. Output under `docs/progress/captures/` (gitignored). See local
+`docs/progress/2026-09-07-u7-ship-reel.md` for the accepted take.
 
 ---
 
