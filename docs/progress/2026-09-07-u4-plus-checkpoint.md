@@ -67,3 +67,5 @@ What this stretch reinforced:
 ## Next
 
 **U5 ENS (G6)** — [`docs/KICKOFF-U5.md`](../KICKOFF-U5.md). **Gate:** GameLab [ENG-2026-0007](https://github.com/D9-Studio/GameLab/tree/main/work/ENG-2026-0007-ensv2-subname-mint) must fill `findings.md` / `handoff.md` with a yes (registry, resolver, client). As of this checkpoint that ENG is still **unrun** — run the lab first, then paste the U5 kickoff into a cold agent. Do not regress U4 / U4+.
+
+**Parallel (optional):** early art from this greybox freeze — [`docs/KICKOFF-U7-viz.md`](../KICKOFF-U7-viz.md). Principal schedules so it does not overlap U5 Name Desk / bridge edits.

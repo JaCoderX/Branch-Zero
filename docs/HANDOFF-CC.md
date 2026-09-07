@@ -15,7 +15,9 @@ prior_mission: U4+ Priority release (G5b) — met 2026-09-07
 You are a **cold agent** unless the human says you are continuing a prior session. Prefer reading this file over chat memory. You have **freedom on how**. You do **not** have freedom on constraints, scope, or protocol semantics.
 
 **Current mission: U5 ENS (G6)** — Petra's Name Desk. Kickoff: [`docs/KICKOFF-U5.md`](./KICKOFF-U5.md). Do not
-start U6–U7. Do not regress the U4 freeze or the U4+ Priority desk.
+start U6 or **full** U7 ship (video / submission). Early art may run from [`docs/KICKOFF-U7-viz.md`](./KICKOFF-U7-viz.md)
+when the principal schedules it so it does not overlap U5 in code or time. Do not regress the U4 freeze or the U4+
+Priority desk.
 
 > **U4+ met 2026-09-07 — Priority release is the third way out of the vault.** Read
 > [`docs/progress/2026-09-07-u4-plus-priority-release.md`](./progress/2026-09-07-u4-plus-priority-release.md)
@@ -455,6 +457,10 @@ Kickoff: [`docs/KICKOFF-U5.md`](./KICKOFF-U5.md). Design: [`docs/ENS.md`](./ENS.
 |------|------|
 | U6 Arc + manager role | G7 |
 | U7 Feel / ship | G8–G10 |
+
+**Parallel (principal-scheduled, not the open mission):** early U7 art off the U4+ greybox —
+[`docs/KICKOFF-U7-viz.md`](./KICKOFF-U7-viz.md). Materials / kit props / lighting only; leave Name Desk
+interactables and all bridge/desk work to U5. Do not advance HANDOFF past U5 from that pass.
 
 Cut order unchanged: Uniswap → Manager → Arc → ENS EAC → ENS mint. **Never cut Privy or Lane B.**
 
