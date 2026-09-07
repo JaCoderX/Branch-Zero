@@ -9,6 +9,7 @@ const CAM_SPEED := 2.2
 const CAM_DIST := 5.0
 const CAM_PITCH := -22.0
 const CAM_HEIGHT := 1.6
+const SKIN := "character-c"   # scripts/npc.gd SKINS lists the staff; the atlas holds eight skins
 
 var cam_yaw: float = 0.0
 var facing: float = 0.0
@@ -31,11 +32,11 @@ func _ready() -> void:
 	shape.position.y = 0.9
 	add_child(shape)
 
-	# the customer: a CC0 Kenney Mini Character (U7 early art); the collider above is still the U3 capsule
+	# the customer: a CC0 Kenney Blocky Character (U7 viz Stage 3, green shirt); the collider above is still the U3 capsule
 	_body = Node3D.new()
 	_body.name = "Body"
 	add_child(_body)
-	var ch := PropKit.character("character-female-b", 1.8)
+	var ch := PropKit.character(SKIN, 1.8)
 	var ch_root: Node3D = ch["root"]
 	ch_root.rotation.y = PI   # glTF characters face +Z; a Godot body faces -Z
 	_body.add_child(ch_root)

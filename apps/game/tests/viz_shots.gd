@@ -4,7 +4,7 @@ extends Node
 ##   godot --path apps/game tests/viz_shots.tscn -- <out_dir>
 ##
 ## Runs the main scene as a child, walks the camera through the DoD views (lobby → counter → vault, manager,
-## account opening, entrance), files a mock wire so the vault door shows PENDING, waits for the mock clock so it
+## account opening, entrance, Stage 3 character two-shots), files a mock wire so the vault door shows PENDING, waits for the mock clock so it
 ## shows OPEN, releases it (DONE), files and recalls another (CANCELLED), and saves a PNG per view into <out_dir>
 ## with the renderer's draw-call / primitive counters printed for each. Quits when done. Tester aid only; the
 ## product path is the walk.
@@ -19,6 +19,12 @@ const VIEWS := [
 	["07_vault", Vector3(8.0, 0.1, -6.5), 0.0],
 	["08_name_desk", Vector3(-11.0, 0.1, -3.5), PI / 2],
 	["09_elevator", Vector3(9.2, 0.1, 0.2), -PI / 2],
+	# Stage 3 character two-shots: player two metres from an NPC (body hidden for the frame, see _shot)
+	["16_mo_close", Vector3(2.0, 0.1, 7.0), 0.0],
+	["17_dev_close", Vector3(-9.6, 0.1, 4.6), PI / 2],
+	["18_ruth_close", Vector3(8.4, 0.1, -6.0), -0.85],
+	["19_okafor_close", Vector3(-6.6, 0.1, -7.6), 0.0],
+	["20_ines_close", Vector3(-7.6, 0.1, 9.0), 0.0],
 ]
 
 var out_dir := ""
@@ -75,10 +81,15 @@ func _shot(name: String, pos: Vector3, yaw: float) -> void:
 	player.global_position = pos
 	player.velocity = Vector3.ZERO
 	player.set_view(yaw)
+	# the *_close two-shots judge the NPC silhouette: hide the player's body for that frame (the spring arm always
+	# centres the player, so at two metres the body would cover the NPC)
+	var body := player.get_node("Body") as Node3D
+	body.visible = not name.ends_with("_close")
 	await get_tree().physics_frame
 	await get_tree().create_timer(0.45).timeout
 	await RenderingServer.frame_post_draw
 	var img := get_viewport().get_texture().get_image()
+	body.visible = true
 	var path := out_dir.path_join(name + ".png")
 	img.save_png(path)
 	print("shot %-22s draw calls %5d · primitives %8d · objects %5d · %s" % [

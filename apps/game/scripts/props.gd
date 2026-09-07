@@ -6,13 +6,15 @@ extends RefCounted
 ##    Brass, BrassDark, Steel, SteelDark, Glass, … — and are re-pointed at the WingTheme colours, so the mesh carries
 ##    shape only (the two Dark tones are derived from the theme's brass / steel, Stage 2 hero recesses);
 ##  - Kenney Furniture Kit props (assets/models/kenney_furniture, CC0) carry 1–4 flat-colour materials each; identical
-##    colours collapse into one shared StandardMaterial3D, and `recolor` re-tints named kit colours into the bank palette.
+##    colours collapse into one shared StandardMaterial3D, and `recolor` re-tints named kit colours into the bank palette;
+##  - Kenney Blocky Characters (assets/characters/kenney_blocky, CC0, Stage 3) all sample one atlas written by
+##    tools/character_atlas.py, so every NPC and the player share a single nearest-filtered textured material.
 ## Anything that blocks the player gets a StaticBody3D on layer 1 / mask 0 — colliders that block must not listen
 ## (U4+ lesson: Godot Physics on web shoves listening bodies).
 
 const HERO := "res://assets/models/hero/"
 const KIT := "res://assets/models/kenney_furniture/"
-const CHARACTERS := "res://assets/characters/kenney_mini/"
+const CHARACTERS := "res://assets/characters/kenney_blocky/"
 
 static var theme: WingTheme = null
 static var _mats: Dictionary = {}
@@ -258,7 +260,8 @@ static func retarget(root: Node, recolor: Dictionary = {}) -> void:
 				mi.set_surface_override_material(i, shared)
 
 
-## One material per texture (the Kenney character colormap is shared by every character).
+## One material per texture (the character atlas is shared by every character). Textures under CHARACTERS are
+## flat-colour block art resampled to 256² tiles, so they sample nearest (with mipmaps) instead of blurring.
 static func textured(tex: Texture2D, tint: Color) -> StandardMaterial3D:
 	var key := "tex|%s|%s" % [tex.resource_path if tex.resource_path != "" else str(tex.get_instance_id()), tint.to_html(false)]
 	if _mats.has(key):
@@ -269,6 +272,8 @@ static func textured(tex: Texture2D, tint: Color) -> StandardMaterial3D:
 	m.albedo_color = tint
 	m.roughness = 0.9
 	m.metallic = 0.0
+	if tex.resource_path.begins_with(CHARACTERS):
+		m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS
 	_mats[key] = m
 	return m
 
@@ -378,8 +383,11 @@ static func _no_batch(node: Node, root: Node) -> bool:
 	return false
 
 
-## Kenney Mini Characters (CC0): one rigged, animated .glb per skin. Scaled so the head top sits at `height`;
-## returns {root, anim}. Clips used: idle · walk · emote-no (refusing) · interact-right (working).
+## Kenney Blocky Characters (CC0, Stage 3 — adult-ish silhouettes; Kenney Mini chibi until then): one animated .glb
+## per skin, six rigid body parts driven by node tracks (no skin), 72 tris, one shared atlas material. Scaled so the
+## head top sits at `height`; returns {root, anim}. Clips used: idle · walk · sprint (player) · emote-no (refusing) ·
+## interact-right (working). Characters animate, so they never join bake_static: budget them as
+## 6 surfaces × (1 colour + 2 shadow passes) = 18 draws each (GameDevOS lesson animated-nodes-cost-surfaces-times-passes).
 static func character(file: String, height: float = 1.8) -> Dictionary:
 	var path := CHARACTERS + file + ".glb"
 	var root := instance(path, {"center": true, "ground": true})

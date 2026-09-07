@@ -8,7 +8,8 @@ extends SceneTree
 ## stays ≤ 40, on-screen triangles stay ≤ 400k, and the surface count (a ceiling on draw calls — the renderer can
 ## only draw fewer, never more) stays under 350 + labels. Also re-asserts the freeze rules that art can break:
 ## every StaticBody3D under the interior is layer 1 / mask 0, the six zone volumes are where U3 put them, and
-## nothing solid sits in the manager door, the vault opening or on the escort waypoints.
+## nothing solid sits in the manager door, the vault opening or on the escort waypoints. Stage 3 adds the
+## characters: clips present, U3 capsules unchanged, head height, one shared atlas material, Petra's skin entry.
 
 const MAX_MATERIALS := 40
 const MAX_TRIS := 400_000
@@ -97,6 +98,57 @@ func _run() -> void:
 		_ok("%d shadowed light (budget 1)" % shadowed)
 	else:
 		_fail("%d shadowed lights (budget 1: the sun)" % shadowed)
+
+	# characters (U7 viz Stage 3): animated, so outside the static batch — budget them as surfaces × passes explicitly
+	print("characters (Stage 3)")
+	var bodies3: Array = main.get_tree().get_nodes_in_group("npc")
+	bodies3.append(main.get_node("Player"))
+	var char_surfaces := 0
+	var char_mats := {}
+	var char_bad: PackedStringArray = []
+	for c in bodies3:
+		var body := (c as Node).get_node_or_null("Body") as Node3D
+		var anim := body.find_child("AnimationPlayer", true, false) as AnimationPlayer if body != null else null
+		if body == null or anim == null:
+			char_bad.append("%s: no animated body" % c.name)
+			continue
+		var want := ["idle", "walk", "interact-right", "emote-no"] if c is Npc else ["idle", "walk", "sprint"]
+		for clip in want:
+			if not anim.has_animation(clip):
+				char_bad.append("%s: missing clip %s" % [c.name, clip])
+		var cap: CapsuleShape3D = null
+		for ch in c.get_children():
+			if ch is CollisionShape3D and (ch as CollisionShape3D).shape is CapsuleShape3D:
+				cap = (ch as CollisionShape3D).shape
+		var want_h := 1.75 if c is Npc else 1.8
+		if cap == null or not is_equal_approx(cap.radius, 0.35) or not is_equal_approx(cap.height, want_h):
+			char_bad.append("%s: collider is not the U3 capsule" % c.name)
+		var root := body.get_child(0) as Node3D
+		var h := PropKit.aabb(root).size.y * root.scale.y
+		if absf(h - want_h) > 0.05:
+			char_bad.append("%s: head height %.2f m, want %.2f" % [c.name, h, want_h])
+		for mi in PropKit._meshes(body):
+			if mi.mesh == null:
+				continue
+			char_surfaces += mi.mesh.get_surface_count()
+			for i in mi.mesh.get_surface_count():
+				var m := mi.get_active_material(i)
+				if m != null:
+					char_mats[m.get_instance_id()] = m
+	print("  %d characters · %d surfaces (≈ %d draw calls with 2 shadow splits if all on screen) · %d character material(s)" % [bodies3.size(), char_surfaces, char_surfaces * 3, char_mats.size()])
+	if char_bad.is_empty():
+		_ok("five NPCs + player: clips idle / walk / interact-right / emote-no (player: sprint), U3 capsules, head at 1.75 / 1.8 m")
+	else:
+		_fail("characters: %s" % "; ".join(char_bad))
+	if char_mats.size() <= 1:
+		_ok("characters share one atlas material")
+	else:
+		_fail("characters use %d materials (one shared atlas expected)" % char_mats.size())
+	var skins: Dictionary = Npc.SKINS
+	if skins.has("registrar"):
+		_ok("npc.gd SKINS has an explicit registrar entry (%s) for U5" % skins["registrar"])
+	else:
+		_fail("npc.gd SKINS has no registrar entry")
 
 	print("freeze rules")
 	var bad_layers: PackedStringArray = []

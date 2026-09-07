@@ -2,22 +2,25 @@ class_name Npc
 extends CharacterBody3D
 ## NPC — one on-chain role or read surface each (docs/NPCS.md §2). State machine:
 ## IDLE → TALKING → WORKING → TALKING | REFUSING → TALKING → ESCORTING → IDLE.
-## The body is a CC0 Kenney Mini Character (assets/characters/kenney_mini); states are read from its clips
-## (idle · interact-right while working · emote-no while refusing · walk while escorting). `tint` colours the nameplate.
+## The body is a CC0 Kenney Blocky Character (assets/characters/kenney_blocky, U7 viz Stage 3); states are read from its
+## clips (idle · interact-right while working · emote-no while refusing · walk while escorting). `tint` colours the nameplate.
 
 signal player_near(npc: Npc, near: bool)
 signal duty_changed
 
 enum State { IDLE, TALKING, WORKING, ESCORTING, REFUSING }
 
-## npc_id → Kenney Mini Character skin (U7 early art). Unlisted ids (Petra, U5) fall back to `default`.
+## npc_id → Kenney Blocky Characters skin (U7 viz Stage 3; the eight skins in the atlas are listed in
+## tools/character_atlas.py). `registrar` is Petra's explicit entry for U5 — she is not instanced yet, her skin already
+## sits in the atlas at no extra material. Unlisted ids fall back to `default`.
 const SKINS := {
-	"greeter": "character-male-c",
-	"clerk": "character-female-a",
-	"teller": "character-male-b",
-	"vault_keeper": "character-female-d",
-	"manager": "character-male-e",
-	"default": "character-female-c",
+	"greeter": "character-b",        # red shirt — the lobby's friendly face
+	"clerk": "character-f",          # teal blouse — Account Opening
+	"teller": "character-i",         # shirt, tie and glasses — Counter 1
+	"vault_keeper": "character-j",   # uniform with badge — the vault window
+	"manager": "character-q",        # dark suit, red tie — the corner office
+	"registrar": "character-e",      # purple top — Petra, Name Desk (U5 instances her)
+	"default": "character-m",
 }
 
 @export var npc_id: String = "greeter"
@@ -71,7 +74,7 @@ func _ready() -> void:
 	add_child(_body)
 	var ch := PropKit.character(str(SKINS.get(npc_id, SKINS["default"])), 1.75)
 	var ch_root: Node3D = ch["root"]
-	ch_root.rotation.y = PI   # glTF characters face +Z; a Godot body faces -Z
+	ch_root.rotation.y = PI   # Kenney glTF characters face +Z; a Godot body faces -Z
 	_body.add_child(ch_root)
 	_anim = ch["anim"]
 	_play("idle")

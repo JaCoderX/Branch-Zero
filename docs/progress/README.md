@@ -22,6 +22,7 @@ Do not commit secrets, `.env`, or large binaries.
 | [2026-09-07 — K6 yes](./2026-09-07-k6-yes.md) | K6 / U5 gate | K6 | **yes** — ENSv2 parent + `test.branchzero.eth`; pin UR V2; U5 unblocked |
 | [2026-09-07 — U7 early viz (Stage 1)](./2026-09-07-u7-early-viz.md) | U7 (art) | early viz DoD | met — kits + lighting + bake; `.pck` 0.14 → 0.97 MB |
 | [2026-09-07 — U7 viz Stage 2](./2026-09-07-u7-viz-stage2.md) | U7 (art) | Stage 2 DoD | met — hero polish; worst 188 draws / 130k prims; `.pck` 1.25 MB |
+| [2026-09-07 — U7 viz Stage 3](./2026-09-07-u7-viz-stage3.md) | U7 (art) | Stage 3 DoD | met — adult-ish CC0 characters (Kenney Blocky, one atlas material); worst 242 draws / 126k prims / 34 mats; `.pck` 1.21 MB; Quaternius ruled out (QAL, not CC0) |
 | [KICKOFF-U5](../KICKOFF-U5.md) | U5 | G6 | **paste into cold agent** — ENG-0007 yes; product Name Desk |
 
 The newest note carries the findings that will otherwise cost the next agent an afternoon. Read it first.

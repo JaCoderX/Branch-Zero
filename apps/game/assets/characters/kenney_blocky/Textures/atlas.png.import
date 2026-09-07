@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://vhs8mwj1wvlo"
-path="res://.godot/imported/colormap.png-2fa06806fb80c90fe87f0ad06eb66ff6.ctex"
+uid="uid://djsr57v8aqamn"
+path="res://.godot/imported/atlas.png-510a6233f88c27fb8c1d260f49ad5369.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/characters/kenney_mini/Textures/colormap.png"
-dest_files=["res://.godot/imported/colormap.png-2fa06806fb80c90fe87f0ad06eb66ff6.ctex"]
+source_file="res://assets/characters/kenney_blocky/Textures/atlas.png"
+dest_files=["res://.godot/imported/atlas.png-510a6233f88c27fb8c1d260f49ad5369.ctex"]
 
 [params]
 
@@ -23,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=false
+mipmaps/generate=true
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""
