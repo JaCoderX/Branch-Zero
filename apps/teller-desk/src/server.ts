@@ -22,6 +22,7 @@ import { pay, passbook } from './lanes/laneA.ts';
 import { approve, cancel, listPending, resumeWatchers, wire, type Actor } from './lanes/laneB.ts';
 import { preparePriority, submitPriority } from './lanes/priority.ts';
 import { ROLE_SET_VERSION, ensureTxPolicy, ensureTypedDataPolicy, provision, recoverAccount } from './lanes/provision.ts';
+import { available as ensAvailable, mint as ensMint, resolve as ensResolve, setText as ensSetText } from './ens.ts';
 import { emitStage, getPlayer, listReceipts, newJobId, patchPlayer, serialize, subscribe, upsertPlayer, type Player } from './store.ts';
 import type { SignatureAudit, TxAudit } from './signing/privySigner.ts';
 
@@ -78,7 +79,7 @@ app.get('/healthz', async () => {
     ]);
     return {
       ok: chainId === chain.id,
-      unit: 'U4+',
+      unit: 'U5',
       priorityRelease: config.priorityRelease,
       roleSetVersion: ROLE_SET_VERSION,
       chains: { remoteEvm: { chainId, expected: chain.id, block: block.toString(), reachable: true } },
@@ -90,7 +91,7 @@ app.get('/healthz', async () => {
       timeLockSec: Number(config.timeLockSec),
     };
   } catch (e) {
-    return { ok: false, unit: 'U4+', chains: { remoteEvm: { reachable: false, error: (e as Error).message } } };
+    return { ok: false, unit: 'U5', chains: { remoteEvm: { reachable: false, error: (e as Error).message } } };
   }
 });
 
@@ -152,6 +153,7 @@ app.post('/session', async (req, reply) => {
       timeLockSec: Number(config.timeLockSec),
       instantLimit: config.instantLimit,
       manager: managerAddress ?? null,
+      ensName: player.ensName ?? null,
       /** U4+: this branch runs the Priority desk (manager key + PRIORITY_RELEASE) and this account carries the split. */
       priority: config.priorityRelease && Boolean(player.priority),
       roleSet: player.roleSet ?? 0,
@@ -311,6 +313,58 @@ app.post('/cancel', async (req, reply) => {
   }
 });
 
+// ============ U5 — ENSv2 Name Desk (Sepolia identity, Remote EVM payments unchanged) ============
+
+/** Public availability read. With no label this also supplies the Name Desk's recent on-chain claims board. */
+app.get('/ens/available', async (req, reply) => {
+  try {
+    const { label } = (req.query ?? {}) as { label?: string };
+    return await ensAvailable(label);
+  } catch (e) {
+    return fail(reply, e);
+  }
+});
+
+/** Petra's claim: the ENS registrar key mints to the player's owner and sets addr(60) to their AccountBlox. */
+app.post('/ens/claim', async (req, reply) => {
+  try {
+    const player = await requirePlayer(req as never);
+    const body = (req.body ?? {}) as { label?: string; name?: string };
+    const label = body.label ?? body.name;
+    if (!label) throw Object.assign(new Error('`label` is required'), { statusCode: 400, code: 'BAD_ARGS' });
+    const jobId = newJobId();
+    const result = await serialize(player.privyUserId, () => ensMint(getPlayer(player.privyUserId)!, label, jobId));
+    app.log.info({ owner: player.ownerAddress, account: result.account, name: result.name, txHash: result.txHash }, 'ENS Name Desk: customer name claimed');
+    return { jobId, ...result };
+  } catch (e) {
+    return fail(reply, e);
+  }
+});
+
+/** Petra's delegated text-record desk. U5 permits only the teaching record bz.tier (Silver or Gold). */
+app.post('/ens/record', async (req, reply) => {
+  try {
+    const player = await requirePlayer(req as never);
+    const body = (req.body ?? {}) as { name?: string; key?: string; value?: string };
+    const jobId = newJobId();
+    const result = await serialize(player.privyUserId, () => ensSetText(getPlayer(player.privyUserId)!, body.name, body.key, body.value, jobId));
+    return { jobId, ...result };
+  } catch (e) {
+    return fail(reply, e);
+  }
+});
+
+/** Public forward resolution. This is the only name lookup the counter needs before paying on 1337. */
+app.get('/ens/resolve', async (req, reply) => {
+  try {
+    const { name } = (req.query ?? {}) as { name?: string };
+    if (!name) throw Object.assign(new Error('`name` is required'), { statusCode: 400, code: 'BAD_ARGS' });
+    return await ensResolve(name);
+  } catch (e) {
+    return fail(reply, e);
+  }
+});
+
 app.get('/status', async (req, reply) => {
   try {
     const player = await requirePlayer(req as never);
@@ -369,12 +423,8 @@ app.get('/events', async (req, reply) => {
   return reply;
 });
 
-/** Not in U2. Left explicit so the bridge fails with a plan, not a 404. */
-for (const [route, unit] of [
-  ['/ens/claim', 'U5'],
-  ['/ens/record', 'U5'],
-  ['/fx/swap', 'S1'],
-] as const) {
+/** Not in U5. Left explicit so the bridge fails with a plan, not a 404. */
+for (const [route, unit] of [['/fx/swap', 'S1']] as const) {
   app.post(route, async (_req, reply) => reply.code(501).send({ error: 'not implemented', route, plannedUnit: unit }));
 }
 
@@ -391,7 +441,7 @@ deployments();
 app.listen({ port: config.port, host: '127.0.0.1' }).then((addr) => {
   app.log.info(
     { rpc: config.rpcUrl, broadcaster: broadcasterAddress, deployer: deployerAddress, manager: managerAddress ?? null, priorityRelease: config.priorityRelease, roleSet: ROLE_SET_VERSION, privyApp: config.privy.appId, signerId: config.privy.signerId },
-    `Teller Desk (U4+) listening on ${addr}`,
+    `Teller Desk (U5) listening on ${addr}`,
   );
 });
 

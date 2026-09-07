@@ -42,6 +42,7 @@ export type BridgeMessage = BridgeResponse | BridgeEvent;
  * login prompt) and `getHistory` (the ledger board's receipts). Both are backed by existing routes.
  * U4+ adds `priority` — the one bridge method that is allowed to open a second Privy surface (the Passkey / hand
  * scan), over `/priority/prepare` + `/priority/submit`. `approve` is owner-only from here on.
+ * U5 adds the ENS Name Desk reads/writes; they never change the Remote EVM payment lanes.
  */
 export type BridgeMethod =
   | 'echo'
@@ -65,7 +66,12 @@ export type BridgeMethod =
   | 'getSession'
   | 'getHistory'
   // U4+ — Priority release (Okafor): owner Passkey signature in the browser, manager submits before the clock
-  | 'priority';
+  | 'priority'
+  // U5 — ENS Name Desk (Sepolia identity; payments still use 1337)
+  | 'ensAvailable'
+  | 'ensMint'
+  | 'ensSetText'
+  | 'resolveName';
 
 /** How the owner's signature is obtained for meta-transactions. */
 export type SigningMode = 'session' | 'client';
@@ -94,7 +100,7 @@ export type RecordStatus = 'UNDEFINED' | 'PENDING' | 'EXECUTING' | 'PROCESSING_P
 export interface StageEvent {
   type: 'stage';
   jobId: string;
-  lane: 'A' | 'B' | 'CONFIG' | 'PROVISION';
+  lane: 'A' | 'B' | 'CONFIG' | 'PROVISION' | 'ENS';
   stage: JobStage;
   /** Bank-counter wording for the NPC; always safe to show. */
   bankLine: string;
@@ -146,6 +152,8 @@ export interface DeskSession {
   instantLimit?: string;
   /** Branch Manager address when the Teller Desk has one; enables the shredder and (U4+) the Priority desk. */
   manager?: string | null;
+  /** U5: the latest customer subname this player claimed under branchzero.eth. */
+  ensName?: string | null;
   /** U4+: the branch runs Priority releases and this account carries the META_APPROVE split (ROLE_SET 3). */
   priority?: boolean;
   token?: { address: string; symbol: string; decimals: number };

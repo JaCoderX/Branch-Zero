@@ -53,6 +53,12 @@ export const config = {
    */
   priorityRelease: opt('PRIORITY_RELEASE', opt('MANAGER_PK') ? 'on' : 'off').toLowerCase() === 'on' && Boolean(opt('MANAGER_PK')),
 
+  /** U5: ENS identity is always read/written on Sepolia; it is never the payment chain. */
+  sepoliaRpcUrl: opt('SEPOLIA_RPC_URL'),
+  ensParentName: opt('ENS_PARENT_NAME', 'branchzero.eth'),
+  /** Sepolia throwaway bank key. Lazy ENS client construction fails with ENS_NOT_CONFIGURED if absent. */
+  ensRegistrarPk: opt('ENS_REGISTRAR_PK') as Hex | undefined,
+
   privy: {
     appId: req('PRIVY_APP_ID'),
     appSecret: req('PRIVY_APP_SECRET'),

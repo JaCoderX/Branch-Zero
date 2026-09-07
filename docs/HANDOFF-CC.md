@@ -6,22 +6,29 @@ created: 2026-09-06
 updated: 2026-09-07
 product: Branch-Zero
 objective: OBJ-2026-0004
-first_mission: U5 ENS (G6)
-prior_mission: U4+ Priority release (G5b) — met 2026-09-07
+first_mission: U6 Arc + manager role (G7)
+prior_mission: U5 ENS (G6) — met 2026-09-07
 ---
 
 # Handoff — Claude Code (Fable 5.1)
 
 You are a **cold agent** unless the human says you are continuing a prior session. Prefer reading this file over chat memory. You have **freedom on how**. You do **not** have freedom on constraints, scope, or protocol semantics.
 
-**Current mission: U5 ENS (G6)** — Petra's Name Desk. Kickoff: [`docs/KICKOFF-U5.md`](./KICKOFF-U5.md). Do not
-start U6 or **full** U7 ship (video / submission). Early art: Stage 1–3 met
+**Current mission: U6 Arc + manager role (G7)** — U5 Petra's Name Desk is met and frozen. Kickoff:
+[`docs/KICKOFF-U6.md`](./KICKOFF-U6.md). Do not start **full** U7 ship (video / submission). Early art: Stage 1–3 met
 ([`progress/2026-09-07-u7-early-viz.md`](./progress/2026-09-07-u7-early-viz.md),
 [`progress/2026-09-07-u7-viz-stage2.md`](./progress/2026-09-07-u7-viz-stage2.md),
 [`progress/2026-09-07-u7-viz-stage3.md`](./progress/2026-09-07-u7-viz-stage3.md)); next art unit is
 [`docs/KICKOFF-U7-viz-stage4.md`](./KICKOFF-U7-viz-stage4.md) (wall shell) when the principal schedules it clear of
-U5. Do not regress the U4 freeze or the U4+ Priority desk.
+U6. Do not regress the U4 freeze, the U4+ Priority desk, or the U5 ENS Name Desk.
 
+> **U5 met 2026-09-07 — ENS Name Desk / G6.** Read
+> [`docs/progress/2026-09-07-u5-ens-g6.md`](./progress/2026-09-07-u5-ens-g6.md) **first** for live evidence.
+> Bridge is **`u5.0`** (`ensAvailable` / `ensMint` / `ensSetText` / `resolveName`). Identity is Sepolia ENSv2 with
+> Universal Resolver pinned to `0x85edf8b6b7d4211e2b07aa687506b746357b92cf`; payments stay on Remote EVM 1337.
+> Live proof: `u5-mtra3lb6.branchzero.eth` → AccountBlox `0x494f…eBfd`, Lane A pay `0x7ea8…6a58`, duplicate →
+> `NAME_TAKEN`. **Still owed on a Godot 4.5 host:** `tests/run_checks.gd` (absent on the U5 build machine).
+>
 > **U4+ met 2026-09-07 — Priority release is the third way out of the vault.** Read
 > [`docs/progress/2026-09-07-u4-plus-priority-release.md`](./progress/2026-09-07-u4-plus-priority-release.md)
 > **first**. Ruth is wait-only (owner timed approve after the clock, silent); Mr. Okafor submits an owner-signed
@@ -31,7 +38,7 @@ U5. Do not regress the U4 freeze or the U4+ Priority desk.
 > `npm -w apps/teller-desk run upgrade-players`) upgrades existing players and `/pay` `/wire` `/priority/*` refuse
 > `NOT_CONFIGURED` until it has. The per-player Privy typed-data rule now pins `params.action` to
 > `SIGN_META_REQUEST_AND_APPROVE`, so the silent session signer **cannot** sign the bypass payload (kill test Y8a) and
-> still signs counter pays (Y8b). Bridge is `u4.1` (`priority`; `approve` owner-only). Findings that will otherwise cost
+> still signs counter pays (Y8b). Bridge methods from U4+ remain; do not regress Priority. Findings that will otherwise cost
 > you: the manager's old grant on the `approveTimeLockExecution` *handler* selector is **not revocable** (schema
 > `isGrantRevocable=false`) — it stays, inert without the transfer half, and provisioning reports it as "stranded";
 > a headless rig cannot hold a Passkey, so `killtests:u4plus` obtains the owner's Priority signature by briefly
@@ -94,29 +101,26 @@ Not: a wallet UI, DeFi protocol, Bloxchain fork, mainnet, Tactical-AI, GameLab m
 
 ## 2. Read order (before code)
 
-1. **This file** (§5f is the open mission)
-2. [`docs/DEV-LOOP.md`](./DEV-LOOP.md) — U5 row; ENG-0007 **yes**
-3. [`docs/progress/2026-09-07-k6-yes.md`](./progress/2026-09-07-k6-yes.md) — K6 pass + UR V2 pin; then
-   [`…u4-plus-checkpoint.md`](./progress/2026-09-07-u4-plus-checkpoint.md) /
-   [`…u4-plus-priority-release.md`](./progress/2026-09-07-u4-plus-priority-release.md) for prior gates
-4. [`docs/ENS.md`](./ENS.md) §2–4 + [`docs/NPCS.md`](./NPCS.md) §4.6 — Name Desk. GameLab ENG-2026-0007
-   [`handoff.md`](https://github.com/D9-Studio/GameLab/blob/main/work/ENG-2026-0007-ensv2-subname-mint/handoff.md)
-   is **yes**. Pin addresses from that handoff (esp. UR V2 `0x85ed…b92cf`); do not invent.
-5. [`docs/REMOTE-EVM.md`](./REMOTE-EVM.md) — **do not wipe**; payments stay on 1337; gasLimit **16,777,216**; § 1a frozen block clock
-6. [`docs/GAME-DESIGN.md`](./GAME-DESIGN.md) + [`docs/WORLD-3D-ENVIRONMENT.md`](./WORLD-3D-ENVIRONMENT.md) — zones, NPCs, the ledger board
-7. [`docs/GODOT.md`](./GODOT.md) §4–5 — bridge method table (`u4.1` now; U5 adds `ens*`), MockChain (§5a), canvas focus (§5b)
-8. [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) §1–3, §5–6 (§3.3 is Lane B as built)
-9. [`docs/BLOXCHAIN-INTEGRATION.md`](./BLOXCHAIN-INTEGRATION.md) §6–7 — Lane B + roles (do not regress ROLE_SET 3)
-10. [`docs/PRIVY.md`](./PRIVY.md) — session signer, action pin, Priority Passkey exception
-11. [`docs/SECURITY-AND-KEYS.md`](./SECURITY-AND-KEYS.md) — registrar key is a bank key
+1. **This file** (§5g is the open mission)
+2. [`docs/DEV-LOOP.md`](./DEV-LOOP.md) — U6 row; ENG-0006 **yes** (K3); U5 / G6 **met**
+3. [`docs/progress/2026-09-07-u5-ens-g6.md`](./progress/2026-09-07-u5-ens-g6.md) — Name Desk frozen; then
+   [`…k6-yes.md`](./progress/2026-09-07-k6-yes.md) only if you need Sepolia address pins
+4. [`docs/ARC.md`](./ARC.md) + GameLab ENG-2026-0006
+   [`handoff.md`](https://github.com/D9-Studio/GameLab/blob/main/work/ENG-2026-0006-accountblox-on-arc/handoff.md)
+   — attach library fixtures; CopyBlox-style clone; never Ganache keys on Arc
+5. [`docs/REMOTE-EVM.md`](./REMOTE-EVM.md) — **do not wipe**; Main-wing payments stay on 1337
+6. [`docs/GAME-DESIGN.md`](./GAME-DESIGN.md) + [`docs/WORLD-3D-ENVIRONMENT.md`](./WORLD-3D-ENVIRONMENT.md) — Arc wing / elevator
+7. [`docs/GODOT.md`](./GODOT.md) §4–5 — bridge is **`u5.0`** (preserve ENS methods); MockChain (§5a), canvas focus (§5b)
+8. [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) §1–3, §5–6 (§3.5 wing switch)
+9. [`docs/BLOXCHAIN-INTEGRATION.md`](./BLOXCHAIN-INTEGRATION.md) §6–7 — do not regress ROLE_SET 3 / Priority
+10. [`docs/PRIVY.md`](./PRIVY.md) — Arc policy must include Arc `verifyingContract` when provisioning Arc accounts
+11. [`docs/SECURITY-AND-KEYS.md`](./SECURITY-AND-KEYS.md) — Arc keys ≠ Remote EVM keys ≠ ENS registrar
 12. [`docs/REFLECTION.md`](./REFLECTION.md) — kill log + principal decisions
-13. Craft lessons (do not re-author) — U4+ scrub + ENG-0007:
-    https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/lab-gate-before-product-unit.md  
-    https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/app-resolve-is-not-registry-ownership.md  
+13. Craft lessons (do not re-author) — especially:
+    https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/sdk-runtime-factory-clones.md  
     https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/pin-the-resolver-that-walks-your-hierarchy.md  
+    https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/lab-gate-before-product-unit.md  
     https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/pin-delegated-signer-to-allowed-payload.md  
-    https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/headless-cannot-prove-user-held-credential.md  
-    https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/colliders-that-block-must-not-listen.md  
     https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/prefer-timed-path-over-untimed-sibling.md  
     https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/on-demand-mining-freezes-view-time.md  
     https://github.com/D9-Studio/GameDevOS/blob/main/wiki/lessons/dual-selector-permission-checks.md  
@@ -422,13 +426,16 @@ Kickoff: [`docs/KICKOFF-U4-plus.md`](./KICKOFF-U4-plus.md). Labs (do not edit):
 
 ---
 
-## 5f. Mission U5 — ENS (G6) — **NEXT**
+## 5f. Mission U5 — ENS (G6) — **MET 2026-09-07**
 
 Petra's Name Desk becomes a desk. A player claims a subname under the bank's parent on Sepolia; the name points at
 their account; the counter pays by name. Payments stay on Remote EVM 1337 — ENS only answers "which address".
 Kickoff: [`docs/KICKOFF-U5.md`](./KICKOFF-U5.md). Design: [`docs/ENS.md`](./ENS.md) §2–4; NPC: [`docs/NPCS.md`](./NPCS.md) §4.6.
 
-**U4+ / G5b met 2026-09-07** — this is the open mission.
+**U5 / G6 met 2026-09-07.** The live kill test claimed `u5-mtra3lb6.branchzero.eth` on Sepolia, resolved it through the pinned UR V2 to
+the player's AccountBlox, paid that address through Lane A on Remote EVM 1337, and refused the duplicate claim as `NAME_TAKEN`.
+The local Godot 4.5 binary is absent on this host, so `run_checks.gd` remains a named verification follow-up; the static dialogue/JSON
+review and the real-chain kill path are recorded in [`docs/progress/2026-09-07-u5-ens-g6.md`](./progress/2026-09-07-u5-ens-g6.md).
 
 **Lab gate:** GameLab ENG-2026-0007 is **yes** ([K6 note](./progress/2026-09-07-k6-yes.md)). Parent `branchzero`
 owned on ENSv2; UserRegistry `0x64ED…073c`; `test.branchzero.eth` resolves via UR **`0x85ed…b92cf`**.
@@ -449,26 +456,58 @@ Mainnet `branchzero.eth` remains brand-only. See GameLab
 
 ### Definition of Done (G6)
 
-- [ ] Teller Desk `/ens/available`, `/ens/claim`, `/ens/record`, `/ens/resolve` (the 501 stubs from U2 become real); registrar key from env, never a player key
-- [ ] Bridge `u5.0`: `ensAvailable` / `ensMint` / `ensSetText` / `resolveName` over those routes; codes survive the fetch boundary; MockChain answers them
-- [ ] Petra at the Name Desk claims a name for the player's account; a taken or invalid name is refused with her line
-- [ ] Counter 1 accepts a name on the slip: resolve → address → Lane A / Lane B on 1337 unchanged
-- [ ] Names board on the Name Desk wall lists recent claims
-- [ ] Freeze intact: `run_checks.gd`, `npm run typecheck`, both kill-test scripts green; canvas focus and `desk.link` unchanged; Account Opening still one modal; Priority Passkey still only on Okafor’s bypass
-- [ ] Progress note + REFLECTION; HANDOFF advanced to U6 + `docs/KICKOFF-U6.md`
+- [x] Teller Desk `/ens/available`, `/ens/claim`, `/ens/record`, `/ens/resolve`; registrar key from env, never a player key
+- [x] Bridge `u5.0`: `ensAvailable` / `ensMint` / `ensSetText` / `resolveName` over those routes; codes survive the fetch boundary; MockChain answers them
+- [x] Petra at the Name Desk claims a name for the player's account; a taken or invalid name is refused with her line
+- [x] Counter 1 accepts a name on the slip: resolve → address → Lane A / Lane B on 1337 unchanged; live G6 pay proof recorded
+- [x] Names board on the Name Desk wall lists recent claims
+- [ ] Freeze verification complete: `npm run typecheck` is green; Godot `run_checks.gd` and the existing kill-test scripts are not runnable through `tsx`/Godot on this host (fallbacks and exact commands are recorded in the progress note); canvas focus, `desk.link`, one-modal flow, and Priority path were left unchanged
+- [x] Progress note + REFLECTION; HANDOFF advanced to U6 + `docs/KICKOFF-U6.md`
 
 ---
 
-## 6. After U5
+## 5g. Mission U6 — Arc + manager role (G7) — **NEXT**
+
+Elevator wing: same AccountBlox pattern on **Arc Testnet 5042002** (native USDC gas); provision Arc accounts from
+ENG-0006 library fixtures + CopyBlox-style clone. Manager-role product beat only where this file and ARC.md say yes —
+do not invent a second Priority path. Kickoff: [`docs/KICKOFF-U6.md`](./KICKOFF-U6.md).
+
+**Lab gate:** GameLab ENG-2026-0006 is **yes** (K3 deploy+init+`owner()`). Guard batches / Lane A/B / meta-tx on Arc are
+**unproven** — treat as product work with honest kill tests, not as already answered.
+
+### Freedom envelope
+
+- How Arc chain config and `infra/deployments/arc-testnet.json` are shaped, as long as ENG-0006 addresses are pinned first
+- Whether the first shippable Arc beat is provision+owner read, a single Lane A pay in native USDC, or both
+- Smallest Godot elevator / wing switch that proves the chain split without redesigning the Main wing
+
+### Out of scope
+
+- Full U7 ship; Uniswap; ENS mainnet; moving Main-wing Lane A/B or ENS off their chains; wiping Remote EVM;
+  merging ENG trees; re-proving K6/G6; redesigning Petra / Name Desk; weakening ROLE_SET 3
+
+### Definition of Done (G7)
+
+- [ ] Arc chain + deployment pins from ENG-0006; Ganache-parity keys refused on Arc
+- [ ] Per-player Arc AccountBlox provision path (prefer clone; document if first ship is deploy+init only)
+- [ ] At least one live Arc kill test with explorer-linked evidence; Main wing 1337 + ENS Sepolia still green
+- [ ] Manager-role beat only if explicitly in scope for this unit's G7 checklist in progress note — otherwise defer with named cut
+- [ ] Freeze intact: bridge `u5.0`, Priority, Name Desk; `run_checks.gd` on a Godot 4.5 host if available
+- [ ] Progress note + REFLECTION; HANDOFF → U7 + `docs/KICKOFF-U7.md` (or next viz stage if principal schedules art)
+
+---
+
+## 6. After U5 / during U6
 
 | Next | Gate |
 |------|------|
-| U6 Arc + manager role | G7 |
+| U6 Arc + manager role | G7 — **open** |
 | U7 Feel / ship | G8–G10 |
 
 **Parallel (principal-scheduled, not the open mission):** staged U7 art —
-Stage 1–3 met; next is [`docs/KICKOFF-U7-viz-stage4.md`](./KICKOFF-U7-viz-stage4.md) (wall shell only). Leave Name Desk
-interactables and all bridge/desk work to U5. Do not advance HANDOFF past U5 from that pass.
+Stage 1–3 met; next is [`docs/KICKOFF-U7-viz-stage4.md`](./KICKOFF-U7-viz-stage4.md) (wall shell only). Do not touch
+Name Desk interactables or bridge/desk work from an art pass. Do not advance the **construction** HANDOFF from a viz-only
+session.
 
 Cut order unchanged: Uniswap → Manager → Arc → ENS EAC → ENS mint. **Never cut Privy or Lane B.**
 
@@ -478,7 +517,7 @@ Cut order unchanged: Uniswap → Manager → Arc → ENS EAC → ENS mint. **Nev
 
 - Need custom Solidity or path-dep on Bloxchain-protocol for **runtime** (bootstrap artifacts OK)
 - Would wipe Remote EVM or re-add contracts compile as default
-- Scope drifts to greybox/ENS/Arc/Uniswap
+- Scope drifts to greybox redesign / ENS rework / Uniswap without a gate
 - Lane B blocked and PLAN fallback not chosen
 
-Leave: commands, file pointers, kill-test log, next agent can resume from the G5b checklist.
+Leave: commands, file pointers, kill-test log; next agent resumes from §5g / `docs/KICKOFF-U6.md`.

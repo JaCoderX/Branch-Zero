@@ -1,0 +1,86 @@
+{
+  "id": "registrar",
+  "name": "Petra",
+  "role": "Registrar · Name Desk",
+  "start": [
+    { "if": "!booted", "node": "booting" },
+    { "if": "!has_account", "node": "no_account" },
+    { "if": "!has_ens_name", "node": "first_visit" },
+    { "node": "idle" }
+  ],
+  "nodes": {
+    "booting": {
+      "text": "The Name Desk is opening. One moment.",
+      "choices": [ { "text": "Sure.", "next": "end" } ]
+    },
+    "no_account": {
+      "text": "Names point to accounts, so I need an AccountBlox before I can put one on your file. Ines at Account Opening can help.",
+      "choices": [
+        { "text": "Ask why", "next": "why_ens" },
+        { "text": "OK.", "next": "end" }
+      ]
+    },
+    "first_visit": {
+      "text": "Names! Pick one and people can pay you by it.",
+      "choices": [
+        { "text": "Claim a name", "form": "name_claim", "on_submit": "claim_name" },
+        { "text": "Who's registered?", "next": "board" },
+        { "text": "Ask why", "next": "why_ens" },
+        { "text": "Just looking.", "next": "end" }
+      ]
+    },
+    "idle": {
+      "text": "Your name is {ens_name}. It points at your account on the board; the counter can resolve it before paying.",
+      "choices": [
+        { "text": "Claim another name", "form": "name_claim", "on_submit": "claim_name" },
+        { "text": "Update my tier to Gold", "action": "ens_set_text", "args": { "key": "bz.tier", "value": "Gold" }, "working": "Writing your Gold passbook record…", "on_ok": "tier_updated", "on_error": "refused" },
+        { "text": "Who's registered?", "next": "board" },
+        { "text": "Ask why", "next": "why_ens" },
+        { "text": "Thanks.", "next": "end" }
+      ]
+    },
+    "claim_name": {
+      "text": "I'll check {label} and put it on your account if it is free.",
+      "enter_action": { "action": "ens_mint", "working": "Registering your name on Sepolia…", "on_ok": "claimed", "on_error": "refused" }
+    },
+    "claimed": {
+      "text": "{ens_name} is ready. It resolves to your AccountBlox, and the counter can now accept that name on a payment slip.",
+      "choices": [
+        { "text": "Ask why", "next": "why_ens" },
+        { "text": "Who's registered?", "next": "board" },
+        { "text": "Thanks.", "next": "end" }
+      ]
+    },
+    "tier_updated": {
+      "text": "Done. {ens_name} now carries the Gold tier record.",
+      "choices": [
+        { "text": "Ask why", "next": "why_ens" },
+        { "text": "Thanks.", "next": "end" }
+      ]
+    },
+    "board": {
+      "text": "That board is the customers registry's recent registration log. The names are real subnames under branchzero.eth, not a local guest list.",
+      "choices": [
+        { "text": "Claim a name", "form": "name_claim", "on_submit": "claim_name" },
+        { "text": "Ask why", "next": "why_ens" },
+        { "text": "Back", "next": "idle" }
+      ]
+    },
+    "why_ens": {
+      "text": "You're getting a subname under branchzero.eth on ENSv2. Your name points to your AccountBlox; bz.tier is a text record; the counter resolves on Sepolia, then pays that address on Remote EVM 1337.",
+      "choices": [ { "text": "Back", "next": "idle" } ]
+    },
+    "refused": {
+      "text": "{reason_line}",
+      "choices": [
+        { "text": "Ask why", "next": "refused_why" },
+        { "text": "Back", "next": "idle" },
+        { "text": "OK.", "next": "end" }
+      ]
+    },
+    "refused_why": {
+      "text": "{reason_why}",
+      "choices": [ { "text": "OK.", "next": "end" } ]
+    }
+  }
+}

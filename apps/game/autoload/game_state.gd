@@ -20,6 +20,7 @@ var balance: String = "0"
 var symbol: String = "dUSDC"
 var wires: Array = []                  # PendingWire dictionaries, strings only
 var receipts: Array = []               # Teller Desk receipts (last few)
+var ens_names: Array = []              # Recent ENSv2 customer claims for Petra's wall board
 var clock_offset: float = 0.0          # serverNow - local wall clock, seconds
 var last_stage: Dictionary = {}
 var busy: bool = false
@@ -50,6 +51,9 @@ func boot() -> void:
 	if logged_in():
 		await refresh_passbook()
 	booted = true
+	# Read the board after the bridge/session boot is complete. Anonymous users still get a silent board read,
+	# while a real adapter can no longer race its initial ready event here.
+	await refresh_names()
 	print("GameState: booted — bridge ready after %d ms, session after %d ms (%s)" % [t1 - t0, Time.get_ticks_msec() - t1, "MockChain" if Chain.use_mock else "bridge " + Chain.bridge_version])
 	changed.emit()
 
@@ -62,6 +66,27 @@ func logged_in() -> bool:
 
 func has_account() -> bool:
 	return logged_in() and session.get("account") != null and str(session.get("account", "")) != ""
+
+
+func has_ens_name() -> bool:
+	return str(session.get("ensName", "")) != "" or not ens_names_for_owner().is_empty()
+
+
+func ens_name() -> String:
+	var direct := str(session.get("ensName", ""))
+	if direct != "":
+		return direct
+	var mine := ens_names_for_owner()
+	return str(mine[0].get("name", "")) if not mine.is_empty() else ""
+
+
+func ens_names_for_owner() -> Array:
+	var out: Array = []
+	var owner_id := owner().to_lower()
+	for row in ens_names:
+		if str(row.get("owner", "")).to_lower() == owner_id or str(row.get("address", "")).to_lower() == account().to_lower():
+			out.append(row)
+	return out
 
 
 func delegated() -> bool:
@@ -171,6 +196,7 @@ func facts() -> Dictionary:
 		"cooling": cooling_count(),
 		"busy": busy,
 		"desk_linked": desk_linked,
+		"ens_name": ens_name(),
 		"mock": Chain.use_mock,
 		"web": Chain.is_web,
 	}
@@ -194,6 +220,7 @@ func vars(extra: Dictionary = {}) -> Dictionary:
 		"chain": "Remote EVM 1337" if not Chain.use_mock else "MockChain",
 		"manager_name": "Mr. Okafor",
 		"priority_copy": str(strings.get("priority_copy", "Skip the cooling period — hand scan required.")),
+		"ens_name": ens_name() if has_ens_name() else "no name yet",
 	}
 	v.merge(extra, true)
 	return v
@@ -212,6 +239,18 @@ func refresh_session() -> void:
 	else:
 		session = {"loggedIn": false, "ready": false}
 		_note_error(r.get("error", {}))
+	changed.emit()
+
+
+## The Name Desk board is backed by the customers UserRegistry's recent registration events.
+func refresh_names() -> void:
+	var r := await Chain.call_async("ensAvailable", {}, 20.0)
+	if not r.get("ok", false):
+		# A board read must not make Account Opening or the existing bank lanes unusable.
+		return
+	var result: Dictionary = r.get("result", {})
+	if result.get("recent") is Array:
+		ens_names = result["recent"]
 	changed.emit()
 
 
@@ -281,10 +320,18 @@ func run_action(action: String, args: Dictionary = {}) -> Dictionary:
 			r = await Chain.call_async("logout", {}, 30.0)
 		"provision":
 			r = await Chain.call_async("provision", {}, 300.0)         # clone + config batches + funding
+		"ens_available":
+			r = await Chain.call_async("ensAvailable", {"label": args.get("label", "")}, 20.0)
+		"ens_mint":
+			r = await Chain.call_async("ensMint", {"label": str(args.get("label", ""))}, 180.0)
+		"ens_set_text":
+			r = await Chain.call_async("ensSetText", {"name": str(args.get("name", ens_name())), "key": str(args.get("key", "bz.tier")), "value": str(args.get("value", "Silver"))}, 120.0)
+		"resolve_name":
+			r = await Chain.call_async("resolveName", {"name": str(args.get("name", ""))}, 20.0)
 		"pay":
-			r = await Chain.call_async("pay", {"to": args.get("to", ""), "amount": str(args.get("amount", "")), "memo": args.get("memo", "")}, 120.0)
+			r = await _run_payment_lane("pay", args)
 		"wire":
-			r = await Chain.call_async("wire", {"to": args.get("to", ""), "amount": str(args.get("amount", "")), "memo": args.get("memo", "")}, 120.0)
+			r = await _run_payment_lane("wire", args)
 		"approve":
 			# Ruth's wait path — the owner's timed release after the clock, silent. Never the manager (U4+).
 			r = await Chain.call_async("approve", {"txId": str(args.get("txId", "")), "as": "owner"}, 120.0)
@@ -305,9 +352,26 @@ func run_action(action: String, args: Dictionary = {}) -> Dictionary:
 	if not r.get("ok", false):
 		_note_error(r.get("error", {}))
 	await refresh_all()
+	if action.begins_with("ens"):
+		await refresh_names()
 	busy = false
 	changed.emit()
 	return r
+
+
+## Pay-by-name is a resolve step followed by the unchanged Remote EVM Lane A/B call.
+## The resolved address is never sent to Godot from a scene script; it stays inside this action boundary.
+func _run_payment_lane(lane: String, args: Dictionary) -> Dictionary:
+	var to := str(args.get("to", ""))
+	var name := str(args.get("name", "")).strip_edges()
+	if name != "":
+		var resolved := await Chain.call_async("resolveName", {"name": name}, 20.0)
+		if not resolved.get("ok", false):
+			return resolved
+		var target: Dictionary = resolved.get("result", {})
+		to = str(target.get("address", ""))
+	var method_args := {"to": to, "amount": str(args.get("amount", "")), "memo": args.get("memo", "")}
+	return await Chain.call_async(lane, method_args, 120.0)
 
 
 # ---------------------------------------------------------------- errors → NPC lines (docs/NPCS.md §5)

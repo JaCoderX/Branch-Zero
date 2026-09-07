@@ -19,6 +19,9 @@ var account := ""
 var balance := 0.0
 var wires: Array = []        # PendingWire dictionaries (strings only, like the real bridge)
 var receipts: Array = []     # Receipt dictionaries
+var ens_name := ""
+var ens_tier := "Silver"
+var ens_names: Array = []
 var _next_tx_id := 1
 var _job := 0
 
@@ -29,6 +32,9 @@ func preset_account() -> void:
 	delegated = true
 	account = ACCOUNT
 	balance = 500.0
+	ens_name = "test.branchzero.eth"
+	ens_tier = "Silver"
+	ens_names = [{"label": "test", "name": ens_name, "address": ACCOUNT, "owner": OWNER, "expiry": str(_now() + 365 * 86400), "txHash": _hash()}]
 
 
 func call_method(method: String, args: Dictionary) -> Dictionary:
@@ -68,6 +74,14 @@ func call_method(method: String, args: Dictionary) -> Dictionary:
 				balance = 500.0
 				_stage(job, "PROVISION", "mined", "Ready.", {"account": account})
 			return _ok({"jobId": job, "account": account, "balance": _fmt(balance)})
+		"ensAvailable":
+			return _ens_available(args)
+		"ensMint":
+			return await _ens_mint(args)
+		"ensSetText":
+			return await _ens_set_text(args)
+		"resolveName":
+			return _resolve_name(args)
 		"getPassbook":
 			return _ok(_status())
 		"listPending":
@@ -112,6 +126,63 @@ func _pay(args: Dictionary) -> Dictionary:
 	_next_tx_id += 1
 	_stage(job, "A", "mined", "Paid %s dUSDC." % _fmt(amount), {"hash": _hash(), "txId": str(tx_id), "amount": _fmt(amount)})
 	return _ok({"jobId": job, "hash": _hash(), "txId": str(tx_id), "to": args.get("to"), "amount": _fmt(amount), "balanceAfter": _fmt(balance)})
+
+
+func _ens_available(args: Dictionary) -> Dictionary:
+	var label := str(args.get("label", "")).strip_edges().to_lower()
+	var result := {"chainId": 11155111, "parent": "branchzero.eth", "recent": ens_names.duplicate(true)}
+	if label == "":
+		return _ok(result)
+	var taken := label == "test" or label == "taken" or label == ens_name.get_slice(".", 0)
+	result["label"] = label
+	result["name"] = "%s.branchzero.eth" % label
+	result["available"] = not taken
+	return _ok(result)
+
+
+func _ens_mint(args: Dictionary) -> Dictionary:
+	if account == "":
+		return _err("NO_ACCOUNT", "Open an account before claiming a name")
+	var label := str(args.get("label", "")).strip_edges().to_lower()
+	if label == "" or label.contains("."):
+		return _err("INVALID_NAME", "choose one label under branchzero.eth")
+	if not bool(_ens_available({"label": label}).get("result", {}).get("available", false)):
+		return _err("NAME_TAKEN", "%s.branchzero.eth is already registered" % label)
+	var job := _new_job()
+	_stage(job, "ENS", "signing", "Checking the Name Desk register…")
+	await get_tree().create_timer(0.5).timeout
+	_stage(job, "ENS", "broadcasting", "Registering %s.branchzero.eth on Sepolia…" % label)
+	await get_tree().create_timer(0.8).timeout
+	ens_name = "%s.branchzero.eth" % label
+	ens_tier = "Silver"
+	var row := {"label": label, "name": ens_name, "address": account, "owner": OWNER, "expiry": str(_now() + 365 * 86400), "txHash": _hash()}
+	ens_names.append(row)
+	_stage(job, "ENS", "broadcasting", "Pointing the name at your AccountBlox…", {"txId": label})
+	await get_tree().create_timer(0.5).timeout
+	_stage(job, "ENS", "mined", "%s is ready — it points to your AccountBlox." % ens_name, {"hash": row["txHash"], "name": ens_name})
+	return _ok({"jobId": job, "label": label, "name": ens_name, "address": account, "owner": OWNER, "expiry": row["expiry"], "txHash": row["txHash"], "txHashes": [row["txHash"]], "tier": "Silver", "account": account})
+
+
+func _ens_set_text(args: Dictionary) -> Dictionary:
+	var name := str(args.get("name", ens_name))
+	if name == "" or name != ens_name:
+		return _err("NAME_NOT_OWNED", "that name does not point to this account")
+	if str(args.get("key", "bz.tier")) != "bz.tier" or not ["Silver", "Gold"].has(str(args.get("value", "Silver"))):
+		return _err("BAD_ARGS", "the Name Desk only edits bz.tier to Silver or Gold")
+	ens_tier = str(args.get("value", "Silver"))
+	var job := _new_job()
+	_stage(job, "ENS", "signing", "Preparing the passbook record…")
+	await get_tree().create_timer(0.5).timeout
+	_stage(job, "ENS", "mined", "%s now carries a %s passbook record." % [name, str(args.get("value", "Silver"))], {"hash": _hash(), "name": name})
+	return _ok({"jobId": job, "name": name, "key": "bz.tier", "value": ens_tier, "txHash": _hash(), "chainId": 11155111})
+
+
+func _resolve_name(args: Dictionary) -> Dictionary:
+	var name := str(args.get("name", "")).strip_edges().to_lower()
+	for row in ens_names:
+		if str(row.get("name", "")).to_lower() == name:
+			return _ok({"name": name, "address": str(row.get("address", ACCOUNT)), "chainId": 11155111, "tier": ens_tier if name == ens_name else "Silver"})
+	return _err("NAME_NOT_FOUND", "%s has no address record" % name)
 
 
 func _wire(args: Dictionary) -> Dictionary:
@@ -212,7 +283,7 @@ func _session() -> Dictionary:
 		return {"loggedIn": false, "ready": true}
 	return {
 		"loggedIn": true, "ready": true, "userId": "did:privy:mock", "owner": OWNER,
-		"account": account if account != "" else null, "delegated": delegated,
+		"account": account if account != "" else null, "delegated": delegated, "ensName": ens_name if ens_name != "" else null,
 		"signingMode": "session" if delegated else "client", "chainId": 1337,
 		"timeLockSec": TIMELOCK_SEC, "instantLimit": INSTANT_LIMIT, "manager": MANAGER, "priority": true,
 		"token": {"address": "0xM0CK00000000000000000000000000000000dUSD", "symbol": "dUSDC", "decimals": 18},

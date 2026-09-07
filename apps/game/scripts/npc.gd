@@ -11,15 +11,15 @@ signal duty_changed
 enum State { IDLE, TALKING, WORKING, ESCORTING, REFUSING }
 
 ## npc_id → Kenney Blocky Characters skin (U7 viz Stage 3; the eight skins in the atlas are listed in
-## tools/character_atlas.py). `registrar` is Petra's explicit entry for U5 — she is not instanced yet, her skin already
-## sits in the atlas at no extra material. Unlisted ids fall back to `default`.
+## tools/character_atlas.py). `registrar` is Petra's explicit U5 skin entry and uses the shared atlas material.
+## Unlisted ids fall back to `default`.
 const SKINS := {
 	"greeter": "character-b",        # red shirt — the lobby's friendly face
 	"clerk": "character-f",          # teal blouse — Account Opening
 	"teller": "character-i",         # shirt, tie and glasses — Counter 1
 	"vault_keeper": "character-j",   # uniform with badge — the vault window
 	"manager": "character-q",        # dark suit, red tie — the corner office
-	"registrar": "character-e",      # purple top — Petra, Name Desk (U5 instances her)
+	"registrar": "character-e",      # purple top — Petra, Name Desk
 	"default": "character-m",
 }
 

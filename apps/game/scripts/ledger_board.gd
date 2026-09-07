@@ -106,7 +106,7 @@ func _redraw() -> void:
 		recent.reverse()
 		for r in recent:
 			var lane := str(r.get("lane", "?"))
-			var kind: String = str({"A": "PAY", "B": "WIRE", "PROVISION": "OPEN", "CONFIG": "DESK"}.get(lane, lane))
+			var kind: String = str({"A": "PAY", "B": "WIRE", "PROVISION": "OPEN", "CONFIG": "DESK", "ENS": "NAME"}.get(lane, lane))
 			var h := str(r.get("hash", ""))
 			right.append("%-5s %-12s %s%s" % [kind, str(r.get("stage", "")).to_upper(), ("#" + str(r["txId"]) + " ") if r.has("txId") and r["txId"] != null else "", h.substr(0, 10) if h != "" else ""])
 	_right.text = "\n".join(right)

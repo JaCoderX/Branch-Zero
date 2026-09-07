@@ -8,6 +8,7 @@ const NPCS := [
 	["greeter", "Mo", "Greeter", Color(0.85, 0.55, 0.25), Vector3(2.0, 0, 4.5), PI * 0.9, []],
 	["clerk", "Ines", "Account Clerk", Color(0.30, 0.60, 0.50), Vector3(-9.0, 0, 6.9), PI, []],
 	["teller", "Dev", "Teller · Counter 1", Color(0.55, 0.35, 0.70), Vector3(-11.6, 0, 3.0), -PI / 2, [Vector3(-11.6, 0, 5.6), Vector3(-8.5, 0, 5.6), Vector3(-2.0, 0, -1.0), Vector3(6.0, 0, -3.5), Vector3(8.0, 0, -6.8)]],
+	["registrar", "Petra", "Registrar · Name Desk", Color(0.25, 0.60, 0.45), Vector3(-12.0, 0, -5.8), 0.0, []],
 	["vault_keeper", "Ruth", "Vault Keeper", Color(0.75, 0.30, 0.30), Vector3(10.0, 0, -7.5), PI * 0.6, []],
 	["manager", "Mr. Okafor", "Branch Manager", Color(0.25, 0.30, 0.55), Vector3(-8.0, 0, -9.8), 0.0, []],
 ]
@@ -38,6 +39,10 @@ func _ready() -> void:
 	board.set_script(load("res://scripts/ledger_board.gd"))
 	board.position = Vector3(0.0, 3.0, -4.7)
 	add_child(board)
+
+	var names_board := Node3D.new()
+	names_board.set_script(load("res://scripts/names_board.gd"))
+	add_child(names_board)
 
 	var npcs := Node3D.new()
 	npcs.name = "NPCs"
@@ -78,6 +83,9 @@ func _ready() -> void:
 	var slip := Control.new()
 	slip.set_script(load("res://scripts/payment_slip.gd"))
 	ui.add_child(slip)
+	var name_form := Control.new()
+	name_form.set_script(load("res://scripts/name_claim_form.gd"))
+	ui.add_child(name_form)
 
 	GameState.changed.connect(func() -> void:
 		interior.refresh_signs())
@@ -85,7 +93,7 @@ func _ready() -> void:
 		_update_prompt())
 	Dialogue.opened.connect(func(_id: String) -> void:
 		hud.set_prompt(""))
-	print("Branch Zero U3 · Godot %s · %s · bridge %s" % [Engine.get_version_info().string, "web" if Chain.is_web else "desktop", "MockChain" if Chain.use_mock else Chain.bridge_version])
+	print("Branch Zero U5 · Godot %s · %s · bridge %s" % [Engine.get_version_info().string, "web" if Chain.is_web else "desktop", "MockChain" if Chain.use_mock else Chain.bridge_version])
 
 
 func _on_player_near(npc: Npc, near: bool) -> void:
@@ -125,6 +133,7 @@ const TELEPORTS := {
 	KEY_F4: [Vector3(8.0, 0.1, -6.5), 0.0],        # Vault antechamber, looking north at the door
 	KEY_F6: [Vector3(3.0, 0.1, 6.0), 0.0],         # Lobby, near Mo
 	KEY_F7: [Vector3(-8.0, 0.1, -7.3), 0.0],       # Manager's office, looking north at the desk
+	KEY_F8: [Vector3(-12.0, 0.1, -7.0), 0.0],      # Name Desk, looking north at Petra
 }
 
 

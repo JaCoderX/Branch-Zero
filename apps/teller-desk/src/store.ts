@@ -43,6 +43,8 @@ export interface Player {
   priority?: boolean;
   /** U4+: shape of the typed-data policy rule (privy.ts `TYPED_DATA_RULE_VERSION`); 1 = no action pin. */
   typedDataRule?: number;
+  /** U5: latest customer subname claimed at Petra's Name Desk. The chain remains source of truth for resolution. */
+  ensName?: string;
   createdAt: number;
 }
 

@@ -12,6 +12,7 @@
  *             routes that already exist (`/session`, `/status`); U3 added no chain semantics.
  * U4+ method: priority (Okafor's desk) — the one call allowed to open a second Privy surface: the player's own
  *             signer signs the meta-approve bypass behind a Passkey, the Branch Manager submits it before the clock.
+ * U5 methods: ensAvailable / ensMint / ensSetText / resolveName — ENSv2 identity on Sepolia; payments remain 1337.
  *             `approve` is owner-only from here (Ruth's wait path); `as: 'manager'` is refused by the desk.
  *
  * Everything that needs a Privy identity is delegated to the React overlay through a small adapter it
@@ -26,7 +27,7 @@ import type { DeskLink } from '../shell/deskEvents';
 import { focusCanvas } from '../shell/focus';
 
 /** u4.1: `priority` (U4+). u4.0 added the `desk.link` event and gave the canvas focus back after the Privy modals. */
-export const BRIDGE_VERSION = 'u4.1';
+export const BRIDGE_VERSION = 'u5.0';
 
 /**
  * `?mock=1` on the shell URL tells Godot to answer every desk call from its own MockChain (canned data,
@@ -69,6 +70,7 @@ export interface DeskSessionSource {
   instantLimit?: string;
   manager?: string | null;
   priority?: boolean;
+  ensName?: string | null;
   token?: { address: string; symbol: string; decimals: number };
 }
 
@@ -181,6 +183,39 @@ const handlers: Record<string, Handler> = {
     return requireAdapter().call('/provision', {});
   },
 
+  // --- U5: Petra's ENSv2 Name Desk (Sepolia only) ---
+  async ensAvailable(args) {
+    const label = typeof args.label === 'string' ? args.label.trim() : '';
+    const query = label ? `?label=${encodeURIComponent(label)}` : '';
+    return requireAdapter().call(`/ens/available${query}`);
+  },
+  async ensMint(args) {
+    const label = typeof args.label === 'string' ? args.label.trim() : '';
+    if (!label) throw bridgeError('BAD_ARGS', 'name label is required', 'Petra needs a name to put on the slip.');
+    try {
+      return await requireAdapter().call('/ens/claim', { label });
+    } finally {
+      // The Name Desk is a Godot form today, but keep every async desk mutation's focus contract explicit.
+      focusCanvas();
+    }
+  },
+  async ensSetText(args) {
+    const name = typeof args.name === 'string' ? args.name.trim() : '';
+    const key = typeof args.key === 'string' ? args.key : 'bz.tier';
+    const value = typeof args.value === 'string' ? args.value : '';
+    if (!name || !value) throw bridgeError('BAD_ARGS', 'name record needs name and value', 'Petra needs a name record to edit.');
+    try {
+      return await requireAdapter().call('/ens/record', { name, key, value });
+    } finally {
+      focusCanvas();
+    }
+  },
+  async resolveName(args) {
+    const name = typeof args.name === 'string' ? args.name.trim() : '';
+    if (!name) throw bridgeError('BAD_ARGS', 'ENS name is required', 'Write a customer name, like alice.branchzero.eth.');
+    return requireAdapter().call(`/ens/resolve?name=${encodeURIComponent(name)}`);
+  },
+
   // --- U1: the counter ---
   async getPassbook() {
     return requireAdapter().call('/status');
@@ -253,6 +288,7 @@ const handlers: Record<string, Handler> = {
       instantLimit: s.instantLimit,
       manager: s.manager ?? null,
       priority: Boolean(s.priority),
+      ensName: s.ensName ?? null,
       token: s.token,
     };
   },

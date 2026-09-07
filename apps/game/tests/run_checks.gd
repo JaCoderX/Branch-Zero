@@ -8,7 +8,7 @@ extends SceneTree
 ## code in docs/NPCS.md §5 (and every Teller Desk / bridge code the lanes emit) has a line in errors.json;
 ## the condition evaluator and interpolation behave.
 
-const NPCS := ["greeter", "clerk", "teller", "vault_keeper", "manager"]
+const NPCS := ["greeter", "clerk", "teller", "vault_keeper", "manager", "registrar"]
 
 ## NPCS.md §5 rows, the SDK names behind them, plus every code the Teller Desk and the bridge can return.
 const REQUIRED_CODES := [
@@ -23,6 +23,8 @@ const REQUIRED_CODES := [
 	"NO_ACCOUNT", "NO_WALLET", "NO_MANAGER", "NOT_PENDING", "RECORD_*", "policy_violation", "Unknown",
 	"TIMEOUT", "UNKNOWN_METHOD", "BAD_ARGS", "RPC", "NOT_IMPLEMENTED", "INTERNAL", "AUTH", "POLICY", "CHAIN", "LOGIN_CANCELLED",
 	"NOT_CONFIGURED",
+	# U5 ENS Name Desk codes
+	"INVALID_NAME", "NAME_TAKEN", "NAME_NOT_FOUND", "NAME_NOT_OWNED", "ENS_NOT_CONFIGURED", "ENS_RPC", "ENS_TX_FAILED", "ENS_RECORD_FAILED",
 	# U4+ Priority release (Okafor) — desk + overlay codes
 	"MANAGER_NO_STAMP", "NOT_COOLING", "PRIORITY_OFF", "PRIORITY_CANCELLED", "MFA_FAILED", "PRIORITY_EXPIRED",
 	"default",
@@ -122,15 +124,19 @@ func _check_npc(id: String) -> void:
 		if node.has("enter_action"):
 			choices.append(node["enter_action"])
 		for c in choices:
-			for k in ["next", "on_ok", "on_error", "on_instant", "on_vault"]:
+			for k in ["next", "on_ok", "on_error", "on_instant", "on_vault", "on_submit"]:
 				if c.has(k):
 					targets.append(c[k])
 			if c.has("action") or c.has("form"):
 				action_nodes += 1
 			if str(c.get("text", "")).begins_with("Ask why"):
 				has_ask_why = true
-			if c.has("form") and not (c.has("on_instant") and c.has("on_vault")):
-				_fail("%s: form choice needs on_instant + on_vault" % nid)
+			if c.has("form"):
+				var form_kind := str(c.get("form", ""))
+				if form_kind == "name_claim" and not c.has("on_submit"):
+					_fail("%s: name_claim form needs on_submit" % nid)
+				elif form_kind != "name_claim" and not (c.has("on_instant") and c.has("on_vault")):
+					_fail("%s: form choice needs on_instant + on_vault" % nid)
 			if c.has("action") and not c.has("on_error"):
 				_fail("%s: action '%s' has no on_error node" % [nid, str(c["action"])])
 		for t in targets:

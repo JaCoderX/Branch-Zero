@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "description": "Teller Desk service (Fastify). U1: Privy session-signer signing lane, CopyBlox provisioning, Lane A payments. U2: time-locked wires (Lane B), owner transactions via session signer, Branch Manager role. U4+: Priority release (owner Passkey-signed meta-approve, manager submits before the clock).",
+  "description": "Teller Desk service (Fastify). U1: Privy session-signer signing lane, CopyBlox provisioning, Lane A payments. U2: time-locked wires (Lane B), owner transactions via session signer, Branch Manager role. U4+: Priority release. U5: ENSv2 Name Desk on Sepolia; payments remain on Remote EVM 1337.",
   "scripts": {
     "dev": "tsx watch --env-file-if-exists=../../.env src/server.ts",
     "start": "tsx --env-file-if-exists=../../.env src/server.ts",
@@ -11,6 +11,7 @@
     "killtests": "tsx --env-file-if-exists=../../.env scripts/kill-tests.ts",
     "killtests:u2": "tsx --env-file-if-exists=../../.env scripts/kill-tests-u2.ts",
     "killtests:u4plus": "tsx --env-file-if-exists=../../.env scripts/kill-tests-u4plus.ts",
+    "killtests:u5": "tsx --env-file-if-exists=../../.env scripts/kill-tests-u5.ts",
     "upgrade-players": "tsx --env-file-if-exists=../../.env scripts/upgrade-players.ts",
     "probe:policy": "tsx --env-file-if-exists=../../.env scripts/probe-typed-data-policy.ts",
     "evidence": "tsx --env-file-if-exists=../../.env scripts/vault-evidence.ts"

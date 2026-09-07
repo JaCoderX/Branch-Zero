@@ -4,6 +4,9 @@ extends Node3D
 ## (assets/models/hero, made by tools/hero_props.py), Kenney Furniture Kit props (CC0) and the Main-wing materials +
 ## lighting recipe (themes/wing_main.tres, WORLD-3D §7). 1 unit = 1 m; x east, z south (north is -z), origin at the
 ## centre of the 30 × 22 m footprint. Zones are Area3D volumes; entering one emits `zone_entered`.
+## U7 viz Stage 4 dresses the visible wall faces and the ceiling in place (`_shell`, `_coffers`): pilasters, frieze,
+## framed panels, wainscot stiles and coffer beams, all BoxMesh pieces in existing palette materials with no collider,
+## so they merge into the static batch at zero extra draw calls and zero new materials.
 ##
 ## Rules kept from U4+: props that block the player collide on layer 1 and listen on mask 0 (Godot Physics on web
 ## shoves listening bodies); nothing sits in the manager door (x ∈ [-9, -7] at z = -5), the vault opening
@@ -18,9 +21,18 @@ const WALL_H := 4.5
 const T := 0.3
 const WAINSCOT_H := 0.95
 const SKYLIGHT := Rect2(-6.0, -4.0, 12.0, 9.0)   # x, z, w, d — the open ceiling over the lobby
+# Stage 4 shell modules (docs/WORLD-3D-ENVIRONMENT.md §1 art-deco lobby): a deep-green frieze with brass fillets just
+# under the clerestory sills (3.45), raised panels between the pilasters above the wainscot cap (1.0)
+const FRIEZE_Y0 := 3.12
+const FRIEZE_Y1 := 3.34
+const PANEL_Y0 := 1.25
+const PANEL_Y1 := 2.95
+const PILASTER_W := 0.36
+const BEAM_DROP := 0.28   # coffer beams hang this far under the ceiling slabs (pendant canopies sit at the slab)
 
 var theme: WingTheme
 var lamps: Array[OmniLight3D] = []
+var shell_pieces := 0   # BoxMesh modules the Stage 4 shell added; tests/run_viz_budget.gd asserts they exist and were baked
 
 
 func _ready() -> void:
@@ -34,6 +46,8 @@ func _ready() -> void:
 	_lobby_furniture()
 	_east_column()
 	_lamps_and_windows()
+	_shell()
+	_coffers()
 	_zones()
 	# one merged mesh per material for everything static (WORLD-3D §6); colliders, zones and labels stay as they are
 	PropKit.bake_static(self)
@@ -193,7 +207,7 @@ func _west_column() -> void:
 	quad.material_override = PropKit.color(Color(0.06, 0.07, 0.09), 0.0, 1.0)
 	quad.set_meta("no_batch", true)   # stays its own node so U5 can swap the material
 	add_child(quad)
-	plaque("NAME DESK\n(opens with U5)", Vector3(-12.5, 2.2, -4.9), 0.0, 0.3, theme.graphite_color)
+	plaque("NAME DESK", Vector3(-12.5, 2.2, -4.9), 0.0, 0.3, theme.graphite_color)
 	plaque("Approved payees\n• Florist\n• Landlord\n• Demo merchant", Vector3(-14.8, 2.4, 3.0), PI / 2, 0.24, theme.graphite_color, "PayeeList")
 	box_m("PayeeListBoard", Vector3(-14.83, 2.4, 3.0), Vector3(0.03, 1.2, 2.6), PropKit.palette("Paper"), false)
 	plaque("Services at this counter\n• Payment over the counter\n• Scheduled wire (via the vault)", Vector3(-14.8, 2.4, -1.0), PI / 2, 0.24, theme.graphite_color, "ServiceMenu")
@@ -342,6 +356,208 @@ func _zones() -> void:
 	zone("Counter", Vector3(-11.5, 1.5, 1.0), Vector3(7.0, 3.0, 8.0))
 	zone("Vault antechamber", Vector3(8.0, 1.5, -8.0), Vector3(14.0, 3.0, 6.0))
 	zone("Manager's office", Vector3(-8.0, 1.5, -8.0), Vector3(14.0, 3.0, 6.0))
+
+
+# ---------------------------------------------------------------- Stage 4: architecture shell — wall faces and ceiling
+
+## Dress the visible faces of the CSG walls so they stop reading as single-colour boxes. The walls, their colliders,
+## the door gaps and every footprint stay exactly where U3 put them; only mesh is added. Coordinates are the
+## along-wall axis (x for walls running east–west, z for north–south) in world metres; every hero prop, board and
+## plaque on a face was measured first so pilasters and panels land between them, and `gaps` cut the frieze where a
+## housing rises through it (ledger board, names board, vault frame, ACCOUNT OPENING plaque).
+func _shell() -> void:
+	var half_w := W / 2.0
+	var half_d := D / 2.0
+	var inner_x := [-half_w + T / 2.0, half_w - T / 2.0]
+	var inner_z := [-half_d + T / 2.0, half_d - T / 2.0]
+	var pz := -5.0
+	# north partition — lobby face (+1, south) and vault face (-1, north). The ledger housing covers x ∈ [-4.4, 4.4] of
+	# the lobby face; the pilasters at 5.75 / 10.25 turn the vault opening and its lintel into a portal.
+	shell("VaultPartA", Vector3(3.5, WALL_H / 2, pz), Vector3(5.0, WALL_H, T), 1, {"pilasters": [5.75], "panels": [[4.6, 5.4]], "gaps": [[1.0, 4.45]]})
+	shell("VaultPartA", Vector3(3.5, WALL_H / 2, pz), Vector3(5.0, WALL_H, T), -1, {"pilasters": [1.3, 5.75], "panels": [[1.7, 5.4]]})
+	shell("VaultPartB", Vector3(12.5, WALL_H / 2, pz), Vector3(5.0, WALL_H, T), 1, {"pilasters": [10.25, 14.6], "panels": [[10.65, 14.2]]})
+	shell("VaultPartB", Vector3(12.5, WALL_H / 2, pz), Vector3(5.0, WALL_H, T), -1, {"pilasters": [10.25, 14.6], "panels": [[10.65, 14.2]]})
+	# north wall, south face: manager's office (x < -1) and vault antechamber (x > -1). The vault frame stands on
+	# x ∈ [5.5, 10.5] (4.45 m tall, so the frieze stops for it), the window on [12.4, 14.6]; the limits poster gets a
+	# brass frame instead of a panel.
+	shell("WallN", Vector3(0, WALL_H / 2, -half_d), Vector3(W + T, WALL_H, T), 1, {
+		"span": inner_x,
+		"pilasters": [-14.6, -10.6, -5.5, -1.4, -0.6, 2.6, 4.6, 11.4],
+		"panels": [[-14.2, -11.0], [-9.75, -6.25, 1.68, 3.06, false], [-5.1, -1.8], [-0.2, 2.2], [3.0, 4.2]],
+		"gaps": [[5.4, 10.6]]})
+	# west wall, east face: behind the counters and the Name Desk. The payee list and service menu boards get frames;
+	# the names-board housing (z ∈ [-5.3, -2.3], top 3.29) interrupts the frieze.
+	shell("WallW", Vector3(-half_w, WALL_H / 2, 0), Vector3(T, WALL_H, D + T), 1, {
+		"span": inner_z,
+		"pilasters": [-10.6, -7.9, -5.5, 1.15, 5.2, 7.9, 10.6],
+		"panels": [[-10.2, -8.3], [-7.5, -5.9], [-2.65, 0.65, 1.75, 3.05, false], [1.65, 4.35, 1.75, 3.05, false], [5.6, 7.5], [8.3, 10.2]],
+		"gaps": [[-5.4, -2.2]]})
+	# east wall, west face: the elevator shaft stands on z ∈ [-1, 2] (0.35 m off the wall), the FX DESK plaque at
+	# z = -3 gets a frame, the side door fills z ∈ [3, 4]
+	shell("WallE", Vector3(half_w, WALL_H / 2, 0), Vector3(T, WALL_H, D + T), -1, {
+		"span": inner_z,
+		"pilasters": [-10.6, -7.9, -5.5, -4.4, -1.5, 2.4, 4.7, 7.9, 10.6],
+		"panels": [[-10.2, -8.3], [-7.5, -5.9], [-3.9, -2.1, 1.75, 2.65, false], [5.1, 7.5], [8.3, 10.2]]})
+	# south wall, north face, in its two halves either side of the entrance gap x ∈ [3, 7]: portal pilasters flank the
+	# gap; the ACCOUNT OPENING plaque sits at y ≈ 3 over x ∈ [-11, -7], so that bay's panel is lower and the frieze skips it
+	shell("WallS_a", Vector3((-half_w + 3.0) / 2.0, WALL_H / 2, half_d), Vector3(half_w + 3.0, WALL_H, T), -1, {
+		"span": [inner_x[0], 3.0],
+		"pilasters": [-14.6, -11.0, -7.5, -3.5, 2.55],
+		"panels": [[-14.2, -11.4], [-10.6, -7.9, PANEL_Y0, 2.55], [-7.1, -3.9], [-3.1, 2.15]],
+		"gaps": [[-11.3, -6.7]]})
+	shell("WallS_b", Vector3((7.0 + half_w) / 2.0, WALL_H / 2, half_d), Vector3(half_w - 7.0, WALL_H, T), -1, {
+		"span": [7.0, inner_x[1]],
+		"pilasters": [7.45, 11.0, 14.6],
+		"panels": [[7.85, 10.6], [11.4, 14.2]]})
+	# elevator shaft (a graphite block to the ceiling): marble corner columns, green dado with brass cap, frieze and a
+	# brass crown on its three lobby faces. The call panel (z = -0.6) and the hall lantern (y 2.58) stay clear; the
+	# ELEVATOR plaque (y ≈ 2.9–3.8) sits where the frieze would run on the west face, so that face has none.
+	var ev_pos := Vector3(13.0, WALL_H / 2, 0.5)
+	var ev_size := Vector3(3.0, WALL_H, 3.0)
+	shell("ElevatorW", ev_pos, ev_size, -1, {"along_x": false, "pilasters": [-0.95, 1.95], "dado": true, "crown": true, "frieze": false})
+	shell("ElevatorN", ev_pos, ev_size, -1, {"along_x": true, "dado": true, "crown": true, "stiles": false})
+	shell("ElevatorS", ev_pos, ev_size, 1, {"along_x": true, "dado": true, "crown": true, "stiles": false})
+
+
+## One wall face. `pos` / `size` are the wall box; `face` is ±1 along the box's thin axis (the wall's normal).
+## spec keys — pilasters: along-coords of marble pilasters (green base, brass fillet, brass capital) · panels:
+## [a0, a1, (y0, y1, plate)] brass frames with a raised paper plate unless plate is false (a board already fills it) ·
+## gaps: [a0, a1] the frieze skips · span: [a0, a1] to dress (default: the whole box) · along_x: override the axis ·
+## frieze (true) · stiles (true): brass strips splitting the wainscot into panels · dado / crown (false): the green
+## wainscot + cap and a brass top band for boxes that `wall()` did not build. Mesh only — no collider is ever added.
+func shell(name: String, pos: Vector3, size: Vector3, face: int, spec: Dictionary) -> void:
+	var along_x: bool = spec.get("along_x", size.x > size.z)
+	var sgn := float(face)
+	var plane := (pos.z + size.z / 2.0 * sgn) if along_x else (pos.x + size.x / 2.0 * sgn)
+	var a0 := (pos.x - size.x / 2.0) if along_x else (pos.z - size.z / 2.0)
+	var a1 := (pos.x + size.x / 2.0) if along_x else (pos.z + size.z / 2.0)
+	if spec.has("span"):
+		a0 = float(spec["span"][0])
+		a1 = float(spec["span"][1])
+	var tag := name + ("Face%s" % ("S" if face > 0 else "N")) if along_x else name + ("Face%s" % ("E" if face > 0 else "W"))
+	var marble := PropKit.palette("Marble")
+	var green := PropKit.palette("MarbleDark")
+	var brass := PropKit.palette("Brass")
+	var paper := PropKit.palette("Paper")
+	# one piece: centred on along-coordinate `a`, `w` wide, from y0 to y1, standing p0..p1 proud of the face
+	var piece := func(n: String, a: float, w: float, y0: float, y1: float, p0: float, p1: float, m: Material) -> void:
+		var c := plane + sgn * (p0 + p1) / 2.0
+		var d := p1 - p0
+		var p := Vector3(a, (y0 + y1) / 2.0, c) if along_x else Vector3(c, (y0 + y1) / 2.0, a)
+		var s := Vector3(w, y1 - y0, d) if along_x else Vector3(d, y1 - y0, w)
+		slab(tag + n, p, s, m)
+		shell_pieces += 1
+	var pilasters: Array = spec.get("pilasters", [])
+	for i in pilasters.size():
+		var a := float(pilasters[i])
+		piece.call("Pilaster%d" % i, a, PILASTER_W, 0.0, FRIEZE_Y0, 0.0, 0.10, marble)
+		piece.call("PilasterBase%d" % i, a, PILASTER_W + 0.08, 0.0, 0.30, 0.0, 0.13, green)
+		piece.call("PilasterFillet%d" % i, a, PILASTER_W + 0.10, 0.30, 0.34, 0.0, 0.14, brass)
+		piece.call("PilasterCap%d" % i, a, PILASTER_W + 0.08, FRIEZE_Y0 - 0.10, FRIEZE_Y0, 0.0, 0.13, brass)
+	if bool(spec.get("frieze", true)):
+		var segs: Array = [[a0 + 0.02, a1 - 0.02]]
+		for g in spec.get("gaps", []):
+			var next: Array = []
+			for sg in segs:
+				if float(g[1]) <= float(sg[0]) or float(g[0]) >= float(sg[1]):
+					next.append(sg)
+					continue
+				if float(g[0]) > float(sg[0]):
+					next.append([sg[0], g[0]])
+				if float(g[1]) < float(sg[1]):
+					next.append([g[1], sg[1]])
+			segs = next
+		for i in segs.size():
+			var mid := (float(segs[i][0]) + float(segs[i][1])) / 2.0
+			var w := float(segs[i][1]) - float(segs[i][0])
+			piece.call("Frieze%d" % i, mid, w, FRIEZE_Y0, FRIEZE_Y1, 0.0, 0.05, green)
+			piece.call("FriezeLo%d" % i, mid, w, FRIEZE_Y0 - 0.03, FRIEZE_Y0, 0.0, 0.06, brass)
+			piece.call("FriezeHi%d" % i, mid, w, FRIEZE_Y1, FRIEZE_Y1 + 0.03, 0.0, 0.06, brass)
+	var panels: Array = spec.get("panels", [])
+	for i in panels.size():
+		var pnl: Array = panels[i]
+		var y0 := float(pnl[2]) if pnl.size() > 2 else PANEL_Y0
+		var y1 := float(pnl[3]) if pnl.size() > 3 else PANEL_Y1
+		var plate := bool(pnl[4]) if pnl.size() > 4 else true
+		var mid := (float(pnl[0]) + float(pnl[1])) / 2.0
+		var w := float(pnl[1]) - float(pnl[0])
+		var f := 0.035
+		piece.call("PanelL%d" % i, float(pnl[0]) + f / 2.0, f, y0, y1, 0.0, 0.03, brass)
+		piece.call("PanelR%d" % i, float(pnl[1]) - f / 2.0, f, y0, y1, 0.0, 0.03, brass)
+		piece.call("PanelB%d" % i, mid, w - 2.0 * f, y0, y0 + f, 0.0, 0.03, brass)
+		piece.call("PanelT%d" % i, mid, w - 2.0 * f, y1 - f, y1, 0.0, 0.03, brass)
+		if plate:
+			piece.call("Panel%d" % i, mid, w - 2.0 * f, y0 + f, y1 - f, 0.0, 0.015, paper)
+	if bool(spec.get("dado", false)):
+		piece.call("Dado", (a0 + a1) / 2.0, a1 - a0 - 0.02, 0.0, WAINSCOT_H, 0.0, 0.04, green)
+		piece.call("DadoCap", (a0 + a1) / 2.0, a1 - a0 - 0.02, WAINSCOT_H, WAINSCOT_H + 0.05, 0.0, 0.055, brass)
+	if bool(spec.get("stiles", true)):
+		var edges: Array[float] = [a0]
+		for a in pilasters:
+			edges.append(float(a))
+		edges.append(a1)
+		edges.sort()
+		for i in edges.size() - 1:
+			var bay := edges[i + 1] - edges[i]
+			var n := int(floor(bay / 2.6))
+			for k in n:
+				piece.call("Stile%d_%d" % [i, k], edges[i] + bay * float(k + 1) / float(n + 1), 0.03, 0.03, WAINSCOT_H - 0.02, 0.0, 0.055, brass)
+	if bool(spec.get("crown", false)):
+		piece.call("Crown", (a0 + a1) / 2.0, a1 - a0, WALL_H - 0.22, WALL_H - 0.08, 0.0, 0.06, brass)
+
+
+## Coffered ceiling: marble beams with a brass fillet hang under the slabs on lines chosen to miss the eight
+## pendants (0.84 m canopies at the slab), the skylight well (x ∈ [-6, 6], z ∈ [-4, 5]), the vault frame (top 4.45)
+## and the ledger housing (top 4.44); a green band lines the skylight well under the brass curb. The skylight glass
+## keeps its no-shadow / no-batch behaviour. Mesh only: nothing walks on or collides with the ceiling.
+func _coffers() -> void:
+	var marble := PropKit.palette("Marble")
+	var brass := PropKit.palette("Brass")
+	var green := PropKit.palette("MarbleDark")
+	var half_w := W / 2.0 - T / 2.0
+	var half_d := D / 2.0 - T / 2.0
+	var s := SKYLIGHT
+	var y_beam := WALL_H - BEAM_DROP / 2.0
+	var y_fillet := WALL_H - BEAM_DROP - 0.015
+	# [z, x0, x1] — beams running east–west
+	var along_x := [
+		[-9.5, -half_w, half_w], [-6.5, -half_w, half_w],
+		[-2.0, -half_w, s.position.x], [-2.0, s.end.x, half_w],
+		[1.8, -half_w, s.position.x], [1.8, s.end.x, half_w],
+		[5.3, -half_w, half_w], [9.0, -half_w, half_w],
+	]
+	# [x, z0, z1] — beams running north–south
+	var along_z := [
+		[-13.4, -half_d, half_d], [-10.0, -half_d, half_d], [-6.6, -half_d, half_d],
+		[-3.2, -half_d, -5.1], [-3.2, s.end.y, half_d],
+		[0.2, -half_d, -5.1], [0.2, s.end.y, half_d],
+		[4.0, -half_d, -5.1], [4.0, s.end.y, half_d],
+		[8.0, -4.85, half_d],
+		[12.0, -half_d, -5.15], [12.0, -4.85, half_d],
+	]
+	for i in along_x.size():
+		var b: Array = along_x[i]
+		var mid := (float(b[1]) + float(b[2])) / 2.0
+		var len := float(b[2]) - float(b[1])
+		slab("BeamX%d" % i, Vector3(mid, y_beam, float(b[0])), Vector3(len, BEAM_DROP, 0.22), marble)
+		slab("BeamXFillet%d" % i, Vector3(mid, y_fillet, float(b[0])), Vector3(len, 0.03, 0.26), brass)
+		shell_pieces += 2
+	for i in along_z.size():
+		var b: Array = along_z[i]
+		var mid := (float(b[1]) + float(b[2])) / 2.0
+		var len := float(b[2]) - float(b[1])
+		slab("BeamZ%d" % i, Vector3(float(b[0]), y_beam, mid), Vector3(0.22, BEAM_DROP, len), marble)
+		slab("BeamZFillet%d" % i, Vector3(float(b[0]), y_fillet, mid), Vector3(0.26, 0.03, len), brass)
+		shell_pieces += 2
+	# green band lining the skylight well, inside the brass curb (the curb's inner faces are flush with the opening)
+	var c := s.get_center()
+	var wy := WALL_H + 0.2   # the curb spans WALL_H … WALL_H + 0.5; the band sits in its lower half, under the glass
+	slab("SkyWellN", Vector3(c.x, wy, s.position.y + 0.015), Vector3(s.size.x - 0.06, 0.3, 0.03), green)
+	slab("SkyWellS", Vector3(c.x, wy, s.end.y - 0.015), Vector3(s.size.x - 0.06, 0.3, 0.03), green)
+	slab("SkyWellW", Vector3(s.position.x + 0.015, wy, c.y), Vector3(0.03, 0.3, s.size.y - 0.06), green)
+	slab("SkyWellE", Vector3(s.end.x - 0.015, wy, c.y), Vector3(0.03, 0.3, s.size.y - 0.06), green)
+	shell_pieces += 4
+	set_meta("shell_pieces", shell_pieces)
 
 
 # ---------------------------------------------------------------- builders

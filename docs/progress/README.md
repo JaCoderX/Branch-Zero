@@ -20,9 +20,11 @@ Do not commit secrets, `.env`, or large binaries.
 | [2026-09-07 — U4+ checkpoint + scrub](./2026-09-07-u4-plus-checkpoint.md) | U4+ | G5b | accept — principal playtest green; four lessons scrubbed; **ENG-0007 still unrun → lab before U5** |
 | [2026-09-07 — Pre-U5 closeout](./2026-09-07-pre-u5-closeout.md) | pre-U5 | — | ENG-0007 still partial at dig time (historical) |
 | [2026-09-07 — K6 yes](./2026-09-07-k6-yes.md) | K6 / U5 gate | K6 | **yes** — ENSv2 parent + `test.branchzero.eth`; pin UR V2; U5 unblocked |
+| [2026-09-07 — U5 ENS G6](./2026-09-07-u5-ens-g6.md) | U5 | G6 | **met** — live Sepolia mint/resolve + Remote EVM 1337 pay-by-name; duplicate refused |
 | [2026-09-07 — U7 early viz (Stage 1)](./2026-09-07-u7-early-viz.md) | U7 (art) | early viz DoD | met — kits + lighting + bake; `.pck` 0.14 → 0.97 MB |
 | [2026-09-07 — U7 viz Stage 2](./2026-09-07-u7-viz-stage2.md) | U7 (art) | Stage 2 DoD | met — hero polish; worst 188 draws / 130k prims; `.pck` 1.25 MB |
 | [2026-09-07 — U7 viz Stage 3](./2026-09-07-u7-viz-stage3.md) | U7 (art) | Stage 3 DoD | met — adult-ish CC0 characters (Kenney Blocky, one atlas material); worst 242 draws / 126k prims / 34 mats; `.pck` 1.21 MB; Quaternius ruled out (QAL, not CC0) |
-| [KICKOFF-U5](../KICKOFF-U5.md) | U5 | G6 | **paste into cold agent** — ENG-0007 yes; product Name Desk |
+| [KICKOFF-U6](../KICKOFF-U6.md) | U6 | G7 | **paste into cold agent** — Arc + manager; ENG-0006 yes |
+| [KICKOFF-U5](../KICKOFF-U5.md) | U5 | G6 | historical — G6 met |
 
 The newest note carries the findings that will otherwise cost the next agent an afternoon. Read it first.

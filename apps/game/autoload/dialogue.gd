@@ -106,8 +106,17 @@ func submit_form(values: Dictionary) -> void:
 		return
 	var c := _pending_form
 	_pending_form = {}
-	_ctx["payee"] = GameState.short_address(str(values.get("to", "")))
-	_ctx["to"] = str(values.get("to", ""))
+	if str(c.get("form", "")) == "name_claim":
+		_ctx["label"] = str(values.get("label", "")).strip_edges()
+		_goto(str(c.get("on_submit", "end")))
+		return
+	if str(values.get("name", "")).strip_edges() != "":
+		_ctx["name"] = str(values.get("name", "")).strip_edges()
+		_ctx["payee"] = _ctx["name"]
+		_ctx["to"] = ""
+	else:
+		_ctx["payee"] = GameState.short_address(str(values.get("to", "")))
+		_ctx["to"] = str(values.get("to", ""))
 	_ctx["amount"] = GameState.fmt_amount(str(values.get("amount", "0")))
 	_ctx["memo"] = str(values.get("memo", ""))
 	var amount := float(str(values.get("amount", "0")))
@@ -205,7 +214,7 @@ func _run(c: Dictionary) -> void:
 	if c.has("ctx"):
 		_ctx.merge(c["ctx"], true)
 	var args: Dictionary = c.get("args", {}).duplicate()
-	for k in ["to", "amount", "memo", "txId"]:
+	for k in ["to", "amount", "memo", "txId", "label", "name", "key", "value"]:
 		if not args.has(k) and _ctx.has(k):
 			args[k] = _ctx[k]
 	var action := str(c.get("action", ""))

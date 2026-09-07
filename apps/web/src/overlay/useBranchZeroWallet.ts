@@ -47,6 +47,8 @@ export interface Session {
   manager?: string | null;
   /** U4+: this branch runs Priority releases and this account carries the META_APPROVE split. */
   priority?: boolean;
+  /** U5: the latest customer subname claimed under branchzero.eth. */
+  ensName?: string | null;
   roleSet?: number;
   roleSetWanted?: number;
 }

@@ -12,6 +12,8 @@ const PAYEES := [
 var _panel: PanelContainer
 var _payee: OptionButton
 var _address: LineEdit
+var _name_toggle: CheckButton
+var _name_edit: LineEdit
 var _amount: LineEdit
 var _memo: LineEdit
 var _hint: Label
@@ -76,6 +78,18 @@ func _ready() -> void:
 	_address.editable = false
 	_address.add_theme_font_size_override("font_size", 15)
 	v.add_child(_address)
+	_name_toggle = CheckButton.new()
+	_name_toggle.text = str(s.get("slip_name_toggle", "Pay by ENS name"))
+	_name_toggle.add_theme_font_size_override("font_size", 16)
+	_name_toggle.toggled.connect(_toggle_name)
+	v.add_child(_name_toggle)
+	_name_edit = LineEdit.new()
+	_name_edit.placeholder_text = str(s.get("slip_name_placeholder", "alice.branchzero.eth"))
+	_name_edit.add_theme_font_size_override("font_size", 17)
+	_name_edit.visible = false
+	_name_edit.text_submitted.connect(func(_t: String) -> void:
+		_submit())
+	v.add_child(_name_edit)
 
 	v.add_child(_field_label(Dialogue.interpolate(str(s.get("slip_amount", "Amount ({symbol})")), GameState.vars())))
 	_amount = LineEdit.new()
@@ -136,16 +150,26 @@ func _field_label(text: String) -> Label:
 
 func _open() -> void:
 	_error.visible = false
+	_name_toggle.button_pressed = false
+	_name_edit.visible = false
+	_payee.visible = true
+	_address.visible = true
 	_hint.text = Dialogue.interpolate(str(GameState.strings.get("slip_hint", "Up to {limit} {symbol} goes over the counter. More than that goes through the vault ({timelock} cooling).")), GameState.vars())
 	visible = true
 	_amount.grab_focus()
 
 
 func _submit() -> void:
+	var use_name := _name_toggle.button_pressed
 	var to := _address.text.strip_edges()
+	var ens_name := _name_edit.text.strip_edges()
 	var amount := _amount.text.strip_edges()
 	var s: Dictionary = GameState.strings
-	if not (to.begins_with("0x") and to.length() == 42):
+	if use_name and (ens_name == "" or not ens_name.to_lower().ends_with(".branchzero.eth") or ens_name.count(".") != 2):
+		_error.text = str(s.get("slip_bad_name", "Write a full customer name, like alice.branchzero.eth."))
+		_error.visible = true
+		return
+	if not use_name and not (to.begins_with("0x") and to.length() == 42):
 		_error.text = str(s.get("slip_bad_address", "That is not an address the counter can pay."))
 		_error.visible = true
 		return
@@ -154,7 +178,15 @@ func _submit() -> void:
 		_error.visible = true
 		return
 	visible = false
-	Dialogue.submit_form({"to": to, "amount": amount, "memo": _memo.text.strip_edges()})
+	Dialogue.submit_form({"to": to, "name": ens_name if use_name else "", "amount": amount, "memo": _memo.text.strip_edges()})
+
+
+func _toggle_name(enabled: bool) -> void:
+	_payee.visible = not enabled
+	_address.visible = not enabled
+	_name_edit.visible = enabled
+	if enabled:
+		_name_edit.grab_focus()
 
 
 func _unhandled_input(event: InputEvent) -> void:
