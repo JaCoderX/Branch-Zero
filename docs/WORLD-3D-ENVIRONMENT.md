@@ -58,10 +58,10 @@ Reference boards: art-deco bank lobbies (symmetry, terrazzo floors), *Katamari*-
 | Counter 1 & 2 | 6×4 each | Marble counter, glass partition with slot, stamp, dot-matrix printer, "Approved payees" wall list, service menu sign | Teller NPCs, printed receipt | Approved payees list is generated from `getFunctionWhitelistTargets` |
 | Ledger board | 8×1 wall | Split-flap board, clock | read-only | Rows: id · type · payee · amount · status · release |
 | Vault antechamber | 6×6 | Bench, magazine rack, wall clock (analog), LED strip on door frame, vault window | Vault Keeper NPC or terminal, magazine (lore) | Clock hands driven by `releaseTime - now` |
-| Vault door | 3.5 h | Circular door with bolts (animated), status LED | door (non-enterable; opens 30° on release for theatre) | The player never goes inside; the payment "leaves" |
+| Vault door | 3.5 h | Circular door with bolts (animated), status LED; shallow strongroom behind it (shelves, cash, bars — U7 polish) | door (non-enterable; opens 70° on release so the strongroom reads) | The player never goes inside (solid throat); the payment "leaves" |
 | Manager's office | 6×5 | Glass walls, big desk, approval stamp, shredder, framed "Branch limits" poster | Branch Manager NPC, shredder | Poster text from config |
-| Name Desk | 5×4 | Desk, nameplate engraver prop, board of "registered names" | Registrar NPC, engraver | Board lists recent `LabelRegistered` events |
-| Elevator | 3×3 | Two-button panel "MAIN / ARC", floor indicator | panel | Triggers wing swap (scene swap + chain switch) |
+| Name Desk | 5×4 | Desk (records annex), board of "registered names" on the west wall; the engraver sits on Counter 2's shelf | Registrar NPC **at the Counter 2 teller bay** (U7 polish), engraver | Board lists recent `LabelRegistered` events |
+| Elevator | 3×3 | Two-button panel "MAIN / ARC", floor indicator, "ARC floor — coming soon" notice | panel | Arc **deferred** (ARC.md §5b): the car refuses with the coming-soon line and the Main wing stays; wing swap code kept for revive |
 | FX Desk (stretch) | 4×3 | Ticker board, dealer window | Dealer NPC | Quote text from Uniswap |
 | Side door | 2×3 | "SECURITY" sign, keypad | Security Officer NPC | S2 stretch; otherwise lore |
 
@@ -69,7 +69,8 @@ Reference boards: art-deco bank lobbies (symmetry, terrazzo floors), *Katamari*-
 
 - Single `NavigationRegion3D` baked per wing; NPC "walk with me" waypoints for the teller escort to the vault.
 - Player: `CharacterBody3D`, 4 m/s walk, 6.5 m/s jog, no jump (keeps colliders trivial).
-- Interaction: `Area3D` triggers with `[E]` prompt; dialogue locks movement and switches camera.
+- Interaction: `Area3D` triggers with `[Space]` prompt (U7 polish: Space talks, Q/E orbit); dialogue locks movement and switches camera.
+- Mouse: LMB drag orbits; RMB click walks to the pointed floor spot, RMB hold steers toward the cursor (U7 polish).
 
 ---
 
@@ -132,6 +133,7 @@ Pipeline rules:
 - Textures ≤ 1024², atlas props per zone; use vertex colours where possible (flat-shade look, zero texture memory).
 - Import presets in Godot: `Mesh → Generate LODs on`, `Lightmap UV off` (no lightmaps on web build v1), compress to **Basis Universal** for web.
 - Naming: `prop_<zone>_<name>.glb`, `npc_<role>.glb`, `mat_<name>.tres`.
+- **Public-repo intake:** only redistribution-safe licences (true CC0 / OFL fonts). "Free for commercial games" is not enough if the licence bans republishing raw assets. Style must pass the art bible (this §1) — see Stage 6 [`KICKOFF-U7-viz-stage6.md`](./KICKOFF-U7-viz-stage6.md) and GameDevOS card `public-repo-asset-intake`.
 
 ---
 

@@ -25,4 +25,5 @@ this note if they are ever wanted back. Not used: **Quaternius** — the pack pa
 licence page is the *Quaternius Asset License v1.0* (dated 2026-08-28), which forbids redistributing the assets "in
 original or modified form" outside a completed product; committing raw `.glb` files to this public repo would sit on the
 wrong side of that line, and the downloads are Google Drive folders, not direct files. Freesound (Kenney's CC0 packs
-sufficed).
+sufficed). Next art climb (optional): [`KICKOFF-U7-viz-stage6.md`](./docs/KICKOFF-U7-viz-stage6.md) — CC0 + art-deco
+narrative only (KayKit Furniture Bits / MrEliptik office / Poly Haven·ambientCG atlas); keep Blocky cast.
