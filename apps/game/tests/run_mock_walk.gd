@@ -38,6 +38,18 @@ func _run() -> void:
 	await gs.refresh_all()
 	print("mock account: %s balance %s, priority=%s" % [gs.account(), gs.balance, str(gs.priority_enabled())])
 
+	# Lane B preflight: an overdrawn wire is refused before a pending record is created.
+	var wires_before := chain._mock.wires.size()
+	var over_balance: Dictionary = await gs.run_action("wire", {"to": "0x95cED938F7991cd0dFcb48F0a06a40FA1aF46EBC", "amount": "501", "memo": "too much"})
+	var over_error: Dictionary = over_balance.get("error", {})
+	var over_line := gs.error_line(over_error)
+	if over_balance.get("ok", false) or str(over_error.get("code", "")) != "InsufficientBalance" or chain._mock.wires.size() != wires_before:
+		_fail("over-balance wire was filed or returned the wrong error: %s" % str(over_balance))
+	elif not str(over_error.get("message", "")).contains("500") or not str(over_error.get("message", "")).contains("501") or not over_line.contains("free balance") or not over_line.contains("requested amount"):
+		_fail("over-balance wire copy is not honest: line=%s error=%s" % [over_line, str(over_error)])
+	else:
+		_ok("over-balance wire → InsufficientBalance: \"%s\"; no pending record filed" % over_line)
+
 	# file a wire (Dev's over-limit path) — 250 > instant limit 100
 	var r: Dictionary = await gs.run_action("wire", {"to": "0x95cED938F7991cd0dFcb48F0a06a40FA1aF46EBC", "amount": "250", "memo": "flat"})
 	if not r.get("ok", false):
@@ -134,6 +146,35 @@ func _run() -> void:
 		_fail("Bob start for a released wire is %s, want ready" % ruth_start)
 	else:
 		_ok("Bob starts at ready for the released wire")
+
+	# Spend down the free balance after filing: a release can still mine and leave the record FAILED.
+	var spend_a: Dictionary = await gs.run_action("pay", {"to": "0x95cED938F7991cd0dFcb48F0a06a40FA1aF46EBC", "amount": "100"})
+	var spend_b: Dictionary = await gs.run_action("pay", {"to": "0x95cED938F7991cd0dFcb48F0a06a40FA1aF46EBC", "amount": "50"})
+	if not spend_a.get("ok", false) or not spend_b.get("ok", false):
+		_fail("mock spend-down setup failed: %s / %s" % [str(spend_a), str(spend_b)])
+	else:
+		var failed_release: Dictionary = await gs.run_action("approve", {"txId": tx2})
+		var failed_error: Dictionary = failed_release.get("error", {})
+		var failed_line := gs.error_line(failed_error)
+		if failed_release.get("ok", false) or str(failed_error.get("code", "")) != "RECORD_FAILED" or not failed_line.contains("execution failed") or not failed_line.contains("free balance") or str(gs.last_stage.get("txId", "")) != tx2 or not str(gs.last_stage.get("hash", "")).begins_with("0xm0ck"):
+			_fail("underfunded Bob release did not map to RECORD_FAILED: %s" % str(failed_release))
+		else:
+			_ok("underfunded Bob release → RECORD_FAILED: \"%s\"" % failed_line)
+
+	# The same spend-down race is surfaced at Okafor's Priority desk, with the stage carrying its fake hash/txId.
+	var r3: Dictionary = await gs.run_action("wire", {"to": "0x95cED938F7991cd0dFcb48F0a06a40FA1aF46EBC", "amount": "100", "memo": "priority race"})
+	if not r3.get("ok", false):
+		_fail("mock Priority race wire refused unexpectedly: %s" % str(r3))
+	else:
+		var tx3 := str(r3["result"]["txId"])
+		var last_spend: Dictionary = await gs.run_action("pay", {"to": "0x95cED938F7991cd0dFcb48F0a06a40FA1aF46EBC", "amount": "1"})
+		var failed_priority: Dictionary = await gs.run_action("priority", {"txId": tx3})
+		var priority_error: Dictionary = failed_priority.get("error", {})
+		var priority_line := gs.error_line(priority_error)
+		if not last_spend.get("ok", false) or failed_priority.get("ok", false) or str(priority_error.get("code", "")) != "RECORD_FAILED" or not priority_line.contains("execution failed") or not priority_line.contains("free balance") or str(gs.last_stage.get("txId", "")) != tx3 or not str(gs.last_stage.get("hash", "")).begins_with("0xm0ck"):
+			_fail("underfunded Priority did not map to RECORD_FAILED: %s" % str(failed_priority))
+		else:
+			_ok("underfunded Priority → RECORD_FAILED: \"%s\"" % priority_line)
 	_finish()
 
 

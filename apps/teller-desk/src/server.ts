@@ -219,7 +219,7 @@ app.post('/pay', async (req, reply) => {
 
 // ============ U2 — the vault (Lane B) ============
 
-/** File a time-locked wire. Any amount is accepted here; the counter routes large ones this way. */
+/** File a time-locked wire. The counter routes large ones here, but the desk refuses a wire above free balance. */
 app.post('/wire', async (req, reply) => {
   try {
     const player = await requirePlayer(req as never);

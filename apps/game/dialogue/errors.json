@@ -27,6 +27,7 @@
   "PendingSecureRequest": { "line": "There's already a request of that kind waiting — let it settle first.", "why": "SecureOwnable allows one pending request per operation type." },
   "NOT_PENDING": { "line": "That wire is no longer waiting in the vault.", "why": "The Teller Desk read the record before sending and it was not PENDING any more (released, recalled, or failed)." },
   "RECORD_*": { "line": "The vault took the request, but the record didn't end up where we expected — let me check the board.", "why": "The transaction was mined but the record's final status was not the one this action should produce. The board is re-read from the chain." },
+  "RECORD_FAILED": { "line": "The release was mined, but execution failed — free balance may have been spent down, so nothing was sent.", "why": "A release transaction can mine while the AccountBlox record becomes FAILED when the ERC-20 transfer cannot settle, commonly because free balance fell below the requested amount after filing. A pending wire is a count, not escrowed funds; this is an execution failure, not a hand-scan failure." },
 
   "InvalidSignature": { "line": "That slip isn't signed by the account holder.", "why": "The EIP-712 signature does not recover to `metaTx.params.signer`, or the signer is not the owner." },
   "InvalidSignatureLength": { "line": "That slip isn't signed properly — let's write a new one.", "why": "The signature bytes are not 65 bytes long." },
@@ -44,7 +45,7 @@
   "InvalidNonce": { "line": "Someone already used that slip number — writing a fresh one.", "why": "The signer nonce in the slip is not the account's current nonce for that signer. One in-flight slip per player is why the desk serialises them." },
   "GasPriceExceedsMax": { "line": "The network is too expensive for that slip right now.", "why": "`maxGasPrice` in the slip is below the current gas price." },
 
-  "InsufficientBalance": { "line": "Not enough practice dollars in the account.", "why": "The ERC-20 transfer would exceed the account's balance. Ask Ines for a top-up." },
+  "InsufficientBalance": { "line": "Free balance is lower than the requested amount — nothing was filed.", "why": "The Teller Desk or AccountBlox refused because the ERC-20 amount exceeds free `balanceOf(account)`. For a wire, the desk checks before filing; a pending wire is a count, not escrowed funds, so the check prevents an already-unsettleable wire but cannot reserve funds against later spend-down." },
   "PaymentFailed": { "line": "The payment didn't go through.", "why": "The account's payment step reverted." },
   "InvalidPayment": { "line": "The payment details don't add up.", "why": "Native/token payment parameters were inconsistent." },
   "OperationFailed": { "line": "The account tried, but the operation failed.", "why": "The inner execution call reverted." },

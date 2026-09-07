@@ -28,7 +28,7 @@ import { broadcaster, chain, manager, managerAddress, metaTxDuration, publicClie
 import { config, deployments } from '../config.ts';
 import { emitStage, type Player } from '../store.ts';
 import { receiptFee } from '../fees.ts';
-import { explainRevert, readWire, statusName } from './laneB.ts';
+import { explainRevert, readWire, RECORD_FAILED_BANK_LINE, statusName } from './laneB.ts';
 
 type Unsigned = Awaited<ReturnType<GuardController['generateUnsignedMetaTransactionForExisting']>>;
 
@@ -240,8 +240,14 @@ export async function submitPriority(player: Player, priorityId: string, signatu
   const receipt = await res.wait();
   const after = await readWire(p.account, p.txId);
   if (receipt.status !== 'success' || after.status !== 'COMPLETED') {
-    stage('failed', 'The priority release did not go through.', { hash: res.hash, txId: String(p.txId), status: after.status });
-    throw Object.assign(new Error(`priority meta-approve mined but record is ${after.status} (${res.hash})`), { statusCode: 500, code: 'RECORD_' + after.status });
+    const code = after.status === 'FAILED' ? 'RECORD_FAILED' : 'RECORD_' + after.status;
+    stage('failed', after.status === 'FAILED' ? RECORD_FAILED_BANK_LINE : 'The priority release did not go through.', {
+      hash: res.hash,
+      txId: String(p.txId),
+      status: after.status,
+      reason: `${code}: priority meta-approve mined but record is ${after.status}`,
+    });
+    throw Object.assign(new Error(`priority meta-approve mined but record is ${after.status} (${res.hash})`), { statusCode: 500, code });
   }
   const block = await publicClient.getBlock({ blockHash: receipt.blockHash });
   const balanceAfter = formatUnits((await publicClient.readContract({ address: token.address, abi: erc20Abi, functionName: 'balanceOf', args: [p.account] })) as bigint, token.decimals);

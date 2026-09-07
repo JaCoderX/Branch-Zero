@@ -94,6 +94,9 @@ const stageFor =
 
 const nowSec = () => String(Math.floor(Date.now() / 1000));
 
+/** Shared player-facing line for a mined release whose AccountBlox record is FAILED. */
+export const RECORD_FAILED_BANK_LINE = 'The release was mined, but execution failed — free balance may have been spent down, so nothing was sent.';
+
 /**
  * Selectors for the protocol errors the vault actually produces. The SDK's `GuardController` ABI does not
  * carry `SharedValidation`'s custom errors, so viem cannot name them: it reports "reverted with the
@@ -216,6 +219,18 @@ export async function wire(player: Player, to: Address, amount: string, jobId: s
   const stage = stageFor(player, jobId);
 
   const value = parseUnits(amount, token.decimals);
+  const freeBalance = (await publicClient.readContract({
+    address: token.address,
+    abi: erc20Abi,
+    functionName: 'balanceOf',
+    args: [account],
+  })) as bigint;
+  if (value > freeBalance) {
+    const free = formatUnits(freeBalance, token.decimals);
+    const message = `Free balance is ${free} ${token.symbol}; requested wire is ${amount} ${token.symbol}. Nothing was filed.`;
+    stage('failed', message, { reason: `InsufficientBalance: ${message}` });
+    throw Object.assign(new Error(message), { statusCode: 400, code: 'InsufficientBalance' });
+  }
   const params = encodeAbiParameters(parseAbiParameters('address, uint256'), [to, value]);
   const gc = asOwner(player, account, txAudit);
 
@@ -301,8 +316,14 @@ async function decide(player: Player, txId: bigint, actor: Actor, kind: 'approve
   const after = await readWire(account, txId);
 
   if (receipt.status !== 'success' || (kind === 'approve' ? after.status !== 'COMPLETED' : after.status !== 'CANCELLED')) {
-    stage('failed', kind === 'approve' ? 'The wire did not go through.' : 'The wire could not be recalled.', { hash: res.hash, txId: String(txId), status: after.status });
-    throw Object.assign(new Error(`${kind} mined but record is ${after.status} (${res.hash})`), { statusCode: 500, code: 'RECORD_' + after.status });
+    const code = after.status === 'FAILED' ? 'RECORD_FAILED' : 'RECORD_' + after.status;
+    stage('failed', after.status === 'FAILED' ? RECORD_FAILED_BANK_LINE : kind === 'approve' ? 'The wire did not go through.' : 'The wire could not be recalled.', {
+      hash: res.hash,
+      txId: String(txId),
+      status: after.status,
+      reason: `${code}: ${kind} mined but record is ${after.status}`,
+    });
+    throw Object.assign(new Error(`${kind} mined but record is ${after.status} (${res.hash})`), { statusCode: 500, code });
   }
 
   const balanceAfter =

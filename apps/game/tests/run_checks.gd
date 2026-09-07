@@ -20,7 +20,7 @@ const REQUIRED_CODES := [
 	"InsufficientBalance",
 	"InvalidNonce",
 	"TransactionNotPending", "CanOnlyApprovePending", "CanOnlyCancelPending", "TransactionNotFound",
-	"NO_ACCOUNT", "NO_WALLET", "NO_MANAGER", "NOT_PENDING", "RECORD_*", "policy_violation", "Unknown",
+	"NO_ACCOUNT", "NO_WALLET", "NO_MANAGER", "NOT_PENDING", "RECORD_*", "RECORD_FAILED", "policy_violation", "Unknown",
 	"TIMEOUT", "UNKNOWN_METHOD", "BAD_ARGS", "RPC", "NOT_IMPLEMENTED", "INTERNAL", "AUTH", "POLICY", "CHAIN", "LOGIN_CANCELLED",
 	"NOT_CONFIGURED",
 	# U5 ENS Name Desk codes

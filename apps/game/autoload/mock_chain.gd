@@ -199,6 +199,10 @@ func _wire(args: Dictionary) -> Dictionary:
 	var job := _new_job()
 	_stage(job, "B", "signing", "Filing your wire with the vault…")
 	await get_tree().create_timer(0.7).timeout
+	if amount > balance:
+		var line := "Free balance is %s dUSDC; requested wire is %s dUSDC. Nothing was filed." % [_fmt(balance), _fmt(amount)]
+		_stage(job, "B", "failed", line, {"reason": "InsufficientBalance"})
+		return _err("InsufficientBalance", line)
 	var tx_id := _next_tx_id
 	_next_tx_id += 1
 	var release := _now() + timelock_sec
@@ -230,7 +234,13 @@ func _decide(args: Dictionary, kind: String) -> Dictionary:
 		return _err("BeforeReleaseTime", "BeforeReleaseTime: Current time is before release time", {"releaseTime": rec["releaseTime"]})
 	wires.remove_at(idx)
 	if kind == "approve":
-		balance -= float(rec["amount"])
+		var h := _hash()
+		var requested := float(rec["amount"])
+		if requested > balance:
+			var failed_line := "The release was mined, but execution failed — free balance may have been spent down, so nothing was sent."
+			_stage(job, "B", "failed", failed_line, {"hash": h, "txId": tx_id, "status": "FAILED", "reason": "RECORD_FAILED"})
+			return _err("RECORD_FAILED", failed_line, {"hash": h, "txId": tx_id, "status": "FAILED"})
+		balance -= requested
 		_stage(job, "B", "mined", "Wire released: %s dUSDC sent." % rec["amount"], {"hash": _hash(), "txId": tx_id, "status": "COMPLETED"})
 		return _ok({"jobId": job, "hash": _hash(), "txId": tx_id, "status": "COMPLETED", "actor": actor, "balanceAfter": _fmt(balance)})
 	_stage(job, "B", "cancelled", "Wire recalled. Nothing left the vault.", {"hash": _hash(), "txId": tx_id, "status": "CANCELLED"})
@@ -261,8 +271,13 @@ func _priority(args: Dictionary) -> Dictionary:
 	if idx < 0:
 		return _err("NOT_PENDING", "record %s is not PENDING" % tx_id)
 	wires.remove_at(idx)
-	balance -= float(rec["amount"])
 	var h := _hash()
+	var requested := float(rec["amount"])
+	if requested > balance:
+		var failed_line := "The release was mined, but execution failed — free balance may have been spent down, so nothing was sent."
+		_stage(job, "B", "failed", failed_line, {"hash": h, "txId": tx_id, "status": "FAILED", "via": "priority", "reason": "RECORD_FAILED"})
+		return _err("RECORD_FAILED", failed_line, {"hash": h, "txId": tx_id, "status": "FAILED", "via": "priority"})
+	balance -= requested
 	_stage(job, "B", "mined", "Priority release (mock): %s dUSDC sent before the clock — hand scan on file." % rec["amount"], {"hash": h, "txId": tx_id, "status": "COMPLETED", "via": "priority", "releaseTime": rec["releaseTime"], "chainNow": str(_now() - 47)})
 	return _ok({"jobId": job, "hash": h, "txId": tx_id, "status": "COMPLETED", "actor": "priority", "releaseTime": rec["releaseTime"], "chainNow": str(_now() - 47), "balanceAfter": _fmt(balance), "mfaPrompted": false})
 
