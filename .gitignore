@@ -48,9 +48,20 @@ apps/web/dist/
 # agent scratch probes (never committed)
 .scratch/
 
+# ---- hackathon public surface ----
+# Product code + judge-facing docs stay public.
+# Agent ops and daily construction evidence stay on the laptop.
+
+# Daily unit notes, captures, probe logs, demo reels
+docs/progress/
+
+# Cold-agent paste prompts and session handoff (wallet/tx kitchen sink)
+docs/KICKOFF-*.md
+docs/HANDOFF-CC.md
+
 # Cursor / Claude local launch configs
 .claude/
 
-# Progress captures / demo reels / probe logs (markdown notes stay tracked)
-docs/progress/captures/
+# Large media anywhere (demo reels, exports)
 *.mp4
+*.mkv
