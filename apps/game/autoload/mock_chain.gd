@@ -12,6 +12,7 @@ const ACCOUNT := "0xM0CK0000000000000000000000000000000ACC7"
 const MANAGER := "0xE11BA2b4D45Eaed5996Cd0823791E0C93114882d"
 const TIMELOCK_SEC := 30
 const INSTANT_LIMIT := "100"
+const OPENING_BALANCE := 500.0
 
 ## Cooling period the mock writes into new wires. The demo autopilot stretches it so the vault beats
 ## (Bob refuses early, Okafor's Priority release) still happen at a human reading pace.
@@ -36,7 +37,7 @@ func preset_account() -> void:
 	logged_in = true
 	delegated = true
 	account = ACCOUNT
-	balance = 500.0
+	balance = OPENING_BALANCE
 	ens_name = "test.branchzero.eth"
 	ens_tier = "Silver"
 	ens_names = [{"label": "test", "name": ens_name, "address": ACCOUNT, "owner": OWNER, "expiry": str(_now() + 365 * 86400), "txHash": _hash()}]
@@ -75,12 +76,14 @@ func call_method(method: String, args: Dictionary) -> Dictionary:
 				await get_tree().create_timer(0.8).timeout
 				_stage(job, "PROVISION", "configuring", "Registering services and the payee list…")
 				await get_tree().create_timer(0.8).timeout
-				_stage(job, "PROVISION", "funding", "Putting 500 practice dollars in it…")
+				_stage(job, "PROVISION", "funding", "Putting %s practice dollars in it…" % _fmt(OPENING_BALANCE))
 				await get_tree().create_timer(0.5).timeout
 				account = ACCOUNT
-				balance = 500.0
+				balance = OPENING_BALANCE
 				_stage(job, "PROVISION", "mined", "Ready.", {"account": account})
 			return _ok({"jobId": job, "account": account, "balance": _fmt(balance)})
+		"faucet":
+			return _faucet()
 		"ensAvailable":
 			return _ens_available(args)
 		"ensMint":
@@ -133,6 +136,19 @@ func _pay(args: Dictionary) -> Dictionary:
 	_next_tx_id += 1
 	_stage(job, "A", "mined", "Paid %s dUSDC." % _fmt(amount), {"hash": _hash(), "txId": str(tx_id), "amount": _fmt(amount)})
 	return _ok({"jobId": job, "hash": _hash(), "txId": str(tx_id), "to": args.get("to"), "amount": _fmt(amount), "balanceAfter": _fmt(balance)})
+
+
+## Practice faucet: an explicit, Main-wing-only top-up to the opening balance. Full is a no-op.
+func _faucet() -> Dictionary:
+	if account == "":
+		return _err("NO_ACCOUNT", "No account opened for this player")
+	if chain_id != 1337:
+		return _err("FAUCET_OFF", "the practice faucet is only available on the Main wing")
+	if balance >= OPENING_BALANCE:
+		return _ok({"balance": _fmt(balance), "symbol": "dUSDC", "targetBalance": _fmt(OPENING_BALANCE), "toppedUp": false})
+	var delta := OPENING_BALANCE - balance
+	balance = OPENING_BALANCE
+	return _ok({"balance": _fmt(balance), "symbol": "dUSDC", "targetBalance": _fmt(OPENING_BALANCE), "toppedUp": true, "amount": _fmt(delta), "hash": _hash()})
 
 
 func _ens_available(args: Dictionary) -> Dictionary:

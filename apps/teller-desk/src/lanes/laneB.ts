@@ -323,7 +323,8 @@ async function decide(player: Player, txId: bigint, actor: Actor, kind: 'approve
       status: after.status,
       reason: `${code}: ${kind} mined but record is ${after.status}`,
     });
-    throw Object.assign(new Error(`${kind} mined but record is ${after.status} (${res.hash})`), { statusCode: 500, code });
+    // 409: the outer tx may have mined; the record did not settle as expected (business conflict, not a desk crash).
+    throw Object.assign(new Error(`${kind} mined but record is ${after.status} (${res.hash})`), { statusCode: 409, code });
   }
 
   const balanceAfter =

@@ -21,17 +21,18 @@ ship reel met (laptop-local). U6 Arc remains **DEFERRED** — do not revive fund
 Do not regress the U4 freeze, the U4+ Priority desk, U5 ENS verbs, or the polish DoD (Bob, Space/E, debug-gated
 F-keys, Petra at Counter 2).
 
-> **Optional parallel (playtest continuity):** [`docs/KICKOFF-U7-practice-faucet.md`](./KICKOFF-U7-practice-faucet.md) —
-> Ines menu **Top up practice dollars** → restore demo balance **up to** `OPENING_BALANCE_USDC` (500). Already named in
-> `NPCS.md` §4.2 as `faucet`; not wired. Does not change provision’s zero-only `fundAccount`. Prefer Fable 5.1.
+> **Practice faucet met:** [`docs/KICKOFF-U7-practice-faucet.md`](./KICKOFF-U7-practice-faucet.md) —
+> Ines **Top up practice dollars** → `/faucet` restores demo balance **up to** `OPENING_BALANCE_USDC` (500);
+> provision `fundAccount` stays zero-only; Arc refuses `FAUCET_OFF`. Mock: `tests/run_faucet_walk.gd`.
 
 > **U7 polish pass landed 2026-09-07** (local `docs/progress/2026-09-07-u7-polish.md`): findings 1–10 built and checked
 > (`run_checks`, `run_viz_budget`, `run_mock_walk` green; :5173 `?mock=account` walk). Product facts that changed: the vault
 > keeper is **Bob**; **Space** talks and **E** orbits right; F2–F8 teleports need **`?debug=1`**; Petra serves from **Counter 2**;
 > the elevator refuses Arc with "ARC floor — coming soon" and never rebuilds the interior. **Owed:** the principal's
 > re-playtest of the ten findings before packaging. **Live Priority (same evening):** free balance below wire amount →
-> meta-approve mined, record `FAILED` / `RECORD_FAILED` (auth OK). Optional follow-up: `/wire` balance pre-check +
-> clearer FAILED copy. Craft lessons scrubbed to GameDevOS (`pending-count-is-not-reserved-balance`,
+> meta-approve mined, record `FAILED` / `RECORD_FAILED` (auth OK). **Met:** `/wire` balance pre-check +
+> `RECORD_FAILED` copy (`3209ab8`); hygiene follow-up: `RECORD_FAILED` → HTTP 409, Ruth→Bob desk strings, Ines tip on
+> InsufficientBalance. Craft lessons scrubbed to GameDevOS (`pending-count-is-not-reserved-balance`,
 > `outer-tx-success-is-not-record-completed`, plus four polish lessons).
 
 > **U5 met 2026-09-07 — ENS Name Desk / G6.** Read

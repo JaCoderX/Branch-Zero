@@ -54,6 +54,7 @@ export type BridgeMethod =
   | 'addSessionSigner'
   | 'removeSessionSigner'
   | 'provision'
+  | 'faucet'
   // U1 — counter
   | 'getPassbook'
   | 'pay'

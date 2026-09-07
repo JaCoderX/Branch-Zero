@@ -288,7 +288,7 @@ Decoded via the SDK's `decodeRevertReason` / `getUserFriendlyErrorMessage`, then
 | Timelock not expired | "Still cooling — {release_in} to go." |
 | Invalid signature / signer mismatch | "That slip isn't signed by the account holder." |
 | Deadline passed | "That slip expired — let's write a new one." |
-| Insufficient free balance (`InsufficientBalance`) | "Free balance is lower than the requested amount — nothing was filed." |
+| Insufficient free balance (`InsufficientBalance`) | "Free balance is lower than the requested amount — nothing was filed. Ask Ines to top up practice dollars." |
 | Release transaction mined but record ended `FAILED` (`RECORD_FAILED`) | "The release was mined, but execution failed — free balance may have been spent down, so nothing was sent." |
 | Nonce mismatch | "Someone already used that slip number — writing a fresh one." |
 | Teller Desk unreachable (`RPC`; a dead desk answers 5xx with no JSON through the proxy) | "The branch can't reach the ledger right now." |

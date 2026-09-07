@@ -11,7 +11,7 @@
  * grants and the opening balance are each read back before anything is sent, so re-running it on an
  * account opened under U1 upgrades it in place, and a Teller Desk restart cannot re-fund or re-grant.
  */
-import { decodeEventLog, encodeFunctionData, formatEther, getAddress, keccak256, parseEther, parseUnits, toBytes, type Address, type Hex } from 'viem';
+import { decodeEventLog, encodeFunctionData, formatEther, formatUnits, getAddress, keccak256, parseEther, parseUnits, toBytes, type Address, type Hex } from 'viem';
 import {
   EngineBlox,
   GuardController,
@@ -48,7 +48,7 @@ const d = () => deployments();
  *   1  U1  Lane A (owner signs, broadcaster executes on `transfer`)
  *   2  U2  Lane B (owner request / timed approve / cancel; manager timed approve + cancel)
  *   3  U4+ Priority release: owner `SIGN_META_APPROVE`, manager `EXECUTE_META_APPROVE`; the manager's timed
- *          approve is REMOVED (Okafor is not the vault stamp — Ruth is). Vault-only mode (`PRIORITY_RELEASE=off`)
+ *          approve is REMOVED (Okafor is not the vault stamp — Bob is). Vault-only mode (`PRIORITY_RELEASE=off`)
  *          shares the version: it removes the manager's stamp and grants no META bits.
  */
 export const ROLE_SET_VERSION = 3;
@@ -178,7 +178,7 @@ export async function whitelistToken(player: Player, account: Address, audit?: A
  * On the transfer selector (U4+, `ROLE_SET_VERSION` 3):
  *   OWNER        SIGN_META_REQUEST_AND_APPROVE          Lane A: sign a routine payment (U1)
  *                EXECUTE_TIME_DELAY_REQUEST             Lane B: file a wire (`executeWithTimeLock`)
- *                EXECUTE_TIME_DELAY_APPROVE             Wait path (Ruth): open the vault after `releaseTime`
+ *                EXECUTE_TIME_DELAY_APPROVE             Wait path (Bob): open the vault after `releaseTime`
  *                EXECUTE_TIME_DELAY_CANCEL              Recall a wire
  *                SIGN_META_APPROVE                      Priority: sign the bypass payload — in the browser, with a
  *                                                       Passkey, never by the session signer (policy pins action 3)
@@ -186,7 +186,7 @@ export async function whitelistToken(player: Player, account: Address, audit?: A
  *   BRANCH_MANAGER (runtime role; needs MANAGER_PK)
  *                EXECUTE_TIME_DELAY_CANCEL              the shredder (recall)
  *                EXECUTE_META_APPROVE                   Priority: submit the owner-signed meta-approve BEFORE the clock
- *                — and **no** EXECUTE_TIME_DELAY_APPROVE any more: Mr. Okafor is not a second Ruth. His grant on the
+ *                — and **no** EXECUTE_TIME_DELAY_APPROVE any more: Mr. Okafor is not a second Bob. His grant on the
  *                `approveTimeLockExecution` handler selector is removed too where the schema allows it (see
  *                `syncRolePermissions`); without the transfer half it is inert either way.
  *   plus BRANCH_MANAGER on the handler selectors `cancelTimeLockExecution` and `approveTimeLockExecutionWithMetaTx`,
@@ -197,7 +197,7 @@ export async function whitelistToken(player: Player, account: Address, audit?: A
  * `SIGN_META_APPROVE` and `EXECUTE_META_APPROVE` on a selector (`ConflictingMetaTxPermissions`): the owner must sign
  * and someone else must submit. In this bank the owner's signature costs a hand scan and the submitter is the
  * manager. The session signer cannot produce that signature: its policy only allows typed data whose
- * `params.action` is `SIGN_META_REQUEST_AND_APPROVE` (privy.ts). Ruth's path is untouched and still time-checked.
+ * `params.action` is `SIGN_META_REQUEST_AND_APPROVE` (privy.ts). Bob's path is untouched and still time-checked.
  *
  * **META bits are account-wide.** Once granted, any PENDING wire on the account can be released early by this pair,
  * not only ones a UI labels "Priority". Vault-only mode (`PRIORITY_RELEASE=off`) keeps the U2 invariant — no
@@ -356,6 +356,66 @@ export async function fundAccount(account: Address): Promise<Hex | undefined> {
   });
   await publicClient.waitForTransactionReceipt({ hash });
   return hash;
+}
+
+/**
+ * U7 practice faucet — explicitly restore a provisioned Main-wing account up to the opening balance.
+ * This is deliberately separate from `fundAccount`: Account Opening / Re-check remains zero-only, while
+ * Ines's faucet action transfers only the missing delta from the deployer treasury.
+ */
+export async function faucetAccount(account: Address): Promise<{ balance: string; symbol: string; targetBalance: string; toppedUp: boolean; amount?: string; hash?: Hex }> {
+  if (config.target !== 'remote') {
+    throw Object.assign(new Error('the practice faucet is only available on the Main wing'), { statusCode: 400, code: 'FAUCET_OFF' });
+  }
+
+  const { token } = d();
+  const target = parseUnits(config.openingBalance, token.decimals);
+  const balanceOf = async (owner: Address) =>
+    (await publicClient.readContract({ address: token.address, abi: erc20Abi, functionName: 'balanceOf', args: [owner] })) as bigint;
+  const balance = await balanceOf(account);
+  const targetBalance = formatUnits(target, token.decimals);
+
+  if (balance >= target) {
+    return { balance: formatUnits(balance, token.decimals), symbol: token.symbol, targetBalance, toppedUp: false };
+  }
+
+  const delta = target - balance;
+  const treasury = await balanceOf(deployerAddress);
+  if (treasury < delta) {
+    throw Object.assign(
+      new Error(`practice treasury has ${formatUnits(treasury, token.decimals)} ${token.symbol}; ${formatUnits(delta, token.decimals)} needed to restore ${targetBalance}`),
+      { statusCode: 400, code: 'FAUCET_EMPTY' },
+    );
+  }
+
+  const hash = await deployer.writeContract({
+    address: token.address,
+    abi: erc20Abi,
+    functionName: 'transfer',
+    args: [account, delta],
+    chain,
+    account: deployer.account!,
+  });
+  const receipt = await publicClient.waitForTransactionReceipt({ hash });
+  if (receipt.status !== 'success') {
+    throw Object.assign(new Error(`practice faucet transfer reverted (${hash})`), { statusCode: 400, code: 'FAUCET_TX_FAILED' });
+  }
+
+  const after = await balanceOf(account);
+  if (after < target) {
+    throw Object.assign(
+      new Error(`practice faucet transfer mined but balance is ${formatUnits(after, token.decimals)} ${token.symbol}; wanted ${targetBalance}`),
+      { statusCode: 400, code: 'FAUCET_TX_FAILED' },
+    );
+  }
+  return {
+    balance: formatUnits(after, token.decimals),
+    symbol: token.symbol,
+    targetBalance,
+    toppedUp: true,
+    amount: formatUnits(delta, token.decimals),
+    hash: hash as Hex,
+  };
 }
 
 /**

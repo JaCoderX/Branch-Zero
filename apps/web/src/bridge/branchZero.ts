@@ -6,7 +6,7 @@
  * registered with `setGodotCallback`. Never `JavaScriptBridge.eval`. Godot never sees RPC URLs or keys.
  *
  * U0 methods: echo (K1), chainInfo, accountInfo.
- * U1 methods: login, logout, addSessionSigner, removeSessionSigner, provision, getPassbook, pay.
+ * U1 methods: login, logout, addSessionSigner, removeSessionSigner, provision, faucet, getPassbook, pay.
  * U2 methods: wire, approve, cancel, listPending (the vault — Lane B).
  * U3 methods: getSession (who is at the desk, never opens a modal), getHistory (ledger receipts). Both call
  *             routes that already exist (`/session`, `/status`); U3 added no chain semantics.
@@ -186,6 +186,10 @@ const handlers: Record<string, Handler> = {
   },
   async provision() {
     return requireAdapter().call('/provision', {});
+  },
+  /** U7: server-side Main-wing practice credit; no wallet or Passkey surface. */
+  async faucet() {
+    return requireAdapter().call('/faucet', {});
   },
 
   // --- U6: elevator ---

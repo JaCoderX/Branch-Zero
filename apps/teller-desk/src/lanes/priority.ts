@@ -1,7 +1,7 @@
 /**
  * Priority release (U4+, G5b) — Mr. Okafor's desk. The third way out of the vault.
  *
- *   Wait      Ruth: owner `approveTimeLockExecution` after `releaseTime`, silent session signer (laneB.ts).
+ *   Wait      Bob: owner `approveTimeLockExecution` after `releaseTime`, silent session signer (laneB.ts).
  *   Priority  Okafor: the owner signs a `SIGN_META_APPROVE` meta-transaction **in the browser with a Passkey**,
  *             the Branch Manager submits `approveTimeLockExecutionWithMetaTx` **before** `releaseTime`.
  *   Recall    owner or manager `cancelTimeLockExecution` while PENDING (laneB.ts).
@@ -16,7 +16,7 @@
  *   POST /priority/prepare {txId}               → unsigned meta-tx built by the contract, typed data for the wallet
  *   POST /priority/submit  {priorityId, signature} → signature verified (recover == owner), manager submits, COMPLETED
  *
- * Okafor is not a second Ruth: a wire whose clock has already run down is refused here (`NOT_COOLING`) — Ruth
+ * Okafor is not a second Bob: a wire whose clock has already run down is refused here (`NOT_COOLING`) — Bob
  * releases it silently. A vault-only branch (`PRIORITY_RELEASE=off`) refuses everything (`PRIORITY_OFF`).
  */
 import { randomUUID } from 'node:crypto';
@@ -162,7 +162,7 @@ export async function preparePriority(player: Player, txId: bigint, jobId: strin
 
   const rec = await readWire(account, txId);
   if (rec.status !== 'PENDING') throw err(`record ${txId} is ${rec.status}, not PENDING`, 'NOT_PENDING', 409);
-  if (rec.released) throw err(`record ${txId} passed its releaseTime (${rec.releaseTime}) — that is Ruth's window, not a priority release`, 'NOT_COOLING', 409);
+  if (rec.released) throw err(`record ${txId} passed its releaseTime (${rec.releaseTime}) — that is Bob's window, not a priority release`, 'NOT_COOLING', 409);
 
   // The owner's half: SIGN_META_APPROVE for the manager's meta handler. Nonce and digest come from the contract.
   const duration = await metaTxDuration();
@@ -215,7 +215,7 @@ export async function submitPriority(player: Player, priorityId: string, signatu
     prepared.delete(priorityId);
     throw err(`priority payload expired at ${p.deadline}`, 'PRIORITY_EXPIRED', 410);
   }
-  // The clock may have run out while the player scanned. Then it is Ruth's release, silent — not a priority stamp.
+  // The clock may have run out while the player scanned. Then it is Bob's release, silent — not a priority stamp.
   const before = await readWire(p.account, p.txId);
   if (before.status !== 'PENDING') {
     prepared.delete(priorityId);
@@ -223,8 +223,8 @@ export async function submitPriority(player: Player, priorityId: string, signatu
   }
   if (before.released) {
     prepared.delete(priorityId);
-    stage('failed', 'The clock ran down while you scanned — Ruth can release it now, no scan needed.', { txId: String(p.txId), releaseTime: before.releaseTime });
-    throw err(`record ${p.txId} passed its releaseTime during the hand scan — use Ruth's release`, 'NOT_COOLING', 409);
+    stage('failed', 'The clock ran down while you scanned — Bob can release it now, no scan needed.', { txId: String(p.txId), releaseTime: before.releaseTime });
+    throw err(`record ${p.txId} passed its releaseTime during the hand scan — use Bob's release`, 'NOT_COOLING', 409);
   }
 
   stage('broadcasting', 'Hand scan on file. The manager is stamping a priority release…', { txId: String(p.txId), releaseTime: before.releaseTime });
@@ -247,7 +247,8 @@ export async function submitPriority(player: Player, priorityId: string, signatu
       status: after.status,
       reason: `${code}: priority meta-approve mined but record is ${after.status}`,
     });
-    throw Object.assign(new Error(`priority meta-approve mined but record is ${after.status} (${res.hash})`), { statusCode: 500, code });
+    // 409: meta-approve may have mined; FAILED/wrong status is a settle conflict, not an INTERNAL desk fault.
+    throw Object.assign(new Error(`priority meta-approve mined but record is ${after.status} (${res.hash})`), { statusCode: 409, code });
   }
   const block = await publicClient.getBlock({ blockHash: receipt.blockHash });
   const balanceAfter = formatUnits((await publicClient.readContract({ address: token.address, abi: erc20Abi, functionName: 'balanceOf', args: [p.account] })) as bigint, token.decimals);

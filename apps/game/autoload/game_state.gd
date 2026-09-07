@@ -339,6 +339,8 @@ func run_action(action: String, args: Dictionary = {}) -> Dictionary:
 				r = await Chain.call_async("switchWing", {"chainId": target_chain}, 60.0)
 		"provision":
 			r = await Chain.call_async("provision", {}, 300.0)         # clone + config batches + funding
+		"faucet":
+			r = await Chain.call_async("faucet", {}, 120.0)            # explicit practice top-up; no Privy surface
 		"ens_available":
 			r = await Chain.call_async("ensAvailable", {"label": args.get("label", "")}, 20.0)
 		"ens_mint":

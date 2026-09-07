@@ -21,7 +21,7 @@ import { createPlayerPolicy, ensureTypedDataRule, identify, recoverPolicy } from
 import { pay, passbook } from './lanes/laneA.ts';
 import { approve, cancel, listPending, resumeWatchers, wire, type Actor } from './lanes/laneB.ts';
 import { preparePriority, submitPriority } from './lanes/priority.ts';
-import { ROLE_SET_VERSION, ensureTxPolicy, ensureTypedDataPolicy, provision, recoverAccount } from './lanes/provision.ts';
+import { ROLE_SET_VERSION, ensureTxPolicy, ensureTypedDataPolicy, faucetAccount, provision, recoverAccount } from './lanes/provision.ts';
 import { available as ensAvailable, mint as ensMint, resolve as ensResolve, setText as ensSetText } from './ens.ts';
 import { emitStage, getPlayer, listReceipts, newJobId, patchPlayer, serialize, subscribe, upsertPlayer, type Player } from './store.ts';
 import type { SignatureAudit, TxAudit } from './signing/privySigner.ts';
@@ -172,6 +172,20 @@ app.post('/provision', async (req, reply) => {
     const jobId = newJobId();
     const result = await serialize(player.privyUserId, () => provision(getPlayer(player.privyUserId)!, jobId, auditFor(player)));
     return { jobId, ...result };
+  } catch (e) {
+    return fail(reply, e);
+  }
+});
+
+/** Explicit practice-credit top-up. Unlike Account Opening, this restores only the missing delta to the configured opening balance. */
+app.post('/faucet', async (req, reply) => {
+  try {
+    const player = await requirePlayer(req as never);
+    const current = getPlayer(player.privyUserId)!;
+    requireConfigured(current);
+    if (!current.account) throw Object.assign(new Error('No account opened for this player'), { statusCode: 400, code: 'NO_ACCOUNT' });
+    const result = await serialize(player.privyUserId, () => faucetAccount(current.account!));
+    return { ok: true, ...result };
   } catch (e) {
     return fail(reply, e);
   }

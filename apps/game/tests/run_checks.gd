@@ -23,6 +23,7 @@ const REQUIRED_CODES := [
 	"NO_ACCOUNT", "NO_WALLET", "NO_MANAGER", "NOT_PENDING", "RECORD_*", "RECORD_FAILED", "policy_violation", "Unknown",
 	"TIMEOUT", "UNKNOWN_METHOD", "BAD_ARGS", "RPC", "NOT_IMPLEMENTED", "INTERNAL", "AUTH", "POLICY", "CHAIN", "LOGIN_CANCELLED",
 	"NOT_CONFIGURED",
+	"FAUCET_OFF", "FAUCET_EMPTY", "FAUCET_TX_FAILED",
 	# U5 ENS Name Desk codes
 	"INVALID_NAME", "NAME_TAKEN", "NAME_NOT_FOUND", "NAME_NOT_OWNED", "ENS_NOT_CONFIGURED", "ENS_RPC", "ENS_TX_FAILED", "ENS_RECORD_FAILED",
 	# U4+ Priority release (Okafor) — desk + overlay codes
@@ -38,6 +39,7 @@ func _initialize() -> void:
 	_check_errors()
 	for id in NPCS:
 		_check_npc(id)
+	_check_faucet_choice()
 	_check_vault_desks()
 	_check_polish()
 	_check_eval(Dlg)
@@ -178,6 +180,27 @@ func _check_vault_desks() -> void:
 	if str(strings.get("priority_copy", "")) != "Skip the cooling period — hand scan required.":
 		_fail("strings.json priority_copy is not the mandated line")
 	_ok("Bob: approve only · Okafor: priority + cancel, no approve · copy present")
+
+
+## U7 practice faucet: Ines exposes the explicit top-up as a done/passbook action, not as Re-check.
+func _check_faucet_choice() -> void:
+	print("practice faucet choice")
+	var clerk := _load("res://dialogue/clerk.json")
+	var found := false
+	for c in clerk.get("nodes", {}).get("done", {}).get("choices", []):
+		if str(c.get("action", "")) != "faucet":
+			continue
+		found = true
+		if str(c.get("text", "")) != "Top up practice dollars":
+			_fail("clerk faucet choice has unexpected text")
+		if str(c.get("working", "")) != "Counting out practice dollars…":
+			_fail("clerk faucet choice has unexpected working copy")
+		if str(c.get("on_ok", "")) != "done" or str(c.get("on_error", "")) != "refused":
+			_fail("clerk faucet choice must return to done or refused")
+	if not found:
+		_fail("clerk done has no faucet choice")
+	else:
+		_ok("Ines offers Top up practice dollars from the done/passbook node")
 
 
 ## U7 polish (principal playtest findings 7 · 8 · 10): the vault keeper is Bob everywhere a player can read it, the
