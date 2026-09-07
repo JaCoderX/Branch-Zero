@@ -88,7 +88,7 @@
       "choices": [ { "text": "Back", "next": "over_limit" } ]
     },
     "wired": {
-      "text": "Filed. Wire #{txId} is in the vault; it releases in {release_in}. Ruth at the vault window releases it once the clock runs down — or Mr. Okafor can skip the cooling if you bring a hand scan, or recall it.",
+      "text": "Filed. Wire #{txId} is in the vault; it releases in {release_in}. Bob at the vault window releases it once the clock runs down — or Mr. Okafor can skip the cooling if you bring a hand scan, or recall it.",
       "choices": [
         { "text": "Ask why", "next": "why_wired" },
         { "text": "Thanks.", "next": "end" }

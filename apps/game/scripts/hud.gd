@@ -8,6 +8,8 @@ extends CanvasLayer
 ## is built, so every Control in the game inherits it.
 
 const HELP_SECONDS := 25.0    # the key legend fades once the player has had a look; F1 brings it back
+
+var _debug := false           # main.gd: F-key teleports are live → the legend shows their line too
 const BRASS := Color(0.86, 0.69, 0.32)
 
 var _passbook: Label
@@ -144,8 +146,17 @@ func set_prompt(text: String) -> void:
 	_prompt.visible = text != ""
 
 
+## With the debug flag the legend also lists the F-key teleports; without it they are not bound, so they are not shown.
+func set_debug(on: bool) -> void:
+	_debug = on
+	var s: Dictionary = GameState.strings
+	_help.text = str(s.get("help", ""))
+	if on and str(s.get("help_debug", "")) != "":
+		_help.text += "\n" + str(s.get("help_debug", ""))
+
+
 func _unhandled_input(event: InputEvent) -> void:
-	# F1 pins / unpins the key legend after it has faded (F5 is the browser's reload, F2–F8 are the teleports)
+	# F1 pins / unpins the key legend after it has faded (F5 is the browser's reload; F2–F8 teleport only with ?debug=1)
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F1:
 		_help_pinned = not _help_pinned
 		if not _help_pinned:

@@ -312,7 +312,7 @@ export function App({ engineState }: { engineState: string }) {
                       {released ? '● released' : `○ ${fmt(left)} to release`}
                     </span>
                     <span style={{ color: '#556' }}>t={x.releaseTime}</span>
-                    <button style={{ ...btn, opacity: released ? 1 : 0.6 }} title="Ruth — owner timed release after the clock, silent" onClick={() => run('Opening the vault…', () => w.call('/approve', { txId: x.txId }))}>
+                    <button style={{ ...btn, opacity: released ? 1 : 0.6 }} title="Bob — owner timed release after the clock, silent" onClick={() => run('Opening the vault…', () => w.call('/approve', { txId: x.txId }))}>
                       Release
                     </button>
                     <button style={btn} onClick={() => run('Recalling the wire…', () => w.call('/cancel', { txId: x.txId }))}>

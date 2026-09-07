@@ -39,6 +39,7 @@ func _initialize() -> void:
 	for id in NPCS:
 		_check_npc(id)
 	_check_vault_desks()
+	_check_polish()
 	_check_eval(Dlg)
 	print("\n%s — %d failure(s)" % ["PASS" if failures == 0 else "FAIL", failures])
 	quit(0 if failures == 0 else 1)
@@ -151,7 +152,7 @@ func _check_npc(id: String) -> void:
 	_ok("%d nodes, %d action choices, targets resolve" % [nodes.size(), action_nodes])
 
 
-## U4+ (HANDOFF §5e): Ruth waits the clock, Okafor bypasses it. The dialogue must not hand either the other's verb.
+## U4+ (HANDOFF §5e): Bob waits the clock, Okafor bypasses it. The dialogue must not hand either the other's verb.
 func _check_vault_desks() -> void:
 	print("vault desks (U4+)")
 	var m := _load("res://dialogue/manager.json")
@@ -159,13 +160,13 @@ func _check_vault_desks() -> void:
 	var m_actions := _actions_in(m)
 	var r_actions := _actions_in(r)
 	if m_actions.has("approve") or m_actions.has("manager_approve"):
-		_fail("manager.json still stamps a timed approve (Okafor is not a second Ruth)")
+		_fail("manager.json still stamps a timed approve (Okafor is not a second Bob)")
 	if not m_actions.has("priority"):
 		_fail("manager.json has no priority action")
 	if not m_actions.has("cancel"):
 		_fail("manager.json has no recall")
 	if r_actions.has("priority"):
-		_fail("vault_keeper.json offers priority (Ruth is the wait path)")
+		_fail("vault_keeper.json offers priority (Bob is the wait path)")
 	if not r_actions.has("approve"):
 		_fail("vault_keeper.json has no owner approve")
 	var m_text := JSON.stringify(m)
@@ -176,7 +177,52 @@ func _check_vault_desks() -> void:
 	var strings := _load("res://dialogue/strings.json")
 	if str(strings.get("priority_copy", "")) != "Skip the cooling period — hand scan required.":
 		_fail("strings.json priority_copy is not the mandated line")
-	_ok("Ruth: approve only · Okafor: priority + cancel, no approve · copy present")
+	_ok("Bob: approve only · Okafor: priority + cancel, no approve · copy present")
+
+
+## U7 polish (principal playtest findings 7 · 8 · 10): the vault keeper is Bob everywhere a player can read it, the
+## prompts and legend say Space (E orbits), the F-keys live only in the debug legend, and the elevator's Arc line is a
+## "coming soon" — never a wing swap.
+func _check_polish() -> void:
+	print("U7 polish strings")
+	var strings := _load("res://dialogue/strings.json")
+	var bad: PackedStringArray = []
+	for id in NPCS:
+		var text := FileAccess.get_file_as_string("res://dialogue/%s.json" % id)
+		if text.find("Ruth") >= 0:
+			bad.append("%s.json still says Ruth" % id)
+		if text.find("[E]") >= 0:
+			bad.append("%s.json still shows an [E] prompt" % id)
+	for f in ["errors", "strings"]:
+		var text := FileAccess.get_file_as_string("res://dialogue/%s.json" % f)
+		if text.find("Ruth") >= 0:
+			bad.append("%s.json still says Ruth" % f)
+		if text.find("[E]") >= 0:
+			bad.append("%s.json still shows an [E] prompt" % f)
+	var keeper := _load("res://dialogue/vault_keeper.json")
+	if str(keeper.get("name", "")) != "Bob":
+		bad.append("vault_keeper.json name is %s, want Bob" % str(keeper.get("name", "")))
+	if not str(strings.get("prompt_talk", "")).begins_with("[Space]"):
+		bad.append("prompt_talk does not start with [Space]")
+	for k in ["prompt_elevator_arc", "prompt_elevator_main"]:
+		if not str(strings.get(k, "")).begins_with("[Space]"):
+			bad.append("%s missing or not a [Space] prompt" % k)
+	if str(strings.get("elevator_arc_deferred", "")).to_lower().find("coming soon") < 0:
+		bad.append("elevator_arc_deferred missing or does not say 'coming soon'")
+	if str(strings.get("prompt_elevator_arc", "")).to_lower().find("coming soon") < 0:
+		bad.append("prompt_elevator_arc does not say 'coming soon'")
+	var help := str(strings.get("help", ""))
+	if help.find("Space") < 0 or help.find(" E ") >= 0 or help.find("F2") >= 0:
+		bad.append("help legend must name Space to talk and keep the F-keys out (they belong to help_debug)")
+	if str(strings.get("help_debug", "")).find("F2") < 0:
+		bad.append("help_debug does not list the F-key teleports")
+	if str(strings.get("escort_arrived", "")).find("Bob") < 0:
+		bad.append("escort_arrived does not hand over to Bob")
+	if bad.is_empty():
+		_ok("Bob is the keeper · [Space] prompts · Space in the legend, F-keys only in help_debug · Arc elevator says coming soon")
+	else:
+		for b in bad:
+			_fail(b)
 
 
 func _actions_in(d: Dictionary) -> Dictionary:

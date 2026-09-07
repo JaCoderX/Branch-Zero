@@ -280,7 +280,7 @@ func _escort(delta: float) -> void:
 
 	if waiting:
 		_wait += delta
-		_say(str(GameState.strings.get("escort_arrived", "Here we are. Ruth has your wire.")))
+		_say(str(GameState.strings.get("escort_arrived", "Here we are. Bob has your wire.")))
 		velocity.x = 0.0
 		velocity.z = 0.0
 		velocity.y = 0.0 if is_on_floor() else -9.8

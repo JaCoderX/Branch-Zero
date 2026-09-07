@@ -20,6 +20,12 @@ Prefer **Fable 5.1**. Early art Stage 1–5 met; ship reel met (laptop-local). U
 revive funding; elevator must not black the canvas. After polish: [`docs/KICKOFF-U7-ship-package.md`](./KICKOFF-U7-ship-package.md).
 Do not regress the U4 freeze, the U4+ Priority desk, or U5 ENS verbs.
 
+> **U7 polish pass landed 2026-09-07** (local `docs/progress/2026-09-07-u7-polish.md`): findings 1–10 built and checked
+> (`run_checks`, `run_viz_budget`, `run_mock_walk` green; :5173 `?mock=account` walk). Product facts that changed: the vault
+> keeper is **Bob**; **Space** talks and **E** orbits right; F2–F8 teleports need **`?debug=1`**; Petra serves from **Counter 2**;
+> the elevator refuses Arc with "ARC floor — coming soon" and never rebuilds the interior. **Owed:** the principal's
+> re-playtest of the ten findings before packaging.
+
 > **U5 met 2026-09-07 — ENS Name Desk / G6.** Read
 > [`docs/progress/2026-09-07-u5-ens-g6.md`](./progress/2026-09-07-u5-ens-g6.md) **first** for live evidence.
 > Bridge is **`u5.0`** (`ensAvailable` / `ensMint` / `ensSetText` / `resolveName`). Identity is Sepolia ENSv2 with

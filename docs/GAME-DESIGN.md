@@ -108,7 +108,7 @@ Failure UX: if delegation is refused, the clerk says "No problem — tellers wil
 2. Teller walks you (waypoint) to the Vault antechamber. `executeWithTimeLock` fires; the vault door clock starts from `releaseTime`.
 3. Waiting is a design moment: the antechamber has a bench, a magazine ("Why do banks wait?" → optional lore about timelocks), and the Ledger board is visible.
 4. Two ways to finish, plus recall:
-   - **Wait:** when the door light turns green, Ruth at the vault window — owner timed `approveTimeLockExecution` after `releaseTime` (silent).
+   - **Wait:** when the door light turns green, Bob at the vault window — owner timed `approveTimeLockExecution` after `releaseTime` (silent).
    - **Priority:** Mr. Okafor while still cooling — Passkey / hand scan, then meta-approve bypass. He is not a second timed stamp.
    - **Recall:** shredder while PENDING (owner or manager).
 
@@ -148,7 +148,7 @@ There is no fail state. The only "difficulty" is procedural: the bank refuses wh
 ## 7. HUD and UI
 
 - **Passbook (top-left):** name (ENS) or short address, wing/chain chip, USDC balance, pending count badge.
-- **Interaction prompt (center-bottom):** `[E] Talk` / `[E] Use`.
+- **Interaction prompt (center-bottom):** `[Space] Talk` / `[Space] Use` (U7 polish: Space is the only interact key; Q/E orbit).
 - **Dialogue panel (bottom):** NPC portrait, 1–3 lines, choices. Includes a persistent **"Ask why"** choice that reveals the protocol explanation for the current step.
 - **Forms:** amount + recipient + memo as a paper slip UI; recipient field accepts `0x…` or `*.branchzero.eth`.
 - **Receipts:** collectible; opens a side panel with hash and explorer link; "Copy hash".

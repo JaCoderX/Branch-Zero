@@ -19,7 +19,7 @@
       "choices": [ { "text": "OK.", "next": "end" } ]
     },
     "lore": {
-      "text": "Come in. Today I'm decoration — this branch has no manager key on the desk. Ruth releases at the vault window once the clock runs down, and nobody skips the cooling.",
+      "text": "Come in. Today I'm decoration — this branch has no manager key on the desk. Bob releases at the vault window once the clock runs down, and nobody skips the cooling.",
       "choices": [
         { "text": "Ask why", "next": "why_manager" },
         { "text": "OK.", "next": "end" }
@@ -58,7 +58,7 @@
       ]
     },
     "not_cooling": {
-      "text": "Those have finished cooling — Ruth releases them at the vault window, no hand scan needed. I don't stamp after the clock.",
+      "text": "Those have finished cooling — Bob releases them at the vault window, no hand scan needed. I don't stamp after the clock.",
       "choices": [
         { "text": "Ask why", "next": "why_manager" },
         { "text": "Back", "next": "idle" }
@@ -89,7 +89,7 @@
       ]
     },
     "limits": {
-      "text": "Over the counter: up to {limit} {symbol}, done in one step. Above that: the vault, {timelock} of cooling, then Ruth releases it — or you bring a hand scan here and I release it early. Honest footnote — the limit is this branch's policy, enforced at the counter; the vault clock is the contract's.",
+      "text": "Over the counter: up to {limit} {symbol}, done in one step. Above that: the vault, {timelock} of cooling, then Bob releases it — or you bring a hand scan here and I release it early. Honest footnote — the limit is this branch's policy, enforced at the counter; the vault clock is the contract's.",
       "choices": [
         { "text": "Ask why", "next": "why_limits" },
         { "text": "Back", "next": "idle" }
@@ -100,7 +100,7 @@
       "choices": [ { "text": "Back", "next": "idle" } ]
     },
     "why_manager": {
-      "text": "I hold a runtime role — BRANCH_MANAGER. I cannot start a payment. I cannot open the vault after the clock — that is Ruth's window, and the chain would refuse me anyway; my timed stamp was removed. I can shred a wire, or submit a priority release before the clock when you bring a hand scan.",
+      "text": "I hold a runtime role — BRANCH_MANAGER. I cannot start a payment. I cannot open the vault after the clock — that is Bob's window, and the chain would refuse me anyway; my timed stamp was removed. I can shred a wire, or submit a priority release before the clock when you bring a hand scan.",
       "choices": [ { "text": "OK.", "next": "end" } ]
     },
     "refused": {

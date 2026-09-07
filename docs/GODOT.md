@@ -132,7 +132,7 @@ JS side (`apps/web/src/bridge.ts`) exposes a **flat, JSON-only** API. All values
 | `resolveName` | `{ name }` | `{ address, chainId, avatar? }` | ENS (Sepolia) |
 | `pay` | `{ chainId, to, amount, memo }` | `{ txId, txHash }` | Teller `/pay` (Lane A) |
 | `wire` | `{ to, amount, memo }` | `{ txId, releaseTime, chainNow, serverNow, hash, status }` | Teller `/wire` (Lane B request). **No `releaseSeconds`** — the cooling period is the account's own `timeLockPeriodSec`, fixed at `initialize`; the game cannot shorten it |
-| `approve` | `{ txId }` | `{ hash, txId, status, balanceAfter? }` | Teller `/approve` — **owner only** (Ruth's wait path, after `releaseTime`). U4+: `as: "manager"` is refused (`MANAGER_NO_STAMP`) |
+| `approve` | `{ txId }` | `{ hash, txId, status, balanceAfter? }` | Teller `/approve` — **owner only** (Bob's wait path, after `releaseTime`). U4+: `as: "manager"` is refused (`MANAGER_NO_STAMP`) |
 | `cancel` | `{ txId, as?: "owner" or "manager" }` | `{ hash, txId, status }` | Teller `/cancel` (recall) |
 | `priority` (U4+) | `{ txId }` | `{ hash, txId, status, actor: "priority", releaseTime, chainNow, balanceAfter, mfaPrompted }` | Teller `/priority/prepare` → Privy **user signer** (`clear()` + `promptMfa()` Passkey when enrolled, `signTypedData` with `showWalletUIs`) → `/priority/submit`. The one method allowed to open a second Privy surface; hands focus back to the canvas afterwards. Refuses a released wire (`NOT_COOLING`) |
 | `listPending` | — | `{ items: [{ txId, status, releaseTime, released, to, amount, requester }], serverNow }` | `getPendingTransactions` + `getTransaction` |
@@ -197,7 +197,7 @@ Browsers throttle `requestAnimationFrame` in background tabs, so Godot's `_proce
 
 Godot's web export listens for `keydown` **on the canvas element**, not on `document`. The game therefore only hears
 keys while `#canvas` is `document.activeElement`; any click on a React control or a finished Privy modal moves focus
-off it and WASD / `E` go dead. Rules that follow:
+off it and WASD / `Space` go dead. Rules that follow:
 
 - Nothing may sit over the canvas as a hit target when it is not meant to be one. The U4 playtest bug was the
   full-viewport `#boot` status div (`position: fixed; inset: 0`) left in the DOM after loading: every click on the
@@ -207,7 +207,8 @@ off it and WASD / `E` go dead. Rules that follow:
   and the bridge's `login` / `addSessionSigner` once the Privy flow settles. It focuses now and again on two
   timers — not `requestAnimationFrame`, which a background tab never runs — because React unmounts the clicked button
   in the same commit and an unmounted focused element drops focus to `<body>`.
-- Verified 2026-09-07 in the shell: pill → `body`; click bank → `canvas`; *hide* → `canvas`; `F6` teleports, `E` opens Mo.
+- Verified 2026-09-07 in the shell: pill → `body`; click bank → `canvas`; *hide* → `canvas`; `F6` teleports, `E` opens Mo
+  (U7 polish since then: **Space** talks, **E** orbits the camera right, and `F6` needs `?debug=1`).
 - U4+: the Priority hand scan (Privy MFA sheet + sign sheet) is the second surface that moves focus; the bridge's
   `priority` handler calls `focusCanvas()` in a `finally`, success or refusal.
 
@@ -216,11 +217,11 @@ off it and WASD / `E` go dead. Rules that follow:
 `autoload/mock_chain.gd` answers the whole bridge API from canned state (addresses start `0xM0CK…`, cooling period
 30 s, receipts local; U4+ `priority` is a 1.8 s timer labelled "MockChain: no Passkey, nothing signed" and
 `approve as: manager` answers `MANAGER_NO_STAMP`). `godot --headless --path apps/game -s tests/run_mock_walk.gd`
-boots the autoloads by hand and walks Ruth's and Okafor's desks against it (U4+) — a `-s` script gets no project
+boots the autoloads by hand and walks Bob's and Okafor's desks against it (U4+) — a `-s` script gets no project
 autoloads, so the test adds `Chain` / `GameState` / `Dialogue` to the root itself. It is used automatically on desktop, and on web when the shell URL carries `?mock` (`?mock=account`
 starts as a signed-in, delegated player with an open, funded account). The real bridge stays installed; only Godot's
 `Chain` routes calls to the mock. It exists to walk the greybox without an inbox and proves nothing about the chain —
-kill tests run against the Teller Desk (REMOTE-EVM.md §5). Tester keys: **F2 / F3 / F4 / F6 / F7 / F8** teleport to Account Opening /
+kill tests run against the Teller Desk (REMOTE-EVM.md §5). Tester keys (**only with `?debug=1`** on the web, or `-- --debug` / `BRANCH_ZERO_DEBUG=1` on desktop — U7 polish: a plain `?mock=account` playtest never teleports): **F2 / F3 / F4 / F6 / F7 / F8** teleport to Account Opening /
 Counter 1 / Vault / Lobby / Manager / Name Desk (F5 is the browser's reload and is left alone); **1–9** pick a dialogue choice; **Enter** in the payment slip hands it in.
 
 **Walking demo reel (MockChain):** `godot --path apps/game -- --demo=walk` (or `BRANCH_ZERO_DEMO=walk`, or web
@@ -250,7 +251,7 @@ apps/game/
 ```
 
 - Static typing everywhere (`var x: int`); `@export` for tunables; signals over polling between nodes.
-- NPC interaction: `Area3D` trigger → prompt → `E` → `Dialogue.start(npc_id)`; dialogue conditions read `GameState` (which mirrors bridge results), never call the bridge directly.
+- NPC interaction: `Area3D` trigger → prompt → `Space` (U7 polish; was `E`) → `Dialogue.start(npc_id)`; dialogue conditions read `GameState` (which mirrors bridge results), never call the bridge directly.
 - Camera switch to "counter cam" via `Phantom Camera`-style priority (`Camera3D` per counter, tweened).
 - All player-visible strings in `dialogue/*.json` or `ui/strings.json` (no literals in code) so everyday bank wording can be reviewed in one place.
 - Performance budget in [WORLD-3D-ENVIRONMENT.md](./WORLD-3D-ENVIRONMENT.md) § 6; run the web build every evening.

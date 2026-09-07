@@ -169,7 +169,8 @@ BOLTS = 6
 
 
 def vault_frame():
-    """Frame node (Graphite / Steel / SteelDark / Brass) + LedStrip node (state material from vault_door.gd).
+    """Frame node (Graphite / Steel / SteelDark / Brass) + LedStrip node (state material from vault_door.gd) + Mouth
+    node (the blind graphite disc; hidden by vault_door.gd since U7 polish opened a strongroom behind it).
     Pilaster inner faces stay at x = +-1.925 and the lintel bottom at ~4.0, as Stage 1."""
     clear()
     parts = [
@@ -181,9 +182,9 @@ def vault_frame():
         # threshold plate with a brass edge
         box("Threshold", (0.0, 0.03, 0.1), (4.3, 0.06, 0.6), "Steel", 0.01),
         box("ThresholdEdge", (0.0, 0.035, 0.41), (4.3, 0.05, 0.03), "Brass"),
-        # mouth: dark disc behind the door, chamfered collar, steel liner ring
-        cyl("Mouth", (0.0, DOOR_CY, -0.02), DOOR_R + 0.2, 0.06, "Graphite", axis="z", verts=48),
-        cyl("Collar", (0.0, DOOR_CY, 0.06), DOOR_R + 0.18, 0.10, "SteelDark", axis="z", verts=48, r2=DOOR_R + 0.08),
+        # chamfered collar, steel liner ring (the dark Mouth disc behind the door is its own node below)
+        # open frustum (no caps): U7 polish looks through the collar into the strongroom, so it must not be a disc
+        cyl("Collar", (0.0, DOOR_CY, 0.06), DOOR_R + 0.18, 0.10, "SteelDark", axis="z", verts=48, r2=DOOR_R + 0.08, fill="NOTHING"),
         torus("Liner", (0.0, DOOR_CY, 0.12), DOOR_R + 0.12, 0.06, "Steel", axis="z", segs=48),
         # clock hood in front of the lintel: graphite face (the Label3D sits at z 0.62), brass bezel + canopy, brackets
         box("ClockPlate", (0.0, CLOCK_Y, 0.57), (1.7, 0.62, 0.08), "Graphite", 0.02),
@@ -218,7 +219,10 @@ def vault_frame():
         box("LedTop", (0.0, 4.17, 0.215), (4.3, 0.16, 0.05), "LED"),
     ]
     led = join(leds, "LedStrip")
-    export([frame, led], "prop_vault_frame.glb")
+    # the blind disc behind the door is exported as its own node so scripts/vault_door.gd can hide it: U7 polish
+    # builds a strongroom behind the wall (bank_interior.gd _vault_interior) where this disc used to block the view
+    mouth = join([cyl("Mouth", (0.0, DOOR_CY, -0.02), DOOR_R + 0.2, 0.06, "Graphite", axis="z", verts=48)], "Mouth")
+    export([frame, led, mouth], "prop_vault_frame.glb")
 
 
 def vault_repeater():

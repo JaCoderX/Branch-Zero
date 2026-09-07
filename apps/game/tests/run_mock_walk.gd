@@ -4,7 +4,7 @@ extends SceneTree
 ##   godot --headless --path apps/game -s tests/run_mock_walk.gd
 ##
 ## Boots the autoloads by hand (a `-s` script does not get project autoloads), opens a funded mock account, files a
-## wire, then checks what each desk offers: Ruth lists the cooling wire under `approve` and is refused
+## wire, then checks what each desk offers: Bob lists the cooling wire under `approve` and is refused
 ## `BeforeReleaseTime`; Okafor lists it under `priority` and the mock Priority release completes it; a released
 ## wire is `NOT_COOLING` at Okafor's desk. Exits non-zero on the first wrong answer.
 
@@ -48,9 +48,9 @@ func _run() -> void:
 
 	# desk listings
 	var manager: Dictionary = dlg.load_npc("manager")
-	var ruth: Dictionary = dlg.load_npc("vault_keeper")
+	var bob: Dictionary = dlg.load_npc("vault_keeper")
 	var m_choices: Array = dlg._resolve_choices(manager["nodes"]["priority_list"])
-	var r_choices: Array = dlg._resolve_choices(ruth["nodes"]["cooling"])
+	var r_choices: Array = dlg._resolve_choices(bob["nodes"]["cooling"])
 	var m_actions := []
 	for c in m_choices:
 		if c.has("action"):
@@ -64,22 +64,22 @@ func _run() -> void:
 	else:
 		_fail("Okafor's priority list does not offer the cooling wire: %s" % str(m_actions))
 	if r_actions.has("approve#" + tx_id):
-		_ok("Ruth's cooling list offers approve#%s" % tx_id)
+		_ok("Bob's cooling list offers approve#%s" % tx_id)
 	else:
-		_fail("Ruth does not list the wire: %s" % str(r_actions))
+		_fail("Bob does not list the wire: %s" % str(r_actions))
 	var start: String = dlg.pick_start(manager, gs.facts())
 	if start != "idle":
 		_fail("Okafor start node is %s, want idle (facts %s)" % [start, str(gs.facts())])
 	else:
 		_ok("Okafor starts at idle; facts cooling=%d priority=%s" % [gs.facts()["cooling"], str(gs.facts()["priority"])])
 
-	# Ruth early → BeforeReleaseTime
+	# Bob early → BeforeReleaseTime
 	var early: Dictionary = await gs.run_action("approve", {"txId": tx_id})
 	var code := str(early.get("error", {}).get("code", ""))
 	if early.get("ok", false) or code != "BeforeReleaseTime":
-		_fail("Ruth early: ok=%s code=%s" % [str(early.get("ok")), code])
+		_fail("Bob early: ok=%s code=%s" % [str(early.get("ok")), code])
 	else:
-		_ok("Ruth early → BeforeReleaseTime: \"%s\"" % gs.error_line(early["error"], {"txId": tx_id}))
+		_ok("Bob early → BeforeReleaseTime: \"%s\"" % gs.error_line(early["error"], {"txId": tx_id}))
 	# manager approve (stale verb) → MANAGER_NO_STAMP
 	var stamp: Dictionary = await gs.run_action("manager_approve", {"txId": tx_id})
 	if str(stamp.get("error", {}).get("code", "")) != "MANAGER_NO_STAMP":
@@ -109,7 +109,7 @@ func _run() -> void:
 	else:
 		_ok("Okafor priority → COMPLETED with %d s still on the clock; balance %s; pending now %d" % [before, gs.balance, gs.pending_count()])
 
-	# a released wire is Ruth's, not Okafor's
+	# a released wire is Bob's, not Okafor's
 	var r2: Dictionary = await gs.run_action("wire", {"to": "0x95cED938F7991cd0dFcb48F0a06a40FA1aF46EBC", "amount": "150", "memo": "x"})
 	var tx2 := str(r2["result"]["txId"])
 	var rec: Dictionary = chain._mock.wires[chain._mock._find(tx2)]
@@ -129,11 +129,11 @@ func _run() -> void:
 		_fail("released wire: Okafor idle should route Priority to not_cooling: %s" % str(texts))
 	else:
 		_ok("released wire: Okafor's Priority choice routes to not_cooling")
-	var ruth_start: String = dlg.pick_start(ruth, gs.facts())
+	var ruth_start: String = dlg.pick_start(bob, gs.facts())
 	if ruth_start != "ready":
-		_fail("Ruth start for a released wire is %s, want ready" % ruth_start)
+		_fail("Bob start for a released wire is %s, want ready" % ruth_start)
 	else:
-		_ok("Ruth starts at ready for the released wire")
+		_ok("Bob starts at ready for the released wire")
 	_finish()
 
 

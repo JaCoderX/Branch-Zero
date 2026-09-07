@@ -1,5 +1,7 @@
 extends CharacterBody3D
-## Player — third-person capsule, WASD relative to the camera, ←/→ (or Q/R, or mouse drag) orbit the camera.
+## Player — third-person capsule, WASD relative to the camera, ←/→ (or Q/E, or LMB drag) orbit the camera.
+## Right mouse (U7 polish finding 6): a click walks to the pointed floor spot, holding steers toward the cursor's
+## ground aim; WASD or a UI lock cancels. It reuses `steer_target`, the same rail the demo autopilot and walk_to() use.
 ## Camera (U7 viz Stage 5): the spring arm hangs 0.6 m off the right shoulder at -17 deg; while a dialogue is open it
 ## shortens and swings 38 deg into a two-shot so the NPC is beside the player, not behind the Blocky body.
 ## No jump (docs/WORLD-3D-ENVIRONMENT.md §2.2). Movement is locked while a dialogue or form is open.
@@ -16,6 +18,9 @@ const TALK_DIST := 3.8         # while a dialogue is open the arm shortens and..
 const TALK_SWING := -38.0      # ...swings (degrees) so the NPC sits beside the player in a two-shot, not behind
 const CAM_EASE := 6.0
 const SKIN := "character-c"   # scripts/npc.gd SKINS lists the staff; the atlas holds eight skins
+const CLICK_ARRIVE := 0.35     # RMB walk: close enough to the pointed spot
+const CLICK_STUCK_SEC := 0.7   # RMB walk: give up when a wall / desk stops the body for this long
+const CLICK_RAY := 80.0        # metres of camera ray to look for the floor
 
 var cam_yaw: float = 0.0
 var view_yaw: float = 0.0       # the yaw the pivot actually shows: eases to cam_yaw, or to the talk two-shot
@@ -35,6 +40,9 @@ var _cam: Camera3D
 var _body: Node3D
 var _anim: AnimationPlayer
 var _dragging := false
+var _rmb_held := false
+var _mouse_steer := false      # steer_target came from the mouse (cancel on WASD / lock; no camera follow)
+var _stuck_t := 0.0
 
 
 func _ready() -> void:
@@ -90,15 +98,27 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if GameState.ui_locked:
 		_dragging = false
+		_rmb_held = false
 		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		_dragging = event.pressed
+	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT:
+		_rmb_held = event.pressed
+		if event.pressed:
+			_aim_at_mouse(event.position)
 	elif event is InputEventMouseMotion and _dragging:
 		cam_yaw -= event.relative.x * 0.006
 
 
 func _physics_process(delta: float) -> void:
 	var locked: bool = GameState.ui_locked
+	var input := Vector2.ZERO if locked else Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+	if _mouse_steer:
+		# WASD or a dialogue / form takes the wheel back; while RMB is held the aim follows the cursor
+		if locked or input.length() > 0.1:
+			clear_steer()
+		elif _rmb_held:
+			_aim_at_mouse(get_viewport().get_mouse_position())
 	var steering: bool = steer_target is Vector3 and not locked
 	if not locked and not steering:
 		var orbit := Input.get_action_strength("cam_left") - Input.get_action_strength("cam_right")
@@ -112,13 +132,16 @@ func _physics_process(delta: float) -> void:
 	if steering:
 		var to: Vector3 = (steer_target as Vector3) - global_position
 		to.y = 0.0
-		if to.length() > 0.15:
+		if _mouse_steer and to.length() <= CLICK_ARRIVE:
+			clear_steer()
+		elif to.length() > 0.15:
 			dir = to.normalized()
 			speed = steer_speed
-			# Keep the camera behind the walk so the reel reads as third-person, not strafe.
-			cam_yaw = lerp_angle(cam_yaw, atan2(-dir.x, -dir.z), 4.0 * delta)
+			# Autopilot only: keep the camera behind the walk so the reel reads as third-person, not strafe. A mouse
+			# walk keeps the camera still, so the spot under the cursor stays the spot the body walks to.
+			if not _mouse_steer:
+				cam_yaw = lerp_angle(cam_yaw, atan2(-dir.x, -dir.z), 4.0 * delta)
 	elif not locked:
-		var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 		dir = Basis(Vector3.UP, cam_yaw) * Vector3(input.x, 0.0, input.y)
 		speed = JOG if Input.is_key_pressed(KEY_SHIFT) else WALK
 	var target := dir * speed
@@ -131,12 +154,45 @@ func _physics_process(delta: float) -> void:
 		facing = atan2(-dir.x, -dir.z)
 	_body.rotation.y = lerp_angle(_body.rotation.y, facing, TURN * delta)
 	var ground_speed := Vector2(velocity.x, velocity.z).length()
+	if _mouse_steer and dir.length() > 0.1:
+		# a desk or wall between here and the click: stop pushing rather than jog in place
+		_stuck_t = _stuck_t + delta if ground_speed < 0.3 else 0.0
+		if _stuck_t > CLICK_STUCK_SEC:
+			clear_steer()
 	_play("sprint" if ground_speed > WALK + 0.5 else ("walk" if ground_speed > 0.4 else "idle"))
 
 
-## Clear autopilot steering (idle in place).
+## Point the mouse walk at the floor under `screen`: the camera ray against layer 1 (floor, desks, NPC bodies — a
+## click on a desk walks up to it), or the player's ground plane when the ray hits nothing.
+func _aim_at_mouse(screen: Vector2) -> void:
+	var from := _cam.project_ray_origin(screen)
+	var dir := _cam.project_ray_normal(screen)
+	var hit := Vector3.ZERO
+	var found := false
+	var q := PhysicsRayQueryParameters3D.create(from, from + dir * CLICK_RAY, 1, [get_rid()])
+	var r := get_world_3d().direct_space_state.intersect_ray(q)
+	if not r.is_empty():
+		hit = r["position"]
+		found = true
+	elif absf(dir.y) > 0.001:
+		var t := (global_position.y - from.y) / dir.y
+		if t > 0.0:
+			hit = from + dir * t
+			found = true
+	if not found:
+		return
+	steer_target = Vector3(hit.x, global_position.y, hit.z)
+	steer_speed = WALK
+	if not _mouse_steer:
+		_stuck_t = 0.0
+	_mouse_steer = true
+
+
+## Clear autopilot / mouse steering (idle in place).
 func clear_steer() -> void:
 	steer_target = null
+	_mouse_steer = false
+	_stuck_t = 0.0
 	velocity.x = 0.0
 	velocity.z = 0.0
 

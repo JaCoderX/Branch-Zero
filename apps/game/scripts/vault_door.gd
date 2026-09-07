@@ -12,8 +12,12 @@ extends Node3D
 ## six bolts are radial bars that slide out of the rim into receivers on the frame's collar. A repeater strip on the
 ## lobby face of the vault lintel (prop_vault_repeater.glb, Stage 2) shares the LED material so the state reads from
 ## the lobby (WORLD-3D §10). State logic is unchanged since U3.
+## U7 polish finding 9: bank_interior.gd builds a strongroom behind the door (shelves, cash, bars) and cuts a square
+## throat through the north wall, so the frame's own graphite Mouth disc is hidden here and the door swings 95°
+## instead of 30° — it parks against the west pilaster, so from anywhere in the antechamber the throat is clear
+## (at 70° the disc still stood square in front of it from the F4 spot).
 
-const OPEN_DEG := 30.0
+const OPEN_DEG := 95.0
 const DOOR_R := 1.6          # disc radius — matches tools/hero_props.py DOOR_R
 const DOOR_CY := 1.75        # disc centre height — DOOR_CY
 const CLOCK_Y := 3.62        # clock plate — CLOCK_Y, above the door's swing
@@ -48,6 +52,9 @@ func _ready() -> void:
 	var strip := PropKit.find_mesh(frame, "LedStrip")
 	if strip != null:
 		strip.material_override = _led_mat
+	var mouth := PropKit.find_mesh(frame, "Mouth")
+	if mouth != null:
+		mouth.visible = false   # the strongroom throat (bank_interior.gd) sits where the blind disc was
 	# repeater on the lobby side of the vault lintel, just above the opening (world (8, 3.58, -4.78); this node sits
 	# at (8, 0, -10.7)) — the lobby reads the state without seeing the door. Stage 2: a brass-cased hero strip.
 	var repeater := PropKit.instance(PropKit.HERO + "prop_vault_repeater.glb")

@@ -1,6 +1,6 @@
 {
   "id": "vault_keeper",
-  "name": "Ruth",
+  "name": "Bob",
   "role": "Vault Keeper",
   "start": [
     { "if": "!booted", "node": "booting" },

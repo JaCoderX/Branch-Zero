@@ -14,7 +14,7 @@ const TIMELOCK_SEC := 30
 const INSTANT_LIMIT := "100"
 
 ## Cooling period the mock writes into new wires. The demo autopilot stretches it so the vault beats
-## (Ruth refuses early, Okafor's Priority release) still happen at a human reading pace.
+## (Bob refuses early, Okafor's Priority release) still happen at a human reading pace.
 var timelock_sec: int = TIMELOCK_SEC
 
 var logged_in := false
@@ -251,7 +251,7 @@ func _priority(args: Dictionary) -> Dictionary:
 		return _err("NOT_PENDING", "record %s is not PENDING" % tx_id)
 	var rec: Dictionary = wires[idx]
 	if int(rec["releaseTime"]) <= _now():
-		return _err("NOT_COOLING", "record %s passed its releaseTime — that is Ruth's window" % tx_id)
+		return _err("NOT_COOLING", "record %s passed its releaseTime — that is Bob's window" % tx_id)
 	var job := _new_job()
 	_stage(job, "B", "signing", "Hand scan at the manager’s desk — (MockChain: no Passkey, nothing signed)…", {"txId": tx_id, "releaseTime": rec["releaseTime"], "via": "priority"})
 	await get_tree().create_timer(1.2).timeout

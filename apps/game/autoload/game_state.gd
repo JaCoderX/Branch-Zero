@@ -316,7 +316,7 @@ func refresh_all() -> void:
 
 ## Run one desk action through the bridge. Returns {"ok", "result", "error"}. Refreshes the mirror afterwards
 ## whatever the outcome (a refused approve still moved the clock; a provision changes the session).
-## Vault verbs (U4+): `approve` = Ruth (owner, after the clock) · `priority` = Okafor (hand scan, before the clock) ·
+## Vault verbs (U4+): `approve` = Bob (owner, after the clock) · `priority` = Okafor (hand scan, before the clock) ·
 ## `cancel` / `manager_cancel` = recall. There is no manager approve.
 func run_action(action: String, args: Dictionary = {}) -> Dictionary:
 	busy = true
@@ -352,12 +352,12 @@ func run_action(action: String, args: Dictionary = {}) -> Dictionary:
 		"wire":
 			r = await _run_payment_lane("wire", args)
 		"approve":
-			# Ruth's wait path — the owner's timed release after the clock, silent. Never the manager (U4+).
+			# Bob's wait path — the owner's timed release after the clock, silent. Never the manager (U4+).
 			r = await Chain.call_async("approve", {"txId": str(args.get("txId", "")), "as": "owner"}, 120.0)
 		"manager_approve":
 			# Okafor's post-clock stamp was removed in U4+ (ROLE_SET 3). Kept as a refusal so a stale dialogue line
 			# gets his bank line instead of a chain revert.
-			r = {"ok": false, "error": {"code": "MANAGER_NO_STAMP", "message": "the manager does not stamp vault releases (U4+); use priority before the clock or Ruth after it"}}
+			r = {"ok": false, "error": {"code": "MANAGER_NO_STAMP", "message": "the manager does not stamp vault releases (U4+); use priority before the clock or Bob after it"}}
 		"priority":
 			# Okafor's Priority release: the one call that may open a second Privy surface (Passkey + sign sheet).
 			# A human scans a hand, so the timeout is generous, like login.
@@ -546,9 +546,10 @@ func _setup_controls() -> void:
 	_bind("move_back", [KEY_S, KEY_DOWN])
 	_bind("move_left", [KEY_A])
 	_bind("move_right", [KEY_D])
+	# U7 polish (principal playtest): Space is the only interact key; E orbits right to pair with Q (R is unbound).
 	_bind("cam_left", [KEY_LEFT, KEY_Q])
-	_bind("cam_right", [KEY_RIGHT, KEY_R])
-	_bind("interact", [KEY_E, KEY_SPACE])
+	_bind("cam_right", [KEY_RIGHT, KEY_E])
+	_bind("interact", [KEY_SPACE])
 	_bind("debug_toggle", [KEY_F1])
 
 

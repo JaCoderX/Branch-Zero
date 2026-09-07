@@ -14,17 +14,17 @@ const VIEWS := [
 	["02_lobby", Vector3(3.0, 0.1, 6.0), 0.0],
 	["03_lobby_to_vault", Vector3(8.0, 0.1, 1.0), 0.0],
 	["04_counter", Vector3(-9.5, 0.1, 3.0), PI / 2],
-	["05_account_opening", Vector3(-7.0, 0.1, 7.6), PI / 2],
+	["05_account_opening", Vector3(-9.0, 0.1, 6.3), PI],
 	["06_manager", Vector3(-8.0, 0.1, -7.3), 0.0],
 	["07_vault", Vector3(8.0, 0.1, -6.5), 0.0],
-	["08_name_desk", Vector3(-11.0, 0.1, -3.5), PI / 2],
+	["08_name_desk", Vector3(-9.5, 0.1, -1.0), PI / 2],
 	["09_elevator", Vector3(9.2, 0.1, 0.2), -PI / 2],
 	# Stage 3 character two-shots: player two metres from an NPC (body hidden for the frame, see _shot)
 	["16_mo_close", Vector3(2.0, 0.1, 7.0), 0.0],
 	["17_dev_close", Vector3(-9.6, 0.1, 4.6), PI / 2],
-	["18_ruth_close", Vector3(8.4, 0.1, -6.0), -0.85],
+	["18_bob_close", Vector3(8.4, 0.1, -6.0), -0.85],
 	["19_okafor_close", Vector3(-6.6, 0.1, -7.6), 0.0],
-	["20_ines_close", Vector3(-7.6, 0.1, 9.0), 0.0],
+	["20_ines_close", Vector3(-9.0, 0.1, 7.0), PI],
 	# Stage 4 shell views: the antechamber's west end (north wall bays, bench, magazine rack) and the lobby looking west
 	# along the partition's lobby face towards the counters. Both keep the spring arm (4.6 m behind) clear of walls.
 	["21_vault_west", Vector3(10.5, 0.1, -9.6), PI / 2],
@@ -34,9 +34,16 @@ const VIEWS := [
 	# skylight dust. Same spots as the F-key teleports, so the spring arm keeps its clearance.
 	["23_mo_talk", Vector3(3.0, 0.1, 6.0), 0.0, {"talk": Vector3(2.0, 0.0, 4.5)}],
 	["24_dev_talk", Vector3(-9.5, 0.1, 3.0), PI / 2, {"talk": Vector3(-11.6, 0.0, 3.0)}],
-	["25_ruth_talk", Vector3(8.0, 0.1, -6.5), 0.0, {"talk": Vector3(10.0, 0.0, -7.5)}],
+	["25_bob_talk", Vector3(8.0, 0.1, -6.5), 0.0, {"talk": Vector3(10.0, 0.0, -7.5)}],
 	["26_lobby_ceiling", Vector3(3.0, 0.1, 6.0), 0.0, {"pitch": -2.0}],
 	["27_lobby_west_ceiling", Vector3(5.5, 0.1, -2.5), PI / 2, {"pitch": -6.0}],
+	# U7 polish views: the manager doorway from the lobby (no rail / sill), Petra's Counter 2 window, Ines behind the
+	# AO desk, Okafor facing his door, and the elevator's coming-soon notice. The vault OPEN interior is 13_vault_open.
+	["28_manager_door", Vector3(-8.0, 0.1, -1.6), 0.0],
+	["29_petra_talk", Vector3(-9.5, 0.1, -1.0), PI / 2, {"talk": Vector3(-11.6, 0.0, -1.0)}],
+	["30_ines_talk", Vector3(-9.0, 0.1, 6.3), PI, {"talk": Vector3(-9.0, 0.0, 9.5)}],
+	["31_okafor_talk", Vector3(-8.0, 0.1, -7.3), 0.0, {"talk": Vector3(-8.0, 0.0, -9.8)}],
+	["32_elevator_notice", Vector3(8.6, 0.1, 1.2), -PI / 2],
 ]
 
 var out_dir := ""
@@ -68,9 +75,10 @@ func _ready() -> void:
 	print("viz_shots: wire #%s cooling %d s — waiting for the mock clock" % [tx_id, remaining])
 	while GameState.released_count() == 0 and GameState.pending_count() > 0:
 		await get_tree().create_timer(0.5).timeout
-	await get_tree().create_timer(1.6).timeout
+	await get_tree().create_timer(6.0).timeout   # the door swings at 20°/s: let the 95° open (U7 polish) finish first
 	await _shot("12_lobby_open", Vector3(8.0, 0.1, 1.0), 0.0)
 	await _shot("13_vault_open", Vector3(8.0, 0.1, -6.5), 0.0)
+	await _shot("13b_vault_open_east", Vector3(9.3, 0.1, -7.6), 0.3)   # U7 polish: the strongroom past the parked door
 	await GameState.run_action("approve", {"txId": tx_id})
 	await get_tree().create_timer(0.6).timeout
 	await _shot("14_vault_done", Vector3(8.0, 0.1, -6.5), 0.0)

@@ -13,9 +13,9 @@ Related: [GAME-DESIGN.md](./GAME-DESIGN.md) § 4 mapping · [BLOXCHAIN-INTEGRATI
 | **Greeter** (Mo) | Lobby | none | account existence, pending count, achievements | — | MVP |
 | **Account Clerk** (Ines) | Account Opening | deployer wallet (bank) | Privy user, `owner()`, `initialized()` | deploy `AccountBlox`, guard config batch, faucet top-up | MVP |
 | **Teller A** (Dev) / **Teller B** (Ama) | Counters | `BROADCASTER_ROLE` (Teller Desk hot wallet) | balance, whitelist, `getFunctionSchema`, ENS resolve | Lane A `requestAndApproveExecution`; Lane B `executeWithTimeLock` request | MVP |
-| **Vault Keeper** (Ruth) | Vault antechamber | none (owner acts) | `getPendingTransactions`, `getTransaction` | **Wait path:** owner timed `approveTimeLockExecution` **after** `releaseTime`, silent session signer | MVP; U4+ wait-only |
+| **Vault Keeper** (Bob — was Ruth until U7 polish) | Vault antechamber | none (owner acts) | `getPendingTransactions`, `getTransaction` | **Wait path:** owner timed `approveTimeLockExecution` **after** `releaseTime`, silent session signer | MVP; U4+ wait-only |
 | **Branch Manager** (Mr. Okafor) | Manager's office | runtime role `BRANCH_MANAGER` | pending list (cooling vs ready), role membership | **Priority:** submits the owner's Passkey-signed `SIGN_META_APPROVE` via `approveTimeLockExecutionWithMetaTx` **before** the clock (`EXECUTE_META_APPROVE`); **recall** `cancelTimeLockExecution`. **No** post-clock timed stamp (removed in ROLE_SET 3) | U4+ **built 2026-09-07** |
-| **Registrar** (Petra) | Name Desk | bank's ENSv2 registrar key | availability, records | mint subname, `setText`, EAC delegation | T1 |
+| **Registrar** (Petra) | Name Desk — serves from the **Counter 2** teller bay (U7 polish); names board on the west wall | bank's ENSv2 registrar key | availability, records | mint subname, `setText`, EAC delegation | T1 |
 | **Dealer** (Kenji) | FX Desk | none | Uniswap quote | guarded swap | S1 |
 | **Security Officer** (Sgt. Bale) | Side door | `RECOVERY_ROLE` | `getRecovery()` | `transferOwnershipRequest` | S2 (MVP: lore) |
 | **Elevator voice** | Elevator | none | chain id | — | T2 |
@@ -165,36 +165,36 @@ Dev: Sorry — {reason_line}.
 
 Lane routing note: the **instant limit is a branch policy** enforced by the Teller Desk; the on-chain controls are the guards and which actions the owner has permission for. "Ask why" says this honestly.
 
-### 4.4 Vault Keeper — Ruth (Vault antechamber)
+### 4.4 Vault Keeper — Bob (Vault antechamber)
 
 Purpose: show pending wires, countdown, **wait-path** owner release after `releaseTime` — silent (session signer,
-owner's own `approveTimeLockExecution`). **U4+ (built):** she is *not* the bypass and never offers one; she points at
+owner's own `approveTimeLockExecution`). **U4+ (built):** Bob is *not* the bypass and never offers one, and points at
 the manager for a recall or a hand-scanned priority release. As built in `dialogue/vault_keeper.json`:
 
 ```text
 [pending > 0, before release]                                     (node: cooling)
-Ruth: {pending} wire(s) in the vault, the soonest releases in {release_in}. Have a seat — or see Mr. Okafor: he can
+Bob: {pending} wire(s) in the vault, the soonest releases in {release_in}. Have a seat — or see Mr. Okafor: he can
       shred it, or skip the cooling if you bring a hand scan. I wait the clock.
   > Try to release #{txId} …   → action: approve (owner)   → refused "Still cooling — {release_in} to go." (BeforeReleaseTime)
   > Ask why                    → why_cooling
 [why_cooling]
-Ruth: The clock is the chain's clock, not mine. releaseTime is written into the transaction record when the wire is
+Bob: The clock is the chain's clock, not mine. releaseTime is written into the transaction record when the wire is
       filed; my window cannot shorten it. The one way round it is the manager's priority release — your own signature
       under a hand scan, his stamp — and the contract only allows that because the two of you are different roles. …
 
 [pending > 0, after release]                                      (node: ready)
-Ruth: {released} wire(s) ready. Say the word and it goes — no scan, no manager, just the clock having run down.
+Bob: {released} wire(s) ready. Say the word and it goes — no scan, no manager, just the clock having run down.
   > Release #{txId} …          → action: approve (owner)   → released_ok
   > Ask why                    → why_release  ("…The manager has no part in this path any more.")
 
 [no pending]
-Ruth: Quiet day. Nothing cooling.
+Bob: Quiet day. Nothing cooling.
 ```
 
 ### 4.5 Branch Manager — Mr. Okafor (Manager's office)
 
 Purpose: **U4+ Priority release** (bypass cooling; owner Passkey + manager submit) and **recall**. He is *not* a second
-Ruth: the timed stamp was removed from `BRANCH_MANAGER` (ROLE_SET 3) and `/approve as: "manager"` is refused
+Bob: the timed stamp was removed from `BRANCH_MANAGER` (ROLE_SET 3) and `/approve as: "manager"` is refused
 (`MANAGER_NO_STAMP`). On-screen copy: **"Skip the cooling period — hand scan required."** (`strings.json`
 `priority_copy`, shown in his idle line and on the priority list). As built in `dialogue/manager.json`:
 
@@ -206,10 +206,10 @@ Ruth: the timed stamp was removed from `BRANCH_MANAGER` (ROLE_SET 3) and `/appro
 [idle]
 Okafor: Come in. {pending} wire(s) in the vault, {cooling} still cooling. {priority_copy} Or I can shred one.
   > Priority release — hand scan   (cooling > 0)              → priority_list
-  > Priority release — hand scan   (cooling == 0, released > 0) → not_cooling: "Those have finished cooling — Ruth
+  > Priority release — hand scan   (cooling == 0, released > 0) → not_cooling: "Those have finished cooling — Bob
                                                                   releases them … I don't stamp after the clock."
   > Recall a wire                  (pending > 0)              → cancel_list → action: cancel as manager
-  > Explain the limits             → limits ("…then Ruth releases it — or you bring a hand scan here and I release it early")
+  > Explain the limits             → limits ("…then Bob releases it — or you bring a hand scan here and I release it early")
   > Ask why                        → why_manager
 
 [priority_list]   choices_from: pending_cooling
@@ -228,14 +228,14 @@ Okafor: A priority release is a meta-transaction. You signed an approval for tha
 
 [why_manager]
 Okafor: I hold a runtime role — BRANCH_MANAGER. I cannot start a payment. I cannot open the vault after the clock —
-        that is Ruth's window, and the chain would refuse me anyway; my timed stamp was removed. I can shred a wire,
+        that is Bob's window, and the chain would refuse me anyway; my timed stamp was removed. I can shred a wire,
         or submit a priority release before the clock when you bring a hand scan.
 ```
 
 `tests/run_checks.gd` enforces the split: `manager.json` must offer `priority` and `cancel` and never `approve`;
 `vault_keeper.json` must offer `approve` and never `priority`; the copy line must be present.
 
-### 4.6 Registrar — Petra (Name Desk) — T1
+### 4.6 Registrar — Petra (Name Desk at Counter 2) — T1
 
 ```text
 Petra: Names! Pick one and people can pay you by it.
@@ -271,6 +271,8 @@ Bale: A separate recovery role can request an ownership transfer. It's time-lock
 ```text
 "Main wing — Sepolia."  /  "Arc wing — fees in dollars."
 On failure: "Arc wing is closed for maintenance." (chain unreachable)
+While U6 Arc is deferred (ARC.md §5b): "ARC floor — coming soon. The Arc wing is under construction; the Main wing keeps serving."
+(`strings.json` `elevator_arc_deferred`; the car never switches wings)
 ```
 
 ---
@@ -292,8 +294,8 @@ Decoded via the SDK's `decodeRevertReason` / `getUserFriendlyErrorMessage`, then
 | No answer within the call's timeout (`TIMEOUT`, raised by `Chain.gd`) | "The desk is taking longer than usual — the board will catch up when it answers." |
 | Expired / invalid Privy token (`AUTH`, 401) | "I'll need you signed in for that — Ines can help at Account Opening." |
 | Account on file but provisioning never recorded its end, or its role set is behind `ROLE_SET_VERSION` (`NOT_CONFIGURED`, 409 on `/pay` `/wire` `/priority/*`) | "Your account is on file, but the desks aren't authorised for it yet — ask Ines to re-check your account." |
-| Manager asked for a timed stamp (`MANAGER_NO_STAMP`, U4+) | "The manager doesn't stamp vault releases any more — Ruth does, once the clock runs down." |
-| Priority asked for a wire already past `releaseTime` (`NOT_COOLING`) | "That one's done cooling — Ruth releases it at the vault window, no hand scan needed." |
+| Manager asked for a timed stamp (`MANAGER_NO_STAMP`, U4+) | "The manager doesn't stamp vault releases any more — Bob does, once the clock runs down." |
+| Priority asked for a wire already past `releaseTime` (`NOT_COOLING`) | "That one's done cooling — Bob releases it at the vault window, no hand scan needed." |
 | Vault-only branch (`PRIORITY_OFF`) | "This branch runs vault-only — nobody skips the cooling here." |
 | Passkey / sign sheet dismissed (`PRIORITY_CANCELLED`) | "No hand scan, no priority release — the wire keeps cooling." |
 | Second factor failed / timed out (`MFA_FAILED`) | "The hand scan didn't take — try again when you're ready." |

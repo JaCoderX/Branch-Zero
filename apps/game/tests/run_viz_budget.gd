@@ -280,9 +280,10 @@ func _run() -> void:
 	else:
 		_fail("bodies not layer 1 / mask 0: %s" % ", ".join(bad_layers))
 	var interior: Node3D = main.get_node("BankInterior")
+	# U7 polish: the Counter volume grew north to the manager glass (Petra's annex chips as Counter); the rest is U3
 	var zones := {
 		"Zone Entrance": Vector3(6.0, 1.5, 8.0), "Zone Account Opening": Vector3(-9.0, 1.5, 8.0), "Zone Lobby": Vector3(0.5, 1.5, 0.0),
-		"Zone Counter": Vector3(-11.5, 1.5, 1.0), "Zone Vault antechamber": Vector3(8.0, 1.5, -8.0), "Zone Manager's office": Vector3(-8.0, 1.5, -8.0),
+		"Zone Counter": Vector3(-11.5, 1.5, 0.0), "Zone Vault antechamber": Vector3(8.0, 1.5, -8.0), "Zone Manager's office": Vector3(-8.0, 1.5, -8.0),
 	}
 	var zone_ok := true
 	for zn in zones.keys():
@@ -291,15 +292,15 @@ func _run() -> void:
 			_fail("zone %s moved or missing" % zn)
 			zone_ok = false
 	if zone_ok:
-		_ok("six zone volumes where U3 put them")
-	# keep-clear spots: manager door, vault opening, escort waypoints, teleports, NPC homes
+		_ok("six zone volumes where U3 put them (Counter stretched north, U7 polish)")
+	# keep-clear spots: manager door, vault opening, escort waypoints, teleports, NPC homes (U7 polish homes)
 	var clear := [
 		["manager door", Vector3(-8.0, 1.0, -5.0), 0.9], ["vault opening", Vector3(8.0, 1.8, -5.0), 1.6],
 		["escort wp1", Vector3(-11.6, 1.0, 5.6), 0.5], ["escort wp2", Vector3(-8.5, 1.0, 5.6), 0.5], ["escort wp3", Vector3(-2.0, 1.0, -1.0), 0.5],
 		["escort wp4", Vector3(6.0, 1.0, -3.5), 0.5], ["escort wp5", Vector3(8.0, 1.0, -6.8), 0.5],
-		["F2", Vector3(-7.0, 1.0, 7.6), 0.4], ["F3", Vector3(-9.5, 1.0, 3.0), 0.4], ["F4", Vector3(8.0, 1.0, -6.5), 0.4], ["F6", Vector3(3.0, 1.0, 6.0), 0.4], ["F7", Vector3(-8.0, 1.0, -7.3), 0.4],
+		["F2", Vector3(-9.0, 1.0, 6.3), 0.4], ["F3", Vector3(-9.5, 1.0, 3.0), 0.4], ["F4", Vector3(8.0, 1.0, -6.5), 0.4], ["F6", Vector3(3.0, 1.0, 6.0), 0.4], ["F7", Vector3(-8.0, 1.0, -7.3), 0.4], ["F8", Vector3(-9.5, 1.0, -1.0), 0.4],
 		["spawn", Vector3(5.0, 1.0, 7.0), 0.4],
-		["Mo", Vector3(2.0, 1.0, 4.5), 0.4], ["Ines", Vector3(-9.0, 1.0, 6.9), 0.4], ["Dev", Vector3(-11.6, 1.0, 3.0), 0.4], ["Ruth", Vector3(10.0, 1.0, -7.5), 0.4], ["Okafor", Vector3(-8.0, 1.0, -9.8), 0.4],
+		["Mo", Vector3(2.0, 1.0, 4.5), 0.4], ["Ines", Vector3(-9.0, 1.0, 9.5), 0.4], ["Dev", Vector3(-11.6, 1.0, 3.0), 0.4], ["Petra", Vector3(-11.6, 1.0, -1.0), 0.4], ["Bob", Vector3(10.0, 1.0, -7.5), 0.4], ["Okafor", Vector3(-8.0, 1.0, -9.8), 0.4],
 	]
 	var space := root.get_world_3d().direct_space_state
 	var blocked: PackedStringArray = []
@@ -324,6 +325,57 @@ func _run() -> void:
 		_ok("door gaps, escort waypoints, teleports and NPC homes are clear of solid props")
 	else:
 		_fail("solid props in keep-clear spots: %s" % "; ".join(blocked))
+
+	# U7 polish (principal playtest findings 2 · 3 · 4 · 5 · 9): the manager doorway carries no mesh at all (the
+	# brass rail used to cross it as a sill — a solid-body probe never saw it), the NPC homes and yaws are the polish
+	# ones, and the strongroom behind the vault door exists with the frame's blind disc hidden and a 60°+ swing.
+	print("U7 polish")
+	var door_tris := 0
+	if batch != null:
+		var faces := batch.mesh.get_faces()   # interior-local == world: BankInterior sits at the origin
+		for i in range(0, faces.size() - 2, 3):
+			var c: Vector3 = (faces[i] + faces[i + 1] + faces[i + 2]) / 3.0
+			if c.x > -8.9 and c.x < -7.1 and c.y > 0.02 and c.y < 2.6 and c.z > -5.3 and c.z < -4.7:
+				door_tris += 1
+	if door_tris == 0:
+		_ok("manager doorway x ∈ [-9, -7] at z = -5 is empty of mesh below 2.6 m (no rail, no sill, no mullion)")
+	else:
+		_fail("%d triangles sit in the manager doorway — a rail / mullion still crosses the door" % door_tris)
+	var homes := {
+		"NPC_clerk": [Vector3(-9.0, 0.0, 9.5), 0.0], "NPC_registrar": [Vector3(-11.6, 0.0, -1.0), -PI / 2],
+		"NPC_manager": [Vector3(-8.0, 0.0, -9.8), PI], "NPC_vault_keeper": [Vector3(10.0, 0.0, -7.5), PI * 0.6],
+	}
+	var home_bad: PackedStringArray = []
+	for hn in homes.keys():
+		var npc := main.get_node_or_null("NPCs/" + hn) as Npc
+		if npc == null:
+			home_bad.append("%s missing" % hn)
+		elif not npc.home.is_equal_approx(homes[hn][0]) or absf(angle_difference(npc.home_yaw, homes[hn][1])) > 0.01:
+			home_bad.append("%s at %s yaw %.2f" % [hn, str(npc.home), npc.home_yaw])
+	var bob := main.get_node_or_null("NPCs/NPC_vault_keeper") as Npc
+	if bob != null and bob.display_name != "Bob":
+		home_bad.append("vault keeper is named %s, not Bob" % bob.display_name)
+	if home_bad.is_empty():
+		_ok("Ines behind the AO desk facing the room · Petra at Counter 2 facing the lobby · Okafor facing his door · Bob at the window")
+	else:
+		_fail("NPC homes: %s" % "; ".join(home_bad))
+	var vault_pieces := int(interior.get_meta("vault_pieces", 0))
+	var door_node := main.get_node_or_null("VaultDoor")
+	var mouth := PropKit.find_mesh(door_node, "Mouth") if door_node != null else null
+	var throat := interior.get_node_or_null("VaultThroatCollider") as StaticBody3D
+	if vault_pieces >= 40 and throat != null:
+		_ok("strongroom built behind the vault door: %d pieces, solid throat keeps the player out" % vault_pieces)
+	else:
+		_fail("strongroom missing or thin (%d pieces, throat %s)" % [vault_pieces, "present" if throat != null else "missing"])
+	if mouth != null and not mouth.visible and door_node.OPEN_DEG >= 60.0:
+		_ok("frame Mouth hidden, door swings %.0f° so the strongroom reads when OPEN" % door_node.OPEN_DEG)
+	else:
+		_fail("vault door still blind: Mouth %s, swing %s°" % ["visible" if mouth == null or mouth.visible else "hidden", str(door_node.OPEN_DEG) if door_node != null else "?"])
+	var wall_n := interior.get_node_or_null("WallN")
+	if wall_n == null and interior.get_node_or_null("WallN_a") != null and interior.get_node_or_null("WallN_b") != null:
+		_ok("north wall cut behind the door (WallN_a / WallN_b + lintel)")
+	else:
+		_fail("north wall not cut for the strongroom")
 
 	print("\n%s — %d failure(s)" % ["PASS" if failures == 0 else "FAIL", failures])
 	quit(0 if failures == 0 else 1)

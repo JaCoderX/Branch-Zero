@@ -86,7 +86,12 @@ func _floor() -> void:
 func _outer_walls() -> void:
 	var half_w := W / 2.0
 	var half_d := D / 2.0
-	wall("WallN", Vector3(0, WALL_H / 2, -half_d), Vector3(W + T, WALL_H, T), [1])
+	# north wall in two runs either side of the vault strongroom cut (x ∈ [VAULT_X0, VAULT_X1], see _vault_interior);
+	# the run above the cut is a plain lintel box (a wall() piece would hang its wainscot at 3.55 m)
+	wall("WallN_a", Vector3((-half_w - T / 2.0 + VAULT_X0) / 2.0, WALL_H / 2, -half_d), Vector3(VAULT_X0 + half_w + T / 2.0, WALL_H, T), [1])
+	wall("WallN_b", Vector3((VAULT_X1 + half_w + T / 2.0) / 2.0, WALL_H / 2, -half_d), Vector3(half_w + T / 2.0 - VAULT_X1, WALL_H, T), [1])
+	box("WallN_lintel", Vector3((VAULT_X0 + VAULT_X1) / 2.0, (VAULT_H + WALL_H) / 2.0, -half_d), Vector3(VAULT_X1 - VAULT_X0, WALL_H - VAULT_H, T), theme.wall_color)
+	_vault_interior()
 	wall("WallW", Vector3(-half_w, WALL_H / 2, 0), Vector3(T, WALL_H, D + T), [1])
 	wall("WallE", Vector3(half_w, WALL_H / 2, 0), Vector3(T, WALL_H, D + T), [-1])
 	# south wall with the entrance gap x ∈ [3, 7]
@@ -107,6 +112,96 @@ func _outer_walls() -> void:
 	cylinder_m("DoorAxis", Vector3(5.0, 1.1, half_d), 0.04, 2.2, cm, false)
 	ring("DoorRingFloor", Vector3(5.0, 0.02, half_d), 0.95, 0.03, cm)
 	ring("DoorRingTop", Vector3(5.0, 2.22, half_d), 0.95, 0.04, cm)
+
+
+# ---------------------------------------------------------------- vault strongroom (U7 polish finding 9)
+
+# The strongroom sits behind the north wall, x ∈ [VAULT_X0, VAULT_X1], from the wall's outer face (VAULT_Z0) back
+# to VAULT_Z1, under a VAULT_H ceiling. The only see-through is a square throat inscribed in the door's collar
+# (half-side THROAT_HALF about DOOR_CY), so the shut door still covers it; the graphite plate around the throat
+# reads as the door's back plate where the frame's own Mouth disc used to be (vault_door.gd hides that disc).
+const VAULT_X0 := 6.2
+const VAULT_X1 := 9.8
+const VAULT_Z0 := -11.15
+const VAULT_Z1 := -13.7
+const VAULT_H := 3.55
+const THROAT_HALF := 1.26     # (DOOR_R 1.6 + collar 0.18) / sqrt 2
+const THROAT_CY := 1.75       # vault_door.gd DOOR_CY
+
+var vault_pieces := 0   # tests/run_viz_budget.gd asserts the strongroom was built
+
+
+## A shallow strongroom behind the vault door so OPEN shows something worth waiting for (WORLD-3D §2.1: the player
+## never goes inside — a solid, invisible throat block keeps it that way). Palette materials only, all mesh-only, so
+## every piece bakes into the static batch: +0 draw calls, +0 materials. Lit by ambient and the antechamber pendant
+## (shadowless omnis reach through walls); a Bulb strip on the ceiling gives the lit-strongroom cue.
+func _vault_interior() -> void:
+	var cx := (VAULT_X0 + VAULT_X1) / 2.0
+	var wz := -D / 2.0                 # wall plane centre (z = -11)
+	var graphite := PropKit.palette("Graphite")
+	var cream := PropKit.palette("Cream")
+	var green := PropKit.palette("MarbleDark")
+	var wood := PropKit.palette("Wood")
+	var brass := PropKit.palette("Brass")
+	var steel := PropKit.palette("Steel")
+	var steel_dark := PropKit.palette("SteelDark")
+	var paper := PropKit.palette("Paper")
+	var piece := func(n: String, pos: Vector3, size: Vector3, m: Material) -> void:
+		slab("Vault" + n, pos, size, m)
+		vault_pieces += 1
+	# throat plate at the wall plane: graphite around the square opening
+	var tx0 := cx - THROAT_HALF
+	var tx1 := cx + THROAT_HALF
+	var ty0 := THROAT_CY - THROAT_HALF
+	var ty1 := THROAT_CY + THROAT_HALF
+	piece.call("ThroatW", Vector3((VAULT_X0 + tx0) / 2.0, VAULT_H / 2.0, wz), Vector3(tx0 - VAULT_X0, VAULT_H, T), graphite)
+	piece.call("ThroatE", Vector3((tx1 + VAULT_X1) / 2.0, VAULT_H / 2.0, wz), Vector3(VAULT_X1 - tx1, VAULT_H, T), graphite)
+	piece.call("ThroatTop", Vector3(cx, (ty1 + VAULT_H) / 2.0, wz), Vector3(tx1 - tx0, VAULT_H - ty1, T), graphite)
+	piece.call("ThroatSill", Vector3(cx, ty0 / 2.0, wz), Vector3(tx1 - tx0, ty0, T), graphite)
+	piece.call("ThroatSillCap", Vector3(cx, ty0 + 0.02, wz), Vector3(tx1 - tx0 + 0.06, 0.04, T + 0.08), brass)
+	solid_box("VaultThroat", Vector3(cx, VAULT_H / 2.0, wz), Vector3(VAULT_X1 - VAULT_X0, VAULT_H, T))
+	# the room: floor at the sill, cream walls and ceiling, deep-green back lining
+	var depth := VAULT_Z0 - VAULT_Z1
+	var zc := (VAULT_Z0 + VAULT_Z1) / 2.0
+	piece.call("Floor", Vector3(cx, ty0 - 0.05, zc), Vector3(VAULT_X1 - VAULT_X0, 0.1, depth), steel_dark)
+	piece.call("Ceiling", Vector3(cx, VAULT_H + 0.1, zc), Vector3(VAULT_X1 - VAULT_X0 + 0.4, 0.2, depth + 0.2), cream)
+	piece.call("WallW", Vector3(VAULT_X0 - 0.1, VAULT_H / 2.0, zc), Vector3(0.2, VAULT_H, depth), cream)
+	piece.call("WallE", Vector3(VAULT_X1 + 0.1, VAULT_H / 2.0, zc), Vector3(0.2, VAULT_H, depth), cream)
+	piece.call("WallBack", Vector3(cx, VAULT_H / 2.0, VAULT_Z1 - 0.1), Vector3(VAULT_X1 - VAULT_X0 + 0.4, VAULT_H, 0.2), green)
+	piece.call("Underfloor", Vector3(cx, (ty0 - 0.1) / 2.0, zc), Vector3(VAULT_X1 - VAULT_X0 + 0.4, ty0 - 0.1, depth + 0.2), graphite)
+	piece.call("Strip", Vector3(cx, VAULT_H - 0.03, zc + 0.3), Vector3(2.4, 0.05, 0.14), PropKit.palette("Bulb"))
+	# back shelving: two wood uprights, three boards, cash stacks (paper with a green band) and brass bars
+	var shelf_d := 0.42
+	var sz := VAULT_Z1 + shelf_d / 2.0
+	for x in [cx - 1.5, cx + 1.5]:
+		piece.call("Upright%d" % int(x * 10), Vector3(x, (ty0 + 2.85) / 2.0, sz), Vector3(0.06, 2.85 - ty0, shelf_d), wood)
+	var boards: Array[float] = [ty0 + 0.5, ty0 + 1.2, ty0 + 1.9]
+	for i in boards.size():
+		var y: float = boards[i]
+		piece.call("Shelf%d" % i, Vector3(cx, y, sz), Vector3(3.0, 0.05, shelf_d), wood)
+		for k in 6:
+			var x := cx - 1.25 + k * 0.5
+			if i == 1 and k >= 2 and k <= 3:
+				continue   # the middle board keeps a gap for the deed box
+			piece.call("Cash%d_%d" % [i, k], Vector3(x, y + 0.025 + 0.08, sz), Vector3(0.34, 0.16, 0.22), paper)
+			piece.call("Band%d_%d" % [i, k], Vector3(x, y + 0.025 + 0.08, sz), Vector3(0.36, 0.05, 0.24), green)
+	piece.call("DeedBox", Vector3(cx, boards[1] + 0.025 + 0.16, sz), Vector3(0.9, 0.32, 0.34), steel)
+	piece.call("DeedBoxLid", Vector3(cx, boards[1] + 0.025 + 0.33, sz), Vector3(0.94, 0.03, 0.38), steel_dark)
+	# a pallet of bars on the floor, a pyramid of 4 + 3 + 2, with the top row turned
+	var py := ty0 + 0.04
+	piece.call("Pallet", Vector3(cx, py, VAULT_Z1 + 1.15), Vector3(1.1, 0.08, 0.7), wood)
+	var rows := [[4, 0.0], [3, 0.0], [2, 0.0]]
+	for r in rows.size():
+		var n: int = rows[r][0]
+		for k in n:
+			var x := cx - (n - 1) * 0.125 + k * 0.25
+			piece.call("Bar%d_%d" % [r, k], Vector3(x, py + 0.04 + 0.05 + r * 0.1, VAULT_Z1 + 1.15), Vector3(0.22, 0.1, 0.5), brass)
+	# side lockers: steel deed boxes on the east and west walls
+	for i in 3:
+		var y := ty0 + 0.25 + i * 0.5
+		piece.call("LockerW%d" % i, Vector3(VAULT_X0 + 0.25, y, VAULT_Z1 + 1.9), Vector3(0.5, 0.4, 0.45), steel if i % 2 == 0 else steel_dark)
+		piece.call("LockerE%d" % i, Vector3(VAULT_X1 - 0.25, y, VAULT_Z1 + 1.9), Vector3(0.5, 0.4, 0.45), steel_dark if i % 2 == 0 else steel)
+	set_meta("vault_pieces", vault_pieces)
 
 
 ## Ceiling slabs everywhere except the lobby skylight; the skylight glass casts no shadow so the sun pools on the floor.
@@ -145,11 +240,16 @@ func _north_strip() -> void:
 	box_m("MgrGlassA", Vector3(-12.0, WALL_H / 2, z), Vector3(6.0, WALL_H, 0.08), glass, true)
 	box_m("MgrGlassB", Vector3(-4.0, WALL_H / 2, z), Vector3(6.0, WALL_H, 0.08), glass, true)
 	box_m("MgrGlassE", Vector3(-1.0, WALL_H / 2, -8.0), Vector3(0.08, WALL_H, 6.0), glass, true)
-	# brass mullions so the glass reads as glass
+	# brass mullions so the glass reads as glass. U7 polish finding 2: the door gap x ∈ [-9, -7] holds nothing — the
+	# two jamb mullions stand just outside it and the rail is split either side of it (it used to run straight
+	# across the doorway at 1.05 m as a sill).
 	var brass := PropKit.palette("Brass")
-	for x in [-15.0, -13.0, -11.0, -9.0, -7.0, -5.0, -3.0, -1.0]:
+	for x in [-15.0, -13.0, -11.0, -5.0, -3.0, -1.0]:
 		box_m("MgrMullion%d" % int(-x), Vector3(x, WALL_H / 2, z), Vector3(0.08, WALL_H, 0.12), brass, false)
-	box_m("MgrRail", Vector3(-8.0, 1.05, z), Vector3(14.0, 0.06, 0.12), brass, false)
+	box_m("MgrJambW", Vector3(-9.06, WALL_H / 2, z), Vector3(0.12, WALL_H, 0.14), brass, false)
+	box_m("MgrJambE", Vector3(-6.94, WALL_H / 2, z), Vector3(0.12, WALL_H, 0.14), brass, false)
+	box_m("MgrRailW", Vector3(-12.0, 1.05, z), Vector3(6.0, 0.06, 0.12), brass, false)
+	box_m("MgrRailE", Vector3(-4.0, 1.05, z), Vector3(6.0, 0.06, 0.12), brass, false)
 	box_m("MgrLintel", Vector3(-8.0, WALL_H - 0.4, z), Vector3(2.2, 0.8, 0.12), graphite, false)
 	plaque("MANAGER'S OFFICE", Vector3(-8.0, 3.45, z + 0.15), 0.0, 0.3, theme.graphite_color)
 	# desk: two kit desks under one collider (3.0 × 0.8 × 1.2, as the greybox box)
@@ -191,11 +291,13 @@ func _north_strip() -> void:
 
 func _west_column() -> void:
 	_counter("Counter1", 3.0, "COUNTER 1")
-	_counter("Counter2", -1.0, "COUNTER 2")
-	# Name Desk — static dress only; U5 wires Petra, the claim form and the names board (NamesBoardQuad) here.
+	# U7 polish finding 3: Petra serves from the Counter 2 teller bay (main.gd NPCS), so Counter 2 is the Name Desk
+	# window — the engraver replaces its stamp and the wall sign behind it lists the name services. The old Name
+	# Desk table north of it stays as her records annex, under the names board on the west wall.
+	_counter("Counter2", -1.0, "COUNTER 2 · NAME DESK", "prop_engraver")
 	PropKit.kit(self, "NameDesk", "desk", Vector3(-12.5, 0, -4.0), PI, {"fit": Vector3(2.4, 0.8, 1.0)}, Vector3(2.4, 0.8, 1.0), Vector3(0, 0.4, 0))
-	PropKit.hero(self, "Engraver", "prop_engraver", Vector3(-12.0, 0.8, -4.0), 0.0)
 	PropKit.kit(self, "NameDeskPlant", "plantSmall1", Vector3(-13.4, 0.8, -4.1))
+	box_m("NameDeskLedger", Vector3(-12.0, 0.82, -4.0), Vector3(0.36, 0.04, 0.26), PropKit.palette("Paper"), false)
 	PropKit.hero(self, "NamesBoardFrame", "prop_names_board_frame", Vector3(-14.65, 2.3, -3.8), PI / 2)
 	var quad := MeshInstance3D.new()
 	quad.name = "NamesBoardQuad"   # U5: put the registered-names SubViewport texture on this quad (2.3 × 1.2 m)
@@ -210,32 +312,35 @@ func _west_column() -> void:
 	plaque("NAME DESK", Vector3(-12.5, 2.2, -4.9), 0.0, 0.3, theme.graphite_color)
 	plaque("Approved payees\n• Florist\n• Landlord\n• Demo merchant", Vector3(-14.8, 2.4, 3.0), PI / 2, 0.24, theme.graphite_color, "PayeeList")
 	box_m("PayeeListBoard", Vector3(-14.83, 2.4, 3.0), Vector3(0.03, 1.2, 2.6), PropKit.palette("Paper"), false)
-	plaque("Services at this counter\n• Payment over the counter\n• Scheduled wire (via the vault)", Vector3(-14.8, 2.4, -1.0), PI / 2, 0.24, theme.graphite_color, "ServiceMenu")
+	plaque("Name Desk · Counter 2\n• Claim a name under branchzero.eth\n• Update your passbook records\n• Pay by name at Counter 1", Vector3(-14.8, 2.4, -1.0), PI / 2, 0.24, theme.graphite_color, "ServiceMenu")
 	box_m("ServiceMenuBoard", Vector3(-14.83, 2.4, -1.0), Vector3(0.03, 1.2, 3.2), PropKit.palette("Paper"), false)
 
 
-## Marble counter (hero mesh, 1.1 m, glass partition with a slot) under the greybox collider; printer + stamp on a
-## teller-side shelf. The teller stands at x = -11.6, so the shelf stops at x = -11.3.
-func _counter(name: String, z: float, label: String) -> void:
+## Marble counter (hero mesh, 1.1 m, glass partition with a slot) under the greybox collider; printer + stamp (or
+## another hero tool) on a teller-side shelf. The teller stands at x = -11.6, so the shelf stops at x = -11.3.
+func _counter(name: String, z: float, label: String, tool: String = "prop_stamp") -> void:
 	PropKit.hero(self, name, "prop_counter", Vector3(-10.5, 0, z), PI / 2, {}, Vector3(0.9, 1.1, 3.6), Vector3(0, 0.55, 0))
 	box_m(name + "Shelf", Vector3(-11.15, 1.02, z), Vector3(0.3, 0.05, 3.6), PropKit.palette("Wood"), false)
 	PropKit.hero(self, name + "Printer", "prop_printer", Vector3(-11.15, 1.045, z + 1.2), PI / 2)
-	PropKit.hero(self, name + "Stamp", "prop_stamp", Vector3(-11.15, 1.045, z - 1.0))
+	PropKit.hero(self, name + "Tool", tool, Vector3(-11.15, 1.045, z - 1.0), PI / 2 if tool != "prop_stamp" else 0.0)
 	plaque(label, Vector3(-10.5, 3.0, z), PI / 2, 0.5, theme.graphite_color)
 
 
 # ---------------------------------------------------------------- account opening (the desk with the plant)
 
+## U7 polish finding 5: the desk faces the room. Ines stands on its south side (between the desk and the south wall,
+## main.gd NPCS) with the screen and keyboard on her side; the customer chairs sit on the north (lobby) side, so a
+## player walking in from the lobby meets the desk first and Ines behind it.
 func _account_opening() -> void:
-	PropKit.kit(self, "AODeskW", "desk", Vector3(-9.65, 0, 8.0), 0.0, {"fit": Vector3(1.3, 0.78, 1.1)})
-	PropKit.kit(self, "AODeskE", "desk", Vector3(-8.35, 0, 8.0), 0.0, {"fit": Vector3(1.3, 0.78, 1.1)})
+	PropKit.kit(self, "AODeskW", "desk", Vector3(-9.65, 0, 8.0), PI, {"fit": Vector3(1.3, 0.78, 1.1)})
+	PropKit.kit(self, "AODeskE", "desk", Vector3(-8.35, 0, 8.0), PI, {"fit": Vector3(1.3, 0.78, 1.1)})
 	solid_box("AODesk", Vector3(-9.0, 0.4, 8.0), Vector3(2.6, 0.8, 1.1))
-	PropKit.kit(self, "AOScreen", "computerScreen", Vector3(-8.6, 0.78, 8.15), 0.0)
-	PropKit.kit(self, "AOKeyboard", "computerKeyboard", Vector3(-8.6, 0.78, 7.7), 0.0)
+	PropKit.kit(self, "AOScreen", "computerScreen", Vector3(-8.6, 0.78, 7.85), PI)
+	PropKit.kit(self, "AOKeyboard", "computerKeyboard", Vector3(-8.6, 0.78, 8.3), PI)
 	PropKit.kit(self, "AODeskPlant", "plantSmall3", Vector3(-9.9, 0.78, 8.3))
-	box_m("AOLeaflet", Vector3(-8.0, 0.79, 8.2), Vector3(0.2, 0.006, 0.28), PropKit.palette("Paper"), false)
-	PropKit.kit(self, "AOChairA", "chairCushion", Vector3(-9.6, 0, 9.3), PI, {}, Vector3(0.5, 0.5, 0.5), Vector3(0, 0.25, 0))
-	PropKit.kit(self, "AOChairB", "chairCushion", Vector3(-8.4, 0, 9.3), PI, {}, Vector3(0.5, 0.5, 0.5), Vector3(0, 0.25, 0))
+	box_m("AOLeaflet", Vector3(-8.0, 0.79, 7.75), Vector3(0.2, 0.006, 0.28), PropKit.palette("Paper"), false)
+	PropKit.kit(self, "AOChairA", "chairCushion", Vector3(-10.0, 0, 6.7), 0.0, {}, Vector3(0.5, 0.5, 0.5), Vector3(0, 0.25, 0))
+	PropKit.kit(self, "AOChairB", "chairCushion", Vector3(-8.0, 0, 6.7), 0.0, {}, Vector3(0.5, 0.5, 0.5), Vector3(0, 0.25, 0))
 	# the landmark plant ("the desk with the plant")
 	PropKit.kit(self, "AOPlant", "pottedPlant", Vector3(-11.6, 0, 9.6), 0.3, {"scale": 4.0}, Vector3(1.0, 2.2, 1.0), Vector3(0, 1.1, 0))
 	PropKit.kit(self, "BrochureRack", "bookcaseOpen", Vector3(-6.0, 0, 10.6), 0.0, {"fit": Vector3(1.0, 1.6, 0.3)}, Vector3(1.0, 1.6, 0.3), Vector3(0, 0.8, 0))
@@ -298,7 +403,11 @@ func _east_column() -> void:
 	# hall lantern (floor indicator) + call panel: hero props (Stage 2), U6 wires the behaviour
 	PropKit.hero(self, "ElevatorLantern", "prop_elevator_lantern", Vector3(11.46, 2.58, 0.5), -PI / 2)
 	PropKit.hero(self, "ElevatorPanel", "prop_elevator_panel", Vector3(11.46, 1.25, -0.6), -PI / 2)
-	plaque("ELEVATOR\nMAIN / ARC\n(live payment wings)", Vector3(11.45, 3.3, 0.5), -PI / 2, 0.28, theme.wall_color)
+	# U6 Arc is deferred (docs/ARC.md §5b): the shaft says so, and main.gd refuses the trip with the same words
+	plaque("ELEVATOR\nMAIN · ARC\nARC · coming soon", Vector3(11.45, 3.3, 0.5), -PI / 2, 0.28, theme.wall_color)
+	# a paper notice taped across the car doors at eye height (the label sits a centimetre in front of its board)
+	box_m("ArcNoticeBoard", Vector3(11.43, 1.55, 0.5), Vector3(0.02, 0.42, 0.98), PropKit.palette("Paper"), false)
+	plaque("ARC FLOOR\ncoming soon", Vector3(11.41, 1.55, 0.5), -PI / 2, 0.15, theme.graphite_color, "ArcNotice")
 	plaque("FX DESK\n(stretch)", Vector3(14.8, 2.2, -3.0), -PI / 2, 0.3, theme.graphite_color)
 	plaque("SECURITY\nside door (lore)", Vector3(14.8, 2.2, 3.5), -PI / 2, 0.3, theme.graphite_color)
 	PropKit.kit(self, "SideDoor", "doorwayFront", Vector3(14.85, 0, 3.5), -PI / 2, {"fit": Vector3(1.0, 2.2, 0.16)}, Vector3(0.1, 2.2, 1.0), Vector3(0, 1.1, 0))
@@ -348,12 +457,14 @@ func _lamps_and_windows() -> void:
 		box_m("WindowWPane%d" % int(z + 20), Vector3(-half_w + T / 2 + 0.06, y, z), Vector3(0.04, 0.62, 1.9), pane, false)
 
 
-## Trigger volumes. Names match dialogue conditions and the HUD zone chip. Unchanged since U3.
+## Trigger volumes. Names match dialogue conditions and the HUD zone chip. Unchanged since U3 except the Counter
+## volume, which U7 polish stretches north to the manager glass so Petra's records annex and the names board
+## (z ∈ [-5, -3]) chip as Counter instead of nothing.
 func _zones() -> void:
 	zone("Entrance", Vector3(6.0, 1.5, 8.0), Vector3(18.0, 3.0, 6.0))
 	zone("Account Opening", Vector3(-9.0, 1.5, 8.0), Vector3(12.0, 3.0, 6.0))
 	zone("Lobby", Vector3(0.5, 1.5, 0.0), Vector3(15.0, 3.0, 10.0))
-	zone("Counter", Vector3(-11.5, 1.5, 1.0), Vector3(7.0, 3.0, 8.0))
+	zone("Counter", Vector3(-11.5, 1.5, 0.0), Vector3(7.0, 3.0, 10.0))
 	zone("Vault antechamber", Vector3(8.0, 1.5, -8.0), Vector3(14.0, 3.0, 6.0))
 	zone("Manager's office", Vector3(-8.0, 1.5, -8.0), Vector3(14.0, 3.0, 6.0))
 
