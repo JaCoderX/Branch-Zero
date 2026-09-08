@@ -184,6 +184,8 @@ export function App({ engineState }: { engineState: string }) {
   const s = w.session;
   const delegated = Boolean(s?.delegated);
   const live = w.mode === 'live';
+  /** S3 — operator till health from the selected desk's `/healthz`. `null`/absent off the Live wing. */
+  const treasury = w.desk?.treasury ?? undefined;
   const now = Math.floor(Date.now() / 1000) + clockOffset;
 
   const terminal = console_ ? (
@@ -272,6 +274,68 @@ export function App({ engineState }: { engineState: string }) {
         </button>
         <span style={{ color: '#556' }}>desk {w.tellerBase}</span>
       </div>
+
+      {/*
+        S3 — the ops treasury, operator information only (docs/SEPOLIA-TREASURY.md §5).
+
+        This is the whole "desk debug shows till health" surface: no lobby NPC, no quest, no button that
+        moves money. Rebalancing happens in the background or from `npm run treasury:topup`; the panel just
+        says whether the bank can pay its own gas bill, and names the address a human should faucet when it
+        cannot. Absent on the Dev wing, where lab ETH is free.
+      */}
+      {treasury && (
+        <div style={{ margin: '6px 0', padding: '6px 8px', border: '1px solid #2a3140', borderRadius: 6 }}>
+          <div style={row}>
+            <span style={label}>treasury</span>
+            <span style={{ color: treasury.problem ? '#ff7b72' : treasury.treasuryShort ? '#e3b341' : treasury.shortfalls ? '#e3b341' : '#7ee787' }}>
+              {!treasury.configured
+                ? 'not configured — faucet drops go to each staff wallet one at a time'
+                : treasury.error
+                  ? `unreadable: ${treasury.error}`
+                  : `${treasury.eth} ETH · ${treasury.circleUsdc?.amount ?? '0'} Circle USDC · ${treasury.practiceUsdc?.amount ?? '0'} practice ${treasury.practiceUsdc?.symbol ?? 'USDC'}`}
+            </span>
+          </div>
+          {treasury.configured && !treasury.error && (
+            <>
+              <div style={row}>
+                <span style={label} />
+                <code style={{ color: '#8ab4f8' }}>{treasury.address}</code>
+                <span style={{ color: '#556' }}>
+                  {treasury.canExecute ? (treasury.auto ? 'auto top-up on' : 'CLI only') : 'read-only'} · caps {treasury.caps?.perTxEth}/tx · {treasury.caps?.perHourEth}/h
+                </span>
+              </div>
+              {treasury.problem && (
+                <div style={{ color: '#ff7b72', marginBottom: 2 }}>
+                  {treasury.problem.code}: {treasury.problem.message}
+                </div>
+              )}
+              {!treasury.problem && treasury.collapsedRoles && treasury.collapsedRoles.length > 0 && (
+                <div style={{ color: '#e3b341', marginBottom: 2 }}>
+                  demo concession: this key is also the {treasury.collapsedRoles.join(' + ')} key — identity and float are one wallet; that role is skipped and its target reserved
+                </div>
+              )}
+              {(treasury.staff ?? []).map((st) => (
+                <div key={st.role} style={row}>
+                  <span style={label} />
+                  <span style={{ color: st.short ? '#e3b341' : '#9aa4b2', width: 220, flexShrink: 0 }}>{st.label}</span>
+                  <span style={{ color: st.short ? '#e3b341' : '#9aa4b2' }}>
+                    {st.eth} / need {st.needEth} → {st.targetEth}
+                    {st.wouldSendEth ? ` · top-up ${st.wouldSendEth}` : st.skip === 'treasury-short' ? ` · SHORT by ${st.deficitEth ?? '?'}` : st.skip === 'is-treasury' ? ' · is the treasury' : ' · ok'}
+                  </span>
+                </div>
+              ))}
+              {treasury.treasuryShort && (
+                <div style={{ color: '#e3b341', marginTop: 2 }}>
+                  faucet {treasury.requiredEth} ETH to the address above (a human claims it), then `npm run treasury:topup -- --execute`
+                </div>
+              )}
+              {(treasury.recent ?? []).length > 0 && (
+                <div style={{ color: '#556', marginTop: 2 }}>last: {treasury.recent!.map((r) => `${r.eth} → ${r.role} (${r.reason})`).join(' · ')}</div>
+              )}
+            </>
+          )}
+        </div>
+      )}
 
       {!w.ready && <div style={{ color: '#9aa4b2' }}>loading Privy…</div>}
 

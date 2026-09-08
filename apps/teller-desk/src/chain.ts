@@ -51,9 +51,18 @@ export const deployer = wallet(config.deployerPk, 'deployer');
  */
 export const manager = config.managerPk ? wallet(config.managerPk, 'manager') : undefined;
 
+/**
+ * Ops treasury (S3) — the float the faucets fill. It holds **no** role on any player account: its only
+ * ability is a plain value transfer to the staff wallets that do (docs/SEPOLIA-TREASURY.md §1). Built here
+ * rather than in `treasury.ts` so it passes the same Ganache-parity refusal as every other signer — the
+ * hard rule covers *every* `SEPOLIA_*` slot, treasury included.
+ */
+export const treasury = config.treasury.pk ? wallet(config.treasury.pk, 'treasury') : undefined;
+
 export const broadcasterAddress = broadcaster.account!.address as Address;
 export const deployerAddress = deployer.account!.address as Address;
 export const managerAddress = manager?.account!.address as Address | undefined;
+export const treasuryAddress = treasury?.account?.address as Address | undefined;
 
 /** Chain time — the timestamp of the latest block. See `metaTxDuration` for why this is not "now". */
 export async function chainNow(): Promise<bigint> {

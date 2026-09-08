@@ -16,6 +16,7 @@ Related: [ARCHITECTURE.md](./ARCHITECTURE.md) · [PRIVY.md](./PRIVY.md) § 4 (po
 | **Deployer key** | Teller Desk env (`DEPLOYER_PK`) | deploys `AccountBlox`; calls `initialize`; funds faucet | create accounts; one-shot guard config **before** handing ownership | anything after `initialize` (owner is the player) |
 | **Recovery key** | Cold — env only on the operator laptop, not on the server | `RECOVERY_ROLE` on every account | `transferOwnershipRequest` (time-locked) | execute without the timelock |
 | **Bank ENS key** | Teller Desk env (`ENS_REGISTRAR_PK`) | owner of `branchzero.eth` on Sepolia | mint subnames, set records under EAC roles | touch player accounts |
+| **Ops treasury key** | Teller Desk env, **Live only** (`SEPOLIA_TREASURY_PK`) | **none** | receive faucet ETH/USDC; send capped value transfers to the staff wallets above | hold any role on any account, sign a meta-tx, touch a player, or exist on the Dev wing |
 
 Every key above exists once **per wing** (§ 4.1): the Live desk reads `SEPOLIA_*`, the Dev desk reads the
 unprefixed lab slots. Nobody holds two of the roles, and no key holds the same role on two chains.
@@ -73,8 +74,22 @@ to sign if a lab key turns up on a public chain — a comment is not a control.
 | ENS registrar — Sepolia in **both** modes | `ENS_REGISTRAR_PK` | same key (ENS is never on 1337) | Yes (small) |
 | FX teller — Sepolia in **both** modes | `SEPOLIA_BROADCASTER_PK` / `SEPOLIA_DEPLOYER_PK` | same keys | Yes |
 
-`npm -w infra run funding:sepolia` prints every configured Sepolia address, what it pays for, what it holds
-and what is short, and **fails** rather than warns if a Ganache-parity key is sitting in a `SEPOLIA_*` slot.
+`npm -w infra run funding:sepolia` prints the treasury (ETH, Circle USDC, practice USDC) and every configured
+Sepolia address, what it pays for, what it holds and what is short, and **fails** rather than warns if a
+Ganache-parity key is sitting in a `SEPOLIA_*` slot — the treasury slot included, by derived address.
+
+The treasury's own guards (docs/SEPOLIA-TREASURY.md §6), all enforced in code rather than documented:
+
+| Guard | What it stops |
+|-------|---------------|
+| Live-wing gate | `SEPOLIA_TREASURY_PK` is not read at all by a Dev desk, so a key left in `.env` cannot sign on 1337 |
+| Ganache-parity refusal | built through the same `wallet()` helper as every signer, so a lab key fails closed |
+| Role-separation refusal | treasury == deployer / broadcaster / manager / registrar is refused by derived address unless explicitly opted into, and then reported everywhere |
+| Per-tx + rolling-hour caps | a looping bug cannot move more than one faucet drop per send, or ~two per hour (shared ledger, survives restart) |
+| Own-gas reserve | the treasury always keeps enough to pay for its own transfers |
+| Blocker over dribble | a treasury that cannot lift a role to `need` sends **nothing** and names the shortfall; partials need `--partial` and never land below `need` |
+| Circle-USDC hold-only | the Circle token is displayed but never transferable by any policy — it is not the practice dollar |
+| No writes from `/healthz` | the unauthenticated health endpoint reports shortfalls; only the CLI, the pre-`cloneBlox` hook and the interval watcher send |
 Funding runbook: [SEPOLIA-LIVE.md](./SEPOLIA-LIVE.md) § 4. Steady-state faucet → treasury → staff at need × 1.25:
 [SEPOLIA-TREASURY.md](./SEPOLIA-TREASURY.md).
 
@@ -91,6 +106,18 @@ REMOTE_EVM_RPC_URL=http://127.0.0.1:8545
 ARC_RPC_URL=
 MAX_TX_GAS=16777216           # 2^24 — the RPC gascap public providers use; cloneBlox needs ~16.65M
 SEPOLIA_TREASURY_PK=          # Live ops float — faucet destination; never staff roles
+SEPOLIA_TREASURY_ADDRESS=     # read-only alternative: watch a treasury this process cannot spend
+SEPOLIA_TREASURY_AUTO=on      # background top-ups (pre-cloneBlox + interval); off = CLI only
+SEPOLIA_TREASURY_INTERVAL_SEC=900
+SEPOLIA_TREASURY_NEED_DEPLOYER_ETH=0.048     # target = need x 1.25; margin fixed by the principal
+SEPOLIA_TREASURY_NEED_BROADCASTER_ETH=0.012
+SEPOLIA_TREASURY_NEED_MANAGER_ETH=0.008
+SEPOLIA_TREASURY_NEED_REGISTRAR_ETH=0.008
+SEPOLIA_TREASURY_MAX_TX_ETH=0.05             # drain guards: per-tx, rolling hour, own-gas reserve
+SEPOLIA_TREASURY_MAX_HOUR_ETH=0.12
+SEPOLIA_TREASURY_RESERVE_ETH=0.001
+SEPOLIA_TREASURY_PRACTICE=off                # practice float off: the Live token is open-mint
+SEPOLIA_TREASURY_ALLOW_ROLE_REUSE=off        # demo-only: accept treasury == a staff key (refused by default)
 SEPOLIA_DEPLOYER_PK=          # Live wing throwaways — never Ganache-parity keys
 SEPOLIA_BROADCASTER_PK=
 SEPOLIA_MANAGER_PK=
@@ -128,6 +155,7 @@ Rules: `.env*` git-ignored; secrets only via host env or Fly secrets; `git secre
 | Idempotency | `Idempotency-Key` header on `/pay`, `/wire`, `/provision`; stored 24 h |
 | Nonce handling | broadcaster nonce managed by a single in-process queue (one chain, one sender) |
 | Gas caps | per-tx gas limit ceiling; broadcaster balance alarm at 0.05 ETH / 5 USDC |
+| Gas float | Live staff wallets are topped from the ops treasury to `need × 1.25` when they fall below `need`, under per-tx and hourly caps with a shared ledger (docs/SEPOLIA-TREASURY.md) |
 | CORS | strict allowlist |
 | Logging | structured, no PII beyond `userId`, no signatures at info level |
 | Secrets | host env only; no `.env` on the server disk |

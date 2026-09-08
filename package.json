@@ -30,6 +30,8 @@
     "fx:pool": "npm -w infra run fx:pool --",
     "dev:teller:dev": "npm -w apps/teller-desk run dev:dev",
     "funding:sepolia": "npm -w infra run funding:sepolia",
-    "killtests:s2": "npm -w apps/teller-desk run killtests:s2 --"
+    "killtests:s2": "npm -w apps/teller-desk run killtests:s2 --",
+    "treasury:topup": "npm -w apps/teller-desk run treasury:topup --",
+    "killtests:treasury": "npm -w apps/teller-desk run killtests:treasury --"
   }
 }

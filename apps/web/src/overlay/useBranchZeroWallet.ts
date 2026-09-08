@@ -91,6 +91,32 @@ export interface PriorityResult {
  */
 export type DeskMode = 'live' | 'dev';
 
+/**
+ * The ops treasury as `/healthz` reports it (S3, docs/SEPOLIA-TREASURY.md §5). Operator information for the
+ * desk-debug panel only: no player surface, no NPC, and read-only — the panel never asks the desk to send.
+ * `null` on the Dev wing, where lab ETH is free.
+ */
+export interface DeskTreasury {
+  configured: boolean;
+  canExecute?: boolean;
+  address?: string | null;
+  auto?: boolean;
+  problem?: { code: string; message: string } | null;
+  collapsedRoles?: string[];
+  eth?: string;
+  circleUsdc?: { address: string; amount: string };
+  practiceUsdc?: { address: string; symbol: string; amount: string };
+  staff?: Array<{ role: string; label: string; address: string; eth: string; needEth: string; targetEth: string; short: boolean; wouldSendEth: string | null; skip: string | null; deficitEth: string | null }>;
+  unconfigured?: string[];
+  shortfalls?: number;
+  plannedEth?: string;
+  requiredEth?: string;
+  treasuryShort?: boolean;
+  caps?: { perTxEth: string; perHourEth: string; reserveEth: string; spentLastHourEth: string };
+  recent?: Array<{ role: string; to: string; eth: string; hash: string; reason: string; at: string }>;
+  error?: string;
+}
+
 /** One proxy per Teller Desk process — a desk pins its chain at boot, so choosing a mode chooses a desk. */
 const LIVE_TELLER = import.meta.env.VITE_TELLER_DESK_URL || '/api';
 const DEV_TELLER = import.meta.env.VITE_DEV_TELLER_DESK_URL || '/dev-api';
@@ -140,7 +166,7 @@ export function useBranchZeroWallet() {
    * desk is reachable) with no Privy session at all. After sign-in `/session` is the authority and this is just
    * the fallback label.
    */
-  const [desk, setDesk] = useState<{ mode?: string; chainName?: string; chainId?: number; explorer?: string | null; reachable: boolean } | undefined>();
+  const [desk, setDesk] = useState<{ mode?: string; chainName?: string; chainId?: number; explorer?: string | null; reachable: boolean; treasury?: DeskTreasury | null } | undefined>();
   const [activeChainId, setActiveChainId] = useState(() => chainIdForMode(initialMode()));
   const [busy, setBusy] = useState<string | undefined>();
   const [error, setError] = useState<string | undefined>();
@@ -225,8 +251,8 @@ export function useBranchZeroWallet() {
   const probeDesk = useCallback(async (chainId: number) => {
     try {
       const res = await fetch(`${tellerFor(chainId)}/healthz`);
-      const j = (await res.json()) as { ok?: boolean; mode?: string; chainName?: string; explorer?: string | null; chains?: Record<string, { chainId?: number }> };
-      setDesk({ mode: j.mode, chainName: j.chainName, chainId: Object.values(j.chains ?? {})[0]?.chainId, explorer: j.explorer ?? null, reachable: Boolean(j.ok) });
+      const j = (await res.json()) as { ok?: boolean; mode?: string; chainName?: string; explorer?: string | null; chains?: Record<string, { chainId?: number }>; treasury?: DeskTreasury | null };
+      setDesk({ mode: j.mode, chainName: j.chainName, chainId: Object.values(j.chains ?? {})[0]?.chainId, explorer: j.explorer ?? null, reachable: Boolean(j.ok), treasury: j.treasury ?? null });
     } catch {
       setDesk({ reachable: false });
     }

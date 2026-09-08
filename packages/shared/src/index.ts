@@ -5,3 +5,4 @@ export * from './deployments.ts';
 export * from './bridge.ts';
 export * from './metaTx.ts';
 export * from './format.ts';
+export * from './treasury.ts';

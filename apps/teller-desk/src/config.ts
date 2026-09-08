@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getAddress, type Address, type Hex } from 'viem';
-import { ARC_TESTNET_CHAIN_ID, DEFAULT_ARC_RPC_URL, REMOTE_EVM_CHAIN_ID, SEPOLIA_CHAIN_ID, type ChainTarget } from '@branch-zero/shared';
+import { ARC_TESTNET_CHAIN_ID, DEFAULT_ARC_RPC_URL, REMOTE_EVM_CHAIN_ID, SEPOLIA_CHAIN_ID, TREASURY_CAP_DEFAULTS, type ChainTarget } from '@branch-zero/shared';
 
 export const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
@@ -68,6 +68,25 @@ const rpcUrl =
   target === 'arc' ? opt('ARC_RPC_URL', DEFAULT_ARC_RPC_URL) : target === 'sepolia' ? req('SEPOLIA_RPC_URL') : opt('REMOTE_EVM_RPC_URL', 'http://127.0.0.1:8545');
 
 const managerPk = opt(key('MANAGER_PK')) || undefined;
+
+/**
+ * Sepolia ops treasury (docs/SEPOLIA-TREASURY.md).
+ *
+ * **Live wing only, and never required.** The lab chain funds itself from genesis, so a Dev desk must boot
+ * with none of this set — hence `opt` throughout and a `target === 'sepolia'` gate on the key itself: a
+ * treasury key left in `.env` cannot be picked up by the Dev process even by accident.
+ *
+ * The treasury is a float, not an identity: it holds no role on any player account and appears in no
+ * `desiredGrants()`. Its only power is `sendTransaction` to addresses that already hold the bank's duties.
+ */
+const treasuryRawPk = target === 'sepolia' ? opt('SEPOLIA_TREASURY_PK').trim() : '';
+/**
+ * `0x`-normalised, because an operator pasting a bare 64-char key is normal (`ENS_REGISTRAR_PK` is stored
+ * that way) and viem's `privateKeyToAccount` throws on it. The Name Desk already normalises its own key;
+ * doing it here means the treasury wallet is built through the same `wallet()` helper — and the same
+ * Ganache-parity refusal — as every other signer, instead of crashing before that check runs.
+ */
+const treasuryPk = treasuryRawPk ? ((treasuryRawPk.startsWith('0x') ? treasuryRawPk : `0x${treasuryRawPk}`) as Hex) : undefined;
 
 export const config = {
   port: Number(target === 'remote' ? opt('DEV_PORT', '8788') : target === 'arc' ? opt('ARC_PORT', '8789') : opt('PORT', '8787')),
@@ -140,6 +159,41 @@ export const config = {
    * at bootstrap and needs nothing; Arc's payment token is real native USDC and must never be faked.
    */
   practiceTokenOpenMint: target === 'sepolia',
+  /**
+   * The ops treasury. `pk` is present only on Live; `address` lets an operator watch a treasury this process
+   * does not hold the key for (read-only balances in `/healthz` and the funding report) — the same
+   * address-only shape `SEPOLIA_RECOVERY_ADDRESS` already uses.
+   */
+  treasury: {
+    pk: treasuryPk as Hex | undefined,
+    address: (opt('SEPOLIA_TREASURY_ADDRESS') || undefined) as Address | undefined,
+    /**
+     * Background rebalancing. On by default when a key is present, because that is the whole point of the
+     * wallet; `off` leaves the CLI as the only way money moves. Never consulted on the Dev wing.
+     */
+    auto: opt('SEPOLIA_TREASURY_AUTO', 'on').toLowerCase() !== 'off' && Boolean(treasuryPk),
+    /** How often the background watcher may look, in seconds. Each look is still cap- and ledger-bound. */
+    intervalSec: Number(opt('SEPOLIA_TREASURY_INTERVAL_SEC', '900')),
+    /** Largest single transfer, and the largest total in a rolling hour, in ETH (docs/SEPOLIA-TREASURY.md §6). */
+    maxPerTxEth: opt('SEPOLIA_TREASURY_MAX_TX_ETH', TREASURY_CAP_DEFAULTS.perTxEth),
+    maxPerHourEth: opt('SEPOLIA_TREASURY_MAX_HOUR_ETH', TREASURY_CAP_DEFAULTS.perHourEth),
+    /** Held back so the treasury can always pay for its own transfers. */
+    reserveEth: opt('SEPOLIA_TREASURY_RESERVE_ETH', TREASURY_CAP_DEFAULTS.reserveEth),
+    /**
+     * Practice-dollar float. `off` by default: the Live practice token is open-mint, so the deployer makes
+     * its own float and a treasury transfer would be ceremony (docs/SEPOLIA-TREASURY.md §4.2). Circle's USDC
+     * is never sent by any policy — the engine refuses that token outright.
+     */
+    practice: opt('SEPOLIA_TREASURY_PRACTICE', 'off').toLowerCase() === 'on',
+    practiceNeedUsdc: opt('SEPOLIA_TREASURY_NEED_PRACTICE_USDC', opt('OPENING_BALANCE_USDC', '500')),
+    /**
+     * Demo-only escape hatch. The treasury sharing a key with a staff role collapses "identity ≠ float",
+     * which the plan forbids, so every treasury path refuses it by derived address unless the operator says
+     * `on` here. When it is on, the collapse is printed by the CLI, reported on `/healthz` and shown in the
+     * desk-debug panel — a concession stays visible or it becomes the design.
+     */
+    allowRoleReuse: opt('SEPOLIA_TREASURY_ALLOW_ROLE_REUSE', 'off').toLowerCase() === 'on',
+  },
   ensParentName: opt('ENS_PARENT_NAME', 'branchzero.eth'),
   /** Sepolia throwaway bank key. Lazy ENS client construction fails with ENS_NOT_CONFIGURED if absent. */
   ensRegistrarPk: opt('ENS_REGISTRAR_PK') as Hex | undefined,

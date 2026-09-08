@@ -38,6 +38,7 @@ import { broadcaster, broadcasterAddress, chain, deployer, deployerAddress, mana
 import { config, deployments } from '../config.ts';
 import { TYPED_DATA_RULE_VERSION, createTxRules, pinPolicyToAccount, pinTxRulesToAccount } from '../privy.ts';
 import { signMetaTx, type AuditSink } from '../signing/privySigner.ts';
+import { maybeTopUp } from '../treasury.ts';
 import { emitStage, patchPlayer, type Player } from '../store.ts';
 
 const d = () => deployments();
@@ -548,6 +549,14 @@ export async function provision(player: Player, jobId: string, audit?: AuditSink
     }
   }
   if (!account) {
+    /**
+     * S3 — the most expensive thing this branch does is about to happen (~16.65 M gas, ~0.0425 ETH on Live),
+     * so give the ops treasury a chance to top the deployer up first (docs/SEPOLIA-TREASURY.md §5). Silent,
+     * best-effort and rate-limited: on Dev there is no treasury, on Live there may be an empty one, and
+     * neither is a reason to refuse to open an account. If the deployer really is too poor, `cloneAccount`
+     * still fails loudly on its own gas floor rather than mining a half-made account.
+     */
+    await maybeTopUp('pre-cloneBlox');
     stage('provisioning', 'Opening your account…');
     const cloned = await cloneAccount(player.ownerAddress);
     account = cloned.account;

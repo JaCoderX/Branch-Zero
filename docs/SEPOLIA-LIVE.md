@@ -67,10 +67,16 @@ Testnet assets only. Never put Ganache-parity / Remote EVM keys on Sepolia.
 
 ### 4.1 Faucets (canonical)
 
-| Asset | Faucet | What you get | Limits (as published) |
-|-------|--------|--------------|------------------------|
-| **ETH (gas)** | [Google Cloud — Ethereum Sepolia Faucet](https://cloud.google.com/application/web3/faucet/ethereum/sepolia) | **0.05 ETH** | **Once per day** per eligibility (plan top-ups; do not burn a day’s drop on a failed OOG experiment) |
-| **USDC** | [Circle Testnet Faucet](https://faucet.circle.com/) — network **Ethereum Sepolia** | **20 USDC** | One request per asset+network pair every **2 hours** |
+> **Drop them on the treasury.** Since S3 every faucet claim goes to **`SEPOLIA_TREASURY_PK`** first, and the
+> staff wallets are topped from there to `need × 1.25` — in the background or with one command. Get the
+> address (and the current shortfall) from `npm -w infra run funding:sepolia`; see
+> [SEPOLIA-TREASURY.md](./SEPOLIA-TREASURY.md). Funding role addresses one at a time still works and is the
+> fallback when no treasury is configured, but it costs a day's drop per address.
+
+| Asset | Faucet | What you get | Limits (as published) | Send it to |
+|-------|--------|--------------|------------------------|------------|
+| **ETH (gas)** | [Google Cloud — Ethereum Sepolia Faucet](https://cloud.google.com/application/web3/faucet/ethereum/sepolia) | **0.05 ETH** | **Once per day** per eligibility (plan top-ups; do not burn a day’s drop on a failed OOG experiment) | **treasury** |
+| **USDC** | [Circle Testnet Faucet](https://faucet.circle.com/) — network **Ethereum Sepolia** | **20 USDC** | One request per asset+network pair every **2 hours** | **treasury** |
 
 Circle’s public faucet is USDC/EURC/cirBTC — not native ETH. For ETH use Google Cloud (above). Circle’s FAQ also
 points native test ETH/POL at their Developer Console for Circle Wallets only; Branch Zero operator keys are
@@ -81,7 +87,7 @@ ordinary EOAs → **Google Cloud for ETH**.
 | Token | Address (Sepolia) | How to fund | Used for |
 |-------|-------------------|-------------|----------|
 | **Branch Zero practice / demo USDC** | `0xD3322B29a7BdEe707D1684676f149bf41Aa3422f` (open mint; see `infra/deployments/sepolia.json`) | Deployer (or mint script) after it has **ETH** | Ines faucet, Counter pays, FX pool currency0 / Kenji swaps |
-| **Circle test USDC** | Circle’s Sepolia USDC (see Circle docs / faucet) | [faucet.circle.com](https://faucet.circle.com/) → Ethereum Sepolia → 20 USDC | Optional operator checks, CCTP/Arc experiments — **not** the in-game practice token unless a future unit migrates |
+| **Circle test USDC** | `0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238` (pinned in `sepolia.json` as `tokens.circleUsdc`; [Circle docs](https://developers.circle.com/stablecoins/usdc-contract-addresses)) | [faucet.circle.com](https://faucet.circle.com/) → Ethereum Sepolia → 20 USDC → **treasury** | Ops float on the treasury, optional operator checks, CCTP/Arc experiments — **not** the in-game practice token unless a future unit migrates. The treasury **holds** it and never auto-sends it |
 
 **Live Main practice dollars** stay the open-mint demo token unless the principal explicitly migrates. Fund
 **ETH** on the deployer first; then mint/transfer practice USDC in-process (Ines `/faucet` / provision).
@@ -92,6 +98,7 @@ Fund **each address separately** (Google Cloud = 0.05 ETH/day/address). Prefer d
 
 | Role | Env key(s) | Needs ETH? | Needs Circle USDC? | Needs practice USDC? | Notes |
 |------|------------|------------|--------------------|----------------------|-------|
+| **Ops treasury** | `SEPOLIA_TREASURY_PK` | **Yes — this is where the drops land** | Yes (collects) | Optional float | Holds **no** role on any player account; only sends. `need × 1.25` top-ups to the rows below (SEPOLIA-TREASURY §4) |
 | **Live Main deployer** | `SEPOLIA_DEPLOYER_PK` (or Live desk `DEPLOYER_PK` when `CHAIN_ID=11155111`) | **Yes** — cloneBlox / initialize / mint practice USDC / `OWNER_GAS` tops | No | Holds mint rights / treasury for faucet | Highest gas consumer at Account Opening |
 | **Live Main broadcaster** | `SEPOLIA_BROADCASTER_PK` / Live `BROADCASTER_PK` | **Yes** — every meta-tx gas | No | No | Alarm if balance ≪ ~0.05 ETH |
 | **Live Main manager** | Live `MANAGER_PK` | **Yes** — Priority submit / cancel | No | No | Smaller; still fund before demo |
@@ -104,17 +111,18 @@ Fund **each address separately** (Google Cloud = 0.05 ETH/day/address). Prefer d
 
 ### 4.4 Suggested funding order (operator)
 
-1. Create / confirm **Sepolia throwaway** keys for Live deployer, broadcaster, manager, ENS registrar (and FX if not shared). Record **addresses** in a local note; never commit keys.
-2. For **each** address that needs gas: open [Google Cloud Sepolia faucet](https://cloud.google.com/application/web3/faucet/ethereum/sepolia), send **0.05 ETH**, wait for confirmation. Space roles across days if rate-limited.
-3. Optional: [Circle faucet](https://faucet.circle.com/) → Ethereum Sepolia → **20 USDC** to an operator wallet if you need Circle USDC. Do **not** expect that balance to appear as Ines practice dollars (different token).
+1. Create / confirm **Sepolia throwaway** keys for the **ops treasury**, Live deployer, broadcaster, manager and ENS registrar (and FX if not shared). Record **addresses** in a local note; never commit keys. Keep them distinct — the treasury refuses to share a key with a staff role unless you opt in (`SEPOLIA_TREASURY_ALLOW_ROLE_REUSE=on`).
+2. Run `npm -w infra run funding:sepolia`. It prints the treasury address, its ETH / Circle USDC / practice balances, and each staff wallet against `need` and `need × 1.25`.
+3. Claim to the **treasury address**: [Google Cloud Sepolia faucet](https://cloud.google.com/application/web3/faucet/ethereum/sepolia) **0.05 ETH** (daily) and, if you want the ops float, [Circle faucet](https://faucet.circle.com/) → Ethereum Sepolia → **20 USDC** (every 2 h). Then `npm run treasury:topup` (dry run) and `-- --execute` to rebalance. Circle's USDC never becomes Ines' practice dollars — different token.
 4. Set `SEPOLIA_RPC_URL` + keys in `.env`. Start Live desk (`CHAIN_ID=11155111`).
 5. Bootstrap CopyBlox + practice token on Sepolia if missing (`npm run chain:bootstrap -- --chain sepolia` or documented equivalent). Confirm addresses in `infra/deployments/sepolia.json`.
 6. Smoke: provision → Lane A pay → Etherscan. Then ENS claim. Then FX enable/swap (or unified account path).
 7. Dev desk: keep funding Remote EVM from lab genesis (no public faucet). Never paste those keys into Sepolia env slots.
 
-**Steady-state (planned):** faucet drops go to **`SEPOLIA_TREASURY_PK`** first, then staff wallets are topped to
-`need × 1.25` in the background — see [SEPOLIA-TREASURY.md](./SEPOLIA-TREASURY.md). Until that unit lands, fund
-role addresses directly as in the table above.
+**Steady-state (shipped, S3):** faucet drops go to **`SEPOLIA_TREASURY_PK`** first, then staff wallets are
+topped to `need × 1.25` — in the background (before an Account Opening and on an interval) or with
+`npm run treasury:topup -- --execute`. See [SEPOLIA-TREASURY.md](./SEPOLIA-TREASURY.md). With no treasury
+configured, nothing breaks: fund role addresses directly as in the table above.
 
 ### 4.5 Gas budget reminders (Sepolia)
 
@@ -129,7 +137,7 @@ If a day’s 0.05 ETH is spent on a failed batch, wait for the next Google Cloud
 ### 4.6 Public demo host
 
 - Run **Live desk only** (Sepolia). Do not expose Remote EVM.
-- Pre-fund deployer + broadcaster + manager + ENS before any judge link goes live.
+- Pre-fund the **treasury**, then `npm run treasury:topup -- --execute`, and confirm `funding:sepolia` shows deployer + broadcaster + manager + ENS at or above need before any judge link goes live.
 - Practice faucet rate-limit remains; practice USDC is minted, not Circle-faucet drained.
 
 ---

@@ -25,6 +25,7 @@ import { ROLE_SET_VERSION, ensureTxPolicy, ensureTypedDataPolicy, faucetAccount,
 import { available as ensAvailable, mint as ensMint, resolve as ensResolve, setText as ensSetText } from './ens.ts';
 import { enableFx, fxStatus, quote as fxQuote, swap as fxSwap } from './lanes/fx.ts';
 import { grantObserver, listObservers, observerPermissions, revokeObserver } from './lanes/observer.ts';
+import { plan as treasuryPlan, serializeHealth as treasuryHealth, startTreasuryWatch, treasuryView } from './treasury.ts';
 import { emitStage, getPlayer, listReceipts, newJobId, patchPlayer, serialize, subscribe, upsertPlayer, type Player } from './store.ts';
 import type { SignatureAudit, TxAudit } from './signing/privySigner.ts';
 
@@ -69,6 +70,27 @@ function txAuditFor(player: Player) {
     app.log.info({ owner: e.owner, walletId: e.walletId, chainId: e.chainId, to: e.to, selector: e.selector, nonce: e.nonce, gas: e.gas, ms: e.ms }, `privy session signer: transaction signed for ${player.privyUserId}`);
 }
 
+/**
+ * Treasury health, cached briefly. `/healthz` is polled by the overlay whenever the Live | Dev toggle moves,
+ * and a treasury read is six extra RPC calls (its ETH, two token balances, and every staff EOA) — worth
+ * showing, not worth repeating per poll.
+ */
+let treasuryCache: { at: number; value: unknown } | undefined;
+const TREASURY_CACHE_MS = 15_000;
+async function treasuryBlock(): Promise<unknown> {
+  if (config.target !== 'sepolia') return null;
+  if (treasuryCache && Date.now() - treasuryCache.at < TREASURY_CACHE_MS) return treasuryCache.value;
+  try {
+    const { snapshot, plan } = await treasuryPlan();
+    const value = treasuryHealth(snapshot, plan);
+    treasuryCache = { at: Date.now(), value };
+    return value;
+  } catch (e) {
+    // A treasury read must never be the reason the desk looks unhealthy.
+    return { configured: Boolean(treasuryView()), error: (e as Error).message };
+  }
+}
+
 app.get('/healthz', async () => {
   const d = deployments();
   try {
@@ -99,6 +121,13 @@ app.get('/healthz', async () => {
       manager: managerAddress ? { address: managerAddress, balanceNative: formatEther(managerBal), nativeSymbol: chain.nativeCurrency.symbol } : null,
       privy: { appId: config.privy.appId, signerId: config.privy.signerId, authorizationKey: redact(config.privy.authorizationKey) },
       contracts: { copyBlox: d.copyBlox, accountBloxImplementation: d.accountBloxImplementation, token: d.token },
+      /**
+       * S3 — the ops treasury, for the operator's desk-debug view and the funding runbook
+       * (docs/SEPOLIA-TREASURY.md §5). Read-only by design: this endpoint is unauthenticated, so it
+       * *reports* shortfalls and never triggers a send. The writers are the CLI, the pre-`cloneBlox` hook
+       * and the interval watcher. `null` off the Live wing, where the lab funds itself.
+       */
+      treasury: await treasuryBlock(),
       timeLockSec: Number(config.timeLockSec),
     };
   } catch (e) {
@@ -583,6 +612,13 @@ function fail(reply: { code: (n: number) => { send: (b: unknown) => unknown } },
 deployments();
 
 app.listen({ port: config.port, host: '127.0.0.1' }).then((addr) => {
+  /**
+   * Background rebalancing (docs/SEPOLIA-TREASURY.md §5). Live-only, key-only, unref'd: a Dev desk starts
+   * nothing, and a Live desk without `SEPOLIA_TREASURY_PK` starts nothing either — the treasury is never a
+   * boot dependency. Each tick is still cap- and ledger-bound, so a stuck loop cannot drain the float.
+   */
+  const watch = startTreasuryWatch((o, msg) => app.log.info(o, msg));
+  if (watch) app.log.info({ treasury: treasuryView(), everySec: config.treasury.intervalSec, perTxEth: config.treasury.maxPerTxEth, perHourEth: config.treasury.maxPerHourEth }, 'treasury watch armed — staff wallets are topped to need x 1.25 when they fall below need');
   app.log.info(
     { rpc: config.rpcUrl, broadcaster: broadcasterAddress, deployer: deployerAddress, manager: managerAddress ?? null, priorityRelease: config.priorityRelease, roleSet: ROLE_SET_VERSION, privyApp: config.privy.appId, signerId: config.privy.signerId },
     `Teller Desk (U6 ${config.target}) listening on ${addr}`,

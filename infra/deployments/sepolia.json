@@ -90,6 +90,13 @@
       "symbol": "WETH",
       "decimals": 18,
       "note": "Sepolia WETH9 used by the Uniswap deployments"
+    },
+    "circleUsdc": {
+      "address": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+      "symbol": "USDC",
+      "decimals": 6,
+      "note": "Circle test USDC (faucet.circle.com, Ethereum Sepolia) — ops-treasury float ONLY. NOT the in-game practice dollar, which is tokens.demoUsdc; never swap the two (docs/SEPOLIA-TREASURY.md §3).",
+      "source": "https://developers.circle.com/stablecoins/usdc-contract-addresses"
     }
   },
   "uniswap": {
