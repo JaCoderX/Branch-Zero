@@ -65,6 +65,7 @@ to sign if a lab key turns up on a public chain — a comment is not a control.
 
 | Role | Live (Sepolia) | Dev (Remote EVM 1337) | Needs gas? |
 |------|----------------|------------------------|-----------|
+| **Ops treasury** — collects faucet ETH + USDC; tops staff wallets | `SEPOLIA_TREASURY_PK` | n/a (lab ETH is free) | Holds float; **no** on-chain staff roles |
 | Deployer — clones accounts, mints/holds practice dollars, tops owner gas | `SEPOLIA_DEPLOYER_PK` | `DEPLOYER_PK` (acct 0) | **Yes** — `cloneBlox` ~16.2 M gas |
 | Broadcaster — submits owner-signed meta-txs, pays their gas | `SEPOLIA_BROADCASTER_PK` | `BROADCASTER_PK` (acct 1) | **Yes** |
 | Branch Manager — Priority submit / recall | `SEPOLIA_MANAGER_PK` | `MANAGER_PK` (acct 3) | Yes (small) |
@@ -74,7 +75,8 @@ to sign if a lab key turns up on a public chain — a comment is not a control.
 
 `npm -w infra run funding:sepolia` prints every configured Sepolia address, what it pays for, what it holds
 and what is short, and **fails** rather than warns if a Ganache-parity key is sitting in a `SEPOLIA_*` slot.
-Funding runbook and faucet limits: [SEPOLIA-LIVE.md](./SEPOLIA-LIVE.md) § 4.
+Funding runbook: [SEPOLIA-LIVE.md](./SEPOLIA-LIVE.md) § 4. Steady-state faucet → treasury → staff at need × 1.25:
+[SEPOLIA-TREASURY.md](./SEPOLIA-TREASURY.md).
 
 `.env.example` (Teller Desk) — names only, see the file for the full annotated list:
 
@@ -88,6 +90,7 @@ SEPOLIA_RPC_URL=
 REMOTE_EVM_RPC_URL=http://127.0.0.1:8545
 ARC_RPC_URL=
 MAX_TX_GAS=16777216           # 2^24 — the RPC gascap public providers use; cloneBlox needs ~16.65M
+SEPOLIA_TREASURY_PK=          # Live ops float — faucet destination; never staff roles
 SEPOLIA_DEPLOYER_PK=          # Live wing throwaways — never Ganache-parity keys
 SEPOLIA_BROADCASTER_PK=
 SEPOLIA_MANAGER_PK=

@@ -112,6 +112,10 @@ Fund **each address separately** (Google Cloud = 0.05 ETH/day/address). Prefer d
 6. Smoke: provision → Lane A pay → Etherscan. Then ENS claim. Then FX enable/swap (or unified account path).
 7. Dev desk: keep funding Remote EVM from lab genesis (no public faucet). Never paste those keys into Sepolia env slots.
 
+**Steady-state (planned):** faucet drops go to **`SEPOLIA_TREASURY_PK`** first, then staff wallets are topped to
+`need × 1.25` in the background — see [SEPOLIA-TREASURY.md](./SEPOLIA-TREASURY.md). Until that unit lands, fund
+role addresses directly as in the table above.
+
 ### 4.5 Gas budget reminders (Sepolia)
 
 | Operation | Order-of-magnitude | Implication |

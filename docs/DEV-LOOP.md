@@ -66,6 +66,7 @@ Ordered so that after U2 we can stop and still demo a coherent bank-on-a-chain (
 | **S1 Uniswap v4 FX** | FX Desk: Sepolia quote + guarded UR swap + Kenji viz + `FEEDBACK.md` | K7 | **MET 2026-09-08** — build `1d2f558`, landed by S1b: guard + role config on chain and a live swap `0xd98efc64…`; K7-a…f green. Owed: the sponsor feedback form. Spec [UNISWAP.md](./UNISWAP.md) · record `docs/progress/2026-09-08-s1b-fx-validate.md` |
 | **Stretch — Terminal Console** | Iframe `bloxchain.app` + opt-in `OBSERVER` role (empty permissions) for MetaMask/ENS view access | — | **met** 2026-09-08 — [TERMINAL-CONSOLE.md](./TERMINAL-CONSOLE.md) · §5h; Privy↔SaaS Global Wallet **parked**. Human Console+MetaMask walk still owed |
 | **Sepolia Live + Dev Mode (S2)** | Live Main = Sepolia; Remote EVM = Developer Mode (desk debug); FX Sepolia-only honesty; funding runbook | public demo | **met** 2026-09-08 — whole wing on Sepolia with Etherscan evidence; `killtests:s2` 6/6 on both wings — [SEPOLIA-LIVE.md](./SEPOLIA-LIVE.md) §6.1 · HANDOFF-CC §5j |
+| **Sepolia Ops Treasury** | `SEPOLIA_TREASURY_PK` collects ETH+USDC; background staff top-ups at need × 1.25 | Live ops | **planned** 2026-09-08 — [SEPOLIA-TREASURY.md](./SEPOLIA-TREASURY.md) · [KICKOFF-sepolia-treasury.md](./KICKOFF-sepolia-treasury.md) (Opus 5 high) |
 
 Each unit ends with: commit, a local note under `docs/progress/` (gitignored), and a kill/decision line in [REFLECTION.md](./REFLECTION.md) if anything changed.
 
