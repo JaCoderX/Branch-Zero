@@ -8,6 +8,7 @@ Start with **[PLAN.md](./PLAN.md)**. Read order for a new contributor:
 |---|-----|-----------|
 | 1 | [PLAN.md](./PLAN.md) | Always first — scope, 10-day schedule, gates, kill tests, submission |
 | 1b | [DEV-LOOP.md](./DEV-LOOP.md) | OBJ / ENG / U0–U7; when to lab vs when to build here |
+| 1d | [OWED.md](./OWED.md) | **Checklist** — human ops, walks, packaging, follow-ups, parked |
 | 1c | [REMOTE-EVM.md](./REMOTE-EVM.md) | Local chain `1337` — default for development |
 | 2 | [GAME-DESIGN.md](./GAME-DESIGN.md) | Before touching gameplay, dialogue or HUD |
 | 3 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Before touching any code — layers, bridge, sequences, repo layout |
@@ -26,7 +27,7 @@ Start with **[PLAN.md](./PLAN.md)**. Read order for a new contributor:
 | 15b | [HANDOFF-ao-desk-polish.md](./HANDOFF-ao-desk-polish.md) · [KICKOFF-ao-desk-polish.md](./KICKOFF-ao-desk-polish.md) · [KICKOFF-desk-screen-keyboard-swap.md](./KICKOFF-desk-screen-keyboard-swap.md) | AO polish + screen↔keyboard swap at Ines and Okafor |
 | 16 | [SEPOLIA-LIVE.md](./SEPOLIA-LIVE.md) · [HANDOFF-sepolia-live.md](./HANDOFF-sepolia-live.md) · [KICKOFF-sepolia-live.md](./KICKOFF-sepolia-live.md) | Live Main = Sepolia; Remote EVM = Developer Mode (**met** 2026-09-08) |
 | 17 | [SEPOLIA-TREASURY.md](./SEPOLIA-TREASURY.md) · [HANDOFF-sepolia-treasury.md](./HANDOFF-sepolia-treasury.md) · [KICKOFF-sepolia-treasury.md](./KICKOFF-sepolia-treasury.md) | `SEPOLIA_TREASURY_PK` collects ETH+USDC; staff top-ups at need × 1.25 (**met** 2026-09-08; owed: one faucet claim) |
-| 18 | [LOAD-ACCOUNT.md](./LOAD-ACCOUNT.md) · [HANDOFF-load-account.md](./HANDOFF-load-account.md) · [KICKOFF-load-account.md](./KICKOFF-load-account.md) | **Next (product):** Ines loads a custom owned AccountBlox by address |
+| 18 | [LOAD-ACCOUNT.md](./LOAD-ACCOUNT.md) · [HANDOFF-load-account.md](./HANDOFF-load-account.md) · [KICKOFF-load-account.md](./KICKOFF-load-account.md) | Ines loads owned AccountBlox by address (**met** 2026-09-08; owed: Live walk) |
 | 19 | [HANDOFF-character-style.md](./HANDOFF-character-style.md) · [KICKOFF-character-style.md](./KICKOFF-character-style.md) | **Parallel art:** cast climb beyond Kenney Blocky (Borderlands-adjacent outline; room stays) — Opus / CC |
 
 **Not published** (gitignored; stay on the laptop): `docs/progress/` (daily notes + captures). Kickoffs and `HANDOFF-CC.md` stay in git for cold agents.

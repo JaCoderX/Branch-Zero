@@ -14,6 +14,8 @@ prior_mission: Load Account (Ines) MET 2026-09-08 - POST /account/load adopts a 
 
 You are a **cold agent** unless the human says you are continuing a prior session. Prefer reading this file over chat memory. You have **freedom on how**. You do **not** have freedom on constraints, scope, or protocol semantics.
 
+**Open checklist:** [`docs/OWED.md`](./OWED.md) — human ops, principal walks, packaging gate, follow-ups, parked items.
+
 > **Load Account (Ines) — MET 2026-09-08.** Ines adopts a player-owned AccountBlox by number on the current
 > wing (a non-latest CopyBlox clone, or a second account); the terminal still discovers, Ines loads. Gate:
 > `getCode` → `owner()` + `initialized()` + ERC-165 `ISecureOwnable` → `owner()` == the session's Privy owner,
