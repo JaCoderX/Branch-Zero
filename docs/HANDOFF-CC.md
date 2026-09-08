@@ -6,8 +6,8 @@ created: 2026-09-06
 updated: 2026-09-08
 product: Branch-Zero
 objective: OBJ-2026-0004
-first_mission: Load Account via Ines (docs/KICKOFF-load-account.md) — prefer Claude Code Opus 5 high; Sepolia Ops Treasury still planned (KICKOFF-sepolia-treasury.md); U7 ship packaging still owed after polish re-playtest; U6 Arc G7 deferred
-prior_mission: Sepolia Live + Developer Mode MET 2026-09-08 — Live Main wing is Sepolia (CopyBlox 0x443ECf16…, account 0xf8EECc6B…, Lane A/B/Priority/faucet/OBSERVER/ENS/K7 on Etherscan); Remote EVM 1337 is Developer Mode behind the desk-debug toggle. Before it: S1b FX validate, Terminal Console + OBSERVER, U7 polish, practice faucet, U5 ENS
+first_mission: Load Account via Ines (docs/KICKOFF-load-account.md) — prefer Claude Code Opus 5 high; Sepolia Ops Treasury MET 2026-09-08 (docs/SEPOLIA-TREASURY.md 8-9; one human faucet claim owed); U7 ship packaging still owed after polish re-playtest; U6 Arc G7 deferred
+prior_mission: Sepolia Ops Treasury MET 2026-09-08 - SEPOLIA_TREASURY_PK collects Live ETH + USDC and tops staff wallets to need x 1.25 (CLI, pre-cloneBlox hook, interval watcher, desk-debug row); killtests:treasury 7/7; owed: one faucet claim. Before it: Sepolia Live + Developer Mode MET 2026-09-08 — Live Main wing is Sepolia (CopyBlox 0x443ECf16…, account 0xf8EECc6B…, Lane A/B/Priority/faucet/OBSERVER/ENS/K7 on Etherscan); Remote EVM 1337 is Developer Mode behind the desk-debug toggle. Before it: S1b FX validate, Terminal Console + OBSERVER, U7 polish, practice faucet, U5 ENS
 ---
 
 # Handoff — Claude Code (Fable 5.1)
@@ -19,7 +19,14 @@ Plan: [`docs/LOAD-ACCOUNT.md`](./LOAD-ACCOUNT.md). Handoff: [`docs/HANDOFF-load-
 Kickoff: [`docs/KICKOFF-load-account.md`](./KICKOFF-load-account.md).
 Ines loads a player-owned AccountBlox by address (non-latest CopyBlox clone / multi-account). Terminal discovers; Ines loads. Arc stays **DEFERRED**.
 
-**Queued:** Sepolia Ops Treasury — [`docs/KICKOFF-sepolia-treasury.md`](./KICKOFF-sepolia-treasury.md).
+> **Sepolia Ops Treasury — MET 2026-09-08** (§5k). `SEPOLIA_TREASURY_PK` is the Live-wing float: faucet drops
+> land there and staff wallets are topped to **need × 1.25** when they fall below **need** — from
+> `npm run treasury:topup`, before an Account Opening, or on an interval. It holds **no** role on any player
+> account and never sends Circle's USDC. Plan + as-built + evidence:
+> [`docs/SEPOLIA-TREASURY.md`](./SEPOLIA-TREASURY.md) §5, §8–9.
+> **Owed by a human:** one Google Cloud faucet claim to the treasury address, then
+> `npm run treasury:topup -- --execute` — the treasury is 0.010546 ETH short of lifting the deployer to
+> target, and it refuses to dribble.
 
 > **Sepolia Live + Developer Mode — MET 2026-09-08.** The Main payment wing is now **Sepolia `11155111`** and it
 > is the **default**: `CHAIN_ID` unset means Live, the shell's `/api` is the Live desk, and a player who never
@@ -197,6 +204,8 @@ Not: a wallet UI, DeFi protocol, Bloxchain fork, mainnet, Tactical-AI, GameLab m
    [`handoff.md`](https://github.com/D9-Studio/GameLab/blob/main/work/ENG-2026-0006-accountblox-on-arc/handoff.md)
    — attach library fixtures; CopyBlox-style clone; never Ganache keys on Arc
 5. [`docs/SEPOLIA-LIVE.md`](./SEPOLIA-LIVE.md) §1–2, §6.1, §6.3 — Live is Sepolia and is the default; Dev is 1337
+5b. [`docs/SEPOLIA-TREASURY.md`](./SEPOLIA-TREASURY.md) §8–9 — faucet drops go to `SEPOLIA_TREASURY_PK`; staff
+   wallets are topped to `need × 1.25`; the treasury holds **no** role and never sends Circle's USDC
 6. [`docs/REMOTE-EVM.md`](./REMOTE-EVM.md) — **do not wipe**; 1337 is now **Developer Mode**, never public infra
 6. [`docs/GAME-DESIGN.md`](./GAME-DESIGN.md) + [`docs/WORLD-3D-ENVIRONMENT.md`](./WORLD-3D-ENVIRONMENT.md) — Arc wing / elevator
 7. [`docs/GODOT.md`](./GODOT.md) §4–5 — bridge is **`u5.1`** (preserve the ENS `u5.0` and terminal methods); MockChain (§5a), canvas focus (§5b)
@@ -765,10 +774,74 @@ Wallet / bloxchain.app SaaS; GameLab ENG trees; custom Solidity.
 
 ---
 
+## 5k. Mission S3 — Sepolia ops treasury — **MET 2026-09-08**
+
+One Live-wing wallet collects Sepolia **ETH + USDC**; staff wallets are topped to **need × 1.25** when they
+fall below **need**. Plan + as-built + evidence: [`docs/SEPOLIA-TREASURY.md`](./SEPOLIA-TREASURY.md) §5, §8–9.
+Handoff: [`docs/HANDOFF-sepolia-treasury.md`](./HANDOFF-sepolia-treasury.md). Local record:
+`docs/progress/2026-09-08-s3-sepolia-treasury.md`.
+
+**Shape as built.** One planner, three consumers: the need table, the wei-exact ×1.25 and `planTopUps()` are a
+pure function in `packages/shared/src/treasury.ts`, called by the read-only funding report, the CLI and the
+desk's `/healthz` — so the dry run is a rehearsal of the execution, not a second implementation of it.
+Everything touching a key, the chain or the clock is `apps/teller-desk/src/treasury.ts`: balances, caps, a
+shared rolling-hour ledger, the refusals, the sends. The treasury is a **float, not an identity** — it appears
+in no `desiredGrants()`, holds no role on any account, and its only power is a capped value transfer to
+wallets that already hold the bank's duties.
+
+### Freedom envelope (as used)
+
+- The CLI lives in the **desk** (`npm run treasury:topup`), not infra, so the executable path, the
+  pre-`cloneBlox` hook and the watcher share one engine and one ledger; `funding:sepolia` stays the
+  Privy-free read-only report
+- **Refill at `need`, fill to `target`** (the plan allowed either). A treasury too thin to reach `need` sends
+  **nothing** and names the deficit; `--partial` is the opt-in middle ground and never lands below `need`
+- Background = a pre-`cloneBlox` hook + an unref'd interval watcher. **`/healthz` reports and never sends** —
+  it takes no auth, so a health check that moved money would be a gas-drain vector
+- Practice-USDC float implemented but **default off**: the Live practice token is open-mint, so the deployer
+  makes its own. Circle's USDC is collected, displayed, and **never** transferable by any policy
+- Desk debug got an operator row (treasury + each staff role vs need/target + shortfall hints). No NPC, no
+  quest, no player surface
+
+### Out of scope (held)
+
+Walkable Treasury Desk; merging manager into treasury; practice→Circle migration; Arc; ship packaging;
+automated faucet claiming; Remote EVM treasury.
+
+### Definition of Done — met
+
+- [x] `SEPOLIA_TREASURY_PK` + need / cap / practice env names in `.env.example`; SECURITY §1/§4.1/§5 and
+      SEPOLIA-LIVE §4.1–4.4/§4.6 now point faucet drops at the treasury **first**
+- [x] `funding:sepolia` shows treasury ETH / **Circle USDC** / practice USDC, then every staff role against
+      `need` and `need × 1.25`, then the faucet steps with the treasury as step 0
+- [x] Executable top-up: `npm run treasury:topup [-- --execute | --partial | --json | --practice]`, the
+      pre-`cloneBlox` hook, and the interval watcher — one planner behind all three
+- [x] Circle USDC visible on the treasury (**30 USDC**, live), pinned as `tokens.circleUsdc` in
+      `sepolia.json`, hold-only; practice float documented off with the reason
+- [x] `killtests:treasury` **7/7 Live**, **6 PASS + 1 SKIP Dev** (Dev does not read the key at all);
+      `killtests:s2` **6/6 on both wings**; `npm run typecheck` clean
+- [x] No role collapse in code: refused by derived address, demo opt-in is loud (below); the Ganache-parity
+      refusal covers the treasury slot
+- [x] Progress note + 8 REFLECTION rows; SEPOLIA-TREASURY §8 ticked
+
+### Owed by a human
+
+- **A faucet claim to the treasury** — the deployer is 0.0292 ETH below target and the treasury is 0.010546
+  short of covering it after its reserve, so `treasury:topup` exits 2 rather than dribbling. One Google Cloud
+  drop (0.05 ETH/day, human sign-in) then `npm run treasury:topup -- --execute` closes it.
+- A **distinct** treasury throwaway. For this demo the principal deliberately reused the **ENS registrar's
+  key**; the collapse is refused unless `SEPOLIA_TREASURY_ALLOW_ROLE_REUSE=on`, and when on, the registrar row
+  is skipped (a self-transfer moves nothing), its target is added to the reserve so the Name Desk cannot be
+  starved, and the concession is printed by the CLI, reported on `/healthz` and shown in amber in desk debug.
+- Unchanged from S2: the browser walk on Live, and the Uniswap feedback form.
+
+---
+
 ## 6. After U5 / with U6 deferred
 
 | Next | Gate |
 |------|------|
+| **Sepolia ops treasury (S3)** | **met** 2026-09-08 (§5k; faucet → treasury → staff at need × 1.25; owed: one human faucet claim) |
 | **Sepolia Live + Developer Mode (S2)** | **met** 2026-09-08 (§5j; Live wing on Sepolia, Dev = 1337 toggle) |
 | **Uniswap v4 FX Desk (S1/S1b)** | K7 — **met** 2026-09-08 (§5i; live swap `0xd98efc64…`, re-run on the Live till `0xd1d9cd8e…`); owed: the sponsor feedback form |
 | **Terminal Console + OBSERVER** | Stretch — **met** 2026-09-08 (§5h; local `docs/progress/2026-09-08-terminal-observer.md`) |
