@@ -28,7 +28,7 @@ import {
   type Address,
   type Hex,
 } from 'viem';
-import { EngineBlox, GuardController, TxStatus, decodeRevertReason, getUserFriendlyErrorMessage } from '@bloxchain/sdk';
+import { ERROR_SIGNATURES, EngineBlox, GuardController, TxStatus, decodeRevertReason, getUserFriendlyErrorMessage } from '@bloxchain/sdk';
 import { erc20Abi, type PendingWire, type RecordStatus, type StageEvent } from '@branch-zero/shared';
 import { broadcaster, chain, manager, managerAddress, publicClient, tickChain } from '../chain.ts';
 import { deployments } from '../config.ts';
@@ -115,7 +115,22 @@ const ERROR_SELECTORS: Record<string, string> = {
   [toFunctionSelector('InvalidNonce(uint256,uint256)')]: 'InvalidNonce',
   [toFunctionSelector('SignerNotAuthorized(address)')]: 'SignerNotAuthorized',
   [toFunctionSelector('InvalidSignature(bytes)')]: 'InvalidSignature',
+  // S1b: the FX guard's own refusals. `TargetNotWhitelisted` is the one the security story rests on — the account
+  // asked to call a contract that is not on its list — and K7-e reported it as "Unknown" until it was named here.
+  [toFunctionSelector('TargetNotWhitelisted(address,bytes4)')]: 'TargetNotWhitelisted',
+  [toFunctionSelector('HandlerForSelectorMismatch(bytes4,bytes4)')]: 'HandlerForSelectorMismatch',
+  [toFunctionSelector('NoPermissionForFunction(address,bytes4)')]: 'NoPermissionForFunction',
 };
+
+/**
+ * Last resort before "Unknown": the SDK ships a selector → name table for the whole protocol
+ * (`ERROR_SIGNATURES`). `ERROR_SELECTORS` above stays because it overrides that table where the two disagree on a
+ * parameter list (`InvalidNonce`), and because it is the list of errors this bank has actually seen and written a
+ * line for. This fallback simply means a protocol error we have never met is still reported by **name**.
+ */
+const SDK_ERROR_NAMES: Record<string, string> = Object.fromEntries(
+  Object.entries(ERROR_SIGNATURES as Record<string, { name: string }>).map(([selector, sig]) => [selector.toLowerCase(), sig.name]),
+);
 
 /** Pull the revert payload out of viem's error chain — structured fields first, never the message text. */
 function revertData(e: unknown): Hex | undefined {
@@ -152,11 +167,12 @@ export function explainRevert(e: unknown): { code: string; message: string; bank
   let name: string | undefined = viemErrorName(e);
   if (!name && data) name = ERROR_SELECTORS[data.slice(0, 10).toLowerCase()];
   if (!name && decoded?.name) name = decoded.name;
-  if (!name) {
-    const sig = SIG_IN_TEXT.exec(text)?.[1];
-    if (sig) name = ERROR_SELECTORS[sig.toLowerCase()];
-  }
+  const sigInText = SIG_IN_TEXT.exec(text)?.[1]?.toLowerCase();
+  if (!name && sigInText) name = ERROR_SELECTORS[sigInText];
   if (!name) name = NAME_IN_TEXT.exec(text)?.[1];
+  // Only now fall back to the SDK's full table, so a curated name always wins over the generic one.
+  if (!name && data) name = SDK_ERROR_NAMES[data.slice(0, 10).toLowerCase()];
+  if (!name && sigInText) name = SDK_ERROR_NAMES[sigInText];
   if (!name) name = 'Unknown';
   const bankLine =
     name === 'BeforeReleaseTime'

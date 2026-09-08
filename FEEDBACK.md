@@ -116,10 +116,21 @@ would take this if the desk graduated past a hackathon.
 
 ## Honest limitations of our own submission
 
-Our live Sepolia evidence stops short of a completed swap: the FX teller ran out of Sepolia ETH after the pool was
-seeded and the account deployed, and testnet faucets are captcha-gated. What **is** live and verifiable on Sepolia:
-the v4 pool we created and seeded, the `AccountBlox` that trades from it, and the V4Quoter pricing real quotes
-against that pool. The swap path itself is implemented, typechecked, pre-flighted against the live router and walked
-end-to-end against a mock; it needs roughly 0.007 ETH of Sepolia gas to run for real. We would rather say that plainly
-than imply a receipt we do not have. Addresses, transaction hashes and the exact remaining step are in
-[`README.md`](./README.md#the-fx-desk--uniswap-v4-s1).
+The swap is live on Sepolia as of 2026-09-08 —
+[`0xd98efc64…`](https://sepolia.etherscan.io/tx/0xd98efc64e579758b04aa338b2ec777536839b7e48908000e6c6a0b93e8f686b3),
+the account spending its own practice dollars through the Universal Router — so what follows is what the demo still
+does *not* prove, rather than an apology for what it could not reach.
+
+**One pool, one direction, one hop.** We trade USDC → WETH against a pool we created and seeded ourselves, and we
+seeded it thinly on purpose so the board shows visible price impact. Nothing here exercises routing, multi-hop, or
+liquidity we did not put there; our `ExactInputSingleParams` is hand-encoded for exactly this shape. If the desk ever
+needed a second hop we would reach for `@uniswap/v4-sdk` rather than extend the hand-encoding.
+
+**The account, not the wallet, is the integration.** Everything above is written from a contract account with a
+permission system, which is a narrow vantage point. We never touched the front-end SDKs a dapp would use, so we
+cannot say whether the seams we hit exist for a normal integrator too.
+
+**The security story is one whitelist deep.** "The account can only talk to those three contracts with those three
+selectors" is true and enforced on chain (K7-e is refused `TargetNotWhitelisted`), but the router's `execute` takes
+an opaque `bytes[]`. The guard checks *which* contract and *which* function — not what commands are inside. A
+Uniswap-aware guard would be a genuinely interesting thing to build and we did not build it.

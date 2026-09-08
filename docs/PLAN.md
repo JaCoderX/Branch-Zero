@@ -184,7 +184,7 @@ flowchart LR
 | K4 | Are `GuardControllerDefinitions` / `RuntimeRBACDefinitions` published for Sepolia in `@bloxchain/contracts` (`deployed-addresses.json`)? **Local bar:** can we deploy `AccountBlox` from those artifacts onto **Remote EVM 1337** and read `owner()`? | Inspect installed package; run ENG-2026-0005 / U0 deploy script against `http://127.0.0.1:8545` | Deploy the definition libraries ourselves from package artifacts (they are libraries with pure/view functions; cheap). If Remote EVM rejects bytecode: Anvil fork, then Sepolia |
 | K5 | Can a Privy policy constrain typed-data signing to our domain/verifyingContract? | Create policy in dashboard; attempt an out-of-scope sign; expect denial | Scope by method only (`eth_signTypedData_v4`) and document the residual risk; the on-chain guards remain the real control |
 | K6 | ENSv2 Sepolia: can we register a `UserRegistry` under a name we own and mint subnames in a script? | Follow contract-developer tutorial; mint `test.branchzero.eth` | Use `.eth` name text records + wildcard resolution only; still ENSv2, weaker "central" claim |
-| K7 | Uniswap v4 Universal Router on Sepolia callable from a contract account via `GuardController` (Permit2 approvals as guarded calls)? | Script three guarded calls: `approve(Permit2)`, `Permit2.approve(router)`, `router.execute` | Native-input swap only, or drop S1 |
+| K7 | Uniswap v4 Universal Router on Sepolia callable from a contract account via `GuardController` (Permit2 approvals as guarded calls)? — **2026-09-08: YES.** `0xd98efc64…`, three guarded meta-transactions, then one per repeat swap | Script three guarded calls: `approve(Permit2)`, `Permit2.approve(router)`, `router.execute` | Native-input swap only, or drop S1 — not needed |
 
 Results are recorded in [REFLECTION.md](./REFLECTION.md) § Kill test log.
 
@@ -195,7 +195,7 @@ Results are recorded in [REFLECTION.md](./REFLECTION.md) § Kill test log.
 - [ ] Public repo, MIT or MPL-2.0 licence file, README with: 60-second pitch, architecture diagram, **exact file:line pointers** for each sponsor integration, run instructions, AI-tools disclosure.
 - [ ] Live web build reachable over HTTPS (static host; single-thread export needs no special headers).
 - [ ] Demo video (see [DEMO-SCRIPT.md](./DEMO-SCRIPT.md)) showing: login → account opening → instant payment (no pop-up) → time-locked wire with vault countdown → approval → ledger board; plus ENS pay-by-name and the Arc wing if shipped.
-- [ ] Sponsor forms: Privy (state which prize: B2B financial product), ENS (Sepolia, ENSv2 features listed), Arc (architecture diagram + which bounty), Uniswap only if S1 shipped (`FEEDBACK.md` + feedback form).
+- [ ] Sponsor forms: Privy (state which prize: B2B financial product), ENS (Sepolia, ENSv2 features listed), Arc (architecture diagram + which bounty), **Uniswap — S1 shipped 2026-09-08, so this one is owed**: `FEEDBACK.md` + <https://developers.uniswap.org/hackathon-feedback>.
 - [ ] `docs/` up to date; `REFLECTION.md` decision log closed.
 
 ---

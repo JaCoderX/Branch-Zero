@@ -23,9 +23,22 @@ functions on exactly three addresses, because its own `GuardController` whitelis
 ([`0xfd32332c…`](https://sepolia.etherscan.io/address/0xE03A1074c86CFeDd5C142C4F04F1a1536e203543), USDC/WETH, 0.30 %),
 the FX till [`0xB5e8ab92…`](https://sepolia.etherscan.io/address/0xB5e8ab92467663F50c6Ba237Cb062cE6Bf66B2Af)
 (deployed + initialised, `owner()` = the player's Privy wallet), and real `V4Quoter` prices against that pool.
-**Not yet live:** the guarded swap itself — the Sepolia teller ran out of gas money after seeding, and testnet
-faucets are captcha-gated. It needs ≈0.007 ETH and one re-run of the kill test. We would rather say that than imply
-a receipt we do not have; the honest limitation is repeated at the end of [`FEEDBACK.md`](./FEEDBACK.md).
+**And the swap itself — live, 2026-09-08.** The AccountBlox spent its own practice dollars through the Universal
+Router: [`0xd98efc64…`](https://sepolia.etherscan.io/tx/0xd98efc64e579758b04aa338b2ec777536839b7e48908000e6c6a0b93e8f686b3)
+— 0.5 USDC → 0.000206381989870823 WETH on the v4 pool, the third of three guarded meta-transactions
+([`approve`](https://sepolia.etherscan.io/tx/0x74ffbc6aebbdabe99b0941c8001bcd365f3df77b268724d53b29ff298846e9ff) →
+[`Permit2.approve`](https://sepolia.etherscan.io/tx/0x199bf0e360d3ed68386620478404656799502a692b08ae7d4938f434d0cfbc2f) →
+`execute`). The door it went through was opened the same day, by the account's owner and nobody else: the guard batch
+[`0x38f28f37…`](https://sepolia.etherscan.io/tx/0x38f28f3788dbe62f88ea2307f165e0362b0b073567a615a8a32f1614e8bd6128)
+registered the three schemas and whitelisted one address for each, and the role batch
+[`0xef7b253d…`](https://sepolia.etherscan.io/tx/0xef7b253df409a82c2d05c7b201861590761faa2cd089db7791b690efdf1002e5)
+gave OWNER the right to sign them and the FX teller the right to submit them. A second swap
+([`0x77f8076a…`](https://sepolia.etherscan.io/tx/0x77f8076ac375911c2ba427950111874b6495c836f49b45dd79d11c41ce71272f))
+took **one** transaction, because the two approvals are read back from the chain and skipped.
+
+That the list is a real fence and not decoration is the same kill test's next check: asked to call `execute` on the
+PoolManager instead, the account is refused `TargetNotWhitelisted` before anything moves (K7-e). `npm -w
+apps/teller-desk run killtests:s1` runs all six.
 
 **Start here**
 

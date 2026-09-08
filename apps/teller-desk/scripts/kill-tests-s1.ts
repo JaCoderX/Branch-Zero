@@ -15,8 +15,11 @@
  *   K7-e  the same call through a router that is *not* whitelisted is refused by the guard (the security story)
  *   K7-f  a stale quote is refused rather than silently re-priced
  *
- * Sepolia gas is real: the run needs `SEPOLIA_BROADCASTER_PK` funded (~0.002 ETH covers a full pass) and the till
- * holding practice USDC (mint it — the U5 mock's `mint` is open).
+ * Sepolia gas is real. A full first pass — guard batch (≈3.3 M gas) + role batch (≈2.4 M) + three guarded swap calls
+ * (≈2.8 M) — needs **≈0.007–0.01 ETH** in `SEPOLIA_BROADCASTER_PK` at a ~1 gwei base fee, not the ~0.002 an earlier
+ * header claimed. A second pass is cheaper: both batches are idempotent and the two approvals are read back and
+ * skipped, so only `execute` is sent. Check before you spend — `npm -w apps/teller-desk run fx:preflight` prints the
+ * teller's balance against every step's ceiling. The till also needs practice USDC (the U5 mock's `mint` is open).
  */
 import { formatEther, formatUnits, getAddress, parseAbi, parseUnits, type Address, type Hex } from 'viem';
 import { SecureOwnable } from '@bloxchain/sdk';

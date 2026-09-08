@@ -1,0 +1,68 @@
+/**
+ * S1b preflight (read-only): what the FX teller can pay for, what the till holds, and whether the exchange door is
+ * open on chain. Sends nothing. Run before `killtests:s1` so a dry teller is a sentence, not a burned fee.
+ *
+ *   npm -w apps/teller-desk run fx:preflight
+ */
+import { formatEther, formatUnits, parseAbi } from 'viem';
+import { GuardController, RuntimeRBAC } from '@bloxchain/sdk';
+import { config } from '../src/config.ts';
+import { FX_FUNCTIONS, FX_SELECTORS, fxDeployment, _fxClients } from '../src/lanes/fx.ts';
+import { BROADCASTER_ROLE, OWNER_ROLE } from '../src/lanes/provision.ts';
+
+const erc20 = parseAbi(['function balanceOf(address) view returns (uint256)']);
+
+async function main(): Promise<void> {
+  if (!config.sepoliaRpcUrl || !config.fx.broadcasterPk) throw new Error('SEPOLIA_RPC_URL and SEPOLIA_BROADCASTER_PK are required');
+  const d = fxDeployment();
+  const { publicClient, chain, broadcaster, broadcasterAddress } = _fxClients();
+  const block = await publicClient.getBlock();
+  const base = block.baseFeePerGas ?? 0n;
+  const maxFee = (base * 108n) / 100n + 20_000_000n;
+  const balance = await publicClient.getBalance({ address: broadcasterAddress });
+  console.log(`chain     ${chain.id} · block ${block.number} · base ${formatUnits(base, 9)} gwei · maxFee ${formatUnits(maxFee, 9)} gwei`);
+  console.log(`teller    ${broadcasterAddress} ${formatEther(balance)} ETH → ${(balance / maxFee).toString()} gas affordable`);
+  for (const [label, want] of [
+    ['guard batch (6)', 3_320_000n],
+    ['role  batch (6)', 2_400_000n],
+    ['swap  approve  ', 780_000n],
+    ['swap  permit2  ', 790_000n],
+    ['swap  execute  ', 1_050_000n],
+  ] as const) {
+    const cost = want * maxFee;
+    console.log(`  ${label} want ${want.toString().padStart(9)} gas ≈ ${formatEther(cost)} ETH  ${balance >= cost ? 'OK' : 'SHORT'}`);
+  }
+  const full = (3_320_000n + 2_400_000n + 780_000n + 790_000n + 1_050_000n) * maxFee;
+  console.log(`  full pass ceiling ≈ ${formatEther(full)} ETH — teller ${balance >= full ? 'covers it' : `SHORT by ${formatEther(full - balance)} ETH`}`);
+
+  const till = d.fixtures[0]?.address;
+  if (!till) return;
+  const [usdc, weth] = await Promise.all([
+    publicClient.readContract({ address: d.usdc.address, abi: erc20, functionName: 'balanceOf', args: [till] }),
+    publicClient.readContract({ address: d.weth.address, abi: erc20, functionName: 'balanceOf', args: [till] }),
+  ]);
+  console.log(`till      ${till} · ${formatUnits(usdc, d.usdc.decimals)} ${d.usdc.symbol} · ${formatUnits(weth, d.weth.decimals)} ${d.weth.symbol}`);
+
+  const gc = new GuardController(publicClient, broadcaster, till, chain);
+  const rbac = new RuntimeRBAC(publicClient, broadcaster, till, chain);
+  const supported = new Set((await gc.getSupportedFunctions()).map((s: string) => s.toLowerCase()));
+  for (const fn of FX_FUNCTIONS) {
+    const sel = FX_SELECTORS[fn.key];
+    const has = supported.has(sel.toLowerCase());
+    const targets = has ? await gc.getFunctionWhitelistTargets(sel).catch(() => []) : [];
+    console.log(`  schema ${fn.key.padEnd(8)} ${sel} ${has ? 'registered' : 'MISSING'} · whitelist [${(targets as string[]).join(', ') || '—'}]`);
+  }
+  for (const [role, name] of [[OWNER_ROLE, 'OWNER'], [BROADCASTER_ROLE, 'BROADCASTER']] as const) {
+    const perms = (await rbac.getActiveRolePermissions(role)) as Array<{ functionSelector: string; grantedActionsBitmap: number | bigint }>;
+    for (const fn of FX_FUNCTIONS) {
+      const sel = FX_SELECTORS[fn.key];
+      const cur = perms.find((p) => p.functionSelector.toLowerCase() === sel.toLowerCase());
+      console.log(`  role   ${name.padEnd(11)} ${fn.key.padEnd(8)} ${cur ? `bitmap ${cur.grantedActionsBitmap}` : 'MISSING'}`);
+    }
+  }
+}
+
+main().catch((e) => {
+  console.error(`preflight failed: ${(e as Error).message}`);
+  process.exitCode = 1;
+});

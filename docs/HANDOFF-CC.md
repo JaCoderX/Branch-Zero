@@ -6,22 +6,33 @@ created: 2026-09-06
 updated: 2026-09-08
 product: Branch-Zero
 objective: OBJ-2026-0004
-first_mission: S1b FX validate (docs/KICKOFF-S1-fx-validate.md) — land Sepolia guards/roles + live K7; teller funded; U7 ship packaging owed after principal polish re-playtest; U6 Arc G7 deferred — revive via docs/ARC.md §5b
-prior_mission: S1 FX desk built 2026-09-08 (1d2f558) PARTIAL — pool/till/quotes live, guards OOG; Terminal Console + OBSERVER met; U7 polish met; practice faucet met; U5 ENS met
+first_mission: U7 ship packaging (docs/KICKOFF-U7-ship-package.md) — owed: the principal's polish re-playtest; U6 Arc G7 deferred — revive via docs/ARC.md §5b
+prior_mission: S1b FX validate MET 2026-09-08 — guards/roles landed on Sepolia and K7-a…f green (live swap 0xd98efc64…); Terminal Console + OBSERVER met; U7 polish met; practice faucet met; U5 ENS met
 ---
 
 # Handoff — Claude Code (Fable 5.1)
 
 You are a **cold agent** unless the human says you are continuing a prior session. Prefer reading this file over chat memory. You have **freedom on how**. You do **not** have freedom on constraints, scope, or protocol semantics.
 
-**Authorized construction (2026-09-08): S1b FX validate** — prefer **Fable 5.1**. Spec:
-[`docs/UNISWAP.md`](./UNISWAP.md). Kickoff (guards + K7):
-[`docs/KICKOFF-S1-fx-validate.md`](./KICKOFF-S1-fx-validate.md). Prior build kickoff:
-[`docs/KICKOFF-S1-uniswap-fx.md`](./KICKOFF-S1-uniswap-fx.md). Mission record: **§5i**.
+**S1 / S1b Uniswap v4 FX Desk — MET 2026-09-08.** Spec: [`docs/UNISWAP.md`](./UNISWAP.md). Mission record: **§5i**.
 Arc stays **DEFERRED**; Uniswap is the activated **sponsor #3**. Official pitch: Privy + ENS + Uniswap.
+Next authorized construction is **U7 ship packaging** (below), still gated on the principal's polish re-playtest.
 
-> **Principal funded the FX teller** `0x83Af7CAA74b62a268887b4eDA92e0efDDFACd4DC` (2026-09-08).
-> Gas blocker is lifted — run S1b. Do **not** soft-send undersized gas limits (`budget()` must hard-fail).
+> **K7 is PASS.** The FX till `0xB5e8ab92…` completed a Uniswap v4 swap on Sepolia —
+> [`0xd98efc64…`](https://sepolia.etherscan.io/tx/0xd98efc64e579758b04aa338b2ec777536839b7e48908000e6c6a0b93e8f686b3),
+> 0.5 practice USDC → 0.000206381989870823 WETH through the Universal Router, as the account, through its own guard
+> list. Guard batch `0x38f28f37…`, role batch `0xef7b253d…`; `killtests:s1 -- --amount 0.5` is **K7-a…f green**.
+> Local record: `docs/progress/2026-09-08-s1b-fx-validate.md`.
+>
+> Two findings from S1b you will meet again anywhere config is written through a meta-transaction. **(1)** A role
+> grant on a selector *you* registered must set `handlerForSelectors` to **the selector itself** — provisioning's
+> `REQUEST_AND_APPROVE_EXECUTION_SELECTOR` is correct only for the built-in schemas, which are flexible-mode
+> (BLOXCHAIN-INTEGRATION V4/V7). **(2)** A config batch's receipt says `success` even when every action in it
+> reverted: the account records `TxStatus.FAILED` on `TransactionEvent` and returns normally. Read the event, not the
+> receipt — `assertInnerSuccess` in `lanes/fx.ts`. The first role batch cost 2,021,592 gas and granted nothing.
+>
+> **Owed by a human:** submit the [Uniswap hackathon feedback form](https://developers.uniswap.org/hackathon-feedback)
+> pointing at <https://github.com/JaCoderX/Branch-Zero/blob/main/FEEDBACK.md>. No amount of code substitutes for it.
 
 > **Terminal Console + OBSERVER met 2026-09-08** (local `docs/progress/2026-09-08-terminal-observer.md`; **§5h**).
 > The bank computers in the manager's office and at Account Opening open a terminal overlay: an iframe of
@@ -138,7 +149,7 @@ Not: a wallet UI, DeFi protocol, Bloxchain fork, mainnet, Tactical-AI, GameLab m
 
 ## 2. Read order (before code)
 
-1. **This file** (§5i S1b FX validate authorized — teller funded; §5h Terminal **met**; packaging §6; U6 §5g deferred)
+1. **This file** (§5i Uniswap **met** — K7 PASS; §5h Terminal **met**; packaging §6 is the open unit; U6 §5g deferred)
 2. [`docs/DEV-LOOP.md`](./DEV-LOOP.md) — U6 row; ENG-0006 **yes** (K3); U5 / G6 **met**
 3. [`docs/progress/2026-09-07-u5-ens-g6.md`](./progress/2026-09-07-u5-ens-g6.md) — Name Desk frozen; then
    [`…k6-yes.md`](./progress/2026-09-07-k6-yes.md) only if you need Sepolia address pins
@@ -583,7 +594,7 @@ itself can reach stays a Console-side **VERIFY** (TERMINAL-CONSOLE §7) — gran
 
 ---
 
-## 5i. Mission S1 — Uniswap v4 FX Desk — **OPEN**
+## 5i. Mission S1 / S1b — Uniswap v4 FX Desk — **MET 2026-09-08**
 
 Activated **2026-09-08** as sponsor **#3** while U6 Arc stays deferred. End-to-end: Sepolia infra → AccountBlox
 guards → Teller `/quote` `/swap` → bridge → Kenji + FX desk visualization → `FEEDBACK.md` + Uniswap form.
@@ -605,30 +616,47 @@ MockChain for greybox only — **K7 evidence must be live Sepolia**.
 - Arc revive / funding; Terminal/OBSERVER; ship packaging title cards; Unichain; CCA; custom v4 hooks;
   v2/v3 as the primary path; custom Solidity; wiping Remote EVM; ENS mainnet
 
-**S1 status (2026-09-08): PARTIAL → S1b validate.** Build met (`1d2f558`): pool, till, quotes, desk/bridge/Kenji/board,
-`FEEDBACK.md`. **Not** met: on-chain FX permissions + live swap. Guard batch OOG (`0x2d3b6b27…`); role batch never
-sent — till has **no** Uniswap door yet. Read
-[`docs/progress/2026-09-08-s1-uniswap-fx.md`](./progress/2026-09-08-s1-uniswap-fx.md) and
-[`docs/KICKOFF-S1-fx-validate.md`](./KICKOFF-S1-fx-validate.md) **first**.
+**Status: MET.** S1 built it (`1d2f558`); **S1b landed it on chain 2026-09-08**. Read
+[`docs/progress/2026-09-08-s1b-fx-validate.md`](./progress/2026-09-08-s1b-fx-validate.md) **first** — it carries the
+hashes, the gas numbers and the two findings. The build note
+[`…s1-uniswap-fx.md`](./progress/2026-09-08-s1-uniswap-fx.md) is history: its "measured 2,143,997" role-batch figure
+was taken against a batch that reverted, and its `budget()` soft-send is gone.
 
-**Funded (principal):** FX teller `0x83Af7CAA74b62a268887b4eDA92e0efDDFACd4DC`. Continue with
-`npm -w apps/teller-desk run killtests:s1 -- --amount 0.5` after hardening `budget()` (hard-fail when short).
+Re-run any time (idempotent; a repeat pass is one meta-transaction, ≈0.0013 ETH):
+
+```bash
+npm -w apps/teller-desk run fx:preflight            # read-only: teller balance vs every step, door state
+npm -w apps/teller-desk run killtests:s1 -- --amount 0.5
+```
+
+**FX teller** `0x83Af7CAA74b62a268887b4eDA92e0efDDFACd4DC` — funded by the principal, **0.0367 ETH left** after S1b.
 
 ### Definition of Done
 
 - [x] Sepolia v4 addresses + liquid pool documented in `infra/deployments/sepolia.json` / UNISWAP.md — pool created
       and seeded live; addresses pinned from the official deployments page
-- [ ] **FX guard + role config live on till `0xB5e8…`** — code in `enableFx`; **not landed** (prior OOG). Need three
-      schemas + three whitelist targets (USDC / Permit2 / Universal Router) + OWNER sign + BROADCASTER execute on each
-- [ ] **Live K7: AccountBlox completes a v4 swap on Sepolia** — teller funded; run S1b. Pool / till / quoter already live
+- [x] **FX guard + role config live on till `0xB5e8ab92…`** — guard batch
+      [`0x38f28f37…`](https://sepolia.etherscan.io/tx/0x38f28f3788dbe62f88ea2307f165e0362b0b073567a615a8a32f1614e8bd6128)
+      (3 schemas + 3 whitelist targets, 2,880,708 gas) and role batch
+      [`0xef7b253d…`](https://sepolia.etherscan.io/tx/0xef7b253df409a82c2d05c7b201861590761faa2cd089db7791b690efdf1002e5)
+      (OWNER sign + BROADCASTER execute on each). Read back by `fx:preflight`: OWNER bitmap 8, BROADCASTER 64, on all three
+- [x] **Live K7: AccountBlox completes a v4 swap on Sepolia** —
+      [`0xd98efc64…`](https://sepolia.etherscan.io/tx/0xd98efc64e579758b04aa338b2ec777536839b7e48908000e6c6a0b93e8f686b3),
+      0.5 USDC → 0.000206381989870823 WETH; repeat swap `0x77f8076a…` in one transaction. **K7-a…f all green**
 - [x] Desk `/fx/status` `/fx/quote` `/fx/enable` `/fx/swap` + bridge `s1.0` + Kenji dialogue (mock + live paths)
 - [x] In-world FX desk + Kenji + quote board + sponsor signage; `run_viz_budget` green (35 materials, 37 with
       particles, ≤ 40) and named shots `33_fx_desk_close` / `34_fx_talk` / `35_fx_board_close`
 - [x] `FEEDBACK.md` committed; README points at integration lines; form reminder in the progress note
 - [x] `run_checks` green (120 codes, Kenji's verb split enforced), `run_fx_walk` green, `run_mock_walk` green,
       `npm run typecheck` green; no freeze / Priority / ENS / faucet regression
-- [x] REFLECTION K7 row (PARTIAL) + S1 decision-log rows; this §5i updated for S1b
-- [ ] S1b: `budget()` never soft-sends undersized gas; kill-test gas comment ≈0.007–0.01 ETH; README + K7 = PASS after live swap
+- [x] REFLECTION K7 = **PASS** + S1/S1b decision-log rows; this §5i DoD updated
+- [x] S1b: `budget()` hard-fails `FX_TELLER_DRY` and every write is sized from a **state-override `eth_estimateGas`**
+      (`OUTER_GAS` is only a floor); kill-test header says ≈0.007–0.01 ETH; new `fx:preflight` prices a pass before it starts
+- [x] S1b: `assertInnerSuccess` — a config batch's receipt is delivery, not success; `fxEnabled` checks all three
+      whitelists **and** the six role bits; `explainRevert` names `TargetNotWhitelisted` instead of `Unknown`
+- [x] README / FEEDBACK / UNISWAP.md / REFLECTION K7 = PASS carry the hashes; BLOXCHAIN-INTEGRATION V4+V7 amended
+- [ ] **Owed by a human:** the [Uniswap hackathon feedback form](https://developers.uniswap.org/hackathon-feedback),
+      pointing at <https://github.com/JaCoderX/Branch-Zero/blob/main/FEEDBACK.md>
 
 ---
 
@@ -636,14 +664,16 @@ sent — till has **no** Uniswap door yet. Read
 
 | Next | Gate |
 |------|------|
+| **Uniswap v4 FX Desk (S1/S1b)** | K7 — **met** 2026-09-08 (§5i; live swap `0xd98efc64…`); owed: the sponsor feedback form |
 | **Terminal Console + OBSERVER** | Stretch — **met** 2026-09-08 (§5h; local `docs/progress/2026-09-08-terminal-observer.md`) |
 | U7 polish | Principal playtest — **met** 2026-09-07 ([`KICKOFF-U7-polish.md`](./KICKOFF-U7-polish.md); owed: principal re-playtest) |
 | **U7 ship packaging** | G8–G10 — **open** after re-playtest ([`KICKOFF-U7-ship-package.md`](./KICKOFF-U7-ship-package.md)) |
 | U6 Arc + manager role | G7 — **deferred** (revive ARC.md §5b) |
 
 **Now:** staged art Stage 1–5 **met**; ship reel **met**; polish **met** (code); practice faucet **met**;
-Terminal/OBSERVER stretch **met**. Do not reopen Arc funding; elevator refuses with coming-soon. Packaging waits on
-the principal's re-walk of the ten findings.
+Terminal/OBSERVER stretch **met**; **Uniswap S1/S1b met** (K7 PASS on Sepolia). Do not reopen Arc funding; elevator
+refuses with coming-soon. Packaging waits on the principal's re-walk of the ten findings. The one thing owed to a
+sponsor is the Uniswap feedback form — it is a prize requirement, not paperwork.
 
 Cut order unchanged: Uniswap → Manager → Arc → ENS EAC → ENS mint. **Never cut Privy or Lane B.**
 

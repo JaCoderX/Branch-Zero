@@ -42,6 +42,7 @@ import {
   maxUint256,
   parseAbi,
   parseAbiParameters,
+  parseEther,
   parseGwei,
   parseUnits,
   toBytes,
@@ -115,11 +116,61 @@ const stateViewAbi = parseAbi([
 ]);
 const POOL_KEY_TUPLE = '(address currency0, address currency1, uint24 fee, int24 tickSpacing, address hooks)';
 
+/**
+ * The two events every AccountBlox emits when a transaction reaches a terminal state (`EngineBlox`
+ * `_completeTransaction`). We read them because **a mined meta-transaction is not a successful one**: the account
+ * catches the inner revert, records the transaction `FAILED`, and returns normally, so the outer receipt says
+ * `success` either way. See `assertInnerSuccess`.
+ */
+const accountEventsAbi = parseAbi([
+  'event TransactionEvent(uint256 indexed txId, bytes4 indexed functionHash, uint8 status, address indexed requester, address target, bytes32 operationType, bytes32 resultHash)',
+  'event TxExecutionResult(uint256 indexed txId, bytes result)',
+]);
+/** `EngineBlox.TxStatus`, by enum position. 5 = COMPLETED, 6 = FAILED. */
+const TX_STATUS = ['UNDEFINED', 'PENDING', 'EXECUTING', 'PROCESSING_PAYMENT', 'CANCELLED', 'COMPLETED', 'FAILED'] as const;
+const TX_FAILED = 6;
+
+/**
+ * Did the work inside the meta-transaction actually happen?
+ *
+ * `receipt.status === 'success'` only says the account accepted and ran the request. When the inner call reverts,
+ * `_completeTransaction` writes `TxStatus.FAILED`, emits it on `TransactionEvent`, puts the raw revert bytes on
+ * `TxExecutionResult` — and the outer transaction still mines, still succeeds, still charges for every bit of gas
+ * it burned. The first FX role batch cost 2,021,592 gas that way while granting nothing, and the desk called it a
+ * success. So: read the events back, and turn a FAILED record into the error it actually carried.
+ */
+function assertInnerSuccess(logs: readonly { address: string; data: Hex; topics: readonly Hex[] }[], account: Address, what: string, hash: Hex): void {
+  const mine = logs.filter((l) => l.address.toLowerCase() === account.toLowerCase());
+  const results = new Map<string, Hex>();
+  const terminal: Array<{ txId: bigint; status: number }> = [];
+  for (const l of mine) {
+    try {
+      const e = decodeEventLog({ abi: accountEventsAbi, data: l.data, topics: l.topics as [Hex, ...Hex[]] });
+      if (e.eventName === 'TxExecutionResult') results.set(String(e.args.txId), e.args.result as Hex);
+      else if (e.eventName === 'TransactionEvent' && Number(e.args.status) >= 4) terminal.push({ txId: e.args.txId as bigint, status: Number(e.args.status) });
+    } catch {
+      /* some other contract's event, or a shape this ABI does not cover */
+    }
+  }
+  const failed = terminal.find((t) => t.status === TX_FAILED);
+  if (!failed) return;
+  const data = results.get(String(failed.txId));
+  const why = data && data.length >= 10 ? explainRevert(Object.assign(new Error(`reverted, signature "${data.slice(0, 10)}"`), { data })) : undefined;
+  throw Object.assign(new Error(`${what} mined but the account recorded it ${TX_STATUS[failed.status]}: ${why?.message ?? `revert data ${data ?? '(none)'}`} (${hash})`), {
+    statusCode: 502,
+    code: 'FX_CONFIG_FAILED',
+    ...(why?.bankLine ? { bankLine: why.bankLine } : {}),
+  });
+}
+
 /** The three guarded functions, in bank order. `signature` is what `registerFunctionSchema` stores. */
 export const FX_FUNCTIONS = [
   { key: 'approve', signature: 'approve(address,uint256)', operation: 'ERC20_APPROVE', gas: 80_000n },
   { key: 'permit2', signature: 'approve(address,address,uint160,uint48)', operation: 'PERMIT2_APPROVE', gas: 90_000n },
-  { key: 'execute', signature: 'execute(bytes,bytes[],uint256)', operation: 'UNISWAP_V4_SWAP', gas: 350_000n },
+  // 500k, not the ~200k a warm v4 exactInputSingle costs: the till's first swap writes *cold* storage — a new WETH
+  // balance slot, the pool's fee growth, Permit2's nonce — and inner gas is a cap the guard forwards, not a price.
+  // Unused gas is refunded; an undersized inner cap is a paid-for revert. Same asymmetry `budget()` is built on.
+  { key: 'execute', signature: 'execute(bytes,bytes[],uint256)', operation: 'UNISWAP_V4_SWAP', gas: 500_000n },
 ] as const;
 export const FX_SELECTORS = Object.fromEntries(FX_FUNCTIONS.map((f) => [f.key, toFunctionSelector(`function ${f.signature}`)])) as Record<(typeof FX_FUNCTIONS)[number]['key'], Hex>;
 const FX_ACTIONS = [TxAction.SIGN_META_REQUEST_AND_APPROVE, TxAction.EXECUTE_META_REQUEST_AND_APPROVE];
@@ -131,7 +182,7 @@ const FX_ACTIONS = [TxAction.SIGN_META_REQUEST_AND_APPROVE, TxAction.EXECUTE_MET
 const OUTER_GAS = {
   /** Guard batch: 6 actions (3 `registerFunctionSchema` + 3 whitelist) measured at 2,989,417 on Sepolia. */
   guard: (n: bigint) => 800_000n + 420_000n * n,
-  /** Role batch: 6 `addFunctionToRole` grants measured at 2,143,997. */
+  /** Role batch floor: prefer state-override estimate at send — a failed first grant once priced ~2.1 M and lied. */
   role: (n: bigint) => 600_000n + 300_000n * n,
   /** One guarded call: the `requestAndApproveExecution` machinery plus the inner call's own cap. */
   call: (inner: bigint) => 700_000n + inner,
@@ -155,20 +206,27 @@ async function fees(): Promise<{ maxFeePerGas: bigint; maxPriorityFeePerGas: big
 }
 
 /**
- * What the teller can actually pay for, in gas. `want` is the honest ceiling for the call; when the balance cannot
- * cover it we send what it can (98 %, leaving room for the fee to tick up) rather than refusing — an out-of-gas
- * revert names the real problem, where viem's balance error only says "insufficient funds".
+ * The outer gas limit to send, or a refusal. `want` is the measured ceiling for the step.
+ *
+ * There is **no soft path**: when the teller cannot cover `want` we throw `FX_TELLER_DRY` and send nothing. The
+ * earlier version shipped the affordable limit instead, on the theory that an out-of-gas revert names the problem
+ * better than viem's "insufficient funds". It does — and it also *pays* for the privilege. That is precisely how
+ * 0.0027 ETH went into the failed guard batch `0x2d3b6b27…` (2,481,776 used of a 2,520,000 limit, against a
+ * measured need of 2,989,417): the SDK's pre-flight simulates with **no** gas field, so an undersized limit sails
+ * through `eth_call` and only dies on chain, where the fee is not refunded. A refusal costs nothing and says
+ * exactly what to do — top the teller up. Sizing comes from state-override `eth_estimateGas`, never from simulation.
  */
 async function budget(want: bigint): Promise<bigint> {
   const { publicClient, broadcasterAddress } = fxClients();
   const [balance, f] = await Promise.all([publicClient.getBalance({ address: broadcasterAddress }), fees()]);
+  // 98 %: viem checks `gas × maxFeePerGas ≤ balance` at send time, and the base fee may tick up between the two.
   const affordable = ((balance / f.maxFeePerGas) * 98n) / 100n;
   if (affordable >= want) return want;
-  if (affordable < 200_000n) {
-    throw fxError('FX_TELLER_DRY', `the FX teller ${broadcasterAddress} holds ${formatUnits(balance, 18)} ETH — not enough Sepolia gas for one guarded call (needs ~${formatUnits(want * f.maxFeePerGas, 18)} ETH)`, 503);
-  }
-  console.warn(`[fx] teller can only fund ${affordable} of ${want} gas — sending the smaller limit`);
-  return affordable;
+  throw fxError(
+    'FX_TELLER_DRY',
+    `the FX teller ${broadcasterAddress} holds ${formatUnits(balance, 18)} ETH — enough for ${affordable} gas, and this step needs ${want} (~${formatUnits(want * f.maxFeePerGas, 18)} ETH at ${formatUnits(f.maxFeePerGas, 9)} gwei). Refusing rather than sending an undersized limit that would run out of gas and burn the fee. Top the teller up and re-run.`,
+    503,
+  );
 }
 
 // ---------------------------------------------------------------- deployment + clients (lazy, like ens.ts)
@@ -255,6 +313,36 @@ function fxClients() {
    * viem's defaults, and `TransactionOptions.gasPrice` would force a 1 gwei tip — so the cheapest place to say
    * "0.02 gwei is plenty on Sepolia" is the wallet client itself.
    */
+  /**
+   * And size every write from a **state-override `eth_estimateGas`**, with the caller's figure as a floor.
+   *
+   * This is the other half of the same problem. `OUTER_GAS` carries hand-measured ceilings, and a hand-measured
+   * ceiling is only as good as the run it was measured on: the role batch's "2,143,997" was recorded against a
+   * batch that reverted on its **first** grant, so it measured the revert, not the work. Sized from it, the first
+   * batch that actually did the work died out of gas at 2,363,690 (`0x50ce7190…`). An estimate taken here, against
+   * the real calldata, cannot make that mistake.
+   *
+   * The override is what makes the estimate possible at all: a public node probes with the block gas limit, so on
+   * Sepolia (60 M × ~1.1 gwei ≈ 0.066 ETH) any teller poorer than that gets "insufficient funds for gas * price"
+   * instead of a number. Lending the sender a balance for the duration of one `eth_call` costs nothing and changes
+   * nothing about what is sent — `budget()` still decides, from the *real* balance, whether we can afford it.
+   */
+  const sizeGas = async (args: Record<string, unknown>, from: Address): Promise<bigint> => {
+    const floor = typeof args.gas === 'bigint' ? (args.gas as bigint) : 0n;
+    const to = (args.address ?? args.to) as Address | undefined;
+    const encode = encodeFunctionData as (a: { abi: unknown; functionName: string; args: unknown }) => Hex;
+    const data = (args.data as Hex | undefined) ?? (args.abi ? encode({ abi: args.abi, functionName: args.functionName as string, args: args.args }) : undefined);
+    if (!to || !data) return floor;
+    try {
+      const estimate = await publicClient.estimateGas({ account: from, to, data, value: (args.value as bigint | undefined) ?? 0n, stateOverride: [{ address: from, balance: parseEther('10') }] });
+      const headroom = (estimate * 115n) / 100n;
+      return headroom > floor ? headroom : floor;
+    } catch {
+      // The call itself reverts (a refused guard, a stale quote). The SDK's own pre-flight raises that with a
+      // decoded reason before we get here; keep the floor so the caller's error is the one that surfaces.
+      return floor;
+    }
+  };
   const frugal = (w: WalletClient): WalletClient =>
     new Proxy(w, {
       get(target, prop, receiver) {
@@ -262,7 +350,8 @@ function fxClients() {
         if (prop !== 'writeContract' && prop !== 'sendTransaction') return value;
         return async (args: Record<string, unknown>) => {
           const priced = args.maxFeePerGas || args.gasPrice ? args : { ...args, ...(await fees()) };
-          return (value as (a: unknown) => unknown).call(target, priced);
+          const from = w.account!.address;
+          return (value as (a: unknown) => unknown).call(target, { ...priced, gas: await budget(await sizeGas(priced, from)) });
         };
       },
     }) as WalletClient;
@@ -397,10 +486,13 @@ async function ownerSignedBatch(player: Player, till: Address, kind: 'guard' | '
   const metaTxParams = await ctl.createMetaTxParams(till, metaSelector, TxAction.SIGN_META_REQUEST_AND_APPROVE, await metaTxDuration(), 0n, player.ownerAddress);
   const unsigned = await ctl.generateUnsignedMetaTransactionForNew(player.ownerAddress, till, 0n, innerGas, operation, execSelector, executionParams, metaTxParams);
   const signed = await signMetaTx(publicClient, chain, unsigned, { owner: player.ownerAddress, walletId: player.walletId, account: till }, audit);
-  const opts = { from: broadcasterAddress, gas: await budget(outerGas) };
+  // `gas` is a floor, not the final limit: the frugal wallet client re-sizes it from a state-override estimate
+  // and hard-fails through `budget()` if the teller cannot cover the result.
+  const opts = { from: broadcasterAddress, gas: outerGas };
   const res = kind === 'guard' ? await (ctl as GuardController).guardConfigBatchRequestAndApprove(signed, opts) : await (ctl as RuntimeRBAC).roleConfigBatchRequestAndApprove(signed, opts);
   const receipt = await res.wait();
   if (receipt.status !== 'success') throw fxError('FX_TX_FAILED', `${kind} config batch reverted (${res.hash})`);
+  assertInnerSuccess(receipt.logs, till, `${kind} config batch`, res.hash as Hex);
   return res.hash as Hex;
 }
 
@@ -416,13 +508,15 @@ async function guardedCall(player: Player, till: Address, fn: (typeof FX_FUNCTIO
   const signed = await signMetaTx(publicClient, chain, unsigned, { owner: player.ownerAddress, walletId: player.walletId, account: till }, audit);
   let res;
   try {
-    res = await gc.requestAndApproveExecution(signed, { from: broadcasterAddress, gas: await budget(OUTER_GAS.call(fn.gas)) });
+    res = await gc.requestAndApproveExecution(signed, { from: broadcasterAddress, gas: OUTER_GAS.call(fn.gas) });
   } catch (e) {
     const why = explainRevert(e);
     throw Object.assign(new Error(`${fn.key}: ${why.message}`), { statusCode: 400, code: why.code, bankLine: why.bankLine });
   }
   const receipt = await res.wait();
   if (receipt.status !== 'success') throw fxError('FX_TX_FAILED', `${fn.key} meta-transaction reverted (${res.hash})`);
+  // A guarded call refused *inside* the account mines like any other: same reason as the config batches above.
+  assertInnerSuccess(receipt.logs, till, `${fn.key} meta-transaction`, res.hash as Hex);
   return res.hash as Hex;
 }
 
@@ -453,6 +547,29 @@ export interface FxEnableResult {
  * **Do not trust the SDK's pre-flight simulation to catch an undersized limit.** `BaseStateMachine.executeWriteContract`
  * simulates with `eth_call` and *no* gas field, so the node uses the block limit, the call succeeds, and the real
  * transaction then runs out of gas and burns the fee (2026-09-08: 0.0027 ETH lost that way at a 2.52 M limit).
+ *
+ * ### Why the role grants self-reference (and Lane A's `transfer` grant does not)
+ *
+ * `lanes/provision.ts` grants `transfer(address,uint256)` with `handlerForSelectors: [REQUEST_AND_APPROVE_EXECUTION]`,
+ * and that is correct **there** — `transfer` is one of the built-in schemas `initialize` installs, and the built-ins
+ * are registered in *flexible* mode (`enforceHandlerRelations: false`), which lets a grant name any handler.
+ *
+ * A schema this batch registers is a different animal. `GuardController._registerGuardedFunction` hard-codes
+ * `enforceHandlerRelations: true` and `handlerForSelectors: [the selector itself]` for every dynamically registered
+ * function, and the definition contract's `REGISTER_FUNCTION` format — `(string, string, TxAction[])`, confirmed by
+ * `getGuardConfigActionSpecs` — gives us no field to change either. So at grant time `_validateHandlerForSelectors`
+ * checks our handler against *that* list and only the self-reference is in it: naming
+ * `REQUEST_AND_APPROVE_EXECUTION_SELECTOR` reverts `HandlerForSelectorMismatch(0x00000000, 0xde0df793)`.
+ *
+ * Self-referencing costs nothing at run time. `_validateExecutionAndHandlerPermissions` checks
+ * `hasActionPermission` on the execution selector **and** on the handler selector (`0xde0df793`, whose built-in
+ * OWNER/BROADCASTER grants `initialize` already installed), then applies strict mode to the **handler's** schema —
+ * which is flexible — and never re-reads the permission row's `handlerForSelectors`.
+ *
+ * This cost a role batch to learn (`0x36126e6c…`), and it is worth knowing *how*: the outer transaction succeeded
+ * and burned 2,021,592 gas while every grant in it failed. The account records an inner revert as a **FAILED**
+ * status event carrying the error, not as a receipt failure — so `receipt.status === 'success'` on a config batch
+ * proves only that the meta-transaction was delivered. `ownerSignedBatch` now reads the effect back instead.
  */
 export async function enableFx(player: Player, jobId: string, audit?: AuditSink): Promise<FxEnableResult> {
   const d = fxDeployment();
@@ -489,9 +606,9 @@ export async function enableFx(player: Player, jobId: string, audit?: AuditSink)
 
   stage(current, jobId, 'configuring', 'Authorising you to sign and the FX teller to submit…');
   const roleActions: Array<{ actionType: RoleConfigActionType; data: Hex }> = [];
-  for (const [role, roleName, action, actionName, handler] of [
-    [OWNER_ROLE, 'OWNER', TxAction.SIGN_META_REQUEST_AND_APPROVE, 'SIGN_META_REQUEST_AND_APPROVE', GC_SEL.REQUEST_AND_APPROVE_EXECUTION_SELECTOR],
-    [BROADCASTER_ROLE, 'BROADCASTER', TxAction.EXECUTE_META_REQUEST_AND_APPROVE, 'EXECUTE_META_REQUEST_AND_APPROVE', GC_SEL.REQUEST_AND_APPROVE_EXECUTION_SELECTOR],
+  for (const [role, roleName, action, actionName] of [
+    [OWNER_ROLE, 'OWNER', TxAction.SIGN_META_REQUEST_AND_APPROVE, 'SIGN_META_REQUEST_AND_APPROVE'],
+    [BROADCASTER_ROLE, 'BROADCASTER', TxAction.EXECUTE_META_REQUEST_AND_APPROVE, 'EXECUTE_META_REQUEST_AND_APPROVE'],
   ] as const) {
     const existing = (await readFx(() => rbac.getActiveRolePermissions(role))) as Array<{ functionSelector: Hex; grantedActionsBitmap: number | bigint }>;
     for (const fn of FX_FUNCTIONS) {
@@ -500,7 +617,8 @@ export async function enableFx(player: Player, jobId: string, audit?: AuditSink)
       const cur = existing.find((e) => e.functionSelector.toLowerCase() === selector.toLowerCase());
       if (cur && Number(cur.grantedActionsBitmap) === want) continue;
       if (cur) continue; // a different grant already exists on this selector; never REMOVE from a role here
-      roleActions.push({ actionType: RoleConfigActionType.ADD_FUNCTION_TO_ROLE, data: encodeAddFunctionToRole(publicClient, d.rbacDefinitions, role, { functionSelector: selector, grantedActionsBitmap: want, handlerForSelectors: [handler] }) });
+      // `handlerForSelectors` is the **selector itself**, not `requestAndApproveExecution` — see the note below.
+      roleActions.push({ actionType: RoleConfigActionType.ADD_FUNCTION_TO_ROLE, data: encodeAddFunctionToRole(publicClient, d.rbacDefinitions, role, { functionSelector: selector, grantedActionsBitmap: want, handlerForSelectors: [selector] }) });
       actions.push(`ADD ${fn.key} to ${roleName} (${actionName})`);
     }
   }
@@ -516,15 +634,44 @@ export async function enableFx(player: Player, jobId: string, audit?: AuditSink)
   return { account: till, chainId: d.chainId, guardHash, roleHash, actions, whitelist: FX_FUNCTIONS.map((fn) => ({ function: fn.signature, selector: FX_SELECTORS[fn.key], target: targets[fn.key] })) };
 }
 
-/** Is the till open on chain? Read, not remembered — a restart or a foreign Re-check cannot lie about it. */
+/**
+ * Is the till open on chain? Read, not remembered — a restart or a foreign Re-check cannot lie about it.
+ *
+ * All three parts, because the door needs all three and a partial answer is worse than none. The first version
+ * asked only for the three schemas plus the router on `execute`, and on 2026-09-08 that told the kill test the till
+ * was open while every role grant was still missing: K7-b went green and K7-d then failed `NoPermission`. A probe
+ * that can pass over a shut door is not a probe. `fxStatus` shows this to the player, so it costs four `eth_call`s
+ * on a desk read — cheap next to being wrong.
+ */
 export async function fxEnabled(till: Address): Promise<boolean> {
   const d = fxDeployment();
   const { publicClient, chain, broadcaster } = fxClients();
   const gc = new GuardController(publicClient, broadcaster, till, chain);
+  const rbac = new RuntimeRBAC(publicClient, broadcaster, till, chain);
+  const targets: Record<(typeof FX_FUNCTIONS)[number]['key'], Address> = { approve: d.usdc.address, permit2: d.uniswap.permit2, execute: d.uniswap.universalRouter };
+
+  // 1. the three schemas are registered
   const supported = new Set((await readFx(() => gc.getSupportedFunctions())).map((s) => s.toLowerCase()));
   if (!Object.values(FX_SELECTORS).every((s) => supported.has(s.toLowerCase()))) return false;
-  const listed = await readFx(() => gc.getFunctionWhitelistTargets(FX_SELECTORS.execute).catch(() => [] as Address[]));
-  return listed.some((a) => a.toLowerCase() === d.uniswap.universalRouter.toLowerCase());
+
+  // 2. each selector's whitelist carries its one target — a schema with no target opens nothing
+  const listed = await readFx(() => Promise.all(FX_FUNCTIONS.map((fn) => gc.getFunctionWhitelistTargets(FX_SELECTORS[fn.key]).catch(() => [] as Address[]))));
+  if (!FX_FUNCTIONS.every((fn, i) => listed[i].some((a) => a.toLowerCase() === targets[fn.key].toLowerCase()))) return false;
+
+  // 3. and the roles can actually use them: OWNER signs, BROADCASTER executes, on all three (BLOXCHAIN-INTEGRATION V4)
+  for (const [role, action] of [
+    [OWNER_ROLE, TxAction.SIGN_META_REQUEST_AND_APPROVE],
+    [BROADCASTER_ROLE, TxAction.EXECUTE_META_REQUEST_AND_APPROVE],
+  ] as const) {
+    const want = toContractValue(createBitmapFromActions([action]));
+    const perms = (await readFx(() => rbac.getActiveRolePermissions(role))) as Array<{ functionSelector: Hex; grantedActionsBitmap: number | bigint }>;
+    const holds = (selector: Hex) => {
+      const cur = perms.find((p) => p.functionSelector.toLowerCase() === selector.toLowerCase());
+      return Boolean(cur) && (Number(cur!.grantedActionsBitmap) & want) === want;
+    };
+    if (!FX_FUNCTIONS.every((fn) => holds(FX_SELECTORS[fn.key]))) return false;
+  }
+  return true;
 }
 
 // ---------------------------------------------------------------- status, quote, swap

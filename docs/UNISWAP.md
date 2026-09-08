@@ -1,8 +1,11 @@
 # Uniswap v4 Integration — The FX Desk (S1)
 
-> Status: **PARTIAL → S1b validate** (sponsor **#3**; Arc deferred). Build met; pool, FX till and live quotes are on
-> Sepolia; **FX guard/role config and live swap not on chain** (prior OOG). Principal funded FX teller `0x83Af…d4DC`.
-> Continuation: [`KICKOFF-S1-fx-validate.md`](./KICKOFF-S1-fx-validate.md). Build kickoff:
+> Status: **MET 2026-09-08** (sponsor **#3**; Arc deferred). Pool, FX till, quotes, **guard + role config and the
+> guarded swap are all live on Sepolia**. K7-a…f green. First swap
+> [`0xd98efc64…`](https://sepolia.etherscan.io/tx/0xd98efc64e579758b04aa338b2ec777536839b7e48908000e6c6a0b93e8f686b3);
+> guard batch `0x38f28f37…`, role batch `0xef7b253d…` (§3.1). Owed by a human: the Uniswap feedback form.
+> S1b record: `docs/progress/2026-09-08-s1b-fx-validate.md`.
+> Kickoff: [`KICKOFF-S1-fx-validate.md`](./KICKOFF-S1-fx-validate.md). Build kickoff:
 > [`KICKOFF-S1-uniswap-fx.md`](./KICKOFF-S1-uniswap-fx.md). HANDOFF **§5i**. Local progress:
 > `docs/progress/2026-09-08-s1-uniswap-fx.md`. Prize: `FEEDBACK.md` +
 > [Uniswap hackathon feedback form](https://developers.uniswap.org/hackathon-feedback).
@@ -92,7 +95,22 @@ sequenceDiagram
 | `Permit2` | `approve(address,address,uint160,uint48)` `0x87517c45` | allow Universal Router | 
 | `UniversalRouter` | `execute(bytes,bytes[],uint256)` `0x3593564c` | perform the swap | 
 
-Each pair is a `FunctionSchema` registration (`registerFunctionSchema`) plus `addToWhitelist` in a guard config batch (see [BLOXCHAIN-INTEGRATION.md](./BLOXCHAIN-INTEGRATION.md) § 3). This is the security story for the write-up: **the account can only talk to those three contracts with those three selectors**. Nothing else the Dealer says can move funds.
+Each pair is a `FunctionSchema` registration (`registerFunctionSchema`) plus `addToWhitelist` in a guard config batch (see [BLOXCHAIN-INTEGRATION.md](./BLOXCHAIN-INTEGRATION.md) § 3). This is the security story for the write-up: **the account can only talk to those three contracts with those three selectors**. Nothing else the Dealer says can move funds. Proven the other way round by K7-e: the same `execute` call aimed at the PoolManager is refused `TargetNotWhitelisted`.
+
+**The whitelist alone opens nothing** — the same V4 lesson as Lane A. A second, `RuntimeRBAC` batch grants OWNER
+`SIGN_META_REQUEST_AND_APPROVE` and BROADCASTER `EXECUTE_META_REQUEST_AND_APPROVE` on each of the three selectors;
+without it `requestAndApproveExecution` reverts `NoPermission`. Both batches landed 2026-09-08:
+
+| Batch | Contents | Hash | Gas |
+|-------|----------|------|-----|
+| Guard | 3 × `registerFunctionSchema` + 3 × `addTargetToWhitelist` | [`0x38f28f37…`](https://sepolia.etherscan.io/tx/0x38f28f3788dbe62f88ea2307f165e0362b0b073567a615a8a32f1614e8bd6128) | 2,880,708 |
+| Role | 6 × `addFunctionToRole` | [`0xef7b253d…`](https://sepolia.etherscan.io/tx/0xef7b253df409a82c2d05c7b201861590761faa2cd089db7791b690efdf1002e5) | ~2.6 M |
+
+> **The grant's `handlerForSelectors` must be the selector itself, not `requestAndApproveExecution`.** Provisioning
+> uses the latter for `transfer` on 1337 and is right to: the built-in schemas are registered in *flexible* mode.
+> Every schema `registerFunctionSchema` adds is *strict* (`enforceHandlerRelations: true`) with a self-reference, so
+> naming the handler reverts `HandlerForSelectorMismatch`. It costs nothing at run time — the dual permission check
+> reads the **handler's** schema, which is flexible. Full reasoning in `lanes/fx.ts` `enableFx`.
 
 ### 3.2 Batching
 `GuardController` execution is single-call per request. Options:
