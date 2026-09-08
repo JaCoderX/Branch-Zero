@@ -134,6 +134,23 @@ See [`KICKOFF-kaykit-bank-variants.md`](./KICKOFF-kaykit-bank-variants.md) DoD b
 
 ---
 
+## Outcome (2026-09-09) — Pass A met; Pass B / C not needed
+
+**Rung reached:** 1 (texture / palette). Roles read at the lobby cam by silhouette + accent without touching a mesh.
+
+| Item | Result |
+|------|--------|
+| Derivatives | `Characters/*_bank_texture.png` × 5 from `tools/kaykit_bank_variants.py` (cell recolour, gradients kept; skin / eyes untouched); originals kept beside them as the tool's input |
+| Shared bodies | Petra / player / Kenji tinted by **UV cell remap** into spare bottom-row cells (`PropKit.KAYKIT_ROLE_CELLS`, `_kaykit_role_mesh`, cached per mesh × role) — no sixth material |
+| Accents | Mo emerald · Ines mustard (slate robe) · Dev oxblood · Bob coral cape on dark steel + brass · Okafor oxblood sash + brass straps · Petra coral on deep green, copper hair · Kenji teal hood / mask · player navy on graphite, dark hair |
+| Gates | `run_checks` PASS · `run_viz_budget` PASS — 39 mesh mats (41 with particles), 5 body materials, 118k tris whole building; `smoke_kaykit_cast` PASS · worst `viz_shots` view 308 draws (21_vault_west, unchanged class) |
+| Stills | laptop-local `docs/progress/captures/2026-09-09-kaykit-bank-variants/` (before / after lobby 15 m, role frames) |
+| Untouched | Room, furniture, heroes, HUD, particles, lighting, dialogue, colliders, clip names, Kenney revert path |
+
+**Accessory debt (Pass B, not taken):** the Ranger quiver stays on Mo and the player (recoloured leather + accent);
+the Knight helmet + visor stay on Bob (reads as a guard). No weapons were vendored, so nothing else to hide. Take
+Pass B only if the principal wants the quiver gone — it is a Blender part-delete on `Ranger.glb` with the rig kept.
+
 ## Out of scope
 
 Room / heroes / HUD; new NPCs or lines; yellow-licence kits; Quaternius / Mixamo; Kenney charm face sheet revival; Arc; ship packaging; Load Account; Complete KayKit paid Mystery Series unless principal explicitly buys and re-licences intake.

@@ -13,7 +13,9 @@ extends RefCounted
 ##    a shadowless head carrier — see `staff_material` / `staff_outline` / `face_material`;
 ##  - KayKit Adventurers feel-spike (assets/characters/kaykit_adventurers, CC0): when `USE_KAYKIT_CAST` is true,
 ##    `character()` instances a per-role Adventurers mesh and installs bank clip aliases (idle/walk/…) from the
-##    Rig_Medium General / MovementBasic / Simulation libraries — no face sheet / outline / atlas tile;
+##    Rig_Medium General / MovementBasic / Simulation libraries — no face sheet / outline / atlas tile. The bank
+##    variants (2026-09-09) are recoloured palette sheets (`*_bank_texture.png`, tools/kaykit_bank_variants.py) plus a
+##    per-role UV cell remap for the roles that share a body (KAYKIT_ROLE_CELLS) — still five body materials;
 ##  - KayKit Furniture Bits (assets/models/kaykit_furniture, CC0, U7 viz Stage 6a) were authored against one flat-colour
 ##    palette atlas that tools/kaykit_pack.py strips out of the .glb: at load `_split_kaykit` reads each triangle's UV
 ##    cell and hands it the matching WingTheme palette material, so the denser fill costs zero new materials and
@@ -74,14 +76,41 @@ const KAYKIT_MESHES := {
 	"dealer": "Rogue_Hooded",
 	"player": "Ranger",
 }
-## Mesh file stem → albedo PNG beside the .glb (Rogue_Hooded embeds the same rogue atlas).
+## Mesh file stem → albedo PNG beside the .glb. The `*_bank_texture.png` sheets are the bank-variant derivatives that
+## tools/kaykit_bank_variants.py paints from KayKit's CC0 `*_texture.png` (room neutrals + one accent per role;
+## Rogue_Hooded shares the rogue sheet as in the pack). Five sheets → five body materials.
 const KAYKIT_TEXTURE_FILES := {
-	"Barbarian": "barbarian_texture.png",
-	"Knight": "knight_texture.png",
-	"Mage": "mage_texture.png",
-	"Ranger": "ranger_texture.png",
-	"Rogue": "rogue_texture.png",
-	"Rogue_Hooded": "rogue_texture.png",
+	"Barbarian": "barbarian_bank_texture.png",
+	"Knight": "knight_bank_texture.png",
+	"Mage": "mage_bank_texture.png",
+	"Ranger": "ranger_bank_texture.png",
+	"Rogue": "rogue_bank_texture.png",
+	"Rogue_Hooded": "rogue_bank_texture.png",
+}
+## KayKit sheets are an 8 × 4 grid of 128 × 256 px palette cells and every triangle's UVs sit inside one cell. Where two
+## roles wear the same body (Ines / Petra on Mage, Mo / player on Ranger, Dev / Kenji on the rogue sheet) the second
+## role is told apart by tint alone without a sixth material: tools/kaykit_bank_variants.py paints its colours into the
+## sheet's spare bottom-row cells and `_kaykit_role_mesh` moves that role's triangles from the base cell (key) to the
+## spare (value) in a cached copy of the mesh's UVs. Cells are Vector2i(col, row).
+const KAYKIT_CELL_COLS := 8
+const KAYKIT_CELL_ROWS := 4
+const KAYKIT_ROLE_CELLS := {
+	# Petra: deep-green robe + hat (was Ines's slate), coral cape + trims (was mustard), copper hair (was black).
+	"registrar": {
+		Vector2i(0, 1): Vector2i(0, 3), Vector2i(1, 1): Vector2i(0, 3),
+		Vector2i(2, 1): Vector2i(1, 3), Vector2i(5, 0): Vector2i(1, 3),
+		Vector2i(1, 0): Vector2i(2, 3),
+	},
+	# player: graphite tunic + sleeves (Mo's camel), navy cape / sash (Mo's emerald), dark hair (Mo's auburn).
+	"player": {
+		Vector2i(7, 0): Vector2i(0, 3), Vector2i(7, 2): Vector2i(0, 3),
+		Vector2i(0, 1): Vector2i(1, 3),
+		Vector2i(1, 0): Vector2i(2, 3),
+	},
+	# Kenji: teal hood / cape / mask where Dev wears oxblood.
+	"dealer": {
+		Vector2i(0, 1): Vector2i(0, 3), Vector2i(1, 1): Vector2i(1, 3),
+	},
 }
 ## Bank clip name → KayKit Rig_Medium clip (General / MovementBasic / Simulation).
 const KAYKIT_CLIP_SRC := {
@@ -118,6 +147,7 @@ static var theme: WingTheme = null
 static var _mats: Dictionary = {}
 static var _scenes: Dictionary = {}
 static var _staff_meshes: Dictionary = {}
+static var _kaykit_meshes: Dictionary = {}   # "<mesh>@<role>" → UV-remapped ArrayMesh (KAYKIT_ROLE_CELLS)
 
 
 static func ensure_theme() -> WingTheme:
@@ -636,9 +666,12 @@ static func character_kaykit(role: String, height: float = 1.8) -> Dictionary:
 		"center": true, "ground": true, "keep_materials": true,
 	})
 	var mat := kaykit_body_material(mesh_name)
+	var remap: Dictionary = KAYKIT_ROLE_CELLS.get(role, {})
 	for mi in _meshes(root):
 		if mi.mesh == null:
 			continue
+		if not remap.is_empty() and mi.mesh is ArrayMesh:
+			mi.mesh = _kaykit_role_mesh(mi.mesh as ArrayMesh, role, remap)
 		for i in mi.mesh.get_surface_count():
 			mi.set_surface_override_material(i, mat)
 	var bb := aabb(root)
@@ -653,6 +686,51 @@ static func character_kaykit(role: String, height: float = 1.8) -> Dictionary:
 	var anim := _kaykit_ensure_anim_player(root, skeleton)
 	_kaykit_install_bank_clips(anim)
 	return {"root": root, "anim": anim, "face": null, "skeleton": skeleton}
+
+
+## Bank-variant tint for a role that shares its body sheet with another role (KAYKIT_ROLE_CELLS): a copy of the
+## imported ArrayMesh whose triangles in a remapped palette cell are shifted, whole cell to whole cell, into the spare
+## cell painted for this role — the shading gradient inside the cell survives because the offset within the cell does
+## not change. Bones / weights / normals ride along in the arrays, the shadow mesh is shared, and the copy is cached per
+## (mesh, role) so eight instances still cost one mesh each. Same material, so the body count stays at five.
+static func _kaykit_role_mesh(src: ArrayMesh, role: String, remap: Dictionary) -> ArrayMesh:
+	var key := "%s|%s@%s" % [src.resource_path, src.resource_name, role]
+	if _kaykit_meshes.has(key):
+		return _kaykit_meshes[key]
+	var out := ArrayMesh.new()
+	out.resource_name = "%s_%s" % [src.resource_name, role]
+	var cell := Vector2(1.0 / KAYKIT_CELL_COLS, 1.0 / KAYKIT_CELL_ROWS)
+	for surface in src.get_surface_count():
+		var arrays: Array = src.surface_get_arrays(surface)
+		var src_uv: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV]
+		var uv := src_uv.duplicate()
+		var index: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+		var indexed := index.size() > 0
+		# Decide per triangle from its UV centroid (every KayKit triangle sits inside one cell), then move all three
+		# corners by the same whole-cell offset — a corner on a cell edge must follow its triangle, not its own cell.
+		# Shared corners are moved once (`moved`), from the source UVs, so two triangles never shift one vertex twice.
+		var moved := PackedByteArray()
+		moved.resize(uv.size())
+		var tri_count := (index.size() if indexed else uv.size()) / 3
+		for t in tri_count:
+			var a := index[t * 3] if indexed else t * 3
+			var b := index[t * 3 + 1] if indexed else t * 3 + 1
+			var c := index[t * 3 + 2] if indexed else t * 3 + 2
+			var centroid := (src_uv[a] + src_uv[b] + src_uv[c]) / 3.0
+			var from := Vector2i(int(floor(centroid.x * KAYKIT_CELL_COLS)), int(floor(centroid.y * KAYKIT_CELL_ROWS)))
+			if not remap.has(from):
+				continue
+			var to: Vector2i = remap[from]
+			var shift := Vector2(float(to.x - from.x), float(to.y - from.y)) * cell
+			for v in [a, b, c]:
+				if moved[v] == 0:
+					uv[v] = src_uv[v] + shift
+					moved[v] = 1
+		arrays[Mesh.ARRAY_TEX_UV] = uv
+		out.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	out.shadow_mesh = src.shadow_mesh
+	_kaykit_meshes[key] = out
+	return out
 
 
 ## One StandardMaterial3D per Adventurers body texture (cached). No outline / face sheet — KayKit faces are painted on.
