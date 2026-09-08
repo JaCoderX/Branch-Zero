@@ -103,6 +103,25 @@ New scrub from this research (GameDevOS):
 
 ---
 
+## Outcome (2026-09-08) — met
+
+Built, measured and captured; local record `docs/progress/2026-09-08-character-style.md`.
+
+| Question this file asked | Answer as built |
+|--------------------------|-----------------|
+| Which path? | **1 — shader-first on a better humanoid.** Kenney **Animated Characters** (Protagonists + Survivors, CC0, direct zips with `License.txt`): one rigged, skinned adult `characterMedium` (1,604 tris, one surface, 32 deform bones) for the whole cast |
+| Licence tier | **Green.** kenney.nl has no separate licence page (`/license` 404), so the pack pages' structured CC0 row plus each zip's `License.txt` is the evidence — the standard the four existing Kenney rows already use. Quaternius still out on QAL v1; **Retro** rejected on the art bible (painted, soft-shaded skins), not the licence |
+| One material? | Yes — one 1024² atlas of eight 340 px bank uniforms, and `PropKit.character` folds each role's tile into a **copy of the mesh UVs**, so roles cost meshes, not materials. Plus **one** outline material: 38 unique with particles, ≤ 40 |
+| Surfaces × passes | **Fell.** 2 surfaces × (1 colour + 2 shadow) = **6 draws per body**, 48 for the cast — the Blocky figures cost 18 each / 144. Worst view 284 → **225** draws; primitives 170k → **222k** (the outline pass is the price) |
+| "Borderlands-adjacent" without the Gearbox pipeline | All three knobs, cast only: **silhouette** (shoulders +20 %, hands +26 %, shoes +20 % by skin weight), **surface** (Kenney's faces kept, every clothing region repainted in the wing palette), **edges** (Compatibility-safe inverted hull on `next_pass`). No world ink, no Sobel |
+| Clip verbs | `idle` / `walk` / `sprint` shipped or derived from Kenney's clips; **`work`** and **`refuse`** authored on his rig (the packs ship idle / run / jump only). Escort re-verified: `ESCORTING`, clip `walk`, `speed_scale` 2.13, 8.34 m along the U3 waypoints |
+
+Two facts in the Research above are now historical: the cast is no longer Kenney Blocky (retired to git history,
+and it remains the documented fallback), and `tools/character_atlas.py` is replaced by
+`tools/bank_staff_rig.py` + `tools/bank_staff_atlas.py`.
+
+---
+
 ## Baseline (do not regress)
 
 - U7 viz Stages 1–6 **met** (shell, heroes, Blocky cast + atlas, feel, KayKit/Nature/ambientCG).

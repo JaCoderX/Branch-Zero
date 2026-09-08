@@ -17,7 +17,7 @@ const CAM_SHOULDER := 0.6      # over-the-shoulder: the arm hangs off the player
 const TALK_DIST := 3.8         # while a dialogue is open the arm shortens and...
 const TALK_SWING := -38.0      # ...swings (degrees) so the NPC sits beside the player in a two-shot, not behind
 const CAM_EASE := 6.0
-const SKIN := "character-c"   # scripts/npc.gd SKINS lists the staff; the atlas holds eight skins
+const SKIN := "player"        # the customer's tile of the staff atlas (camel overcoat); staff are npc.gd SKINS
 const CLICK_ARRIVE := 0.35     # RMB walk: close enough to the pointed spot
 const CLICK_STUCK_SEC := 0.7   # RMB walk: give up when a wall / desk stops the body for this long
 const CLICK_RAY := 80.0        # metres of camera ray to look for the floor
@@ -56,7 +56,7 @@ func _ready() -> void:
 	shape.position.y = 0.9
 	add_child(shape)
 
-	# the customer: a CC0 Kenney Blocky Character (U7 viz Stage 3, green shirt); the collider above is still the U3 capsule
+	# the customer: the staff rig in a camel overcoat (character style climb); the collider is still the U3 capsule
 	_body = Node3D.new()
 	_body.name = "Body"
 	add_child(_body)
@@ -159,7 +159,13 @@ func _physics_process(delta: float) -> void:
 		_stuck_t = _stuck_t + delta if ground_speed < 0.3 else 0.0
 		if _stuck_t > CLICK_STUCK_SEC:
 			clear_steer()
-	_play("sprint" if ground_speed > WALK + 0.5 else ("walk" if ground_speed > 0.4 else "idle"))
+	# the clips were authored for PropKit.STAFF_WALK_MPS / STAFF_SPRINT_MPS, so playback follows the real speed
+	if ground_speed > WALK + 0.5:
+		_play("sprint", ground_speed / PropKit.STAFF_SPRINT_MPS)
+	elif ground_speed > 0.4:
+		_play("walk", ground_speed / PropKit.STAFF_WALK_MPS)
+	else:
+		_play("idle")
 
 
 ## Point the mouse walk at the floor under `screen`: the camera ray against layer 1 (floor, desks, NPC bodies — a
@@ -228,8 +234,11 @@ func walk_to(p: Vector3, arrive: float = 0.55, timeout_sec: float = 45.0, speed:
 	return false
 
 
-func _play(clip: String) -> void:
-	if _anim != null and _anim.has_animation(clip) and _anim.current_animation != clip:
+func _play(clip: String, speed: float = 1.0) -> void:
+	if _anim == null or not _anim.has_animation(clip):
+		return
+	_anim.speed_scale = clampf(speed, 0.5, 2.5)
+	if _anim.current_animation != clip:
 		_anim.play(clip, 0.15)
 
 

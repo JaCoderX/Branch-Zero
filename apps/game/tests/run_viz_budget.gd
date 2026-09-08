@@ -81,8 +81,11 @@ func _run() -> void:
 		tris += mi.mesh.get_faces().size() / 3
 		for i in mi.mesh.get_surface_count():
 			var m := mi.get_active_material(i)
-			if m != null:
+			while m != null:            # `next_pass` (the cast's outline) is a unique material and a re-submitted surface
 				mats[m.get_instance_id()] = m
+				if m.next_pass != null:
+					surfaces += 1
+				m = m.next_pass
 	for n in _all(main):
 		if n.has_meta("missing_glb"):
 			empty_props.append(str(n.get_meta("missing_glb")))
@@ -114,8 +117,9 @@ func _run() -> void:
 	else:
 		_fail("%d shadowed lights (budget 1: the sun)" % shadowed)
 
-	# characters (U7 viz Stage 3): animated, so outside the static batch — budget them as surfaces × passes explicitly
-	print("characters (Stage 3)")
+	# characters (style climb): animated, so outside the static batch — budget them as surfaces × passes
+	# explicitly, and count the outline `next_pass` as the extra pass it is, not as free comic styling.
+	print("characters (style climb)")
 	var bodies3: Array = main.get_tree().get_nodes_in_group("npc")
 	bodies3.append(main.get_node("Player"))
 	var char_surfaces := 0
@@ -127,7 +131,7 @@ func _run() -> void:
 		if body == null or anim == null:
 			char_bad.append("%s: no animated body" % c.name)
 			continue
-		var want := ["idle", "walk", "interact-right", "emote-no"] if c is Npc else ["idle", "walk", "sprint"]
+		var want := ["idle", "walk", "work", "refuse"] if c is Npc else ["idle", "walk", "sprint"]
 		for clip in want:
 			if not anim.has_animation(clip):
 				char_bad.append("%s: missing clip %s" % [c.name, clip])
@@ -135,30 +139,46 @@ func _run() -> void:
 		for ch in c.get_children():
 			if ch is CollisionShape3D and (ch as CollisionShape3D).shape is CapsuleShape3D:
 				cap = (ch as CollisionShape3D).shape
+		# the U3 capsule is unchanged by the climb: r 0.35, NPC h 1.75 / player 1.8, whatever the body's height
 		var want_h := 1.75 if c is Npc else 1.8
 		if cap == null or not is_equal_approx(cap.radius, 0.35) or not is_equal_approx(cap.height, want_h):
 			char_bad.append("%s: collider is not the U3 capsule" % c.name)
 		var root := body.get_child(0) as Node3D
 		var h := PropKit.aabb(root).size.y * root.scale.y
-		if absf(h - want_h) > 0.05:
-			char_bad.append("%s: head height %.2f m, want %.2f" % [c.name, h, want_h])
+		var target: float = float(Npc._HEIGHTS.get(c.npc_id, 1.76)) if c is Npc else 1.8
+		if absf(h - target) > 0.05:
+			char_bad.append("%s: head height %.2f m, want %.2f" % [c.name, h, target])
+		if h < 1.60 or h > 1.86:
+			char_bad.append("%s: %.2f m is outside the adult band 1.60–1.86 m" % [c.name, h])
+		var outlined := false
 		for mi in PropKit._meshes(body):
 			if mi.mesh == null:
 				continue
-			char_surfaces += mi.mesh.get_surface_count()
 			for i in mi.mesh.get_surface_count():
 				var m := mi.get_active_material(i)
-				if m != null:
-					char_mats[m.get_instance_id()] = m
-	print("  %d characters · %d surfaces (≈ %d draw calls with 2 shadow splits if all on screen) · %d character material(s)" % [bodies3.size(), char_surfaces, char_surfaces * 3, char_mats.size()])
+				if m == null:
+					continue
+				char_surfaces += 1
+				char_mats[m.get_instance_id()] = m
+				var pass_mat: Material = m.next_pass
+				while pass_mat != null:            # an outline pass is a surface submitted again
+					char_surfaces += 1
+					char_mats[pass_mat.get_instance_id()] = pass_mat
+					if pass_mat is BaseMaterial3D and (pass_mat as BaseMaterial3D).cull_mode == BaseMaterial3D.CULL_FRONT \
+							and (pass_mat as BaseMaterial3D).grow:
+						outlined = true
+					pass_mat = pass_mat.next_pass
+		if not outlined:
+			char_bad.append("%s: no inverted-hull outline pass" % c.name)
+	print("  %d characters · %d surfaces incl. outline passes (≈ %d draw calls with 2 shadow splits if all on screen) · %d character material(s)" % [bodies3.size(), char_surfaces, char_surfaces * 3, char_mats.size()])
 	if char_bad.is_empty():
-		_ok("five NPCs + player: clips idle / walk / interact-right / emote-no (player: sprint), U3 capsules, head at 1.75 / 1.8 m")
+		_ok("seven staff + player: clips idle / walk / work / refuse (player: sprint), U3 capsules, adult heights, outline pass on every body")
 	else:
 		_fail("characters: %s" % "; ".join(char_bad))
-	if char_mats.size() <= 1:
-		_ok("characters share one atlas material")
+	if char_mats.size() <= 2:
+		_ok("the cast shares one atlas material + one outline pass (%d)" % char_mats.size())
 	else:
-		_fail("characters use %d materials (one shared atlas expected)" % char_mats.size())
+		_fail("characters use %d materials (one shared atlas + one outline expected)" % char_mats.size())
 	var skins: Dictionary = Npc.SKINS
 	if skins.has("registrar"):
 		_ok("npc.gd SKINS has an explicit registrar entry (%s) for U5" % skins["registrar"])

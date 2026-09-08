@@ -1,0 +1,63 @@
+The mesh, rig and the idle / run clips come from Kenney's "Animated Characters" packs; the skins in
+Textures/staff_atlas.png are repainted from the Protagonists and Survivors skins. Both packs are CC0 1.0.
+The walk / work / refuse clips and the bank wardrobe are D9 Studio work on top of that CC0 base
+(apps/game/tools/bank_staff_rig.py, apps/game/tools/bank_staff_atlas.py) and are MIT with this repo.
+
+
+=== Animated Characters Protagonists (pack License.txt) ===
+	
+
+	Animated Characters Protagonists (1.1)
+
+	Created/distributed by Kenney (www.kenney.nl)
+
+			------------------------------
+
+	License: (Creative Commons Zero, CC0)
+	http://creativecommons.org/publicdomain/zero/1.0/
+
+	You can use this content for personal, educational, and commercial purposes.
+
+	Support by crediting 'Kenney' or 'www.kenney.nl' (this is not a requirement)
+
+			------------------------------
+
+	• Website : www.kenney.nl
+	• Donate  : www.kenney.nl/donate
+
+	• Patreon : patreon.com/kenney
+	
+	Follow on social media for updates:
+
+	• Twitter:	 twitter.com/KenneyNL
+	• Instagram: instagram.com/kenney_nl
+	• Mastodon:	 mastodon.gamedev.place/@kenney
+
+=== Animated Characters Survivors (pack License.txt) ===
+	
+
+	Animated Characters Survivors (1.1)
+
+	Created/distributed by Kenney (www.kenney.nl)
+
+			------------------------------
+
+	License: (Creative Commons Zero, CC0)
+	http://creativecommons.org/publicdomain/zero/1.0/
+
+	You can use this content for personal, educational, and commercial purposes.
+
+	Support by crediting 'Kenney' or 'www.kenney.nl' (this is not a requirement)
+
+			------------------------------
+
+	• Website : www.kenney.nl
+	• Donate  : www.kenney.nl/donate
+
+	• Patreon : patreon.com/kenney
+	
+	Follow on social media for updates:
+
+	• Twitter:	 twitter.com/KenneyNL
+	• Instagram: instagram.com/kenney_nl
+	• Mastodon:	 mastodon.gamedev.place/@kenney

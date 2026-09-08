@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://djsr57v8aqamn"
-path="res://.godot/imported/atlas.png-510a6233f88c27fb8c1d260f49ad5369.ctex"
+uid="uid://dhsng6s6a0bh"
+path="res://.godot/imported/staff_atlas.png-5a793efc69f98bc5f86dc3ba16fdcc75.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/characters/kenney_blocky/Textures/atlas.png"
-dest_files=["res://.godot/imported/atlas.png-510a6233f88c27fb8c1d260f49ad5369.ctex"]
+source_file="res://assets/characters/kenney_staff/Textures/staff_atlas.png"
+dest_files=["res://.godot/imported/staff_atlas.png-5a793efc69f98bc5f86dc3ba16fdcc75.ctex"]
 
 [params]
 

@@ -51,6 +51,12 @@ const VIEWS := [
 	["33_fx_desk_close", Vector3(11.4, 0.1, -2.0), -PI / 2],
 	["34_fx_talk", Vector3(12.0, 0.1, -2.0), -PI / 2, {"talk": Vector3(14.3, 0.0, -2.0)}],
 	["35_fx_board_close", Vector3(10.4, 0.1, -2.1), -PI / 4, {"pitch": -2.0}],
+	# Character style climb: the bank verbs on film. `pose` drives an NPC's state machine for the frame (so the
+	# clip comes from the same mapping the game uses), `clip` plays one clip directly.
+	["36_dev_work_close", Vector3(-9.4, 0.1, 3.0), PI / 2, {"pose": ["teller", Npc.State.WORKING]}],
+	["37_bob_refuse_close", Vector3(8.6, 0.1, -6.2), -0.85, {"pose": ["vault_keeper", Npc.State.REFUSING]}],
+	["38_mo_walk_close", Vector3(2.0, 0.1, 7.0), 0.0, {"clip": ["greeter", "walk"]}],
+	["39_ines_work_close", Vector3(-9.0, 0.1, 7.0), PI, {"pose": ["clerk", Npc.State.WORKING]}],
 ]
 
 var out_dir := ""
@@ -103,6 +109,14 @@ func _ready() -> void:
 	get_tree().quit()
 
 
+func _npc(id: String) -> Npc:
+	for n in main.get_tree().get_nodes_in_group("npc"):
+		if (n as Npc).npc_id == id:
+			return n
+	push_error("viz_shots: no npc %s" % id)
+	return null
+
+
 func _shots(suffix: String) -> void:
 	for v in VIEWS:
 		await _shot(str(v[0]) + suffix, v[1], v[2], v[3] if v.size() > 3 else {})
@@ -117,6 +131,12 @@ func _shot(name: String, pos: Vector3, yaw: float, opts: Dictionary = {}) -> voi
 	if opts.has("talk"):
 		player.look_at_point(opts["talk"])
 		player.set_talk_framing(true, true)
+	if opts.has("pose"):
+		var want: Array = opts["pose"]
+		_npc(str(want[0]))._set_state(want[1])
+	if opts.has("clip"):
+		var which: Array = opts["clip"]
+		_npc(str(which[0]))._play(str(which[1]))
 	# the *_close two-shots judge the NPC silhouette: hide the player's body for that frame (the spring arm always
 	# centres the player, so at two metres the body would cover the NPC)
 	var body := player.get_node("Body") as Node3D

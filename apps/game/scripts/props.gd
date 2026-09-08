@@ -7,8 +7,9 @@ extends RefCounted
 ##    shape only (the two Dark tones are derived from the theme's brass / steel, Stage 2 hero recesses);
 ##  - Kenney Furniture Kit props (assets/models/kenney_furniture, CC0) carry 1–4 flat-colour materials each; identical
 ##    colours collapse into one shared StandardMaterial3D, and `recolor` re-tints named kit colours into the bank palette;
-##  - Kenney Blocky Characters (assets/characters/kenney_blocky, CC0, Stage 3) all sample one atlas written by
-##    tools/character_atlas.py, so every NPC and the player share a single nearest-filtered textured material;
+##  - the bank staff (assets/characters/kenney_staff, Kenney Animated Characters CC0, character style climb) are
+##    one skinned mesh worn eight ways: `character()` folds the role's atlas tile into a copy of the UVs, so the
+##    cast costs one albedo material plus one inverted-hull outline pass — see `staff_material` / `staff_outline`;
 ##  - KayKit Furniture Bits (assets/models/kaykit_furniture, CC0, U7 viz Stage 6a) were authored against one flat-colour
 ##    palette atlas that tools/kaykit_pack.py strips out of the .glb: at load `_split_kaykit` reads each triangle's UV
 ##    cell and hands it the matching WingTheme palette material, so the denser fill costs zero new materials and
@@ -27,12 +28,31 @@ const HERO := "res://assets/models/hero/"
 const KIT := "res://assets/models/kenney_furniture/"
 const KAYKIT := "res://assets/models/kaykit_furniture/"
 const NATURE := "res://assets/models/kenney_nature/"
-const CHARACTERS := "res://assets/characters/kenney_blocky/"
+const CHARACTERS := "res://assets/characters/kenney_staff/"
 const SURFACES := "res://assets/textures/surfaces/"
+
+# The cast: one skinned .glb + one atlas, both regenerable (tools/bank_staff_rig.py, tools/bank_staff_atlas.py).
+const STAFF_GLB := CHARACTERS + "bank_staff.glb"
+const STAFF_ATLAS := CHARACTERS + "Textures/staff_atlas.png"
+const STAFF_TILE := 340.0        # tile side in atlas pixels
+const STAFF_STRIDE := 341.0      # tile pitch — a 1 px gutter keeps mip filtering out of the neighbour
+const STAFF_ATLAS_PX := 1024.0
+const STAFF_COLS := 3
+const STAFF_OUTLINE := 0.042     # inverted-hull grow, model space (see staff_outline)
+## npc.gd `npc_id` / player → atlas tile, in the order tools/bank_staff_atlas.py paints them.
+const STAFF_TILES := {
+	"greeter": 0, "clerk": 1, "teller": 2, "vault_keeper": 3,
+	"manager": 4, "registrar": 5, "dealer": 6, "player": 7,
+}
+const STAFF_CLIPS := ["idle", "walk", "sprint", "work", "refuse"]
+## Ground speed each locomotion clip was authored for, so callers can scale `speed_scale` instead of skating.
+const STAFF_WALK_MPS := 1.5
+const STAFF_SPRINT_MPS := 3.8
 
 static var theme: WingTheme = null
 static var _mats: Dictionary = {}
 static var _scenes: Dictionary = {}
+static var _staff_meshes: Dictionary = {}
 
 
 static func ensure_theme() -> WingTheme:
@@ -404,8 +424,8 @@ static func retarget(root: Node, recolor: Dictionary = {}) -> void:
 				mi.set_surface_override_material(i, shared)
 
 
-## One material per texture (the character atlas is shared by every character). Textures under CHARACTERS are
-## flat-colour block art resampled to 256² tiles, so they sample nearest (with mipmaps) instead of blurring.
+## One material per texture (used by hero / kit .glb that carry an albedo map; the cast has its own
+## `staff_material`, which is why nothing here special-cases the character folder any more).
 static func textured(tex: Texture2D, tint: Color) -> StandardMaterial3D:
 	var key := "tex|%s|%s" % [tex.resource_path if tex.resource_path != "" else str(tex.get_instance_id()), tint.to_html(false)]
 	if _mats.has(key):
@@ -416,8 +436,6 @@ static func textured(tex: Texture2D, tint: Color) -> StandardMaterial3D:
 	m.albedo_color = tint
 	m.roughness = 0.9
 	m.metallic = 0.0
-	if tex.resource_path.begins_with(CHARACTERS):
-		m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS
 	_mats[key] = m
 	return m
 
@@ -527,21 +545,89 @@ static func _no_batch(node: Node, root: Node) -> bool:
 	return false
 
 
-## Kenney Blocky Characters (CC0, Stage 3 — adult-ish silhouettes; Kenney Mini chibi until then): one animated .glb
-## per skin, six rigid body parts driven by node tracks (no skin), 72 tris, one shared atlas material. Scaled so the
-## head top sits at `height`; returns {root, anim}. Clips used: idle · walk · sprint (player) · emote-no (refusing) ·
-## interact-right (working). Characters animate, so they never join bake_static: budget them as
-## 6 surfaces × (1 colour + 2 shadow passes) = 18 draws each (GameDevOS lesson animated-nodes-cost-surfaces-times-passes).
-static func character(file: String, height: float = 1.8) -> Dictionary:
-	var path := CHARACTERS + file + ".glb"
-	var root := instance(path, {"center": true, "ground": true})
+## The bank staff (character style climb, 2026-09-08): **one** skinned .glb for the whole cast — Kenney's CC0
+## `characterMedium` (804 verts, 1,604 tris, one surface, 32 deform bones) carrying the five clips that
+## tools/bank_staff_rig.py bakes, worn eight different ways. `role` picks a 340 px tile of the shared
+## 1024² atlas that tools/bank_staff_atlas.py paints, and the tile is folded into a **copy of the mesh's UVs**
+## rather than into a per-role material — so the cast still costs one albedo material plus one outline
+## (GameDevOS `atlas-skins-to-one-material`), and the tiled meshes are cached per role.
+##
+## Scaled so the head top sits at `height`; returns {root, anim}. Characters animate, so they never join
+## bake_static: budget them as 2 surfaces (body + outline next_pass) × (1 colour + 2 shadow passes) = 6 draws
+## each (GameDevOS `animated-nodes-cost-surfaces-times-passes`) — the Blocky cast cost 18.
+static func character(role: String, height: float = 1.8) -> Dictionary:
+	var root := instance(STAFF_GLB, {"center": true, "ground": true, "keep_materials": true})
+	var tile := int(STAFF_TILES.get(role, STAFF_TILES["greeter"]))
+	var mat := staff_material()
+	for mi in _meshes(root):
+		if mi.mesh is ArrayMesh:
+			mi.mesh = _staff_mesh(mi.mesh as ArrayMesh, tile)
+		for i in mi.mesh.get_surface_count():
+			mi.set_surface_override_material(i, mat)
 	var bb := aabb(root)
 	var s := height / maxf(bb.size.y, 0.01)
 	root.scale = Vector3.ONE * s
 	root.position = Vector3(-(bb.position.x + bb.size.x / 2.0) * s, -bb.position.y * s, -(bb.position.z + bb.size.z / 2.0) * s)
 	var anim := root.find_child("AnimationPlayer", true, false) as AnimationPlayer
 	if anim != null:
-		for clip in ["idle", "walk", "sprint", "interact-right", "static"]:
+		for clip in STAFF_CLIPS:
 			if anim.has_animation(clip):
 				anim.get_animation(clip).loop_mode = Animation.LOOP_LINEAR
 	return {"root": root, "anim": anim}
+
+
+## The cast's albedo: the staff atlas, linear-filtered (the faces are vector art with soft gradients, unlike the
+## Blocky block edges this replaced) with the inverted-hull outline hung off `next_pass`.
+static func staff_material() -> StandardMaterial3D:
+	if _mats.has("staff"):
+		return _mats["staff"]
+	var m := StandardMaterial3D.new()
+	m.resource_name = "staff"
+	m.albedo_texture = load(STAFF_ATLAS)
+	m.roughness = 0.85
+	m.metallic = 0.0
+	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	# a soft toon ramp on bodies only; Compatibility may flatten it back to Lambert, and the flat art still reads
+	m.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
+	m.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	m.next_pass = staff_outline()
+	_mats["staff"] = m
+	return m
+
+
+## Character-only ink: an inverted hull (grow along the normal, cull the front faces, unshaded near-black).
+## Compatibility-safe — no Forward+ pass, no full-screen Sobel — and it is the only style layer on the cast;
+## the room keeps its own materials (GameDevOS `style-the-cast-separately-from-the-set`).
+static func staff_outline() -> StandardMaterial3D:
+	if _mats.has("staffOutline"):
+		return _mats["staffOutline"]
+	var m := StandardMaterial3D.new()
+	m.resource_name = "staffOutline"
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.albedo_color = Color(0.05, 0.045, 0.06)
+	m.cull_mode = BaseMaterial3D.CULL_FRONT
+	m.grow = true
+	m.grow_amount = STAFF_OUTLINE          # model space; the root is scaled to ~0.47, so ≈ 1.3 cm on screen
+	m.disable_receive_shadows = true
+	m.disable_ambient_light = true
+	_mats["staffOutline"] = m
+	return m
+
+
+## The role's tile folded into a copy of the mesh's UVs. One ArrayMesh per role, shared by every instance of it
+## (skinning is per-MeshInstance3D, so sharing the mesh resource is free).
+static func _staff_mesh(src: ArrayMesh, tile: int) -> ArrayMesh:
+	if _staff_meshes.has(tile):
+		return _staff_meshes[tile]
+	var out := ArrayMesh.new()
+	out.resource_name = "staff_tile_%d" % tile
+	var origin := Vector2(float(tile % STAFF_COLS), float(tile / STAFF_COLS)) * STAFF_STRIDE
+	for surface in src.get_surface_count():
+		var arrays: Array = src.surface_get_arrays(surface)
+		var uv: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV]
+		for i in uv.size():
+			uv[i] = (origin + uv[i] * STAFF_TILE) / STAFF_ATLAS_PX
+		arrays[Mesh.ARRAY_TEX_UV] = uv
+		out.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	_staff_meshes[tile] = out
+	return out

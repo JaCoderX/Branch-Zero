@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://l68rfmx6aysy"
-path="res://.godot/imported/character-m.glb-4ebbcd0d85fea22ffee11b266feb50c9.scn"
+uid="uid://dpu5u0os8npg2"
+path="res://.godot/imported/bank_staff.glb-9d68c93bd8728f2e38d1a6e62df1c174.scn"
 
 [deps]
 
-source_file="res://assets/characters/kenney_blocky/character-m.glb"
-dest_files=["res://.godot/imported/character-m.glb-4ebbcd0d85fea22ffee11b266feb50c9.scn"]
+source_file="res://assets/characters/kenney_staff/bank_staff.glb"
+dest_files=["res://.godot/imported/bank_staff.glb-9d68c93bd8728f2e38d1a6e62df1c174.scn"]
 
 [params]
 

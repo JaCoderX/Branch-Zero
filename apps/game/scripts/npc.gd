@@ -2,26 +2,33 @@ class_name Npc
 extends CharacterBody3D
 ## NPC — one on-chain role or read surface each (docs/NPCS.md §2). State machine:
 ## IDLE → TALKING → WORKING → TALKING | REFUSING → TALKING → ESCORTING → IDLE.
-## The body is a CC0 Kenney Blocky Character (assets/characters/kenney_blocky, U7 viz Stage 3); states are read from its
-## clips (idle · interact-right while working · emote-no while refusing · walk while escorting). `tint` colours the nameplate.
+## The body is a bank-staff build of Kenney's CC0 Animated Characters rig (assets/characters/kenney_staff, character
+## style climb): states play its clips (idle · work while working · refuse while refusing · walk while escorting).
+## `tint` colours the nameplate.
 
 signal player_near(npc: Npc, near: bool)
 signal duty_changed
 
 enum State { IDLE, TALKING, WORKING, ESCORTING, REFUSING }
 
-## npc_id → Kenney Blocky Characters skin (U7 viz Stage 3; the eight skins in the atlas are listed in
-## tools/character_atlas.py). `registrar` is Petra's explicit U5 skin entry and uses the shared atlas material.
+## npc_id → the staff wardrobe worn on the shared rig; each name is an atlas tile painted by
+## tools/bank_staff_atlas.py and mapped in `PropKit.STAFF_TILES`. `registrar` is Petra's explicit U5 entry.
 ## Unlisted ids fall back to `default`.
 const SKINS := {
-	"greeter": "character-b",        # red shirt — the lobby's friendly face
-	"clerk": "character-f",          # teal blouse — Account Opening
-	"teller": "character-i",         # shirt, tie and glasses — Counter 1
-	"vault_keeper": "character-j",   # uniform with badge — the vault window
-	"manager": "character-q",        # dark suit, red tie — the corner office
-	"registrar": "character-e",      # purple top — Petra, Name Desk
-	"dealer": "character-c",         # shirtsleeves — Kenji, FX desk (S1)
-	"default": "character-m",
+	"greeter": "greeter",            # deep-green jacket, brass buttons — the lobby's friendly face
+	"clerk": "clerk",                # brass waistcoat, green tie — Account Opening
+	"teller": "teller",              # graphite waistcoat over shirtsleeves — Counter 1
+	"vault_keeper": "vault_keeper",  # graphite uniform, brass trim — the vault window
+	"manager": "manager",            # charcoal suit, oxblood tie, grey hair — the corner office
+	"registrar": "registrar",        # deep-green waistcoat — Petra, Name Desk
+	"dealer": "dealer",              # oxblood waistcoat, rolled sleeves — Kenji, FX desk (S1)
+	"default": "greeter",
+}
+
+## The cast shares one mesh, so a few centimetres of height is what keeps seven staff from reading as clones.
+const _HEIGHTS := {
+	"greeter": 1.78, "clerk": 1.70, "teller": 1.75, "vault_keeper": 1.82,
+	"manager": 1.73, "registrar": 1.68, "dealer": 1.76,
 }
 
 @export var npc_id: String = "greeter"
@@ -73,7 +80,7 @@ func _ready() -> void:
 	_body = Node3D.new()
 	_body.name = "Body"
 	add_child(_body)
-	var ch := PropKit.character(str(SKINS.get(npc_id, SKINS["default"])), 1.75)
+	var ch := PropKit.character(str(SKINS.get(npc_id, SKINS["default"])), _HEIGHTS.get(npc_id, 1.76))
 	var ch_root: Node3D = ch["root"]
 	ch_root.rotation.y = PI   # Kenney glTF characters face +Z; a Godot body faces -Z
 	_body.add_child(ch_root)
@@ -156,11 +163,11 @@ func _set_state(s: State) -> void:
 	duty_changed.emit()
 	match s:
 		State.WORKING:
-			_play("interact-right")
+			_play("work")
 		State.REFUSING:
-			_play("emote-no")
+			_play("refuse")
 		State.ESCORTING:
-			_play("walk")
+			_play("walk", _ESCORT_SPEED / PropKit.STAFF_WALK_MPS)
 		_:
 			_play("idle")
 	if s == State.REFUSING:
@@ -176,8 +183,11 @@ func _say(text: String) -> void:
 	_bubble.visible = text != ""
 
 
-func _play(clip: String) -> void:
-	if _anim != null and _anim.has_animation(clip) and _anim.current_animation != clip:
+func _play(clip: String, speed: float = 1.0) -> void:
+	if _anim == null or not _anim.has_animation(clip):
+		return
+	_anim.speed_scale = speed      # the walk clip covers PropKit.STAFF_WALK_MPS; an escort is faster than that
+	if _anim.current_animation != clip:
 		_anim.play(clip, 0.2)
 
 
