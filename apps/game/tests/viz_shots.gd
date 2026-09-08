@@ -44,6 +44,13 @@ const VIEWS := [
 	["30_ines_talk", Vector3(-9.0, 0.1, 6.3), PI, {"talk": Vector3(-9.0, 0.0, 9.5)}],
 	["31_okafor_talk", Vector3(-8.0, 0.1, -7.3), 0.0, {"talk": Vector3(-8.0, 0.0, -9.8)}],
 	["32_elevator_notice", Vector3(8.6, 0.1, 1.2), -PI / 2],
+	# S1: Kenji's FX desk in the east alcove — the counter, the quote board in its Stage 4 brass frame, and the
+	# sponsor plaque under it. `_close` hides the player body, which the spring arm otherwise centres over the desk;
+	# the talk frame is the two-shot the dialogue camera actually gives the player. The board carries a live mock
+	# quote by then (see `_run`), because a board photographed dark proves nothing about the board.
+	["33_fx_desk_close", Vector3(11.4, 0.1, -3.0), -PI / 2],
+	["34_fx_talk", Vector3(12.0, 0.1, -3.0), -PI / 2, {"talk": Vector3(14.3, 0.0, -3.0)}],
+	["35_fx_board_close", Vector3(10.4, 0.1, -2.6), -PI / 4, {"pitch": -2.0}],
 ]
 
 var out_dir := ""
@@ -63,6 +70,10 @@ func _ready() -> void:
 		await get_tree().process_frame
 	Chain._mock.preset_account()
 	await GameState.refresh_all()
+	# S1: read the FX till and put a quote on Kenji's board, so views 33-35 photograph the panel doing its job.
+	await GameState.refresh_fx()
+	await GameState.run_action("fx_enable", {})
+	await GameState.run_action("fx_quote", {"amount": "25"})
 	await _shots("")
 
 	# vault states, read from the mock's own records through the same GameState the real bridge feeds

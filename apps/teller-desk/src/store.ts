@@ -45,6 +45,13 @@ export interface Player {
   typedDataRule?: number;
   /** U5: latest customer subname claimed at Petra's Name Desk. The chain remains source of truth for resolution. */
   ensName?: string;
+  /** S1: this player's AccountBlox on Sepolia — the FX till Kenji trades from. Never the Main-wing account. */
+  fxAccount?: Address;
+  /** S1: the FX guard batch (three schemas + whitelist + grants) landed. `lanes/fx.ts` still re-reads the chain. */
+  fxConfigured?: boolean;
+  /** S1: the Privy typed-data rule covering Sepolia (`chainId` 11155111), and whether it names the till yet. */
+  fxPolicyRuleId?: string;
+  fxPolicyPinned?: boolean;
   createdAt: number;
 }
 

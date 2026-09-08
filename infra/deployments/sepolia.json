@@ -1,7 +1,7 @@
 {
   "chainId": 11155111,
-  "chainName": "Ethereum Sepolia",
-  "updatedAt": "2026-09-07T00:00:00.000Z",
+  "chainName": "Sepolia",
+  "updatedAt": "2026-09-08T00:04:25.321Z",
   "parentName": "branchzero.eth",
   "parentLabel": "branchzero",
   "registrar": "0xc4d7cCabc561c7D9360481404DA8A80886a49277",
@@ -23,5 +23,92 @@
     "setSubregistryTx": "0x659a991cc6148c4ae37feef084fc6d6863faf9f0c938ec4a59a5add3ebd50bbc",
     "childRegisterTx": "0x229dd7ec777bae7ac5976ad4abdf13b9ea73336b0dbcf7031e4854f224f01110",
     "setAddrTx": "0xeb0bbb2f1193250792f27f1be693ff809e517ca614f8a1e78e026cb484355f9d"
+  },
+  "libraries": {
+    "EngineBlox": {
+      "address": "0xF36E41476A970243eF602075039b1e09a1D676Cb",
+      "txHash": "0x762cb96057e94e5900a9d4981c8648612a0913feee48c29e70a09c3fc8ce3ba7"
+    },
+    "SecureOwnableDefinitions": {
+      "address": "0x05475ee4115C29BC52976b07D3Af6D68ae2dd2f9",
+      "txHash": "0x201054eccfe67c49a819aa73e503e41dc8fc3dcde240da1b740f64cca5b67452"
+    },
+    "RuntimeRBACDefinitions": {
+      "address": "0x27f75eE1AdEd4cD48E1cd4f0D85BA4C7767706c8",
+      "txHash": "0x1f0f89cd44860001a3c5a1182e4a82076b0b6bd7332c191d7ed5b2379b157f68"
+    },
+    "GuardControllerDefinitions": {
+      "address": "0xa57aF5C5Ad96807f07f41820B78C713a2B14cAd8",
+      "txHash": "0x7e522332389c0b0e6c559e49653a2bda70e757ca6502ac4cde5445623c6244e7"
+    }
+  },
+  "deployer": "0xDD46DA5d8d27817b78989FdA1C686724CFEBFB63",
+  "compiler": {
+    "solc": "0.8.35+commit.47b9dedd.Emscripten.clang",
+    "evmVersion": "prague",
+    "optimizerRuns": 200,
+    "viaIR": true
+  },
+  "sources": {
+    "contractsPackage": "@bloxchain/contracts@1.0.0",
+    "sdkPackage": "@bloxchain/sdk@1.0.0",
+    "accountBloxTemplate": {
+      "url": "https://raw.githubusercontent.com/PracticalParticle/Bloxchain-Protocol/99beac2d6e6d7567c23b25cecaf6f4053f31c987/contracts/examples/templates/AccountBlox.sol",
+      "commit": "99beac2d6e6d7567c23b25cecaf6f4053f31c987",
+      "sha256": "a1c2d7c19f59969fb4bf717b15146121a1c68ddc7d802412e0cc023cddbd74c1"
+    }
+  },
+  "accounts": [
+    {
+      "label": "fx-rig-till",
+      "address": "0xB5e8ab92467663F50c6Ba237Cb062cE6Bf66B2Af",
+      "owner": "0x818A90b128952334Ea2C7e76A299D6b98beF83e7",
+      "broadcaster": "0x83Af7CAA74b62a268887b4eDA92e0efDDFACd4DC",
+      "recovery": "0x71573691916bE25b6e67C2db844D97124374dEf2",
+      "timeLockPeriodSec": 120,
+      "eventForwarder": "0x0000000000000000000000000000000000000000",
+      "deployTxHash": "0xd0c1978402d4b92900648366e98fd94684e832f47f9bf422f517d9e67626be38",
+      "initializeTxHash": "0x589384054fee17a3bb18f4b06410288f4e4fc91f2e7b4f4bdc79fad365d131a3",
+      "block": 11657529
+    }
+  ],
+  "tokens": {
+    "demoUsdc": {
+      "address": "0xD3322B29a7BdEe707D1684676f149bf41Aa3422f",
+      "symbol": "USDC",
+      "decimals": 6,
+      "note": "U5 Sepolia mock USDC (open mint) — Kenji quotes this against WETH"
+    },
+    "weth": {
+      "address": "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14",
+      "symbol": "WETH",
+      "decimals": 18,
+      "note": "Sepolia WETH9 used by the Uniswap deployments"
+    }
+  },
+  "uniswap": {
+    "source": "https://developers.uniswap.org/contracts/v4/deployments",
+    "readAt": "2026-09-08",
+    "poolManager": "0xE03A1074c86CFeDd5C142C4F04F1a1536e203543",
+    "universalRouter": "0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b",
+    "positionManager": "0x429ba70129df741B2Ca2a85BC3A2a3328e5c09b4",
+    "stateView": "0xe1dd9c3fa50edb962e442f60dfbc432e24537e4c",
+    "quoter": "0x61b3f2011a92d183c7dbadbda940a7555ccf9227",
+    "permit2": "0x000000000022D473030F116dDEE9F6B43aC78BA3",
+    "pool": {
+      "id": "0xfd32332c7bc1c1ab4b2cd2971b6e1eef513d610457504b8a19745413b678581f",
+      "currency0": "0xD3322B29a7BdEe707D1684676f149bf41Aa3422f",
+      "currency1": "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14",
+      "fee": 3000,
+      "tickSpacing": 60,
+      "hooks": "0x0000000000000000000000000000000000000000",
+      "zeroForOne": "USDC → WETH",
+      "practiceRate": "1 ETH = 2000 USDC at seeding",
+      "sqrtPriceX96": "1771595571142957102961017161607260",
+      "liquidity": "53665631459",
+      "lp": "0xDD46DA5d8d27817b78989FdA1C686724CFEBFB63",
+      "initTx": "0x8f87fcbb976b65707b500d1c05db256b73037d0ea580cc54fd928201355892a8",
+      "seedTx": "0x1fe38f2267eb32228a8c39752fa67e2fdcb3f18f667e99ef321380643ad1d712"
+    }
   }
 }

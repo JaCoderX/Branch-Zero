@@ -247,15 +247,55 @@ Petra: Names! Pick one and people can pay you by it.
 Petra: You're getting a subname under branchzero.eth on ENSv2. Your name points at your account; your passbook fields are text records; the staff only get the rights the registry grants them.
 ```
 
-### 4.7 Dealer — Kenji (FX Desk) — S1
+### 4.7 Dealer — Kenji (FX Desk) — S1 **built 2026-09-08**
+
+Purpose: price a Uniswap v4 swap off-chain, and execute it **from the player's own account on Sepolia** through three
+whitelisted calls. Kenji is not a teller: he cannot pay, wire, release or recall, and `tests/run_checks.gd` fails the
+build if `dealer.json` ever grows a verb other than `fx_quote` / `fx_enable` / `fx_swap`. The FX till is a **second**
+`AccountBlox`, on the chain the exchange lives on; the Main wing's counter and vault stay on Remote EVM 1337.
+
+As built in `dialogue/dealer.json` (start node follows the chain, not memory: `fx_desk` → `fx_till` → `fx_open` → `fx_quoted`):
 
 ```text
-Kenji: Dollars for ether? Quote's on the board.
-  > Swap {amount} USDC → action: fx_swap(amount)  (guarded router call)
-  > Ask why            → why_swap
+[no FX deployment]                                        (node: desk_closed)
+Kenji: Board's dark today — the branch can't reach the exchange floor. Counter 1 and the vault are unaffected.
+
+[no till on Sepolia]                                      (node: no_till)
+Kenji: You've no till on the exchange floor yet. I can open one — same account pattern, just on the other chain.
+  > Open my FX till            → action: fx_enable
+
+[till, but the exchange door is not whitelisted]          (node: closed_door)
+Kenji: Till's there, but the exchange door isn't on your approved list yet. Three doors, three keys.
+  > Register the exchange door → action: fx_enable   → opened
+
+[idle]
+Kenji: Dollars for ether? Quote's on the board. You've {fx_usdc} {fx_symbol_in} and {fx_weth} {fx_symbol_out} in the
+       till; the pool takes {fx_pool_fee}.
+  > Price 1 / 5 / 25 {fx_symbol_in} → action: fx_quote   (V4Quoter, an eth_call — signs nothing)
+  > What can my account do here?    → whitelist  ("Three, and only three…")
+  > Ask why                         → why_swap
+
+[quoted]
+Kenji: {fx_amount_in} {fx_symbol_in} buys {fx_amount_out} {fx_symbol_out}. I'll not accept less than {fx_min_out} —
+       that's your {fx_slippage} slippage. Good for {fx_valid}.
+  > Take it                    → action: fx_swap  → swapped   (refused FX_QUOTE_EXPIRED once the deadline passes)
+
 [why_swap]
-Kenji: Your account calls the exchange router directly, but only because that router is on your approved list for that exact function. Same guard as payments.
+Kenji: Your account calls the exchange router directly, but only because that router is on your approved list for
+       that exact function. Same guard as payments.
+[why_guard]
+Kenji: GuardController holds a whitelist per function selector. Your till registered three schemas —
+       approve(address,uint256), Permit2's approve, and execute(bytes,bytes[],uint256) — and whitelisted one address
+       for each. You sign a meta-transaction, the FX teller submits it, and the account refuses any target that is
+       not on that list. A swap is a treasury operation here, not a wallet pop-up.
 ```
+
+**The quote board** (`scripts/fx_board.gd`, a SubViewport on the vault partition's south face, like the ledger and
+names boards) shows the rate, the floor, the pool's fee tier and a `quote valid m:ss` countdown taken from the
+quote's own deadline against the **desk** clock — never a local timer, for the same reason the vault door counts that
+way. With no quote it shows the pool and the till instead of inventing a rate; with no FX deployment it says the
+board is dark. **No new Privy surface:** the swap is signed by the same silent session signer that stamps counter
+slips (the hand scan stays unique to Okafor's Priority release).
 
 ### 4.8 Security Officer — Sgt. Bale (Side door) — S2 / lore
 

@@ -11,7 +11,8 @@
     "smoke": "tsx scripts/smoke.ts",
     "arc:kill": "tsx scripts/arc-kill.ts",
     "typecheck": "tsc -p tsconfig.json",
-    "bootstrap": "tsx scripts/bootstrap-blox.ts"
+    "bootstrap": "tsx scripts/bootstrap-blox.ts",
+    "fx:pool": "tsx scripts/uniswap-pool.ts"
   },
   "dependencies": {
     "@bloxchain/sdk": "1.0.0",

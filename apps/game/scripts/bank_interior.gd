@@ -384,6 +384,43 @@ func _west_column() -> void:
 	box_m("ServiceMenuBoard", Vector3(-14.83, 2.4, -1.0), Vector3(0.03, 1.2, 3.2), PropKit.palette("Paper"), false)
 
 
+## S1 — Kenji's FX desk, in the east alcove between the elevator shaft (z ∈ [-1, 2]) and the vault partition (z = -5).
+## It reuses the counter the tellers already have, mirrored to the east wall, so the FX desk reads as one more window
+## of the same bank rather than a trading floor bolted on. Nothing new is imported: every mesh here is a hero prop or
+## a KayKit/Nature piece the interior already places elsewhere, so the pass costs no new material (WORLD-3D §6).
+##
+## The brass frame Stage 4 left on this wall face (panel z ∈ [-3.9, -2.1], y ∈ [1.75, 2.65]) becomes the quote board's
+## housing: `FxBoardQuad` is the live SubViewport surface `scripts/fx_board.gd` draws into. The sponsor plaque sits
+## under it, in the same wording class as the Name Desk's service menu — a bank sign, not a logo.
+func _fx_desk() -> void:
+	PropKit.hero(self, "FxCounter", "prop_counter", Vector3(13.5, 0, -3.0), -PI / 2, {}, Vector3(0.9, 1.1, 3.4), Vector3(0, 0.55, 0))
+	box_m("FxCounterShelf", Vector3(14.15, 1.02, -3.0), Vector3(0.3, 0.05, 3.4), PropKit.palette("Wood"), false)
+	PropKit.hero(self, "FxPrinter", "prop_printer", Vector3(14.15, 1.045, -4.2), -PI / 2)
+	PropKit.hero(self, "FxTool", "prop_engraver", Vector3(14.15, 1.045, -1.9), -PI / 2)
+	PropKit.kit(self, "FxScreen", "computerScreen", Vector3(14.15, 1.045, -3.0), -PI / 2)
+	PropKit.kaykit(self, "FxStool", "chair_stool", Vector3(14.35, 0, -3.0), 0.0, {"fit": Vector3(0.45, 0.6, 0.45)})
+	_planter("FxDeskPlant", Vector3(13.6, 1.1, -4.55), 0.4, ["pot_small", Vector3(0.24, 0.2, 0.24)], [["plant_flatTall", Vector3(0.26, 0.34, 0.26)]], "Cream")
+
+	# The board goes on the vault partition's south face, not on the wall behind Kenji: a customer stands at the
+	# counter looking east, so a panel behind the dealer is read through the counter's glass and over his shoulder.
+	# Stage 4 already framed that face (panel x ∈ [10.65, 14.2], y ∈ [1.25, 2.95]) and it faces the whole alcove,
+	# which is what a quote board is for. Its own node, out of the static batch, so fx_board.gd can swap the material.
+	var quad := MeshInstance3D.new()
+	quad.name = "FxBoardQuad"
+	var qm := QuadMesh.new()
+	qm.size = Vector2(2.6, 1.16)
+	quad.mesh = qm
+	quad.position = Vector3(12.4, 2.16, -4.78)
+	quad.material_override = PropKit.color(Color(0.05, 0.06, 0.08), 0.0, 1.0)
+	quad.set_meta("no_batch", true)
+	add_child(quad)
+
+	plaque("FX DESK", Vector3(14.8, 2.95, -3.0), -PI / 2, 0.34, theme.graphite_color)
+	plaque("Foreign exchange · Uniswap v4 on Sepolia\nYour account trades; the guard list says where.", Vector3(12.4, 1.30, -4.77), 0.0, 0.15, theme.graphite_color, "FxSponsor")
+	# the east-wall frame the board used to sit in becomes the desk's service menu, in the Name Desk's wording class
+	plaque("FX Desk\n• Ask for a rate — the exchange quotes it\n• Trade from your own till\n• Three approved calls, nothing else", Vector3(14.8, 2.2, -3.0), -PI / 2, 0.15, theme.graphite_color, "FxServiceMenu")
+
+
 ## Marble counter (hero mesh, 1.1 m, glass partition with a slot) under the greybox collider; printer + stamp (or
 ## another hero tool) on a teller-side shelf. The teller stands at x = -11.6, so the shelf stops at x = -11.3.
 func _counter(name: String, z: float, label: String, tool: String = "prop_stamp") -> void:
@@ -490,7 +527,7 @@ func _east_column() -> void:
 	# a paper notice taped across the car doors at eye height (the label sits a centimetre in front of its board)
 	box_m("ArcNoticeBoard", Vector3(11.43, 1.55, 0.5), Vector3(0.02, 0.42, 0.98), PropKit.palette("Paper"), false)
 	plaque("ARC FLOOR\ncoming soon", Vector3(11.41, 1.55, 0.5), -PI / 2, 0.15, theme.graphite_color, "ArcNotice")
-	plaque("FX DESK\n(stretch)", Vector3(14.8, 2.2, -3.0), -PI / 2, 0.3, theme.graphite_color)
+	_fx_desk()
 	plaque("SECURITY\nside door (lore)", Vector3(14.8, 2.2, 3.5), -PI / 2, 0.3, theme.graphite_color)
 	PropKit.kit(self, "SideDoor", "doorwayFront", Vector3(14.85, 0, 3.5), -PI / 2, {"fit": Vector3(1.0, 2.2, 0.16)}, Vector3(0.1, 2.2, 1.0), Vector3(0, 1.1, 0))
 
@@ -549,6 +586,9 @@ func _zones() -> void:
 	zone("Counter", Vector3(-11.5, 1.5, 0.0), Vector3(7.0, 3.0, 10.0))
 	zone("Vault antechamber", Vector3(8.0, 1.5, -8.0), Vector3(14.0, 3.0, 6.0))
 	zone("Manager's office", Vector3(-8.0, 1.5, -8.0), Vector3(14.0, 3.0, 6.0))
+	# S1: the east alcove, between the elevator shaft and the vault partition. Added after the U3 six, which keep
+	# their volumes exactly (tests/run_viz_budget.gd asserts those by position).
+	zone("FX desk", Vector3(12.6, 1.5, -3.0), Vector3(4.4, 3.0, 3.6))
 
 
 # ---------------------------------------------------------------- Stage 4: architecture shell — wall faces and ceiling

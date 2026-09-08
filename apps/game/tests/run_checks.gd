@@ -8,7 +8,7 @@ extends SceneTree
 ## code in docs/NPCS.md §5 (and every Teller Desk / bridge code the lanes emit) has a line in errors.json;
 ## the condition evaluator and interpolation behave.
 
-const NPCS := ["greeter", "clerk", "teller", "vault_keeper", "manager", "registrar"]
+const NPCS := ["greeter", "clerk", "teller", "vault_keeper", "manager", "registrar", "dealer"]
 ## Dialogue files that are not NPCs. The bank computer runs the same format (docs/TERMINAL-CONSOLE.md §3).
 const PROPS := ["terminal"]
 
@@ -32,6 +32,9 @@ const REQUIRED_CODES := [
 	"MANAGER_NO_STAMP", "NOT_COOLING", "PRIORITY_OFF", "PRIORITY_CANCELLED", "MFA_FAILED", "PRIORITY_EXPIRED",
 	# Terminal Console stretch — the bank computer and the OBSERVER viewing role
 	"CONSOLE_UNAVAILABLE", "OBSERVER_SELF", "OBSERVER_FULL", "NOT_OBSERVER", "RoleWalletLimitReached",
+	# S1 — Kenji's FX desk (Uniswap v4 on Sepolia)
+	"FX_NOT_CONFIGURED", "FX_TILL_CLOSED", "FX_NOT_ENABLED", "FX_TELLER_DRY", "FX_AMOUNT",
+	"FX_QUOTE_FAILED", "FX_QUOTE_EXPIRED", "FX_SLIPPAGE", "FX_ROUTER", "FX_RPC", "FX_TX_FAILED", "FX_TILL_SHORT",
 	"default",
 ]
 
@@ -47,6 +50,7 @@ func _initialize() -> void:
 		_check_npc(id)
 	_check_faucet_choice()
 	_check_terminal()
+	_check_fx_desk()
 	_check_vault_desks()
 	_check_polish()
 	_check_eval(Dlg)
@@ -244,6 +248,52 @@ func _check_terminal() -> void:
 		bad.append("CONSOLE_UNAVAILABLE does not say the panel needs the bank shell")
 	if bad.is_empty():
 		_ok("terminal: open_console + viewing list only, no write verbs · [Space] prompt · read-only copy present")
+	else:
+		for b in bad:
+			_fail(b)
+
+
+## S1 (HANDOFF §5i): Kenji quotes and swaps, and does nothing else. The FX desk is a *third* lane on a *second* chain,
+## so the risk it adds is scope creep in the dialogue — a dealer who could pay, wire or release would put the vault's
+## whole story behind a desk with no clock. He may only price (a read), open the till, and swap; the guard story has
+## to be sayable at the desk; and the quote board must promise a countdown the desk clock can actually keep.
+func _check_fx_desk() -> void:
+	print("FX desk (S1)")
+	var dealer := _load("res://dialogue/dealer.json")
+	var actions := _actions_in(dealer)
+	var allowed := ["fx_quote", "fx_enable", "fx_swap"]
+	var bad: PackedStringArray = []
+	for a in actions.keys():
+		if not allowed.has(str(a)):
+			bad.append("dealer.json runs '%s' — Kenji may only quote, open the till and swap" % str(a))
+	for want in allowed:
+		if not actions.has(want):
+			bad.append("dealer.json never runs '%s'" % want)
+	var text := FileAccess.get_file_as_string("res://dialogue/dealer.json")
+	# the guard story is the submission's whole angle: it must be on the main path, not only in a why_ node
+	if text.find("approved list") < 0:
+		bad.append("dealer.json never tells the player the router is on an approved list")
+	for phrase in ["approve(address,uint256)", "execute(bytes,bytes[],uint256)"]:
+		if text.find(phrase) < 0:
+			bad.append("dealer.json 'Ask why' does not name %s" % phrase)
+	# a quote the player can act on has to say what it is worth and how long it stands
+	var quoted: Dictionary = dealer.get("nodes", {}).get("quoted", {})
+	var quoted_text := str(quoted.get("text", ""))
+	for token in ["{fx_amount_out}", "{fx_min_out}", "{fx_valid}"]:
+		if quoted_text.find(token) < 0:
+			bad.append("dealer.json quoted node does not show %s" % token)
+	var strings := _load("res://dialogue/strings.json")
+	for key in ["fx_board_title", "fx_board_quote", "fx_board_valid", "fx_board_whitelist", "fx_board_dark"]:
+		if str(strings.get(key, "")) == "":
+			bad.append("strings.json is missing %s" % key)
+	if str(strings.get("fx_board_title", "")).find("UNISWAP") < 0:
+		bad.append("the quote board does not name the exchange it quotes")
+	# MockChain must never be mistaken for the sponsor evidence
+	var mock := FileAccess.get_file_as_string("res://autoload/mock_chain.gd")
+	if mock.find("MockChain: no Uniswap here") < 0:
+		bad.append("mock_chain.gd does not label its fake swap")
+	if bad.is_empty():
+		_ok("Kenji: quote + open till + swap only · guard story on the main path · board names the exchange and its countdown")
 	else:
 		for b in bad:
 			_fail(b)

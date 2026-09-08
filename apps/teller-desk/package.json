@@ -16,7 +16,8 @@
     "smoke:faucet": "tsx --env-file-if-exists=../../.env scripts/smoke-faucet.ts",
     "upgrade-players": "tsx --env-file-if-exists=../../.env scripts/upgrade-players.ts",
     "probe:policy": "tsx --env-file-if-exists=../../.env scripts/probe-typed-data-policy.ts",
-    "evidence": "tsx --env-file-if-exists=../../.env scripts/vault-evidence.ts"
+    "evidence": "tsx --env-file-if-exists=../../.env scripts/vault-evidence.ts",
+    "killtests:s1": "tsx --env-file-if-exists=../../.env scripts/kill-tests-s1.ts"
   },
   "dependencies": {
     "@bloxchain/sdk": "1.0.0",

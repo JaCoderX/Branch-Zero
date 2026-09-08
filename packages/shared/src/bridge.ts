@@ -43,6 +43,9 @@ export type BridgeMessage = BridgeResponse | BridgeEvent;
  * U4+ adds `priority` — the one bridge method that is allowed to open a second Privy surface (the Passkey / hand
  * scan), over `/priority/prepare` + `/priority/submit`. `approve` is owner-only from here on.
  * U5 adds the ENS Name Desk reads/writes; they never change the Remote EVM payment lanes.
+ * S1 adds the FX desk: `fxStatus` / `fxEnable` / `fxQuote` / `fxSwap`. The swap is executed by a *second* AccountBlox
+ * on Sepolia (the "FX till") through the same Lane A shape — owner's session signer signs, the Sepolia broadcaster
+ * submits — so it opens no new Privy surface and leaves the 1337 lanes untouched (docs/UNISWAP.md).
  */
 export type BridgeMethod =
   | 'echo'
@@ -73,6 +76,11 @@ export type BridgeMethod =
   | 'ensMint'
   | 'ensSetText'
   | 'resolveName'
+  // S1 — Kenji's FX desk (Uniswap v4 on Sepolia). Reads are silent; `fxSwap` is Lane A on the FX till, no new modal.
+  | 'fxStatus'
+  | 'fxEnable'
+  | 'fxQuote'
+  | 'fxSwap'
   // U6 — elevator: swaps the active Teller Desk wing without touching ENS identity.
   | 'switchWing'
   // Stretch — Terminal Console (docs/TERMINAL-CONSOLE.md): the bank computer and the OBSERVER viewing role.
@@ -110,7 +118,7 @@ export type RecordStatus = 'UNDEFINED' | 'PENDING' | 'EXECUTING' | 'PROCESSING_P
 export interface StageEvent {
   type: 'stage';
   jobId: string;
-  lane: 'A' | 'B' | 'CONFIG' | 'PROVISION' | 'ENS';
+  lane: 'A' | 'B' | 'CONFIG' | 'PROVISION' | 'ENS' | 'FX';
   stage: JobStage;
   /** Bank-counter wording for the NPC; always safe to show. */
   bankLine: string;

@@ -23,6 +23,7 @@ import { approve, cancel, listPending, resumeWatchers, wire, type Actor } from '
 import { preparePriority, submitPriority } from './lanes/priority.ts';
 import { ROLE_SET_VERSION, ensureTxPolicy, ensureTypedDataPolicy, faucetAccount, provision, recoverAccount } from './lanes/provision.ts';
 import { available as ensAvailable, mint as ensMint, resolve as ensResolve, setText as ensSetText } from './ens.ts';
+import { enableFx, fxStatus, quote as fxQuote, swap as fxSwap } from './lanes/fx.ts';
 import { grantObserver, listObservers, observerPermissions, revokeObserver } from './lanes/observer.ts';
 import { emitStage, getPlayer, listReceipts, newJobId, patchPlayer, serialize, subscribe, upsertPlayer, type Player } from './store.ts';
 import type { SignatureAudit, TxAudit } from './signing/privySigner.ts';
@@ -80,7 +81,7 @@ app.get('/healthz', async () => {
     ]);
     return {
       ok: chainId === chain.id,
-      unit: 'U6',
+      unit: 'S1',
       wing: config.target,
       priorityRelease: config.priorityRelease,
       roleSetVersion: ROLE_SET_VERSION,
@@ -494,10 +495,69 @@ app.get('/events', async (req, reply) => {
   return reply;
 });
 
-/** Not in U5. Left explicit so the bridge fails with a plan, not a 404. */
-for (const [route, unit] of [['/fx/swap', 'S1']] as const) {
-  app.post(route, async (_req, reply) => reply.code(501).send({ error: 'not implemented', route, plannedUnit: unit }));
-}
+// ============ S1 — Kenji's FX desk (Uniswap v4 on Sepolia; the Main wing's lanes stay on 1337) ============
+
+/**
+ * The quote board. A read: `V4Quoter.quoteExactInputSingle` by `eth_call`, minus 1 % slippage, good for five
+ * minutes. Public like `/ens/available` — a player standing at the desk sees the rate before signing in — but a
+ * signed-in caller's quote is remembered against their id so `/fx/swap` can honour the exact price they accepted.
+ */
+app.get('/fx/quote', async (req, reply) => {
+  try {
+    const { amount } = (req.query ?? {}) as { amount?: string };
+    if (!amount) throw Object.assign(new Error('`amount` is required'), { statusCode: 400, code: 'BAD_ARGS' });
+    const player = await requirePlayer(req as never).catch(() => undefined);
+    return await fxQuote(player ? getPlayer(player.privyUserId) : undefined, amount);
+  } catch (e) {
+    return fail(reply, e);
+  }
+});
+
+/** The till: balances, whether the exchange door is registered, the pool, and the three whitelisted calls. */
+app.get('/fx/status', async (req, reply) => {
+  try {
+    const player = await requirePlayer(req as never);
+    return await fxStatus(getPlayer(player.privyUserId)!);
+  } catch (e) {
+    return fail(reply, e);
+  }
+});
+
+/**
+ * Open the till: register the three function schemas, whitelist their three targets, and grant OWNER `SIGN_` /
+ * BROADCASTER `EXECUTE_META_REQUEST_AND_APPROVE` on each. `requireConfigured` applies for the Main-wing reason —
+ * a half-provisioned player has no policy to sign with, and "ask Ines to re-check" beats a chain revert.
+ */
+app.post('/fx/enable', async (req, reply) => {
+  try {
+    const player = await requirePlayer(req as never);
+    const jobId = newJobId();
+    const current = getPlayer(player.privyUserId)!;
+    requireConfigured(current);
+    const result = await serialize(player.privyUserId, () => enableFx(current, jobId, auditFor(player)));
+    app.log.info({ owner: current.ownerAddress, till: result.account, actions: result.actions }, 'FX desk: exchange door registered on the Sepolia till');
+    return { jobId, ...result };
+  } catch (e) {
+    return fail(reply, e);
+  }
+});
+
+/** The swap itself: up to three guarded Lane A meta-transactions on Sepolia (approve → Permit2 → V4_SWAP). */
+app.post('/fx/swap', async (req, reply) => {
+  try {
+    const player = await requirePlayer(req as never);
+    const body = (req.body ?? {}) as { quoteId?: string; amount?: string };
+    if (body.amount !== undefined && !/^\d+(\.\d+)?$/.test(String(body.amount))) throw Object.assign(new Error('`amount` must be a decimal string'), { statusCode: 400, code: 'BAD_ARGS' });
+    const jobId = newJobId();
+    const current = getPlayer(player.privyUserId)!;
+    requireConfigured(current);
+    const result = await serialize(player.privyUserId, () => fxSwap(current, body.quoteId, body.amount, jobId, auditFor(player)));
+    app.log.info({ owner: current.ownerAddress, till: result.account, amountIn: result.amountIn, amountOut: result.amountOut, hash: result.hash, steps: result.steps.length }, 'FX desk: guarded Uniswap v4 swap completed on Sepolia');
+    return { jobId, ...result };
+  } catch (e) {
+    return fail(reply, e);
+  }
+});
 
 function fail(reply: { code: (n: number) => { send: (b: unknown) => unknown } }, e: unknown) {
   const err = e as Error & { statusCode?: number; code?: string; status?: number };

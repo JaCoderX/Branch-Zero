@@ -2,6 +2,31 @@
 
 **A walkable 3D bank where every desk is a real smart-account operation.** Built in Godot 4.5 (web, GDScript) on the open-source [Bloxchain](https://github.com/PracticalParticle/Bloxchain-Protocol) account pattern, driven through the public npm package **`@bloxchain/sdk`** (+ `viem`). You do not click "Confirm" in a wallet pop-up; you talk to a teller. For [ETHOnline 2026](https://ethglobal.com/events/ethonline2026) (Start Fresh).
 
+**The FX desk — Uniswap v4 (S1)**
+
+Kenji's desk is a **Uniswap v4 swap executed by a governed smart account**, not by a wallet. The player's
+`AccountBlox` on Sepolia is `msg.sender` to Permit2 and the Universal Router, and it may call exactly three
+functions on exactly three addresses, because its own `GuardController` whitelist says so.
+
+| What | Where |
+|------|-------|
+| The lane: guard batch, quote, swap, and why each step exists | [`apps/teller-desk/src/lanes/fx.ts`](./apps/teller-desk/src/lanes/fx.ts) — `enableFx` (the three schemas + whitelist + role grants), `quote` (V4Quoter), `swap` (V4_SWAP calldata) |
+| The three whitelisted calls | `FX_FUNCTIONS` in the same file: `approve(address,uint256)` → demo USDC · `approve(address,address,uint160,uint48)` → Permit2 · `execute(bytes,bytes[],uint256)` → UniversalRouter |
+| Desk routes | [`apps/teller-desk/src/server.ts`](./apps/teller-desk/src/server.ts) — `/fx/status` `/fx/quote` `/fx/enable` `/fx/swap` |
+| Pool creation + seeding | [`infra/scripts/uniswap-pool.ts`](./infra/scripts/uniswap-pool.ts) (`npm -w infra run fx:pool`) |
+| Addresses, pool id, encoding constants | [`docs/UNISWAP.md`](./docs/UNISWAP.md) § 2 · [`infra/deployments/sepolia.json`](./infra/deployments/sepolia.json) `uniswap` |
+| In-game: dealer, board, desk | [`apps/game/dialogue/dealer.json`](./apps/game/dialogue/dealer.json) · [`apps/game/scripts/fx_board.gd`](./apps/game/scripts/fx_board.gd) · `_fx_desk()` in [`bank_interior.gd`](./apps/game/scripts/bank_interior.gd) |
+| Kill test (K7) | `npm -w apps/teller-desk run killtests:s1` — [`scripts/kill-tests-s1.ts`](./apps/teller-desk/scripts/kill-tests-s1.ts) |
+| Developer feedback for the sponsor | [`FEEDBACK.md`](./FEEDBACK.md) |
+
+**Live on Sepolia now:** the v4 pool we created and seeded
+([`0xfd32332c…`](https://sepolia.etherscan.io/address/0xE03A1074c86CFeDd5C142C4F04F1a1536e203543), USDC/WETH, 0.30 %),
+the FX till [`0xB5e8ab92…`](https://sepolia.etherscan.io/address/0xB5e8ab92467663F50c6Ba237Cb062cE6Bf66B2Af)
+(deployed + initialised, `owner()` = the player's Privy wallet), and real `V4Quoter` prices against that pool.
+**Not yet live:** the guarded swap itself — the Sepolia teller ran out of gas money after seeding, and testnet
+faucets are captcha-gated. It needs ≈0.007 ETH and one re-run of the kill test. We would rather say that than imply
+a receipt we do not have; the honest limitation is repeated at the end of [`FEEDBACK.md`](./FEEDBACK.md).
+
 **Start here**
 
 - Plan and gates: [`docs/PLAN.md`](./docs/PLAN.md) · construction units: [`docs/DEV-LOOP.md`](./docs/DEV-LOOP.md)

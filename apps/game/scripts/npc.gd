@@ -20,6 +20,7 @@ const SKINS := {
 	"vault_keeper": "character-j",   # uniform with badge — the vault window
 	"manager": "character-q",        # dark suit, red tie — the corner office
 	"registrar": "character-e",      # purple top — Petra, Name Desk
+	"dealer": "character-c",         # shirtsleeves — Kenji, FX desk (S1)
 	"default": "character-m",
 }
 

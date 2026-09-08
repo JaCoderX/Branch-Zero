@@ -602,16 +602,30 @@ MockChain for greybox only — **K7 evidence must be live Sepolia**.
 - Arc revive / funding; Terminal/OBSERVER; ship packaging title cards; Unichain; CCA; custom v4 hooks;
   v2/v3 as the primary path; custom Solidity; wiping Remote EVM; ENS mainnet
 
+**S1 status (2026-09-08): PARTIAL → one named blocker, Sepolia gas.** Everything except the live swap is built and
+verified; read [`docs/progress/2026-09-08-s1-uniswap-fx.md`](./progress/2026-09-08-s1-uniswap-fx.md) **first**.
+Live on Sepolia now: the v4 pool this desk trades (`0xfd32332c7b…`, USDC/WETH 0.30 %, seeded by
+`npm -w infra run fx:pool`), the player's FX till `0xB5e8ab92467663F50c6Ba237Cb062cE6Bf66B2Af` (deployed + initialised, `owner()` read back
+through the SDK), and real `V4Quoter` prices against that pool. **Not** live: the three guarded calls. The FX teller
+`0x83Af…d4DC` holds ~0.0015 ETH and the pass needs ≈0.007 ETH; Sepolia faucets are captcha-gated, so an operator must
+top it up and re-run `npm -w apps/teller-desk run killtests:s1`. Measured gas is in the progress note — the code is
+sized for it, and the last attempt reverted only because the *outer* limit was under the measured 2.99 M.
+
 ### Definition of Done
 
-- [ ] Sepolia v4 addresses + liquid pool documented in `infra/deployments/sepolia.json` / UNISWAP.md
-- [ ] Guard whitelist: token `approve`, Permit2 `approve`, UniversalRouter `execute`
-- [ ] Live K7: AccountBlox completes a v4 swap on Sepolia; hash in progress note
-- [ ] Desk `/quote` + `/swap` + bridge + Kenji dialogue (mock + live paths)
-- [ ] In-world FX desk + Kenji + quote board + sponsor signage; `run_viz_budget` / named shot OK
-- [ ] `FEEDBACK.md` committed; README points at integration lines; form reminder recorded
-- [ ] `run_checks` green; no freeze / Priority / ENS / faucet regression
-- [ ] REFLECTION K7 row; this §5i DoD updated
+- [x] Sepolia v4 addresses + liquid pool documented in `infra/deployments/sepolia.json` / UNISWAP.md — pool created
+      and seeded live; addresses pinned from the official deployments page
+- [x] Guard whitelist: token `approve`, Permit2 `approve`, UniversalRouter `execute` — built in
+      `apps/teller-desk/src/lanes/fx.ts` (`enableFx`), idempotent against the chain; **not yet landed on Sepolia** (gas)
+- [ ] **Live K7: AccountBlox completes a v4 swap on Sepolia** — blocked on ≈0.007 ETH of Sepolia gas. Pool, till and
+      quoter are live; the swap is implemented, typechecked, pre-flighted against the live router and walked on the mock
+- [x] Desk `/fx/status` `/fx/quote` `/fx/enable` `/fx/swap` + bridge `s1.0` + Kenji dialogue (mock + live paths)
+- [x] In-world FX desk + Kenji + quote board + sponsor signage; `run_viz_budget` green (35 materials, 37 with
+      particles, ≤ 40) and named shots `33_fx_desk_close` / `34_fx_talk` / `35_fx_board_close`
+- [x] `FEEDBACK.md` committed; README points at integration lines; form reminder in the progress note
+- [x] `run_checks` green (120 codes, Kenji's verb split enforced), `run_fx_walk` green, `run_mock_walk` green,
+      `npm run typecheck` green; no freeze / Priority / ENS / faucet regression
+- [x] REFLECTION K7 row + three decision-log rows; this §5i DoD updated
 
 ---
 

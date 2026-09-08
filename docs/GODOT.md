@@ -141,7 +141,10 @@ JS side (`apps/web/src/bridge.ts`) exposes a **flat, JSON-only** API. All values
 | `getHistory` (U3) | `{ limit }` | `{ items: [receipts], serverNow }` | Teller `/status.receipts` (the ledger board's right column) |
 | `getHistory` | `{ chainId, limit }` | `{ items }` | Teller watcher cache |
 | `ensAvailable` / `ensMint` / `ensSetText` | see [ENS.md](./ENS.md) | — | Teller `/ens/*` |
-| `quote` / `swap` | see [UNISWAP.md](./UNISWAP.md) | — | S1 only |
+| `fxStatus` (S1) | — | `{ chainId, account, enabled, usdc, weth, symbolIn, symbolOut, pool{id,fee,tick,liquidity,router,quoter}, whitelist[], explorer, serverNow }` | Teller `/fx/status` — the till on Sepolia, re-read from the chain each time |
+| `fxQuote` (S1) | `{ amount }` | `{ quoteId, amountIn, amountOut, minOut, rate, fee, slippage, deadline, serverNow, validSec, poolId }` | Teller `/fx/quote` — V4Quoter by `eth_call`; signs nothing and works signed-out |
+| `fxEnable` (S1) | — | `{ account, guardHash?, roleHash?, actions[], whitelist[] }` | Teller `/fx/enable` — registers the three schemas, whitelists their targets, grants OWNER / BROADCASTER. Silent (session signer) |
+| `fxSwap` (S1) | `{ quoteId?, amount? }` | `{ account, amountIn, amountOut, minOut, steps[{step,hash,explorer}], hash, explorer, usdcAfter, wethAfter, fee? }` | Teller `/fx/swap` — up to three guarded Lane A meta-transactions on Sepolia (token `approve` → Permit2 `approve` → UniversalRouter `execute`). **No second Privy surface** |
 | `switchWing` | `{ chainId }` | `{ ok }` | local state + Privy chain switch |
 | `openConsole` (stretch) | — | `{ opened, mode: "iframe" \| "tab", url, account }` | The bank computer's terminal overlay (`apps/web/src/overlay/Terminal.tsx`): an iframe of `bloxchain.app/accounts` plus the viewing-wallet form. Resolves when the **panel mounts**, not when it closes — the game unlocks movement on the `terminal.closed` event instead, because a player may read the Console for minutes and no bridge call should be held open that long. MockChain refuses it (`CONSOLE_UNAVAILABLE`): the panel is the shell's, and claiming to open one it cannot produce would be a lie the player can see |
 | `observerGrant` / `observerRevoke` / `observerList` (stretch) | `{ address }` (grant also takes an ENS `name`) | `{ role, roleName, exists, maxWallets, wallets, changed, address, hash? }` | Teller `/observer/*` — the `OBSERVER` runtime role: membership only, **zero** function permissions, so a wallet the player already holds can pass `_validateAnyRole()` on the permissioned registry views (V10) and nothing else. Idempotent; a name is resolved through the existing `/ens/resolve` first. See [TERMINAL-CONSOLE.md](./TERMINAL-CONSOLE.md) |
@@ -160,6 +163,18 @@ Rules:
 - Godot never sees private keys, session tokens or Privy IDs beyond `userId`.
 - Every call has a timeout (15 s) and returns `{ error: { code, message } }` on failure; NPCs have a line for each `code` (see [NPCS.md](./NPCS.md) § 5).
 - On desktop (editor) `MockChain.gd` implements the same API with fake latency and canned data so gameplay can be iterated offline.
+
+### 4b. Bridge version `s1.0` (as built; adds Kenji's FX desk)
+
+`apps/web/src/bridge/branchZero.ts`. `s1.0` adds four methods — `fxStatus`, `fxQuote`, `fxEnable`, `fxSwap` — and
+changes nothing else: ENS (`u5.0`), the Terminal Console (`u5.1`) and Priority (`u4.1`) are untouched. The FX desk
+executes on **Sepolia**, from a second `AccountBlox` (the "FX till") owned by the same Privy wallet, while pay / wire
+/ release stay on Remote EVM 1337. It opens **no** Privy surface: every FX write uses the Lane A shape (the owner's
+session signer signs, a Sepolia broadcaster submits), so `priority` remains the only method allowed to show a wallet
+sheet. `fxQuote` is a read and deliberately works signed-out, so the board can price a swap for someone still in the
+lobby. Godot routes these through `GameState.run_action("fx_quote" / "fx_enable" / "fx_swap")`, and `GameState`
+refuses to take a quote whose deadline has passed rather than let the desk silently re-price it. `MockChain` answers
+all four from a constant-product curve labelled "MockChain: no Uniswap here".
 
 ### 4a. Bridge version `u5.1` (as built)
 

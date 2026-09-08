@@ -57,6 +57,16 @@ export const config = {
 
   /** U5: ENS identity is always read/written on Sepolia; it is never the payment chain. */
   sepoliaRpcUrl: opt('SEPOLIA_RPC_URL'),
+  /**
+   * S1 — the FX desk's Sepolia keys (docs/UNISWAP.md). Separate throwaways from the Main wing's and from the ENS
+   * registrar's: this broadcaster submits swap meta-transactions for players' FX tills and pays their gas; the
+   * deployer only clones a till. Absent keys make the desk answer `FX_NOT_CONFIGURED`, never a stack trace.
+   */
+  fx: {
+    broadcasterPk: opt('SEPOLIA_BROADCASTER_PK'),
+    deployerPk: opt('SEPOLIA_DEPLOYER_PK'),
+    recoveryAddress: (opt('SEPOLIA_RECOVERY_ADDRESS') || undefined) as Address | undefined,
+  },
   ensParentName: opt('ENS_PARENT_NAME', 'branchzero.eth'),
   /** Sepolia throwaway bank key. Lazy ENS client construction fails with ENS_NOT_CONFIGURED if absent. */
   ensRegistrarPk: opt('ENS_REGISTRAR_PK') as Hex | undefined,

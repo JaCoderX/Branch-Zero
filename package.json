@@ -25,6 +25,8 @@
     "chain:compile": "npm -w infra run compile",
     "chain:deploy": "npm -w infra run deploy",
     "chain:smoke": "npm -w infra run smoke",
-    "typecheck": "npm -w packages/shared run typecheck && npm -w infra run typecheck && npm -w apps/web run typecheck && npm -w apps/teller-desk run typecheck"
+    "typecheck": "npm -w packages/shared run typecheck && npm -w infra run typecheck && npm -w apps/web run typecheck && npm -w apps/teller-desk run typecheck",
+    "killtests:s1": "npm -w apps/teller-desk run killtests:s1 --",
+    "fx:pool": "npm -w infra run fx:pool --"
   }
 }

@@ -1,0 +1,137 @@
+{
+  "id": "dealer",
+  "name": "Kenji",
+  "role": "Dealer · FX Desk",
+  "nodes": {
+    "booting": {
+      "text": "FX desk — give me a moment, the board is still warming up.",
+      "choices": [ { "text": "Sure.", "next": "end" } ]
+    },
+    "no_account": {
+      "text": "Dollars for ether? I'd love to, but I trade out of your account, not out of my pocket. Ines opens one at Account Opening.",
+      "choices": [
+        { "text": "Ask why", "next": "why_account" },
+        { "text": "OK.", "next": "end" }
+      ]
+    },
+    "why_account": {
+      "text": "Every trade here is executed by your own account contract, on the exchange's terms and under your guard list. Until that contract exists there is nothing for the router to talk to.",
+      "choices": [ { "text": "OK.", "next": "end" } ]
+    },
+    "desk_closed": {
+      "text": "Board's dark today — the branch can't reach the exchange floor. Counter 1 and the vault are unaffected.",
+      "choices": [
+        { "text": "Ask why", "next": "why_desk_closed" },
+        { "text": "OK.", "next": "end" }
+      ]
+    },
+    "why_desk_closed": {
+      "text": "The FX desk trades on Sepolia, a different chain from the one your payments and wires use. When that side isn't configured or won't answer, I close the board rather than quote you a price I can't honour.",
+      "choices": [ { "text": "OK.", "next": "end" } ]
+    },
+    "no_till": {
+      "text": "You've no till on the exchange floor yet. I can open one — same account pattern as your current account, just on the other chain.",
+      "choices": [
+        { "text": "Open my FX till", "action": "fx_enable", "working": "Opening your till and registering the exchange door…", "on_ok": "opened", "on_error": "refused" },
+        { "text": "Ask why", "next": "why_till" },
+        { "text": "Not today.", "next": "end" }
+      ]
+    },
+    "why_till": {
+      "text": "Your FX till is a second account contract of your own, on the chain the exchange lives on. Same owner, same tellers, same rules — it just keeps trading money and counter money in separate books.",
+      "choices": [ { "text": "OK.", "next": "end" } ]
+    },
+    "closed_door": {
+      "text": "Till's there, but the exchange door isn't on your approved list yet. Three doors, three keys — I can't trade until the manager's list says so.",
+      "choices": [
+        { "text": "Register the exchange door", "action": "fx_enable", "working": "Registering three functions and three addresses…", "on_ok": "opened", "on_error": "refused" },
+        { "text": "Ask why", "next": "why_guard" },
+        { "text": "Not today.", "next": "end" }
+      ]
+    },
+    "opened": {
+      "text": "Done. Your account may now call exactly three things: the token's approve, Permit2's approve, and the exchange router's execute. Nothing else. {fx_usdc} {fx_symbol_in} in the till.",
+      "choices": [
+        { "text": "What's the rate?", "action": "fx_quote", "args": { "amount": "1" }, "working": "Asking the exchange for a price…", "on_ok": "quoted", "on_error": "refused" },
+        { "text": "Ask why", "next": "why_guard" },
+        { "text": "Thanks.", "next": "end" }
+      ]
+    },
+    "idle": {
+      "text": "Dollars for ether? Quote's on the board. You've {fx_usdc} {fx_symbol_in} and {fx_weth} {fx_symbol_out} in the till; the pool takes {fx_pool_fee}.",
+      "choices": [
+        { "text": "Price 1 {fx_symbol_in}", "action": "fx_quote", "args": { "amount": "1" }, "working": "Asking the exchange for a price…", "on_ok": "quoted", "on_error": "refused" },
+        { "text": "Price 5 {fx_symbol_in}", "action": "fx_quote", "args": { "amount": "5" }, "working": "Asking the exchange for a price…", "on_ok": "quoted", "on_error": "refused" },
+        { "text": "Price 25 {fx_symbol_in}", "action": "fx_quote", "args": { "amount": "25" }, "working": "Asking the exchange for a price…", "on_ok": "quoted", "on_error": "refused" },
+        { "text": "What can my account do here?", "next": "whitelist" },
+        { "text": "Ask why", "next": "why_swap" },
+        { "text": "Just looking.", "next": "end" }
+      ]
+    },
+    "quoted": {
+      "text": "{fx_amount_in} {fx_symbol_in} buys {fx_amount_out} {fx_symbol_out}. I'll not accept less than {fx_min_out} — that's your {fx_slippage} slippage. Good for {fx_valid}.",
+      "choices": [
+        { "text": "Take it", "action": "fx_swap", "working": "Three doors, one at a time — approve, allowance, swap…", "on_ok": "swapped", "on_error": "refused" },
+        { "text": "Price something else", "next": "idle" },
+        { "text": "Ask why", "next": "why_quote" },
+        { "text": "Leave it.", "next": "end" }
+      ]
+    },
+    "swapped": {
+      "text": "Filled. {fx_amount_in} {fx_symbol_in} went out, {fx_symbol_out} came back — the till holds {fx_usdc} {fx_symbol_in} and {fx_weth} {fx_symbol_out} now. Receipt's on the board.",
+      "choices": [
+        { "text": "Ask why", "next": "why_swap" },
+        { "text": "Another quote", "next": "idle" },
+        { "text": "Thanks.", "next": "end" }
+      ]
+    },
+    "whitelist": {
+      "text": "Three, and only three: approve on the token, approve on Permit2, execute on the exchange router. That list is on your account, not on my desk — I couldn't send your money anywhere else if you asked me to.",
+      "choices": [
+        { "text": "Ask why", "next": "why_guard" },
+        { "text": "Back", "next": "idle" }
+      ]
+    },
+    "why_swap": {
+      "text": "Your account calls the exchange router directly, but only because that router is on your approved list for that exact function. Same guard as payments.",
+      "choices": [
+        { "text": "Tell me the technical bit", "next": "why_guard" },
+        { "text": "Back", "next": "idle" }
+      ]
+    },
+    "why_guard": {
+      "text": "GuardController holds a whitelist per function selector. Your till registered three schemas — approve(address,uint256), Permit2's approve, and execute(bytes,bytes[],uint256) — and whitelisted one address for each. You sign a meta-transaction, the FX teller submits it, and the account refuses any target that is not on that list. A swap is a treasury operation here, not a wallet pop-up.",
+      "choices": [
+        { "text": "And the trade itself?", "next": "why_quote" },
+        { "text": "Back", "next": "idle" }
+      ]
+    },
+    "why_quote": {
+      "text": "The board is the exchange's own quoter, asked off-chain — it costs nothing and signs nothing. I take one percent off it as your floor, stamp a five-minute deadline, and the router refuses the trade if the pool has moved past that floor by the time it lands.",
+      "choices": [
+        { "text": "Back", "next": "idle" }
+      ]
+    },
+    "refused": {
+      "text": "{reason_line}",
+      "choices": [
+        { "text": "Ask why", "next": "refused_why" },
+        { "text": "Back", "next": "idle" },
+        { "text": "OK.", "next": "end" }
+      ]
+    },
+    "refused_why": {
+      "text": "{reason_why}",
+      "choices": [ { "text": "OK.", "next": "end" } ]
+    }
+  },
+  "start": [
+    { "if": "!booted", "node": "booting" },
+    { "if": "!has_account", "node": "no_account" },
+    { "if": "!fx_desk", "node": "desk_closed" },
+    { "if": "!fx_till", "node": "no_till" },
+    { "if": "!fx_open", "node": "closed_door" },
+    { "if": "fx_quoted", "node": "quoted" },
+    { "node": "idle" }
+  ]
+}

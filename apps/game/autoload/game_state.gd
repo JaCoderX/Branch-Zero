@@ -28,6 +28,8 @@ var ui_locked: bool = false            # dialogue / form open → player does no
 var current_zone: String = ""
 var desk_linked: bool = true        # Teller Desk SSE stream up (bridge `desk.link`); false while reconnecting
 var observers: Array = []           # viewing wallets on the OBSERVER role (addresses, strings only)
+var fx: Dictionary = {}             # S1: Kenji's till on Sepolia — balances, pool, whitelist (bridge `fxStatus`)
+var fx_quote: Dictionary = {}       # the rate currently on the quote board (bridge `fxQuote`); empty = board dark
 var terminal_open: bool = false     # the bank computer's Console overlay is up in the shell (bridge `terminal.closed` clears it)
 var errors: Dictionary = {}
 var strings: Dictionary = {}
@@ -58,6 +60,7 @@ func boot() -> void:
 	await refresh_names()
 	if logged_in():
 		await refresh_observers()
+		await refresh_fx()
 	print("GameState: booted — bridge ready after %d ms, session after %d ms (%s)" % [t1 - t0, Time.get_ticks_msec() - t1, "MockChain" if Chain.use_mock else "bridge " + Chain.bridge_version])
 	changed.emit()
 
@@ -214,6 +217,12 @@ func facts() -> Dictionary:
 		"desk_linked": desk_linked,
 		"observers": observers.size(),
 		"terminal_open": terminal_open,
+		# S1 — Kenji's desk. `fx_till` = the player has an AccountBlox on Sepolia; `fx_open` = its exchange door is
+		# registered (the three whitelisted calls); `fx_quoted` = a rate is on the board and still inside its deadline.
+		"fx_till": has_fx_till(),
+		"fx_open": fx_open(),
+		"fx_quoted": fx_quoted(),
+		"fx_desk": fx.has("pool"),
 		"ens_name": ens_name(),
 		"mock": Chain.use_mock,
 		"web": Chain.is_web,
@@ -241,6 +250,18 @@ func vars(extra: Dictionary = {}) -> Dictionary:
 		"priority_copy": str(strings.get("priority_copy", "Skip the cooling period — hand scan required.")),
 		"ens_name": ens_name() if has_ens_name() else "no name yet",
 		"observers": str(observers.size()),
+		# S1 — the quote board and Kenji's lines. Everything here came from the chain (V4Quoter, StateView) or is "—".
+		"fx_usdc": fmt_amount(fx.get("usdc", "0")),
+		"fx_weth": fmt_amount(fx.get("weth", "0")),
+		"fx_symbol_in": str(fx.get("symbolIn", "USDC")),
+		"fx_symbol_out": str(fx.get("symbolOut", "WETH")),
+		"fx_pool_fee": str(fx.get("pool", {}).get("fee", "0.30%")),
+		"fx_amount_in": fmt_amount(fx_quote.get("amountIn", "0")),
+		"fx_amount_out": fmt_amount(fx_quote.get("amountOut", "0")),
+		"fx_min_out": fmt_amount(fx_quote.get("minOut", "0")),
+		"fx_rate": str(fx_quote.get("rate", "—")),
+		"fx_slippage": str(fx_quote.get("slippage", "1%")),
+		"fx_valid": fmt_duration(fx_quote_remaining()),
 	}
 	v.merge(extra, true)
 	return v
@@ -286,6 +307,42 @@ func refresh_observers() -> void:
 	var res: Dictionary = r.get("result", {})
 	if res.get("wallets") is Array:
 		observers = res["wallets"]
+	changed.emit()
+
+
+## S1 — has the player an AccountBlox on Sepolia at all? (`fxStatus.account`; null until the FX till is opened.)
+func has_fx_till() -> bool:
+	return fx.get("account") != null and str(fx.get("account", "")) != ""
+
+
+## Is the exchange door registered on it — the three whitelisted calls? Read from the chain, never remembered.
+func fx_open() -> bool:
+	return has_fx_till() and bool(fx.get("enabled", false))
+
+
+## Seconds a quote is still good for, counted against the **desk** clock like the vault (docs/GODOT.md §5).
+func fx_quote_remaining() -> int:
+	if fx_quote.is_empty():
+		return 0
+	return max(int(str(fx_quote.get("deadline", "0"))) - now(), 0)
+
+
+func fx_quoted() -> bool:
+	return not fx_quote.is_empty() and fx_quote_remaining() > 0
+
+
+## Kenji's till and his pool. Silent on failure: the FX desk is a side wing, and a Sepolia hiccup must never make
+## Account Opening or the Main-wing lanes unusable (same rule as the names board).
+func refresh_fx() -> void:
+	if not logged_in():
+		fx = {}
+		return
+	var r := await Chain.call_async("fxStatus", {}, 30.0)
+	if not r.get("ok", false):
+		return
+	if r.get("result") is Dictionary:
+		fx = r["result"]
+		_sync_clock(fx.get("serverNow"))
 	changed.emit()
 
 
@@ -371,6 +428,41 @@ func run_action(action: String, args: Dictionary = {}) -> Dictionary:
 			r = await Chain.call_async("ensSetText", {"name": str(args.get("name", ens_name())), "key": str(args.get("key", "bz.tier")), "value": str(args.get("value", "Silver"))}, 120.0)
 		"resolve_name":
 			r = await Chain.call_async("resolveName", {"name": str(args.get("name", ""))}, 20.0)
+		"fx_status":
+			r = await Chain.call_async("fxStatus", {}, 30.0)
+		"fx_quote":
+			# A read: the V4Quoter prices it with an eth_call. Kenji shows the board before anyone signs anything.
+			r = await Chain.call_async("fxQuote", {"amount": str(args.get("amount", "1"))}, 30.0)
+			if r.get("ok", false) and r.get("result") is Dictionary:
+				fx_quote = r["result"]
+				_sync_clock(fx_quote.get("serverNow"))
+			else:
+				fx_quote = {}
+		"fx_enable":
+			# Registering the exchange door: two owner-signed config batches, silent (the session signer).
+			r = await Chain.call_async("fxEnable", {}, 300.0)
+		"fx_swap":
+			# Up to three guarded Lane A meta-transactions on Sepolia. No Privy surface — this is not the hand scan.
+			#
+			# A quote the player accepted is the price they agreed to. If the board's quote has run out its deadline,
+			# refuse here rather than send an amount and let the desk price it afresh: re-quoting silently under a
+			# player who said "take it" is exactly the behaviour the deadline exists to prevent, and the desk's own
+			# FX_QUOTE_EXPIRED says so on the other side of the bridge.
+			var swap_args := {}
+			var board_id := str(args.get("quoteId", fx_quote.get("quoteId", "")))
+			if board_id != "" and not fx_quoted():
+				r = {"ok": false, "error": {"code": "FX_QUOTE_EXPIRED", "message": "the quote on the board expired before it was taken"}}
+			else:
+				if board_id != "":
+					swap_args["quoteId"] = board_id
+				if str(args.get("amount", "")) != "":
+					swap_args["amount"] = str(args["amount"])
+				elif not swap_args.has("quoteId"):
+					r = {"ok": false, "error": {"code": "FX_AMOUNT", "message": "ask Kenji for a price before taking one"}}
+				if not r.has("error"):
+					r = await Chain.call_async("fxSwap", swap_args, 300.0)
+					if r.get("ok", false):
+						fx_quote = {}
 		"pay":
 			r = await _run_payment_lane("pay", args)
 		"wire":
@@ -413,6 +505,8 @@ func run_action(action: String, args: Dictionary = {}) -> Dictionary:
 		await refresh_names()
 	if action.begins_with("observer"):
 		await refresh_observers()
+	if action.begins_with("fx") and action != "fx_quote":
+		await refresh_fx()
 	busy = false
 	changed.emit()
 	return r

@@ -5,24 +5,31 @@
  *   npm run chain:compile            # once, or after bumping the package
  *   npm run chain:deploy             # reuse libraries already on Remote EVM 1337
  *   npm run chain:deploy -- --chain arc # Arc Testnet 5042002 (requires ARC_* keys)
+ *   npm run chain:deploy -- --chain sepolia --label fx-rig-till   # S1: Sepolia 11155111 (SEPOLIA_* keys; merges into sepolia.json beside the ENS pins)
  *   npm run chain:deploy -- --fresh  # redeploy libraries too (after a Remote EVM wipe)
  *   npm run chain:deploy -- --label alice
+ *   npm run chain:deploy -- --chain sepolia --attach-account 0x… --deploy-tx 0x…   # initialise + record an AccountBlox already deployed (resume after a failed initialize)
  *
  * Env: DEPLOYER_PK/OWNER_ADDRESS/BROADCASTER_ADDRESS/RECOVERY_ADDRESS on 1337;
- * ARC_DEPLOYER_PK/ARC_OWNER_ADDRESS/ARC_BROADCASTER_ADDRESS/ARC_RECOVERY_ADDRESS on Arc; TIMELOCK_SEC=120.
+ * ARC_DEPLOYER_PK/ARC_OWNER_ADDRESS/ARC_BROADCASTER_ADDRESS/ARC_RECOVERY_ADDRESS on Arc; SEPOLIA_* likewise; TIMELOCK_SEC=120.
+ * On public networks the fee is pinned low (0.02 gwei tip over the base fee) because the deployer is a faucet-funded throwaway.
  * Deploy + initialize are two transactions seconds apart (documented window; no factory in the public package — see REFLECTION.md).
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { type Address, type Hex, formatEther, zeroAddress } from 'viem';
+import { type Address, type Hex, formatEther, parseGwei, zeroAddress } from 'viem';
 import { SecureOwnable } from '@bloxchain/sdk';
 import { DeploymentFileSchema, REMOTE_EVM_DEV_ROLES, type DeploymentFile, type ChainTarget } from '@branch-zero/shared';
 import { loadEnv, env, ARTIFACTS_DIR, DEPLOYMENTS_DIR, INFRA_DIR } from './lib/env.ts';
-import { connect, deployerWallet, asAddress, targetFromArg } from './lib/chain.ts';
+import { connect, deployerWallet, asAddress, deploymentsFile, envName, targetFromArg } from './lib/chain.ts';
 
 loadEnv();
 const argv = process.argv.slice(2);
 const FRESH = argv.includes('--fresh');
+const attachIdx = argv.indexOf('--attach-account');
+const ATTACH = attachIdx >= 0 ? (argv[attachIdx + 1] as Address) : undefined;
+const deployTxIdx = argv.indexOf('--deploy-tx');
+const ATTACH_DEPLOY_TX = deployTxIdx >= 0 ? (argv[deployTxIdx + 1] as Hex) : undefined;
 const labelIdx = argv.indexOf('--label');
 const LABEL = labelIdx >= 0 && argv[labelIdx + 1] ? argv[labelIdx + 1] : 'player-owner-acct4';
 
@@ -85,17 +92,27 @@ async function main() {
   console.log(`deployer   ${deployerLabel}  ${formatEther(balance)} ${chain.nativeCurrency.symbol}`);
   if (balance === 0n) throw new Error(`deployer has no ${chain.nativeCurrency.symbol}`);
 
-  const owner = asAddress(env(target === 'arc' ? 'ARC_OWNER_ADDRESS' : 'OWNER_ADDRESS', target === 'arc' ? undefined : REMOTE_EVM_DEV_ROLES.playerOwner), target === 'arc' ? 'ARC_OWNER_ADDRESS' : 'OWNER_ADDRESS');
-  const broadcaster = asAddress(env(target === 'arc' ? 'ARC_BROADCASTER_ADDRESS' : 'BROADCASTER_ADDRESS', target === 'arc' ? undefined : REMOTE_EVM_DEV_ROLES.broadcaster), target === 'arc' ? 'ARC_BROADCASTER_ADDRESS' : 'BROADCASTER_ADDRESS');
-  const recovery = asAddress(env(target === 'arc' ? 'ARC_RECOVERY_ADDRESS' : 'RECOVERY_ADDRESS', target === 'arc' ? undefined : REMOTE_EVM_DEV_ROLES.recovery), target === 'arc' ? 'ARC_RECOVERY_ADDRESS' : 'RECOVERY_ADDRESS');
+  const dev = target === 'remote';
+  const owner = asAddress(env(envName(target, 'OWNER_ADDRESS'), dev ? REMOTE_EVM_DEV_ROLES.playerOwner : undefined), envName(target, 'OWNER_ADDRESS'));
+  const broadcaster = asAddress(env(envName(target, 'BROADCASTER_ADDRESS'), dev ? REMOTE_EVM_DEV_ROLES.broadcaster : undefined), envName(target, 'BROADCASTER_ADDRESS'));
+  const recovery = asAddress(env(envName(target, 'RECOVERY_ADDRESS'), dev ? REMOTE_EVM_DEV_ROLES.recovery : undefined), envName(target, 'RECOVERY_ADDRESS'));
+  // Public networks: a faucet-funded throwaway pays; keep the tip minimal and let the base fee do the work.
+  const head = await publicClient.getBlock();
+  // The cap is also what viem checks the balance against before sending, so keep it close to the base fee.
+  const fees = dev ? {} : { maxPriorityFeePerGas: parseGwei('0.02'), maxFeePerGas: ((head.baseFeePerGas ?? parseGwei('1')) * 21n) / 20n + parseGwei('0.02') };
   const eventForwarder = asAddress(env('EVENT_FORWARDER', zeroAddress), 'EVENT_FORWARDER');
   const timeLockSec = BigInt(env('TIMELOCK_SEC', '120'));
 
-  const outFile = path.join(DEPLOYMENTS_DIR, target === 'arc' ? 'arc-testnet.json' : 'remote-evm.json');
+  const outFile = path.join(DEPLOYMENTS_DIR, deploymentsFile(target));
   let existing: DeploymentFile | undefined;
+  // sepolia.json predates this script (U5 ENS pins, no libraries yet): keep every key it has and add ours beside them.
+  let extra: Record<string, unknown> = {};
   if (fs.existsSync(outFile)) {
-    const parsed = DeploymentFileSchema.safeParse(JSON.parse(fs.readFileSync(outFile, 'utf8')));
+    const raw = JSON.parse(fs.readFileSync(outFile, 'utf8')) as Record<string, unknown>;
+    const parsed = DeploymentFileSchema.safeParse(raw);
     if (parsed.success && parsed.data.chainId === chain.id) existing = parsed.data;
+    else if (raw.chainId === chain.id) extra = raw;
+    else if (raw.chainId !== undefined) throw new Error(`${outFile} is for chain ${raw.chainId}, RPC is ${chain.id}`);
   }
 
   // ---- libraries ----------------------------------------------------------------------------------------------------
@@ -103,7 +120,8 @@ async function main() {
   const libRecords: DeploymentFile['libraries'] = {};
   for (const name of FOUNDATION_LIBRARIES) {
     const art = loadArtifact(name);
-    const prev = existing?.libraries[name];
+    // Attach from a schema-valid file or from a pre-schema one (sepolia.json before its first account) alike.
+    const prev = existing?.libraries[name] ?? ((extra.libraries as Record<string, { address: string; txHash?: string }> | undefined)?.[name]);
     if (prev && !FRESH) {
       const code = await publicClient.getCode({ address: prev.address as Address });
       if (code && code !== '0x') {
@@ -114,7 +132,7 @@ async function main() {
       }
     }
     const bytecode = link(art.bytecode, art.linkReferences, libs);
-    const hash = await walletClient.deployContract({ abi: art.abi, bytecode, account: deployer, chain });
+    const hash = await walletClient.deployContract({ abi: art.abi, bytecode, account: deployer, chain, ...fees });
     const rcpt = await publicClient.waitForTransactionReceipt({ hash });
     if (rcpt.status !== 'success' || !rcpt.contractAddress) throw new Error(`${name} deploy failed: ${hash}`);
     libs[name] = rcpt.contractAddress;
@@ -125,12 +143,24 @@ async function main() {
   // ---- AccountBlox --------------------------------------------------------------------------------------------------
   const acct = loadArtifact('AccountBlox');
   const linked = link(acct.bytecode, acct.linkReferences, libs);
-  const deployHash = await walletClient.deployContract({ abi: acct.abi, bytecode: linked, account: deployer, chain });
-  const deployRcpt = await publicClient.waitForTransactionReceipt({ hash: deployHash });
-  if (deployRcpt.status !== 'success' || !deployRcpt.contractAddress) throw new Error(`AccountBlox deploy failed: ${deployHash}`);
-  const accountAddress = deployRcpt.contractAddress;
+  let deployHash: Hex;
+  let accountAddress: Address;
+  if (ATTACH) {
+    // Resume: the deploy landed but initialize did not (e.g. the fee cap exceeded the deployer's balance).
+    if (!ATTACH_DEPLOY_TX) throw new Error('--attach-account needs --deploy-tx <hash of the deploy transaction>');
+    const rcpt = await publicClient.getTransactionReceipt({ hash: ATTACH_DEPLOY_TX });
+    if (rcpt.contractAddress?.toLowerCase() !== ATTACH.toLowerCase()) throw new Error(`--deploy-tx created ${rcpt.contractAddress}, not ${ATTACH}`);
+    deployHash = ATTACH_DEPLOY_TX;
+    accountAddress = asAddress(ATTACH, '--attach-account');
+    console.log(`attach     ${'AccountBlox'.padEnd(28)} ${accountAddress}`);
+  } else {
+    deployHash = await walletClient.deployContract({ abi: acct.abi, bytecode: linked, account: deployer, chain, ...fees });
+    const deployRcpt = await publicClient.waitForTransactionReceipt({ hash: deployHash });
+    if (deployRcpt.status !== 'success' || !deployRcpt.contractAddress) throw new Error(`AccountBlox deploy failed: ${deployHash}`);
+    accountAddress = deployRcpt.contractAddress;
+  }
   const code = (await publicClient.getCode({ address: accountAddress })) ?? '0x';
-  console.log(`deploy     ${'AccountBlox'.padEnd(28)} ${accountAddress}  gas=${deployRcpt.gasUsed}  code=${(code.length - 2) / 2} bytes`);
+  console.log(`deploy     ${'AccountBlox'.padEnd(28)} ${accountAddress}  code=${(code.length - 2) / 2} bytes`);
 
   const initHash = await walletClient.writeContract({
     address: accountAddress,
@@ -139,6 +169,10 @@ async function main() {
     args: [owner, broadcaster, recovery, timeLockSec, eventForwarder],
     account: deployer,
     chain,
+    ...fees,
+    // initialize registers every schema and role: ~16.1 M gas. Public RPCs' estimateGas has refused it (2026-09-08);
+    // the measured figure plus headroom is sent instead of asking.
+    ...(dev ? {} : { gas: 16_300_000n }),
   });
   const initRcpt = await publicClient.waitForTransactionReceipt({ hash: initHash });
   if (initRcpt.status !== 'success') throw new Error(`initialize reverted: ${initHash}`);
@@ -199,7 +233,7 @@ async function main() {
     ],
   };
   fs.mkdirSync(DEPLOYMENTS_DIR, { recursive: true });
-  fs.writeFileSync(outFile, JSON.stringify(DeploymentFileSchema.parse(record), null, 2) + '\n');
+  fs.writeFileSync(outFile, JSON.stringify({ ...extra, ...DeploymentFileSchema.parse(record) }, null, 2) + '\n');
   console.log(`wrote      ${path.relative(process.cwd(), outFile)}`);
   console.log(`K4 (${target}): PASS — AccountBlox deployed + initialised on chain ${chain.id}; owner() read back via @bloxchain/sdk`);
 }

@@ -30,10 +30,12 @@ import type { DeskLink } from '../shell/deskEvents';
 import { focusCanvas } from '../shell/focus';
 
 /**
- * u5.1: the Terminal Console stretch — `openConsole` plus the three `observer*` methods. `u5.0` (ENS Name Desk) and
- * `u4.1` (`priority`, Okafor's hand scan) are unchanged and must stay that way.
+ * `s1.0`: Kenji's FX desk — `fxStatus` / `fxEnable` / `fxQuote` / `fxSwap` over the Teller Desk's `/fx/*` routes.
+ * `u5.1` (Terminal Console `openConsole` + `observer*`), `u5.0` (ENS Name Desk) and `u4.1` (`priority`, Okafor's hand
+ * scan) are unchanged and must stay that way: the FX desk adds no Privy surface — the swap is signed by the same
+ * silent session signer that stamps counter slips, only on a Sepolia account instead of the Main wing's.
  */
-export const BRIDGE_VERSION = 'u5.1';
+export const BRIDGE_VERSION = 's1.0';
 
 /**
  * Where the bank computer points. `/accounts` is the Console screen that matters: it is where the player imports
@@ -317,6 +319,37 @@ const handlers: Record<string, Handler> = {
   },
   async observerList() {
     return requireAdapter().call('/observer/list');
+  },
+
+  // --- S1: Kenji's FX desk (Uniswap v4 on Sepolia; the Main wing's lanes are untouched) ---
+
+  /** The till: balances, whether the exchange door is registered, the pool, and the three whitelisted calls. */
+  async fxStatus() {
+    return requireAdapter().call('/fx/status');
+  },
+  /**
+   * The quote board. A read — no signature, no modal — so the board can price a swap for a player who has not
+   * signed in yet, exactly like Petra's availability check.
+   */
+  async fxQuote(args) {
+    const amount = typeof args.amount === 'string' ? args.amount.trim() : String(args.amount ?? '');
+    if (!/^\d+(\.\d+)?$/.test(amount) || Number(amount) <= 0) throw bridgeError('FX_AMOUNT', `not an amount: ${amount}`, 'That is not an amount the dealer can price.');
+    return requireAdapter().call(`/fx/quote?amount=${encodeURIComponent(amount)}`);
+  },
+  /** Open the till: register the three schemas, whitelist their targets, grant the two roles. Silent (Lane A shape). */
+  async fxEnable() {
+    return requireAdapter().call('/fx/enable', {});
+  },
+  /**
+   * The swap. Up to three guarded meta-transactions on Sepolia, all signed by the session signer — so unlike
+   * `priority` this opens no Privy surface and needs no `focusCanvas()` dance.
+   */
+  async fxSwap(args) {
+    const body: Record<string, unknown> = {};
+    if (typeof args.quoteId === 'string' && args.quoteId) body.quoteId = args.quoteId;
+    if (args.amount !== undefined && String(args.amount) !== '') body.amount = String(args.amount);
+    if (!body.quoteId && !body.amount) throw bridgeError('FX_AMOUNT', 'a quote or an amount is required', 'Ask the dealer for a quote first.');
+    return requireAdapter().call('/fx/swap', body);
   },
 
   // --- U1: the counter ---

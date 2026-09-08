@@ -1,6 +1,8 @@
 # Uniswap v4 Integration — The FX Desk (S1)
 
-> Status: **OPEN / activated 2026-09-08** as sponsor **#3** while Arc G7 stays deferred. Kickoff:
+> Status: **PARTIAL / built 2026-09-08** as sponsor **#3** while Arc G7 stays deferred. Pool, FX till and live quotes
+> are on Sepolia; the guarded swap is blocked on Sepolia gas (HANDOFF §5i, `docs/progress/2026-09-08-s1-uniswap-fx.md`).
+> Kickoff:
 > [`KICKOFF-S1-uniswap-fx.md`](./KICKOFF-S1-uniswap-fx.md) (infra → visualization). HANDOFF **§5i**.
 > Prize paperwork: `FEEDBACK.md` + [Uniswap hackathon feedback form](https://developers.uniswap.org/hackathon-feedback).
 
@@ -22,16 +24,34 @@ This is not "a swap UI"; it is "swaps as a permissioned treasury operation."
 
 ---
 
-## 2. Contracts (Sepolia — `VERIFY` at deployments page)
+## 2. Contracts (Sepolia — pinned 2026-09-08 from the [deployments page](https://developers.uniswap.org/contracts/v4/deployments))
+
+Recorded in [`infra/deployments/sepolia.json`](../infra/deployments/sepolia.json) under `uniswap`, beside the U5 ENS pins.
 
 | Contract | Role | Address |
 |----------|------|---------|
-| `PoolManager` | v4 singleton | `VERIFY` |
-| `UniversalRouter` | entry point for swaps | `VERIFY` |
-| `V4Quoter` | off-chain quotes (`quoteExactInputSingle`, `eth_call` only) | `VERIFY` |
-| `StateView` | pool state reads | `VERIFY` |
+| `PoolManager` | v4 singleton | `0xE03A1074c86CFeDd5C142C4F04F1a1536e203543` |
+| `UniversalRouter` | entry point for swaps | `0x3A9D48AB9751398BbFa63ad67599Bb04e4BdF98b` |
+| `PositionManager` | pool creation + liquidity (seeding only) | `0x429ba70129df741B2Ca2a85BC3A2a3328e5c09b4` |
+| `V4Quoter` | off-chain quotes (`quoteExactInputSingle` — **non-view**, so `eth_call` / `simulateContract` only) | `0x61b3f2011a92d183c7dbadbda940a7555ccf9227` |
+| `StateView` | pool state reads (`getSlot0`, `getLiquidity` by pool id) | `0xe1dd9c3fa50edb962e442f60dfbc432e24537e4c` |
 | `Permit2` | token allowance to router | `0x000000000022D473030F116dDEE9F6B43aC78BA3` (canonical) |
-| Demo pool | `demoUSDC / WETH` (we create + seed on Day 8, or use an existing Sepolia test pool) | `VERIFY` |
+| Demo pool | `USDC(demo) / WETH`, fee 0.30 %, tick spacing 60, no hook | id `0xfd32332c7bc1c1ab4b2cd2971b6e1eef513d610457504b8a19745413b678581f` |
+| — pool `currency0` | the U5 Sepolia mock USDC, 6 decimals, open `mint` | `0xD3322B29a7BdEe707D1684676f149bf41Aa3422f` |
+| — pool `currency1` | Sepolia WETH9 (the one the Uniswap deployments use) | `0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14` |
+| **FX till** | the player's `AccountBlox` on Sepolia — the account that trades | `0xB5e8ab92467663F50c6Ba237Cb062cE6Bf66B2Af` |
+
+The pool did not exist, so we created and seeded it: `npm -w infra run fx:pool`
+([`infra/scripts/uniswap-pool.ts`](../infra/scripts/uniswap-pool.ts)) initialises it at 1 ETH = 2,000 practice dollars
+and mints one full-range position through `PositionManager.modifyLiquidities` (`MINT_POSITION` → `SETTLE_PAIR`, paid
+through Permit2). It is deliberately a small position, so quotes show real price impact — 1 → 0.000352 WETH,
+5 → 0.000810, 10 → 0.000967.
+
+**Encoding constants** (read from the published sources, not the docs — see `FEEDBACK.md`):
+`Commands.V4_SWAP = 0x10`; `Actions.SWAP_EXACT_IN_SINGLE = 0x06`, `SETTLE_ALL = 0x0c`, `TAKE_ALL = 0x0f`,
+`MINT_POSITION = 0x02`, `SETTLE_PAIR = 0x0d`. Note `IV4Router.ExactInputSingleParams` on `v4-periphery` `main` carries
+a `minHopPriceX36` field the swap guide's sample omits; the deployed Sepolia router takes the guide's five-field shape,
+which is what `lanes/fx.ts` encodes.
 
 ---
 
