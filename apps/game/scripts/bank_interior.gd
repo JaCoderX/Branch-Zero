@@ -53,6 +53,8 @@ func _ready() -> void:
 	_account_opening()
 	_lobby_furniture()
 	_east_column()
+	_partners_board()
+	_lobby_terminal()
 	_lamps_and_windows()
 	_shell()
 	_coffers()
@@ -514,6 +516,51 @@ func _lobby_furniture() -> void:
 	# entrance
 	PropKit.kit(self, "Doormat", "rugDoormat", Vector3(5.0, 0.004, 9.6), 0.0, {"fit": Vector3(2.2, 0.01, 1.2)})
 	PropKit.kit(self, "CoatRack", "coatRackStanding", Vector3(8.6, 0, 9.9), 0.0, {}, Vector3(0.5, 1.6, 0.5), Vector3(0, 0.8, 0))
+
+
+## SE lobby set dressing (partners-board kickoff): the bank's event notice board is a composed sign, not a logo wall.
+## It sits south of the elevator and east of the entrance, faces west into the lobby, and uses only the existing palette
+## materials. The paper panels are mesh-only and bake into the static batch; one thin collider keeps the freestanding
+## board honest without closing the entrance gap or the elevator approach.
+func _partners_board() -> void:
+	var x := 13.40
+	var z := 8.85
+	var brass := PropKit.palette("Brass")
+	var brass_dark := PropKit.palette("BrassDark")
+	var graphite := PropKit.palette("Graphite")
+	var paper := PropKit.palette("Paper")
+	var green := PropKit.palette("MarbleDark")
+	# Backing and inset writing surfaces. The lower half is split into two separate institution panels.
+	box_m("PartnersBoardBacking", Vector3(x, 2.20, z), Vector3(0.14, 2.55, 3.25), graphite, false)
+	box_m("PartnersBoardEventPanel", Vector3(x - 0.09, 3.02, z), Vector3(0.035, 0.70, 3.05), green, false)
+	box_m("PartnersBoardPartnerPanel", Vector3(x - 0.09, 2.48, z), Vector3(0.035, 0.35, 3.05), brass_dark, false)
+	box_m("PartnersBoardBloxchainPanel", Vector3(x - 0.09, 1.68, 8.08), Vector3(0.035, 1.22, 1.43), paper, false)
+	box_m("PartnersBoardParticlePanel", Vector3(x - 0.09, 1.68, 9.62), Vector3(0.035, 1.22, 1.43), paper, false)
+	# Brass frame and the lower institution divider, all proud of the west-facing paper face.
+	box_m("PartnersBoardFrameTop", Vector3(x - 0.13, 3.50, z), Vector3(0.10, 0.10, 3.30), brass, false)
+	box_m("PartnersBoardFrameBottom", Vector3(x - 0.13, 0.90, z), Vector3(0.10, 0.10, 3.30), brass, false)
+	box_m("PartnersBoardFrameWest", Vector3(x - 0.13, 2.20, 7.22), Vector3(0.10, 2.70, 0.10), brass, false)
+	box_m("PartnersBoardFrameEast", Vector3(x - 0.13, 2.20, 10.48), Vector3(0.10, 2.70, 0.10), brass, false)
+	box_m("PartnersBoardLowerDivider", Vector3(x - 0.14, 1.68, 8.85), Vector3(0.08, 1.22, 0.06), brass, false)
+	solid_box("PartnersBoard", Vector3(x, 2.20, z), Vector3(0.24, 2.55, 3.30))
+
+	# Event → featured partners → protocol / company. The wording stays in the bank's everyday signage register.
+	plaque("ETH ONLINE 2026 · BRANCH ZERO", Vector3(x - 0.17, 3.16, z), -PI / 2, 0.22, theme.trim_color, "PartnersEvent")
+	plaque("SEP 4–16 · ONLINE", Vector3(x - 0.17, 2.84, z), -PI / 2, 0.15, theme.paper_color, "PartnersDate")
+	plaque("PARTNERS · PRIVY · ENS · UNISWAP · ARC", Vector3(x - 0.17, 2.48, z), -PI / 2, 0.15, theme.paper_color, "PartnersStrip")
+	plaque("BLOXCHAIN\nOpen protocol\nGoverned accounts", Vector3(x - 0.17, 1.80, 8.08), -PI / 2, 0.13, theme.graphite_color, "BloxchainPanel")
+	plaque("PARTICLE CS\nTrust infrastructure\nBuilds Bloxchain", Vector3(x - 0.17, 1.80, 9.62), -PI / 2, 0.13, theme.graphite_color, "ParticlePanel")
+
+
+## A public bank computer in the same SE pocket. The desk is separate from the notice board, faces the lobby walk-up,
+## and keeps a real desk-sized collider. `main.gd` registers the screen with BankTerminal; no NPC is attached here.
+func _lobby_terminal() -> void:
+	var desk := Vector3(10.95, 0, 9.15)
+	PropKit.kit(self, "LobbyTerminalDesk", "desk", desk, -PI / 2, {"fit": Vector3(1.60, 0.78, 1.0)})
+	solid_box("LobbyTerminalDesk", Vector3(desk.x, 0.40, desk.z), Vector3(1.60, 0.80, 1.0))
+	PropKit.kit(self, "LobbyScreen", "computerScreen", Vector3(11.35, 0.78, 9.15), -PI / 2)
+	PropKit.kit(self, "LobbyKeyboard", "computerKeyboard", Vector3(10.95, 0.78, 9.15), -PI / 2)
+	plaque("BRANCH CONSOLE", Vector3(11.35, 1.55, 9.15), -PI / 2, 0.18, theme.trim_color, "LobbyConsolePlaque")
 
 
 # ---------------------------------------------------------------- east column: elevator, FX desk, side door

@@ -25,6 +25,7 @@ const NPCS := [
 const TERMINALS := [
 	["manager", Vector3(-8.6, 0.4, -8.5), "the manager's terminal"],
 	["opening", Vector3(-8.6, 0.4, 7.95), "the account desk terminal"],
+	["lobby", Vector3(11.35, 0.4, 9.15), "the lobby terminal"],
 ]
 
 const ARC_CHAIN_ID := 5042002

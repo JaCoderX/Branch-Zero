@@ -53,7 +53,7 @@ Reference boards: art-deco bank lobbies (symmetry, terrazzo floors), *Katamari*-
 | Zone | Size | Key props | Interactables | Notes |
 |------|------|-----------|---------------|-------|
 | Entrance | 6×4 | Revolving door, brass plaque "BRANCH ZERO — est. block 0", doormat | none | Spawn; camera intro pan |
-| Lobby | 14×10 | Rope queue, 4 benches, 6 plants, water cooler, floor compass rosette | Greeter NPC, Ledger board | Board is a `SubViewport` texture, 8 rows |
+| Lobby | 14×10 | Rope queue, 4 benches, 6 plants, water cooler, floor compass rosette, SE partners / event board, standalone lobby terminal | Greeter NPC, Ledger board, lobby `BankTerminal` | Ledger is a `SubViewport` texture, 8 rows; the SE board is static bank signage (Event → Partners → Bloxchain \| Particle) and the terminal is a public walk-up computer with no NPC |
 | Account Opening | 6×5 | Desk, plant (landmark), two chairs, brochure rack, "Delegation" leaflet | Clerk NPC, brochure (lore) | Privy overlay appears here |
 | Counter 1 & 2 | 6×4 each | Marble counter, glass partition with slot, stamp, dot-matrix printer, "Approved payees" wall list, service menu sign | Teller NPCs, printed receipt | Approved payees list is generated from `getFunctionWhitelistTargets` |
 | Ledger board | 8×1 wall | Split-flap board, clock | read-only | Rows: id · type · payee · amount · status · release |

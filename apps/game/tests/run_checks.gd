@@ -53,6 +53,7 @@ func _initialize() -> void:
 	_check_faucet_choice()
 	_check_load_account()
 	_check_terminal()
+	_check_se_corner()
 	_check_fx_desk()
 	_check_vault_desks()
 	_check_ao_desk_polish()
@@ -386,6 +387,24 @@ func _check_terminal() -> void:
 		bad.append("CONSOLE_UNAVAILABLE does not say the panel needs the bank shell")
 	if bad.is_empty():
 		_ok("terminal: open_console + viewing list only, no write verbs · [Space] prompt · read-only copy present")
+	else:
+		for b in bad:
+			_fail(b)
+
+
+## SE explore pass: geometry stays in bank_interior.gd while the third screen reuses the existing terminal path.
+func _check_se_corner() -> void:
+	print("SE partners board + lobby terminal")
+	var interior := FileAccess.get_file_as_string("res://scripts/bank_interior.gd")
+	var main_text := FileAccess.get_file_as_string("res://scripts/main.gd")
+	var bad: PackedStringArray = []
+	for needle in ["func _partners_board()", "PartnersBoardEventPanel", "BloxchainPanel", "ParticlePanel", "func _lobby_terminal()", "LobbyScreen", "LobbyKeyboard"]:
+		if interior.find(needle) < 0:
+			bad.append("bank_interior.gd is missing %s" % needle)
+	if main_text.find('["lobby", Vector3(11.35, 0.4, 9.15), "the lobby terminal"]') < 0:
+		bad.append("main.gd has no registered lobby terminal")
+	if bad.is_empty():
+		_ok("event → partners → Bloxchain | Particle board present · third BankTerminal screen registered")
 	else:
 		for b in bad:
 			_fail(b)

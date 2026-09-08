@@ -49,7 +49,7 @@ Related: [HANDOFF-CC.md](./HANDOFF-CC.md) · [DEV-LOOP.md](./DEV-LOOP.md) · [RE
 
 ## 5. Explore / nice-to-have (not blocking ship)
 
-- [ ] **SE partners board + lobby terminal** — southeast notice board (ETH Online / partners / Bloxchain / Particle) **and** a standalone Console terminal (no NPC) — [HANDOFF-partners-board.md](./HANDOFF-partners-board.md) · [KICKOFF-partners-board.md](./KICKOFF-partners-board.md) (Codex Luna)
+- [x] **SE partners board + lobby terminal** — southeast notice board (ETH Online / partners / Bloxchain / Particle) **and** a standalone Console terminal (no NPC) — [HANDOFF-partners-board.md](./HANDOFF-partners-board.md) · [KICKOFF-partners-board.md](./KICKOFF-partners-board.md) (Codex Luna) — met 2026-09-08
 - [ ] **Provision pin follow-up** — Re-check / recovery path that re-pins when `policyPinned` is stale after a lost `players.json` (load lane already moves pins; Account Opening is one-shot today — [LOAD-ACCOUNT.md](./LOAD-ACCOUNT.md) §8.2)
 - [ ] **Ines clone list stretch** — offer this owner’s `BloxCloned` addresses as dialogue choices (log filter; no CopyBlox Solidity)
 - [ ] Doc hygiene: keep [DEV-LOOP.md](./DEV-LOOP.md) unit rows in sync with HANDOFF-CC when units close
@@ -73,4 +73,5 @@ Related: [HANDOFF-CC.md](./HANDOFF-CC.md) · [DEV-LOOP.md](./DEV-LOOP.md) · [RE
 | 2026-09-08 | S2 — Live Main = Sepolia; Dev = 1337 desk toggle |
 | 2026-09-08 | S3 — ops treasury code + killtests (execute still owed → §1) |
 | 2026-09-08 | Load Account — Ines + `POST /account/load` + killtests:load 12/12 on 1337 (Live walk → §2) |
+| 2026-09-08 | SE partners / event board + standalone lobby Console terminal — Label3D bank signage, third `BankTerminal`, no new assets |
 | 2026-09-08 | Pushed `92ad164..ff46ceb` to `origin/main` |

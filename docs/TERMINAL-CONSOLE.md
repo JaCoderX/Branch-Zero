@@ -38,7 +38,7 @@ That is honest theatre: the terminal grants a real viewing clerk.
 
 ## 3. Player fantasy
 
-1. Walk up to an in-world computer (manager office and/or Account Opening already place `computerScreen` props).
+1. Walk up to an in-world computer (manager office, Account Opening, or the standalone SE lobby terminal place `computerScreen` props).
 2. Interact → shell opens a terminal overlay (pause movement; `focusCanvas` on close — GODOT.md §5b).
 3. Prompt: add a **viewing wallet**? Enter `0x…` or ENS → resolve (existing `resolveName` / Sepolia ENS where applicable).
 4. Teller Desk runs `roleConfigBatch`: `CREATE_ROLE OBSERVER` (if missing) + `ADD_WALLET` (idempotent). Signed via the existing owner/broadcaster meta path — **no** new Privy modal beyond Account Opening / Priority.
@@ -111,6 +111,9 @@ Optional later (separate SaaS ask, general embed only): `frame-ancestors` allowl
 (`/observer/grant` `/observer/revoke` `/observer/list`) · `apps/game/scripts/terminal.gd` +
 `apps/game/dialogue/terminal.json`.
 
+The game now has a third screen, `LobbyScreen`, in the standalone south-east lobby desk; it uses this same
+`BankTerminal` and `terminal.json` path rather than introducing new terminal semantics.
+
 `openConsole` resolves as soon as the panel mounts; the game unlocks movement on the `terminal.closed` event, so no
 bridge call is held open while a player reads a ledger. MockChain refuses `openConsole` with `CONSOLE_UNAVAILABLE`
 rather than claiming to open a panel it cannot produce.
@@ -143,7 +146,7 @@ Do not invent a second AccountBlox. Do not move Lane A/B off 1337.
 
 Evidence: [`progress/2026-09-08-terminal-observer.md`](./progress/2026-09-08-terminal-observer.md).
 
-- [x] Interactable computer opens terminal overlay; Esc / Close returns canvas focus — `MgrScreen` + `AOScreen`; after close `document.activeElement` and `elementFromPoint(centre)` are both `#canvas`, and the panel renders nothing at all
+- [x] Interactable computer opens terminal overlay; Esc / Close returns canvas focus — `MgrScreen` + `AOScreen` + standalone SE `LobbyScreen`; after close `document.activeElement` and `elementFromPoint(centre)` are both `#canvas`, and the panel renders nothing at all
 - [x] Grant OBSERVER by `0x` or ENS; on-chain role membership verified — ENS via the existing `/ens/resolve`; `hasRole` true, `getActiveRolePermissions(OBSERVER)` **empty** (kill test O1, tx `0xdcb6c95f…badfe`)
 - [x] Revoke path works — O5, tx `0xcfe66118…de8a8`; the reads go straight back to `NoPermission`
 - [x] Iframe loads bloxchain.app — verified live (`load` in ~150 ms, Console painted). Fallback shipped **and tested against a host that really refuses framing**: a refused frame is not detectable from the parent (§6), so the top-level-tab link is permanent rather than auto-triggered
