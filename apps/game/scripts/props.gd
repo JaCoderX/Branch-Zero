@@ -11,6 +11,9 @@ extends RefCounted
 ##    one skinned mesh worn eight ways: `character()` folds the role's atlas tile into a copy of the UVs, so the
 ##    cast costs one albedo material plus one inverted-hull outline pass, and adds one shared face-sheet material on
 ##    a shadowless head carrier — see `staff_material` / `staff_outline` / `face_material`;
+##  - KayKit Adventurers feel-spike (assets/characters/kaykit_adventurers, CC0): when `USE_KAYKIT_CAST` is true,
+##    `character()` instances a per-role Adventurers mesh and installs bank clip aliases (idle/walk/…) from the
+##    Rig_Medium General / MovementBasic / Simulation libraries — no face sheet / outline / atlas tile;
 ##  - KayKit Furniture Bits (assets/models/kaykit_furniture, CC0, U7 viz Stage 6a) were authored against one flat-colour
 ##    palette atlas that tools/kaykit_pack.py strips out of the .glb: at load `_split_kaykit` reads each triangle's UV
 ##    cell and hands it the matching WingTheme palette material, so the denser fill costs zero new materials and
@@ -30,9 +33,15 @@ const KIT := "res://assets/models/kenney_furniture/"
 const KAYKIT := "res://assets/models/kaykit_furniture/"
 const NATURE := "res://assets/models/kenney_nature/"
 const CHARACTERS := "res://assets/characters/kenney_staff/"
+const KAYKIT_CAST := "res://assets/characters/kaykit_adventurers/"
+const KAYKIT_CHARACTERS := KAYKIT_CAST + "Characters/"
+const KAYKIT_ANIMS := KAYKIT_CAST + "Animations/"
 const SURFACES := "res://assets/textures/surfaces/"
 
-# The cast: one skinned .glb + one atlas, both regenerable (tools/bank_staff_rig.py, tools/bank_staff_atlas.py).
+## Stage 3 lock (2026-09-09): soft-fantasy KayKit Adventurers as the live cast. Flip false to restore Kenney staff.
+const USE_KAYKIT_CAST := true
+
+# The Kenney cast: one skinned .glb + one atlas, both regenerable (tools/bank_staff_rig.py, tools/bank_staff_atlas.py).
 const STAFF_GLB := CHARACTERS + "bank_staff.glb"
 const STAFF_ATLAS := CHARACTERS + "Textures/staff_atlas.png"
 const STAFF_FACE_SHEET := CHARACTERS + "Textures/face_sheet.png"
@@ -53,6 +62,44 @@ const STAFF_CLIPS := ["idle", "walk", "sprint", "work", "refuse", "greet"]
 ## Ground speed each locomotion clip was authored for, so callers can scale `speed_scale` instead of skating.
 const STAFF_WALK_MPS := 1.5
 const STAFF_SPRINT_MPS := 3.8
+
+## KayKit Adventurers mesh per bank role (five free bodies; Mage / Ranger reused; Rogue_Hooded shares rogue texture).
+const KAYKIT_MESHES := {
+	"greeter": "Ranger",
+	"clerk": "Mage",
+	"teller": "Rogue",
+	"vault_keeper": "Knight",
+	"manager": "Barbarian",
+	"registrar": "Mage",
+	"dealer": "Rogue_Hooded",
+	"player": "Ranger",
+}
+## Mesh file stem → albedo PNG beside the .glb (Rogue_Hooded embeds the same rogue atlas).
+const KAYKIT_TEXTURE_FILES := {
+	"Barbarian": "barbarian_texture.png",
+	"Knight": "knight_texture.png",
+	"Mage": "mage_texture.png",
+	"Ranger": "ranger_texture.png",
+	"Rogue": "rogue_texture.png",
+	"Rogue_Hooded": "rogue_texture.png",
+}
+## Bank clip name → KayKit Rig_Medium clip (General / MovementBasic / Simulation).
+const KAYKIT_CLIP_SRC := {
+	"idle": "Idle_A",
+	"walk": "Walking_A",
+	"sprint": "Running_A",
+	"greet": "Waving",
+	"work": "Interact",
+	"refuse": "Hit_A",
+}
+const KAYKIT_ANIM_FILES := [
+	"Rig_Medium_General.glb",
+	"Rig_Medium_MovementBasic.glb",
+	"Rig_Medium_Simulation.glb",
+]
+## Approximate authored ground speeds for KayKit walk / run (no root motion; used for speed_scale only).
+const KAYKIT_WALK_MPS := 1.2
+const KAYKIT_SPRINT_MPS := 3.0
 
 # Mirrors the authoring table in tools/bank_staff_rig.py. The common glb stays one mesh; these pose scales are applied
 # to each Skeleton3D instance so stocky / slight / tall cues cost no mesh, atlas tile, or material.
@@ -565,17 +612,73 @@ static func _no_batch(node: Node, root: Node) -> bool:
 	return false
 
 
-## The bank staff (character style climb, 2026-09-08): **one** skinned .glb for the whole cast — Kenney's CC0
-## `characterMedium` (804 verts, 1,604 tris, one surface, 32 deform bones) carrying the five clips that
-## tools/bank_staff_rig.py bakes, worn eight different ways. `role` picks a 340 px tile of the shared
-## 1024² atlas that tools/bank_staff_atlas.py paints, and the tile is folded into a **copy of the mesh's UVs**
-## rather than into a per-role material — so the cast still costs one albedo material plus one outline
-## (GameDevOS `atlas-skins-to-one-material`), and the tiled meshes are cached per role.
-##
-## Scaled so the head top sits at `height`; returns {root, anim, face, skeleton}. Characters animate, so they never
-## join bake_static: budget them as 3 surfaces (body + outline next_pass + shadowless face) × (1 colour + 2 shadow
-## passes) = 9 worst-case submissions each. The face carrier itself is one unshadowed draw and has no outline pass.
+## Active cast builder. When `USE_KAYKIT_CAST` is true, see `character_kaykit`; otherwise the Kenney staff path below.
+## Scaled so the head top sits at `height`; returns {root, anim, face, skeleton}. `face` is null on the KayKit path.
 static func character(role: String, height: float = 1.8) -> Dictionary:
+	if USE_KAYKIT_CAST:
+		return character_kaykit(role, height)
+	return character_kenney(role, height)
+
+
+static func walk_mps() -> float:
+	return KAYKIT_WALK_MPS if USE_KAYKIT_CAST else STAFF_WALK_MPS
+
+
+static func sprint_mps() -> float:
+	return KAYKIT_SPRINT_MPS if USE_KAYKIT_CAST else STAFF_SPRINT_MPS
+
+
+## KayKit Adventurers feel-spike: one mesh per role + bank clip aliases from Rig_Medium libraries.
+## All surfaces on a body share one cached albedo material (Rogue / Rogue_Hooded share `rogue_texture`).
+static func character_kaykit(role: String, height: float = 1.8) -> Dictionary:
+	var mesh_name := str(KAYKIT_MESHES.get(role, KAYKIT_MESHES["greeter"]))
+	var root := instance(KAYKIT_CHARACTERS + mesh_name + ".glb", {
+		"center": true, "ground": true, "keep_materials": true,
+	})
+	var mat := kaykit_body_material(mesh_name)
+	for mi in _meshes(root):
+		if mi.mesh == null:
+			continue
+		for i in mi.mesh.get_surface_count():
+			mi.set_surface_override_material(i, mat)
+	var bb := aabb(root)
+	var s := height / maxf(bb.size.y, 0.01)
+	root.scale = Vector3.ONE * s
+	root.position = Vector3(
+		-(bb.position.x + bb.size.x / 2.0) * s,
+		-bb.position.y * s,
+		-(bb.position.z + bb.size.z / 2.0) * s,
+	)
+	var skeleton := _find_skeleton(root)
+	var anim := _kaykit_ensure_anim_player(root, skeleton)
+	_kaykit_install_bank_clips(anim)
+	return {"root": root, "anim": anim, "face": null, "skeleton": skeleton}
+
+
+## One StandardMaterial3D per Adventurers body texture (cached). No outline / face sheet — KayKit faces are painted on.
+static func kaykit_body_material(mesh_name: String) -> StandardMaterial3D:
+	var tex_file := str(KAYKIT_TEXTURE_FILES.get(mesh_name, "ranger_texture.png"))
+	var key := "kaykit_" + tex_file.get_basename()
+	if _mats.has(key):
+		return _mats[key]
+	var m := StandardMaterial3D.new()
+	m.resource_name = key
+	m.albedo_texture = load(KAYKIT_CHARACTERS + tex_file)
+	m.roughness = 0.85
+	m.metallic = 0.0
+	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	m.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
+	m.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	_mats[key] = m
+	return m
+
+
+## Kenney staff (character style climb, 2026-09-08): **one** skinned .glb for the whole cast — Kenney's CC0
+## `characterMedium` (804 verts, 1,604 tris, one surface, 32 deform bones) carrying the clips that
+## tools/bank_staff_rig.py bakes, worn eight different ways. `role` picks a 340 px tile of the shared
+## 1024² atlas; the tile is folded into a **copy of the mesh's UVs** rather than into a per-role material.
+## Budget: 3 surfaces (body + outline next_pass + shadowless face) × (1 colour + 2 shadow passes) each.
+static func character_kenney(role: String, height: float = 1.8) -> Dictionary:
 	var root := instance(STAFF_GLB, {"center": true, "ground": true, "keep_materials": true})
 	var tile := int(STAFF_TILES.get(role, STAFF_TILES["greeter"]))
 	var mat := staff_material()
@@ -597,6 +700,57 @@ static func character(role: String, height: float = 1.8) -> Dictionary:
 			if anim.has_animation(clip):
 				anim.get_animation(clip).loop_mode = Animation.LOOP_NONE if clip == "greet" else Animation.LOOP_LINEAR
 	return {"root": root, "anim": anim, "face": face, "skeleton": skeleton}
+
+
+static func _kaykit_ensure_anim_player(root: Node, _skeleton: Skeleton3D) -> AnimationPlayer:
+	var existing := root.find_child("AnimationPlayer", true, false) as AnimationPlayer
+	if existing != null:
+		return existing
+	var anim := AnimationPlayer.new()
+	anim.name = "AnimationPlayer"
+	# KayKit libraries author tracks as `Rig_Medium/Skeleton3D:bone` from the scene root — mirror that.
+	root.add_child(anim)
+	anim.root_node = NodePath(".")
+	return anim
+
+
+static func _kaykit_install_bank_clips(anim: AnimationPlayer) -> void:
+	if anim == null:
+		return
+	var lib := AnimationLibrary.new()
+	var pending: Dictionary = {}
+	for bank_name in KAYKIT_CLIP_SRC:
+		pending[str(KAYKIT_CLIP_SRC[bank_name])] = str(bank_name)
+	for file_name in KAYKIT_ANIM_FILES:
+		if pending.is_empty():
+			break
+		var packed: PackedScene = load(KAYKIT_ANIMS + str(file_name)) as PackedScene
+		if packed == null:
+			push_warning("PropKit: missing KayKit anim library %s" % file_name)
+			continue
+		var tmp := packed.instantiate()
+		var src := tmp.find_child("AnimationPlayer", true, false) as AnimationPlayer
+		if src == null:
+			tmp.free()
+			continue
+		for full in src.get_animation_list():
+			var short := String(full)
+			var slash := short.rfind("/")
+			if slash >= 0:
+				short = short.substr(slash + 1)
+			if not pending.has(short):
+				continue
+			var bank_clip: String = pending[short]
+			var clip: Animation = src.get_animation(full).duplicate(true)
+			clip.loop_mode = Animation.LOOP_NONE if bank_clip == "greet" or bank_clip == "refuse" else Animation.LOOP_LINEAR
+			lib.add_animation(bank_clip, clip)
+			pending.erase(short)
+		tmp.free()
+	for missing_src in pending:
+		push_warning("PropKit: KayKit clip %s (bank %s) not found in anim libraries" % [missing_src, pending[missing_src]])
+	if anim.has_animation_library(&""):
+		anim.remove_animation_library(&"")
+	anim.add_animation_library(&"", lib)
 
 
 static func _find_skeleton(root: Node) -> Skeleton3D:

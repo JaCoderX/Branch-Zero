@@ -11,7 +11,7 @@ Related: [GAME-DESIGN.md](./GAME-DESIGN.md) · [NPCS.md](./NPCS.md) · [GODOT.md
 | Aspect | Decision | Rationale |
 |--------|----------|-----------|
 | Style | Stylised low-poly, flat-shaded with subtle AO; strong silhouettes; no PBR micro-detail | Reads at small canvas sizes; cheap on integrated GPUs; fast to author |
-| Cast | Cartoon Modern — flat graphic faces with large readable eyes, ~5.5-heads proportion, one accent colour per person, ink outline on cast only. Room stays low-poly flat-shaded cream / brass / deep green. | Gives the eight people an inviting, period-bank read without changing the accepted room language or web renderer |
+| Cast | KayKit Adventurers — cute low-poly fantasy roles as bank staff (Ranger / Mage / Rogue / Knight / Barbarian), painted faces, soft toy cheer; room stays low-poly flat-shaded cream / brass / deep green | Principal lock 2026-09-09: fun interaction vibe over Mad Men dress; same KayKit language as lobby furniture |
 | Palette | Warm marble cream, brass, deep green (main wing); cool graphite, white, USDC blue accents (Arc wing) | Wings must be distinguishable in a glance in the demo video |
 | Lighting | One `DirectionalLight3D` through skylights + baked-look ambient via `Environment` (no real-time GI on web); a handful of `OmniLight3D` with shadows off | Web single-thread cannot afford SDFGI/VoxelGI |
 | Camera | Third-person over-the-shoulder, 55° FOV, spring arm 3.2 m; snaps to fixed "counter cam" during dialogue | Dialogue framing like a film two-shot |
@@ -148,7 +148,7 @@ Pipeline rules:
 |--------|--------|----------------|
 | Draw calls | ≤ 350 per frame | Static mesh merging per zone; MultiMesh for plants/benches |
 | Triangles | ≤ 400k on screen | Low-poly kits; LODs |
-| Materials | ≤ 40 unique | Vertex colour + shared atlas |
+| Materials | ≤ 40 unique on meshes (≤ 42 with Stage 5 particle billboards) | Shared PropKit palette + ≤ 5 KayKit body albedos; LODs |
 | Lights with shadows | 1 (directional) | Omni lights without shadows |
 | Texture memory | ≤ 128 MB | Basis compression, 1k caps |
 | Export size | ≤ 60 MB `.pck` + ~40 MB wasm | Strip unused assets; mono audio at 22 kHz for SFX |

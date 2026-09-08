@@ -11,7 +11,8 @@ extends SceneTree
 ## nothing solid sits in the manager door, the vault opening or on the escort waypoints. Stage 3 adds the
 ## characters: clips present, U3 capsules unchanged, head height, one shared atlas material, Petra's skin entry.
 ## The charm pass adds one shadowless face carrier per character and one shared face-sheet material; this check counts
-## that surface explicitly and rejects an outline / shadow on the carrier.
+## that surface explicitly and rejects an outline / shadow on the carrier. When `PropKit.USE_KAYKIT_CAST` is true the
+## KayKit Adventurers path applies instead: shared per-body albedos (≤ 5), painted faces, no face carrier / outline.
 ## Stage 4 adds the shell: the wall / ceiling modules exist and all went into the static batch, the skylight glass
 ## and NamesBoardQuad stayed out of it, and the pendant count is still eight shadowless omnis (a ninth is unlit
 ## on the merged mesh under Compatibility). Stage 5 adds the feel layer: at most two particle systems (CPU, shadowless,
@@ -23,6 +24,9 @@ extends SceneTree
 ## pottedPlant they replace, and no planter reaches the ledger-board rows or the vault repeater / clock sightlines.
 
 const MAX_MATERIALS := 40
+## Stage 5 particles add two billboard mats counted separately from the mesh walk; KayKit's five body albedos
+## leave mesh ≤ 40 but mesh+particles at 41–42. Keep the mesh ceiling tight; allow the documented particle pair.
+const MAX_MATERIALS_WITH_PARTICLES := 42
 const MAX_TRIS := 400_000
 const MAX_SURFACES := 350
 const MAX_OMNIS := 8          # Compatibility lights ≤ 8 omnis per mesh and the merged interior sees them all
@@ -119,9 +123,8 @@ func _run() -> void:
 	else:
 		_fail("%d shadowed lights (budget 1: the sun)" % shadowed)
 
-	# characters (style climb): animated, so outside the static batch — budget them as surfaces × passes
-	# explicitly, and count the outline `next_pass` as the extra pass it is, not as free comic styling.
-	print("characters (style climb)")
+	# characters: Kenney staff (atlas + outline + face) or KayKit Adventurers (shared per-body albedos, painted faces).
+	print("characters (%s)" % ("KayKit Adventurers" if PropKit.USE_KAYKIT_CAST else "Kenney staff"))
 	var bodies3: Array = main.get_tree().get_nodes_in_group("npc")
 	bodies3.append(main.get_node("Player"))
 	var char_surfaces := 0
@@ -130,6 +133,7 @@ func _run() -> void:
 	var face_mats := {}
 	var face_count := 0
 	var char_bad: PackedStringArray = []
+	var kaykit := PropKit.USE_KAYKIT_CAST
 	for c in bodies3:
 		var body := (c as Node).get_node_or_null("Body") as Node3D
 		var anim := body.find_child("AnimationPlayer", true, false) as AnimationPlayer if body != null else null
@@ -178,29 +182,42 @@ func _run() -> void:
 							and (pass_mat as BaseMaterial3D).grow:
 						outlined = true
 					pass_mat = pass_mat.next_pass
-		if not outlined:
-			char_bad.append("%s: no inverted-hull outline pass" % c.name)
-		var face := body.find_child("FaceCarrier", true, false) as MeshInstance3D
-		if face == null or face.mesh == null or face.mesh.get_surface_count() != 1:
-			char_bad.append("%s: missing one face carrier surface" % c.name)
+		if kaykit:
+			# Painted KayKit faces — no face carrier / inverted-hull outline required for this cast.
+			pass
 		else:
-			face_count += 1
-			var fm := face.get_active_material(0)
-			if fm == null:
-				char_bad.append("%s: face carrier has no shared material" % c.name)
+			if not outlined:
+				char_bad.append("%s: no inverted-hull outline pass" % c.name)
+			var face := body.find_child("FaceCarrier", true, false) as MeshInstance3D
+			if face == null or face.mesh == null or face.mesh.get_surface_count() != 1:
+				char_bad.append("%s: missing one face carrier surface" % c.name)
 			else:
-				face_mats[fm.get_instance_id()] = fm
-				if fm.next_pass != null:
-					char_bad.append("%s: face carrier has an outline next_pass" % c.name)
-			if face.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
-				char_bad.append("%s: face carrier casts a shadow" % c.name)
+				face_count += 1
+				var fm := face.get_active_material(0)
+				if fm == null:
+					char_bad.append("%s: face carrier has no shared material" % c.name)
+				else:
+					face_mats[fm.get_instance_id()] = fm
+					if fm.next_pass != null:
+						char_bad.append("%s: face carrier has an outline next_pass" % c.name)
+				if face.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
+					char_bad.append("%s: face carrier casts a shadow" % c.name)
 	var char_draws := char_shadow_surfaces * 3 + face_count # body / outline receive the two shadow splits; face does not
 	print("  %d characters · %d surfaces incl. outline + %d face carriers (≈ %d honest draw calls with 2 shadow splits) · %d character material(s), %d shared face material(s)" % [bodies3.size(), char_surfaces, face_count, char_draws, char_mats.size(), face_mats.size()])
 	if char_bad.is_empty():
-		_ok("seven staff + player: clips idle / walk / work / refuse / greet (player: sprint), U3 capsules, adult heights, outline + shadowless face on every body")
+		if kaykit:
+			_ok("seven staff + player: KayKit clips idle / walk / work / refuse / greet (player: sprint), U3 capsules, heights in band, painted faces")
+		else:
+			_ok("seven staff + player: clips idle / walk / work / refuse / greet (player: sprint), U3 capsules, adult heights, outline + shadowless face on every body")
 	else:
 		_fail("characters: %s" % "; ".join(char_bad))
-	if char_mats.size() <= 3 and face_mats.size() == 1 and face_count == bodies3.size():
+	if kaykit:
+		# Five Adventurers albedos (Rogue + Rogue_Hooded share rogue_texture) — all via PropKit cache.
+		if char_mats.size() <= 5 and face_count == 0:
+			_ok("KayKit cast shares ≤ 5 body albedos via PropKit (%d unique), no face sheet" % char_mats.size())
+		else:
+			_fail("KayKit characters use %d materials / %d face carriers (want ≤ 5 shared body albedos, 0 face carriers)" % [char_mats.size(), face_count])
+	elif char_mats.size() <= 3 and face_mats.size() == 1 and face_count == bodies3.size():
 		_ok("the cast shares one atlas material + one outline pass + one face material (%d total)" % char_mats.size())
 	else:
 		_fail("characters use %d materials / %d face materials / %d face carriers (one shared atlas + one outline + one face expected)" % [char_mats.size(), face_mats.size(), face_count])
@@ -280,10 +297,10 @@ func _run() -> void:
 		_ok("%d particle systems ≤ %d, all CPU, shadowless, unshaded billboards" % [particles.size(), MAX_PARTICLES])
 	else:
 		_fail("particles: %d systems (max %d); %s" % [particles.size(), MAX_PARTICLES, "; ".join(p_bad)])
-	if mats.size() + p_mats.size() <= MAX_MATERIALS:
-		_ok("unique materials with particles %d ≤ %d" % [mats.size() + p_mats.size(), MAX_MATERIALS])
+	if mats.size() + p_mats.size() <= MAX_MATERIALS_WITH_PARTICLES:
+		_ok("unique materials with particles %d ≤ %d (mesh ≤ %d; +2 Stage 5 particle billboards)" % [mats.size() + p_mats.size(), MAX_MATERIALS_WITH_PARTICLES, MAX_MATERIALS])
 	else:
-		_fail("unique materials with particles %d > %d" % [mats.size() + p_mats.size(), MAX_MATERIALS])
+		_fail("unique materials with particles %d > %d" % [mats.size() + p_mats.size(), MAX_MATERIALS_WITH_PARTICLES])
 	var df := ThemeDB.get_default_theme().default_font
 	var df_path := ""
 	if df is FontVariation and (df as FontVariation).base_font != null:
@@ -445,10 +462,10 @@ func _run() -> void:
 		var m: Material = mats[id]
 		if m is StandardMaterial3D and (m as StandardMaterial3D).metallic >= 0.95 and (m as StandardMaterial3D).roughness >= 0.95:
 			kit_mats.append(m.resource_name)   # the Nature Kit's own factors — nothing in the palette is metallic 1 / rough 1
-	if kit_mats.is_empty() and mats.size() <= 37:
-		_ok("no Nature Kit material survives (metallic 1 / roughness 1); %d unique mesh materials ≤ 37 (Stage 6c had 36; charm face sheet is +1; plants cost +0)" % mats.size())
+	if kit_mats.is_empty() and mats.size() <= MAX_MATERIALS:
+		_ok("no Nature Kit material survives (metallic 1 / roughness 1); %d unique mesh materials ≤ %d (KayKit cast uses shared body albedos; plants cost +0)" % [mats.size(), MAX_MATERIALS])
 	else:
-		_fail("Nature Kit remap leaked: raw kit materials %s; %d unique mesh materials (≤ 37 with charm face)" % [", ".join(kit_mats), mats.size()])
+		_fail("Nature Kit remap leaked: raw kit materials %s; %d unique mesh materials (≤ %d)" % [", ".join(kit_mats), mats.size(), MAX_MATERIALS])
 	var retired6d: PackedStringArray = []
 	for f in ["pottedPlant", "plantSmall1", "plantSmall2", "plantSmall3"]:
 		if ResourceLoader.exists("res://assets/models/kenney_furniture/" + f + ".glb"):

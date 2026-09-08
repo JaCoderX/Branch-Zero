@@ -2,9 +2,8 @@ class_name Npc
 extends CharacterBody3D
 ## NPC — one on-chain role or read surface each (docs/NPCS.md §2). State machine:
 ## IDLE → TALKING → WORKING → TALKING | REFUSING → TALKING → ESCORTING → IDLE.
-## The body is a bank-staff build of Kenney's CC0 Animated Characters rig (assets/characters/kenney_staff, character
-## style climb): states play its clips (idle · work while working · refuse while refusing · walk while escorting ·
-## greet once on approach).
+## The body is either the Kenney bank-staff rig or the KayKit Adventurers feel-spike (`PropKit.USE_KAYKIT_CAST`):
+## states play bank clip aliases (idle · work · refuse · walk · greet).
 ## `tint` colours the nameplate.
 
 signal player_near(npc: Npc, near: bool)
@@ -12,18 +11,16 @@ signal duty_changed
 
 enum State { IDLE, TALKING, WORKING, ESCORTING, REFUSING }
 
-## npc_id → the staff wardrobe worn on the shared rig; each name is an atlas tile painted by
-## tools/bank_staff_atlas.py and mapped in `PropKit.STAFF_TILES`. `registrar` is Petra's explicit U5 entry.
-## Unlisted ids fall back to `default`. The wardrobe accent is kept in the atlas; the face portrait is a distinct
-## column in the shared face sheet.
+## npc_id → wardrobe role key. With KayKit cast, `PropKit.KAYKIT_MESHES` maps these to Adventurers bodies.
+## Unlisted ids fall back to `default`.
 const SKINS := {
-	"greeter": "greeter",            # graphite suit, emerald tie — the lobby's friendly face
-	"clerk": "clerk",                # deep-green sheath, mustard cardigan — Account Opening
-	"teller": "teller",              # graphite waistcoat, oxblood tie — Counter 1
-	"vault_keeper": "vault_keeper",  # charcoal suit, coral tie — the vault window
-	"manager": "manager",            # black three-piece, oxblood tie, grey temples — the corner office
-	"registrar": "registrar",        # navy skirt-suit, coral bow — Petra, Name Desk
-	"dealer": "dealer",              # wood braces, teal tie — Kenji, FX desk (S1)
+	"greeter": "greeter",            # Ranger — lobby face
+	"clerk": "clerk",                # Mage — Account Opening
+	"teller": "teller",              # Rogue — Counter 1
+	"vault_keeper": "vault_keeper",  # Knight — vault window
+	"manager": "manager",            # Barbarian — corner office
+	"registrar": "registrar",        # Mage — Petra, Name Desk
+	"dealer": "dealer",              # Rogue_Hooded — Kenji, FX desk (S1)
 	"default": "greeter",
 }
 
@@ -96,7 +93,11 @@ func _ready() -> void:
 	_anim = ch["anim"]
 	_face = ch["face"]
 	_skeleton = ch["skeleton"]
-	_head_bone = _skeleton.find_bone("Head") if _skeleton != null else -1
+	_head_bone = -1
+	if _skeleton != null:
+		_head_bone = _skeleton.find_bone("Head")
+		if _head_bone < 0:
+			_head_bone = _skeleton.find_bone("head")
 	_set_face_state("smile")
 	if _anim != null:
 		_anim.animation_finished.connect(_on_animation_finished)
@@ -201,7 +202,7 @@ func _set_state(s: State) -> void:
 			_play("refuse")
 		State.ESCORTING:
 			_set_face_state("smile")
-			_play("walk", _ESCORT_SPEED / PropKit.STAFF_WALK_MPS)
+			_play("walk", _ESCORT_SPEED / PropKit.walk_mps())
 		State.TALKING:
 			_set_face_state("talk")
 			_play("idle")
@@ -245,8 +246,9 @@ func _on_animation_finished(clip: StringName) -> void:
 func _process(delta: float) -> void:
 	if _skeleton == null or _head_bone < 0:
 		return
-	# Imported glTF clips carry constant scale tracks; re-assert the role's authored silhouette after AnimationPlayer.
-	PropKit.apply_role_scale(_skeleton, str(SKINS.get(npc_id, SKINS["default"])))
+	# Kenney clips carry constant scale tracks; re-assert silhouette. KayKit bones do not match — no-op.
+	if not PropKit.USE_KAYKIT_CAST:
+		PropKit.apply_role_scale(_skeleton, str(SKINS.get(npc_id, SKINS["default"])))
 	var active := state == State.IDLE and _player != null
 	if active and not _gaze_active:
 		_head_base_pose = _skeleton.get_bone_pose_rotation(_head_bone)
@@ -273,7 +275,7 @@ func _say(text: String) -> void:
 func _play(clip: String, speed: float = 1.0) -> void:
 	if _anim == null or not _anim.has_animation(clip):
 		return
-	_anim.speed_scale = speed      # the walk clip covers PropKit.STAFF_WALK_MPS; an escort is faster than that
+	_anim.speed_scale = speed      # the walk clip covers PropKit.walk_mps(); an escort is faster than that
 	if _anim.current_animation != clip:
 		_anim.play(clip, 0.2)
 

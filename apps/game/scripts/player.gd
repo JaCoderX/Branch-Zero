@@ -103,8 +103,9 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	# Imported glTF clips carry constant scale tracks; keep the player's neutral silhouette after animation updates.
-	PropKit.apply_role_scale(_skeleton, SKIN)
+	# Kenney clips carry constant scale tracks; KayKit path skips role bone scales.
+	if not PropKit.USE_KAYKIT_CAST:
+		PropKit.apply_role_scale(_skeleton, SKIN)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -171,11 +172,11 @@ func _physics_process(delta: float) -> void:
 		_stuck_t = _stuck_t + delta if ground_speed < 0.3 else 0.0
 		if _stuck_t > CLICK_STUCK_SEC:
 			clear_steer()
-	# the clips were authored for PropKit.STAFF_WALK_MPS / STAFF_SPRINT_MPS, so playback follows the real speed
+	# the clips were authored for PropKit.walk_mps() / sprint_mps(), so playback follows the real speed
 	if ground_speed > WALK + 0.5:
-		_play("sprint", ground_speed / PropKit.STAFF_SPRINT_MPS)
+		_play("sprint", ground_speed / PropKit.sprint_mps())
 	elif ground_speed > 0.4:
-		_play("walk", ground_speed / PropKit.STAFF_WALK_MPS)
+		_play("walk", ground_speed / PropKit.walk_mps())
 	else:
 		_play("idle")
 
