@@ -384,22 +384,24 @@ func _west_column() -> void:
 	box_m("ServiceMenuBoard", Vector3(-14.83, 2.4, -1.0), Vector3(0.03, 1.2, 3.2), PropKit.palette("Paper"), false)
 
 
-## S1 — Kenji's FX desk, in the east alcove between the elevator shaft (z ∈ [-1, 2]) and the vault partition (z = -5).
-## It reuses the counter the tellers already have, mirrored to the east wall, so the FX desk reads as one more window
-## of the same bank rather than a trading floor bolted on. Nothing new is imported: every mesh here is a hero prop or
-## a KayKit/Nature piece the interior already places elsewhere, so the pass costs no new material (WORLD-3D §6).
+## S1 — Kenji's FX desk, in the east run between the vault partition (z = -5) and the compact SECURITY lore door
+## (z ∈ [1, 2]). The target counter/shelf run is z ∈ [-4.4, 0.4], centred at z = -2.0: materially longer than the
+## old 3.4 m window, while the customer approach from the lobby still looks east. Nothing new is imported: every mesh
+## here is a hero prop or a KayKit/Nature piece the interior already places elsewhere, so the pass costs no new material
+## (WORLD-3D §6).
 ##
-## The brass frame Stage 4 left on this wall face (panel z ∈ [-3.9, -2.1], y ∈ [1.75, 2.65]) becomes the quote board's
-## housing: `FxBoardQuad` is the live SubViewport surface `scripts/fx_board.gd` draws into. The sponsor plaque sits
-## under it, in the same wording class as the Name Desk's service menu — a bank sign, not a logo.
+## The brass frame Stage 4 left on the vault partition's south face (panel x ∈ [10.65, 14.2], y ∈ [1.75, 2.65])
+## remains the quote board's housing: `FxBoardQuad` is the live SubViewport surface `scripts/fx_board.gd` draws into.
+## The sponsor plaque sits under it, in the same wording class as the Name Desk's service menu — a bank sign, not a logo.
 func _fx_desk() -> void:
-	PropKit.hero(self, "FxCounter", "prop_counter", Vector3(13.5, 0, -3.0), -PI / 2, {}, Vector3(0.9, 1.1, 3.4), Vector3(0, 0.55, 0))
-	box_m("FxCounterShelf", Vector3(14.15, 1.02, -3.0), Vector3(0.3, 0.05, 3.4), PropKit.palette("Wood"), false)
-	PropKit.hero(self, "FxPrinter", "prop_printer", Vector3(14.15, 1.045, -4.2), -PI / 2)
-	PropKit.hero(self, "FxTool", "prop_engraver", Vector3(14.15, 1.045, -1.9), -PI / 2)
-	PropKit.kit(self, "FxScreen", "computerScreen", Vector3(14.15, 1.045, -3.0), -PI / 2)
-	PropKit.kaykit(self, "FxStool", "chair_stool", Vector3(14.35, 0, -3.0), 0.0, {"fit": Vector3(0.45, 0.6, 0.45)})
-	_planter("FxDeskPlant", Vector3(13.6, 1.1, -4.55), 0.4, ["pot_small", Vector3(0.24, 0.2, 0.24)], [["plant_flatTall", Vector3(0.26, 0.34, 0.26)]], "Cream")
+	# Target z centres: counter/shelf [-4.4, 0.4] around -2.0; SECURITY [1, 2]; elevator shaft [4, 7].
+	PropKit.hero(self, "FxCounter", "prop_counter", Vector3(13.5, 0, -2.0), -PI / 2, {}, Vector3(0.9, 1.1, 4.8), Vector3(0, 0.55, 0))
+	box_m("FxCounterShelf", Vector3(14.15, 1.02, -2.0), Vector3(0.3, 0.05, 4.8), PropKit.palette("Wood"), false)
+	PropKit.hero(self, "FxPrinter", "prop_printer", Vector3(14.15, 1.045, -3.55), -PI / 2)
+	PropKit.hero(self, "FxTool", "prop_engraver", Vector3(14.15, 1.045, -0.45), -PI / 2)
+	PropKit.kit(self, "FxScreen", "computerScreen", Vector3(14.15, 1.045, -2.0), -PI / 2)
+	PropKit.kaykit(self, "FxStool", "chair_stool", Vector3(14.35, 0, -2.0), 0.0, {"fit": Vector3(0.45, 0.6, 0.45)})
+	_planter("FxDeskPlant", Vector3(13.6, 1.1, -4.05), 0.4, ["pot_small", Vector3(0.24, 0.2, 0.24)], [["plant_flatTall", Vector3(0.26, 0.34, 0.26)]], "Cream")
 
 	# The board goes on the vault partition's south face, not on the wall behind Kenji: a customer stands at the
 	# counter looking east, so a panel behind the dealer is read through the counter's glass and over his shoulder.
@@ -415,10 +417,10 @@ func _fx_desk() -> void:
 	quad.set_meta("no_batch", true)
 	add_child(quad)
 
-	plaque("FX DESK", Vector3(14.8, 2.95, -3.0), -PI / 2, 0.34, theme.graphite_color)
+	plaque("FX DESK", Vector3(14.8, 2.95, -2.0), -PI / 2, 0.34, theme.graphite_color)
 	plaque("Foreign exchange · Uniswap v4 on Sepolia\nYour account trades; the guard list says where.", Vector3(12.4, 1.30, -4.77), 0.0, 0.15, theme.graphite_color, "FxSponsor")
 	# the east-wall frame the board used to sit in becomes the desk's service menu, in the Name Desk's wording class
-	plaque("FX Desk\n• Ask for a rate — the exchange quotes it\n• Trade from your own till\n• Three approved calls, nothing else", Vector3(14.8, 2.2, -3.0), -PI / 2, 0.15, theme.graphite_color, "FxServiceMenu")
+	plaque("FX Desk\n• Ask for a rate — the exchange quotes it\n• Trade from your own till\n• Three approved calls, nothing else", Vector3(14.8, 2.2, -2.0), -PI / 2, 0.15, theme.graphite_color, "FxServiceMenu")
 
 
 ## Marble counter (hero mesh, 1.1 m, glass partition with a slot) under the greybox collider; printer + stamp (or
@@ -518,21 +520,24 @@ func _lobby_furniture() -> void:
 
 func _east_column() -> void:
 	var brass := PropKit.palette("Brass")
-	box("Elevator", Vector3(13.0, WALL_H / 2, 0.5), Vector3(3.0, WALL_H, 3.0), theme.graphite_color)
-	box_m("ElevatorDoorA", Vector3(11.47, 1.1, 0.13), Vector3(0.04, 2.2, 0.7), brass, false)
-	box_m("ElevatorDoorB", Vector3(11.47, 1.1, 0.87), Vector3(0.04, 2.2, 0.7), brass, false)
-	box_m("ElevatorFrame", Vector3(11.46, 2.3, 0.5), Vector3(0.03, 0.2, 1.7), brass, false)
+	# North → south target: vault z=-5, spacious FX z≈[-4.4,0.4], SECURITY z≈1.5, elevator z=5.5 (shaft [4,7]).
+	var elevator_z := 5.5
+	var security_z := 1.5
+	box("Elevator", Vector3(13.0, WALL_H / 2, elevator_z), Vector3(3.0, WALL_H, 3.0), theme.graphite_color)
+	box_m("ElevatorDoorA", Vector3(11.47, 1.1, elevator_z - 0.37), Vector3(0.04, 2.2, 0.7), brass, false)
+	box_m("ElevatorDoorB", Vector3(11.47, 1.1, elevator_z + 0.37), Vector3(0.04, 2.2, 0.7), brass, false)
+	box_m("ElevatorFrame", Vector3(11.46, 2.3, elevator_z), Vector3(0.03, 0.2, 1.7), brass, false)
 	# hall lantern (floor indicator) + call panel: hero props (Stage 2), U6 wires the behaviour
-	PropKit.hero(self, "ElevatorLantern", "prop_elevator_lantern", Vector3(11.46, 2.58, 0.5), -PI / 2)
-	PropKit.hero(self, "ElevatorPanel", "prop_elevator_panel", Vector3(11.46, 1.25, -0.6), -PI / 2)
+	PropKit.hero(self, "ElevatorLantern", "prop_elevator_lantern", Vector3(11.46, 2.58, elevator_z), -PI / 2)
+	PropKit.hero(self, "ElevatorPanel", "prop_elevator_panel", Vector3(11.46, 1.25, elevator_z - 1.1), -PI / 2)
 	# U6 Arc is deferred (docs/ARC.md §5b): the shaft says so, and main.gd refuses the trip with the same words
-	plaque("ELEVATOR\nMAIN · ARC\nARC · coming soon", Vector3(11.45, 3.3, 0.5), -PI / 2, 0.28, theme.wall_color)
+	plaque("ELEVATOR\nMAIN · ARC\nARC · coming soon", Vector3(11.45, 3.3, elevator_z), -PI / 2, 0.28, theme.wall_color)
 	# a paper notice taped across the car doors at eye height (the label sits a centimetre in front of its board)
-	box_m("ArcNoticeBoard", Vector3(11.43, 1.55, 0.5), Vector3(0.02, 0.42, 0.98), PropKit.palette("Paper"), false)
-	plaque("ARC FLOOR\ncoming soon", Vector3(11.41, 1.55, 0.5), -PI / 2, 0.15, theme.graphite_color, "ArcNotice")
+	box_m("ArcNoticeBoard", Vector3(11.43, 1.55, elevator_z), Vector3(0.02, 0.42, 0.98), PropKit.palette("Paper"), false)
+	plaque("ARC FLOOR\ncoming soon", Vector3(11.41, 1.55, elevator_z), -PI / 2, 0.15, theme.graphite_color, "ArcNotice")
 	_fx_desk()
-	plaque("SECURITY\nside door (lore)", Vector3(14.8, 2.2, 3.5), -PI / 2, 0.3, theme.graphite_color)
-	PropKit.kit(self, "SideDoor", "doorwayFront", Vector3(14.85, 0, 3.5), -PI / 2, {"fit": Vector3(1.0, 2.2, 0.16)}, Vector3(0.1, 2.2, 1.0), Vector3(0, 1.1, 0))
+	plaque("SECURITY\nside door (lore)", Vector3(14.8, 2.2, security_z), -PI / 2, 0.3, theme.graphite_color)
+	PropKit.kit(self, "SideDoor", "doorwayFront", Vector3(14.85, 0, security_z), -PI / 2, {"fit": Vector3(1.0, 2.2, 0.16)}, Vector3(0.1, 2.2, 1.0), Vector3(0, 1.1, 0))
 
 
 # ---------------------------------------------------------------- lighting fixtures + clerestory windows (WORLD-3D §7)
@@ -589,9 +594,9 @@ func _zones() -> void:
 	zone("Counter", Vector3(-11.5, 1.5, 0.0), Vector3(7.0, 3.0, 10.0))
 	zone("Vault antechamber", Vector3(8.0, 1.5, -8.0), Vector3(14.0, 3.0, 6.0))
 	zone("Manager's office", Vector3(-8.0, 1.5, -8.0), Vector3(14.0, 3.0, 6.0))
-	# S1: the east alcove, between the elevator shaft and the vault partition. Added after the U3 six, which keep
-	# their volumes exactly (tests/run_viz_budget.gd asserts those by position).
-	zone("FX desk", Vector3(12.6, 1.5, -3.0), Vector3(4.4, 3.0, 3.6))
+	# S1: the expanded east run, between the vault partition and SECURITY. The U3 six above keep their volumes exactly
+	# (tests/run_viz_budget.gd asserts those by position); only this FX volume follows the longer counter.
+	zone("FX desk", Vector3(12.6, 1.5, -2.0), Vector3(4.4, 3.0, 5.0))
 
 
 # ---------------------------------------------------------------- Stage 4: architecture shell — wall faces and ceiling
@@ -628,12 +633,12 @@ func _shell() -> void:
 		"pilasters": [-10.6, -7.9, -5.5, 1.15, 5.2, 7.9, 10.6],
 		"panels": [[-10.2, -8.3], [-7.5, -5.9], [-2.65, 0.65, 1.75, 3.05, false], [1.65, 4.35, 1.75, 3.05, false], [5.6, 7.5], [8.3, 10.2]],
 		"gaps": [[-5.4, -2.2]]})
-	# east wall, west face: the elevator shaft stands on z ∈ [-1, 2] (0.35 m off the wall), the FX DESK plaque at
-	# z = -3 gets a frame, the side door fills z ∈ [3, 4]
+	# east wall, west face: the expanded FX counter/shelf runs z ∈ [-4.4, 0.4] with its service plaque at z = -2;
+	# SECURITY fills z ∈ [1, 2]; the moved elevator shaft is z ∈ [4, 7]. Frames and pilasters stop in the clear gaps.
 	shell("WallE", Vector3(half_w, WALL_H / 2, 0), Vector3(T, WALL_H, D + T), -1, {
 		"span": inner_z,
-		"pilasters": [-10.6, -7.9, -5.5, -4.4, -1.5, 2.4, 4.7, 7.9, 10.6],
-		"panels": [[-10.2, -8.3], [-7.5, -5.9], [-3.9, -2.1, 1.75, 2.65, false], [5.1, 7.5], [8.3, 10.2]]})
+		"pilasters": [-10.6, -7.9, -5.5, -4.6, 0.7, 2.4, 3.9, 7.1, 10.6],
+		"panels": [[-10.2, -8.3], [-7.5, -5.9], [-3.6, -0.4, 1.75, 2.65, false], [7.5, 10.2]]})
 	# south wall, north face, in its two halves either side of the entrance gap x ∈ [3, 7]: portal pilasters flank the
 	# gap; the ACCOUNT OPENING plaque sits at y ≈ 3 over x ∈ [-11, -7], so that bay's panel is lower and the frieze skips it
 	shell("WallS_a", Vector3((-half_w + 3.0) / 2.0, WALL_H / 2, half_d), Vector3(half_w + 3.0, WALL_H, T), -1, {
@@ -646,11 +651,11 @@ func _shell() -> void:
 		"pilasters": [7.45, 11.0, 14.6],
 		"panels": [[7.85, 10.6], [11.4, 14.2]]})
 	# elevator shaft (a graphite block to the ceiling): marble corner columns, green dado with brass cap, frieze and a
-	# brass crown on its three lobby faces. The call panel (z = -0.6) and the hall lantern (y 2.58) stay clear; the
-	# ELEVATOR plaque (y ≈ 2.9–3.8) sits where the frieze would run on the west face, so that face has none.
-	var ev_pos := Vector3(13.0, WALL_H / 2, 0.5)
+	# brass crown on its three lobby faces. It is now centred at z = 5.5 (z ∈ [4, 7]); the call panel stays just north
+	# of that footprint at z = 4.4, the hall lantern at y 2.58, and the ELEVATOR plaque still suppresses the west frieze.
+	var ev_pos := Vector3(13.0, WALL_H / 2, 5.5)
 	var ev_size := Vector3(3.0, WALL_H, 3.0)
-	shell("ElevatorW", ev_pos, ev_size, -1, {"along_x": false, "pilasters": [-0.95, 1.95], "dado": true, "crown": true, "frieze": false})
+	shell("ElevatorW", ev_pos, ev_size, -1, {"along_x": false, "pilasters": [4.05, 6.95], "dado": true, "crown": true, "frieze": false})
 	shell("ElevatorN", ev_pos, ev_size, -1, {"along_x": true, "dado": true, "crown": true, "stiles": false})
 	shell("ElevatorS", ev_pos, ev_size, 1, {"along_x": true, "dado": true, "crown": true, "stiles": false})
 

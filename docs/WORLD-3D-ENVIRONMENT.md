@@ -35,11 +35,11 @@ Reference boards: art-deco bank lobbies (symmetry, terrazzo floors), *Katamari*-
    │ NAME DESK    │      LEDGER BOARD    │ FX DESK  │
    │ (Registrar)  │   (split-flap wall)  │ (stretch)│
    ├──────────────┤                      ├──────────┤
-   │ COUNTER 2    │        LOBBY         │ ELEVATOR │
-   │ (Teller B)   │  greeter · benches   │ to Arc   │
+   │ COUNTER 2    │        LOBBY         │ SECURITY │
+   │ (Teller B)   │  greeter · benches   │ lore door│
    ├──────────────┤  plants · rope line  ├──────────┤
-   │ COUNTER 1    │                      │ SIDE DOOR│
-   │ (Teller A)   │                      │ Security │
+   │ COUNTER 1    │                      │ ELEVATOR │
+   │ (Teller A)   │                      │ to Arc   │
    ├──────────────┴─────┬────────────────┴──────────┤
    │ ACCOUNT OPENING    │      ENTRANCE (revolving)  │
    │ desk w/ plant      │      spawn point           │
@@ -62,8 +62,12 @@ Reference boards: art-deco bank lobbies (symmetry, terrazzo floors), *Katamari*-
 | Manager's office | 6×5 | Glass walls, big desk, approval stamp, shredder, framed "Branch limits" poster | Branch Manager NPC, shredder | Poster text from config |
 | Name Desk | 5×4 | Desk (records annex), board of "registered names" on the west wall; the engraver sits on Counter 2's shelf | Registrar NPC **at the Counter 2 teller bay** (U7 polish), engraver | Board lists recent `LabelRegistered` events |
 | Elevator | 3×3 | Two-button panel "MAIN / ARC", floor indicator, "ARC floor — coming soon" notice | panel | Arc **deferred** (ARC.md §5b): the car refuses with the coming-soon line and the Main wing stays; wing swap code kept for revive |
-| FX Desk (stretch) | 4×3 | Ticker board, dealer window | Dealer NPC | Quote text from Uniswap |
-| Side door | 2×3 | "SECURITY" sign, keypad | Security Officer NPC | S2 stretch; otherwise lore |
+| FX Desk (stretch) | 4.8×3 | Ticker board, longer dealer window | Dealer NPC | Quote text from Uniswap |
+| Side door | 2×3 | "SECURITY" sign, keypad | Security Officer NPC | Compact lore door in the former elevator band; S2 stretch otherwise |
+
+East-column placement pins (north → south): vault partition z = −5.0; expanded FX counter/shelf z ∈ [−4.4, 0.4],
+centre −2.0; SECURITY door z ∈ [1.0, 2.0], centre 1.5; elevator centre z = 5.5, shaft z ∈ [4.0, 7.0].
+The elevator door face remains at x ≈ 11.46, and the south-wall entrance gap x ∈ [3, 7] is unchanged.
 
 ### 2.2 Navigation
 

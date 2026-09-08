@@ -18,7 +18,7 @@ const VIEWS := [
 	["06_manager", Vector3(-8.0, 0.1, -7.3), 0.0],
 	["07_vault", Vector3(8.0, 0.1, -6.5), 0.0],
 	["08_name_desk", Vector3(-9.5, 0.1, -1.0), PI / 2],
-	["09_elevator", Vector3(9.2, 0.1, 0.2), -PI / 2],
+	["09_elevator", Vector3(9.2, 0.1, 4.8), -PI / 2],
 	# Stage 3 character two-shots: player two metres from an NPC (body hidden for the frame, see _shot)
 	["16_mo_close", Vector3(2.0, 0.1, 7.0), 0.0],
 	["17_dev_close", Vector3(-9.6, 0.1, 4.6), PI / 2],
@@ -43,14 +43,14 @@ const VIEWS := [
 	["29_petra_talk", Vector3(-9.5, 0.1, -1.0), PI / 2, {"talk": Vector3(-11.6, 0.0, -1.0)}],
 	["30_ines_talk", Vector3(-9.0, 0.1, 6.3), PI, {"talk": Vector3(-9.0, 0.0, 9.5)}],
 	["31_okafor_talk", Vector3(-8.0, 0.1, -7.3), 0.0, {"talk": Vector3(-8.0, 0.0, -9.8)}],
-	["32_elevator_notice", Vector3(8.6, 0.1, 1.2), -PI / 2],
-	# S1: Kenji's FX desk in the east alcove — the counter, the quote board in its Stage 4 brass frame, and the
+	["32_elevator_notice", Vector3(8.6, 0.1, 4.9), -PI / 2],
+	# S1: Kenji's expanded FX desk in the east run — the longer counter, the quote board in its Stage 4 brass frame, and the
 	# sponsor plaque under it. `_close` hides the player body, which the spring arm otherwise centres over the desk;
 	# the talk frame is the two-shot the dialogue camera actually gives the player. The board carries a live mock
 	# quote by then (see `_run`), because a board photographed dark proves nothing about the board.
-	["33_fx_desk_close", Vector3(11.4, 0.1, -3.0), -PI / 2],
-	["34_fx_talk", Vector3(12.0, 0.1, -3.0), -PI / 2, {"talk": Vector3(14.3, 0.0, -3.0)}],
-	["35_fx_board_close", Vector3(10.4, 0.1, -2.6), -PI / 4, {"pitch": -2.0}],
+	["33_fx_desk_close", Vector3(11.4, 0.1, -2.0), -PI / 2],
+	["34_fx_talk", Vector3(12.0, 0.1, -2.0), -PI / 2, {"talk": Vector3(14.3, 0.0, -2.0)}],
+	["35_fx_board_close", Vector3(10.4, 0.1, -2.1), -PI / 4, {"pitch": -2.0}],
 ]
 
 var out_dir := ""

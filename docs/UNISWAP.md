@@ -131,7 +131,7 @@ Quote → `minAmountOut = quote * (1 - 0.01)`, `deadline = now + 300`. The meta-
 
 ## 4. Game surface
 
-- **FX Desk** in the main wing (Sepolia); Dealer NPC Kenji.
+- **FX Desk** in the main wing (Sepolia): an expanded east-wall window between the vault partition and the SECURITY lore door; Dealer NPC Kenji.
 - Quote board (LED) shows rate, min out, pool fee tier, "quote valid 5:00" countdown driven by the deadline.
 - Receipt: in/out amounts, pool id, route, tx hash link.
 - "Ask why" branch explains: *"I can only trade against the exchange the manager approved, and only through that door."*

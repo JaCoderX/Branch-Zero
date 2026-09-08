@@ -15,8 +15,8 @@ const NPCS := [
 	["registrar", "Petra", "Registrar · Name Desk", Color(0.25, 0.60, 0.45), Vector3(-11.6, 0, -1.0), -PI / 2, []],
 	["vault_keeper", "Bob", "Vault Keeper", Color(0.75, 0.30, 0.30), Vector3(10.0, 0, -7.5), PI * 0.6, []],
 	["manager", "Mr. Okafor", "Branch Manager", Color(0.25, 0.30, 0.55), Vector3(-8.0, 0, -9.8), PI, []],
-	# S1: Kenji works the east alcove's window, behind the FX counter, facing west into the lobby like the tellers.
-	["dealer", "Kenji", "Dealer · FX Desk", Color(0.90, 0.35, 0.62), Vector3(14.3, 0, -3.0), PI / 2, []],
+	# S1: Kenji works the expanded east-wall window, behind the FX counter, facing west into the lobby like the tellers.
+	["dealer", "Kenji", "Dealer · FX Desk", Color(0.90, 0.35, 0.62), Vector3(14.3, 0, -2.0), PI / 2, []],
 ]
 
 ## The bank computers that are worth walking up to (docs/TERMINAL-CONSOLE.md §3). Both sit on `computerScreen`
@@ -136,6 +136,9 @@ func _ready() -> void:
 	var name_form := Control.new()
 	name_form.set_script(load("res://scripts/name_claim_form.gd"))
 	ui.add_child(name_form)
+	var load_form := Control.new()
+	load_form.set_script(load("res://scripts/load_account_form.gd"))
+	ui.add_child(load_form)
 
 	GameState.changed.connect(func() -> void:
 		interior.refresh_signs())
@@ -214,7 +217,7 @@ func _on_terminal_near(t: BankTerminal, near: bool) -> void:
 func _process(_delta: float) -> void:
 	if player == null:
 		return
-	var near := player.global_position.distance_to(Vector3(11.0, 0.0, 0.5)) < 2.6
+	var near := player.global_position.distance_to(Vector3(11.0, 0.0, 5.5)) < 2.6
 	if near != _near_elevator:
 		_near_elevator = near
 		_update_prompt()
@@ -302,7 +305,7 @@ const TELEPORTS := {
 	KEY_F6: [Vector3(3.0, 0.1, 6.0), 0.0],         # Lobby, near Mo
 	KEY_F7: [Vector3(-8.0, 0.1, -7.3), 0.0],       # Manager's office, looking north at the desk
 	KEY_F8: [Vector3(-9.5, 0.1, -1.0), PI / 2],    # Name Desk bay, looking west at Petra
-	KEY_F9: [Vector3(12.0, 0.1, -3.0), -PI / 2],   # FX desk, looking east at Kenji and the quote board
+	KEY_F9: [Vector3(12.0, 0.1, -2.0), -PI / 2],   # FX desk, looking east at Kenji and the quote board
 }
 
 
