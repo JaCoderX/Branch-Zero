@@ -22,6 +22,7 @@
     "dev:dev": "tsx watch --env-file-if-exists=../../.env src/server.ts --dev",
     "start:dev": "tsx --env-file-if-exists=../../.env src/server.ts --dev",
     "killtests:s2": "tsx --env-file-if-exists=../../.env scripts/kill-tests-s2.ts",
+    "killtests:load": "tsx --env-file-if-exists=../../.env scripts/kill-tests-load.ts --dev",
     "treasury:topup": "tsx --env-file-if-exists=../../.env scripts/treasury-topup.ts",
     "killtests:treasury": "tsx --env-file-if-exists=../../.env scripts/kill-tests-treasury.ts"
   },

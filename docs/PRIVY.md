@@ -265,6 +265,30 @@ Exact method names follow the installed Node SDK version; the REST fallback is `
 
 ---
 
+## 6a. Moving a pin — Load Account (docs/LOAD-ACCOUNT.md)
+
+Rules are **app-owned**, so the desk can rewrite them without a second consent — which is what makes
+"load a different account of mine" possible at all. `lanes/loadAccount.ts` `repinPolicies` rewrites the
+typed-data rule (`pinPolicyToAccount`) and the `eth_signTransaction` rules (`pinTxRulesToAccount`, or
+`createTxRules` already naming the account) to the address being loaded.
+
+Two properties, both deliberate:
+
+- **Pin before switch.** Provisioning pins *after* the clone, because there was nothing to pin to. A load has an
+  old address to move away from, so the re-pin runs **before** `patchPlayer`, and a Privy refusal abandons the
+  load (`LOAD_POLICY`) rather than leaving the desk filing account B while the enclave signs only for account A.
+- **It moves, it does not widen.** Proven, not asserted: after a load the session signer signs a Lane A slip for
+  the loaded account and is refused **`policy_violation`** for the account it was loaded away from
+  (`killtests:load` L2b). A rule that had been loosened to "any contract" would pass the first half only.
+
+`provision`'s pin is one-shot (`!player.policyPinned`) and stays that way; moving a pin belongs to this lane.
+
+The §6 gotcha above is the reason the kill test needs `--fresh` to prove any of this: the desk **cannot** attach
+a policy to a user-controlled wallet, so a rig wallet whose `override_policy_ids` is empty has an unbounded
+signer and can demonstrate nothing about pinning. Only the browser consent binds a policy to a wallet.
+
+---
+
 ## 7. UX rules for the Clerk (Ines)
 
 - One consent, plainly worded, with a **Revoke** option always visible at the desk.

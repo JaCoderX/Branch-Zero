@@ -469,6 +469,16 @@ func run_action(action: String, args: Dictionary = {}) -> Dictionary:
 				r = await Chain.call_async("setMode", {"mode": target_mode}, 90.0)
 		"provision":
 			r = await Chain.call_async("provision", {}, 300.0)         # clone + config batches + funding
+		"load_account":
+			# Ines adopts an account the player already owns on this wing (docs/LOAD-ACCOUNT.md). The address
+			# comes from the load slip; the desk checks `owner()` on the chain and refuses anything else. No
+			# Privy surface — the policy re-pin happens behind the counter — so this waits like a Re-check, not
+			# like a sign-in. Godot never reads the chain itself: it only carries the string the player typed.
+			var wanted := str(args.get("account", "")).strip_edges()
+			if wanted == "":
+				r = {"ok": false, "error": {"code": "BAD_ARGS", "message": "an account address is required"}}
+			else:
+				r = await Chain.call_async("loadAccount", {"account": wanted}, 300.0)
 		"faucet":
 			r = await Chain.call_async("faucet", {}, 120.0)            # explicit practice top-up; no Privy surface
 		"ens_available":
@@ -557,6 +567,12 @@ func run_action(action: String, args: Dictionary = {}) -> Dictionary:
 	if action.begins_with("observer"):
 		await refresh_observers()
 	if action.begins_with("fx") and action != "fx_quote":
+		await refresh_fx()
+	# A load changes *which* account this desk works from, so two mirrors that are keyed to the account and not
+	# to the owner go stale: the viewing list (OBSERVER lives on the account) and, on Live, Kenji's till — where
+	# `fxTillIsMain` makes the till the very account Ines just swapped (docs/SEPOLIA-LIVE.md §1).
+	if action == "load_account":
+		await refresh_observers()
 		await refresh_fx()
 	busy = false
 	changed.emit()

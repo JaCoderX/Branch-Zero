@@ -32,6 +32,8 @@ const REQUIRED_CODES := [
 	"MANAGER_NO_STAMP", "NOT_COOLING", "PRIORITY_OFF", "PRIORITY_CANCELLED", "MFA_FAILED", "PRIORITY_EXPIRED",
 	# Terminal Console stretch — the bank computer and the OBSERVER viewing role
 	"CONSOLE_UNAVAILABLE", "OBSERVER_SELF", "OBSERVER_FULL", "NOT_OBSERVER", "RoleWalletLimitReached",
+	# Load Account (Ines adopts an owned AccountBlox by number) — docs/LOAD-ACCOUNT.md
+	"ACCOUNT_NOT_OWNED", "ACCOUNT_NOT_A_VAULT", "LOAD_POLICY",
 	# S1 — Kenji's FX desk (Uniswap v4 on Sepolia)
 	"FX_NOT_CONFIGURED", "FX_TILL_CLOSED", "FX_NOT_ENABLED", "FX_TELLER_DRY", "FX_AMOUNT",
 	"FX_QUOTE_FAILED", "FX_QUOTE_EXPIRED", "FX_SLIPPAGE", "FX_ROUTER", "FX_RPC", "FX_TX_FAILED", "FX_TILL_SHORT",
@@ -49,6 +51,7 @@ func _initialize() -> void:
 	for id in PROPS:
 		_check_npc(id)
 	_check_faucet_choice()
+	_check_load_account()
 	_check_terminal()
 	_check_fx_desk()
 	_check_vault_desks()
@@ -148,10 +151,13 @@ func _check_npc(id: String) -> void:
 			if str(c.get("text", "")).begins_with("Ask why"):
 				has_ask_why = true
 			if c.has("form"):
+				# One-value slips (Petra's label, Ines's account number) route through `on_submit`; the payment
+				# slip is the only form whose value decides which node comes next (over/under the instant limit).
 				var form_kind := str(c.get("form", ""))
-				if form_kind == "name_claim" and not c.has("on_submit"):
-					_fail("%s: name_claim form needs on_submit" % nid)
-				elif form_kind != "name_claim" and not (c.has("on_instant") and c.has("on_vault")):
+				if form_kind == "name_claim" or form_kind == "load_account":
+					if not c.has("on_submit"):
+						_fail("%s: %s form needs on_submit" % [nid, form_kind])
+				elif not (c.has("on_instant") and c.has("on_vault")):
 					_fail("%s: form choice needs on_instant + on_vault" % nid)
 			if c.has("action") and not c.has("on_error"):
 				_fail("%s: action '%s' has no on_error node" % [nid, str(c["action"])])
@@ -214,6 +220,62 @@ func _check_faucet_choice() -> void:
 		_fail("clerk done has no faucet choice")
 	else:
 		_ok("Ines offers Top up practice dollars from the done/passbook node")
+
+
+## Load Account (docs/LOAD-ACCOUNT.md §7): Ines offers the load slip whether or not the player already has an
+## account, the slip routes into a node that really runs `load_account`, and "Open my account" keeps the
+## last-clone default — a load must be a second, named choice, never a replacement for auto-recovery.
+func _check_load_account() -> void:
+	print("load account (Ines)")
+	var clerk := _load("res://dialogue/clerk.json")
+	var nodes: Dictionary = clerk.get("nodes", {})
+	var bad: PackedStringArray = []
+	var submits := {}
+	for nid in ["open", "done", "start_over"]:
+		var found := false
+		for c in nodes.get(nid, {}).get("choices", []):
+			if str(c.get("form", "")) != "load_account":
+				continue
+			found = true
+			if str(c.get("text", "")) != "Load an existing account":
+				bad.append("%s: load slip has unexpected text %s" % [nid, str(c.get("text", ""))])
+			if not c.has("on_submit"):
+				bad.append("%s: load slip has no on_submit" % nid)
+			else:
+				submits[str(c["on_submit"])] = true
+		if not found:
+			bad.append("clerk %s has no load_account form choice" % nid)
+	# The slip only carries a string; the node it lands on is what asks the desk, and must be able to refuse.
+	for target in submits.keys():
+		var node: Dictionary = nodes.get(str(target), {})
+		var enter: Dictionary = node.get("enter_action", {})
+		if str(enter.get("action", "")) != "load_account":
+			bad.append("%s does not run the load_account action on entry" % str(target))
+		if str(enter.get("on_error", "")) != "refused":
+			bad.append("%s must route a refusal to the refused node" % str(target))
+		if not nodes.has(str(enter.get("on_ok", ""))):
+			bad.append("%s on_ok names no node" % str(target))
+	# Auto-recovery stays the default for Open my account (LOAD-ACCOUNT §"out of scope").
+	var opens := 0
+	for c in nodes.get("open", {}).get("choices", []):
+		if str(c.get("action", "")) == "provision":
+			opens += 1
+	if opens != 1:
+		bad.append("clerk open should still offer exactly one provision choice, found %d" % opens)
+	var why := str(nodes.get("why_load", {}).get("text", ""))
+	if why.find("owner()") < 0:
+		bad.append("why_load does not say the desk reads owner()")
+	var strings := _load("res://dialogue/strings.json")
+	for k in ["load_account_title", "load_account_label", "load_account_hint", "load_account_bad_address", "load_account_submit", "load_account_cancel"]:
+		if str(strings.get(k, "")) == "":
+			bad.append("strings.json has no %s" % k)
+	if str(strings.get("load_account_hint", "")).to_lower().find("terminal") < 0:
+		bad.append("load_account_hint does not point at the desk terminal")
+	if bad.is_empty():
+		_ok("Ines offers the load slip from open/done/start_over → %s; Open my account still recovers the last clone" % ", ".join(PackedStringArray(submits.keys())))
+	else:
+		for b in bad:
+			_fail(b)
 
 
 ## AO desk polish: Ines can open the existing terminal from the post-account path, but never edits OBSERVER wallets.

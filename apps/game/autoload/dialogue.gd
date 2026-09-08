@@ -14,6 +14,7 @@ extends Node
 ##                                        ({observer} {short_observer} in text, args.address on the action),
 ##         "choice_template": { ...same fields; text may use {txId} {amount} {payee} {release_in} {status} },
 ##         "form": "payment_slip", "on_instant": "<id>", "on_vault": "<id>",   open the slip; route by amount
+##         "form": "name_claim" | "load_account", "on_submit": "<id>",         one-value slips; the node runs the action
 ##         "enter_action": {"action", "args", "working", "on_ok", "on_error", "escort"},   run on entry
 ##         "next": "<id>"                                                     shown as a single "Continue"
 ##     } } }
@@ -130,6 +131,14 @@ func submit_form(values: Dictionary) -> void:
 	_pending_form = {}
 	if str(c.get("form", "")) == "name_claim":
 		_ctx["label"] = str(values.get("label", "")).strip_edges()
+		_goto(str(c.get("on_submit", "end")))
+		return
+	# Ines's load slip (docs/LOAD-ACCOUNT.md): one address, and the node it routes to runs `load_account`.
+	# Nothing is decided here — the desk is the only thing that may say whether that account is the player's.
+	if str(c.get("form", "")) == "load_account":
+		var wanted := str(values.get("account", "")).strip_edges()
+		_ctx["account"] = wanted
+		_ctx["short_wanted"] = GameState.short_address(wanted)
 		_goto(str(c.get("on_submit", "end")))
 		return
 	if str(values.get("name", "")).strip_edges() != "":
@@ -250,7 +259,7 @@ func _run(c: Dictionary) -> void:
 	if c.has("ctx"):
 		_ctx.merge(c["ctx"], true)
 	var args: Dictionary = c.get("args", {}).duplicate()
-	for k in ["to", "amount", "memo", "txId", "label", "name", "key", "value", "address"]:
+	for k in ["to", "amount", "memo", "txId", "label", "name", "key", "value", "address", "account"]:
 		if not args.has(k) and _ctx.has(k):
 			args[k] = _ctx[k]
 	var action := str(c.get("action", ""))

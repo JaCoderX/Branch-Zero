@@ -15,6 +15,9 @@
  * U5 methods: ensAvailable / ensMint / ensSetText / resolveName — ENSv2 identity on Sepolia, on either wing.
  * S2 method:  setMode ('live' | 'dev') — which Teller Desk, and so which payment chain, the bank runs against.
  *             `approve` is owner-only from here (Bob's wait path); `as: 'manager'` is refused by the desk.
+ * S2.1 method: loadAccount — Ines adopts an AccountBlox the player already owns on the current wing (an older
+ *             CopyBlox clone, or a second account). The desk checks `owner()` on the chain before it switches
+ *             anything; docs/LOAD-ACCOUNT.md.
  * Terminal Console (stretch): openConsole (asks the shell for the terminal overlay — an iframe of bloxchain.app, or
  *             a top-level tab if the Console ever refuses framing) and observerGrant / observerRevoke / observerList
  *             (the OBSERVER viewing role: membership only, no function permissions — docs/TERMINAL-CONSOLE.md).
@@ -31,14 +34,18 @@ import type { DeskLink } from '../shell/deskEvents';
 import { focusCanvas } from '../shell/focus';
 
 /**
- * `s2.0`: Sepolia Live — `setMode` picks the payment wing (`live` = Sepolia, the default; `dev` = Remote EVM
- * 1337, Developer Mode) and `getSession` now carries `mode` / `chainName` / `fxTillIsMain` so the board and the
- * passbook name the chain they are actually on. Everything before it is unchanged and must stay that way:
- * `s1.0` (Kenji's FX desk — `fxStatus` / `fxEnable` / `fxQuote` / `fxSwap`), `u5.1` (Terminal Console
- * `openConsole` + `observer*`), `u5.0` (ENS Name Desk) and `u4.1` (`priority`, Okafor's hand scan). `setMode`
- * opens no Privy surface — the one consent already on the player's wallet covers both desks.
+ * `s2.1`: Load Account — `loadAccount` hands Ines an AccountBlox address the player already owns on the current
+ * wing (docs/LOAD-ACCOUNT.md). It is an ordinary Teller Desk call and opens **no** Privy surface: the desk
+ * re-pins the app-owned policy rules to the loaded address on its own side, so the one consent the player gave
+ * at Account Opening still covers it.
+ *
+ * `s2.0` before it: Sepolia Live — `setMode` picks the payment wing (`live` = Sepolia, the default; `dev` =
+ * Remote EVM 1337, Developer Mode) and `getSession` carries `mode` / `chainName` / `fxTillIsMain` so the board
+ * and the passbook name the chain they are actually on. Everything before that is unchanged and must stay that
+ * way: `s1.0` (Kenji's FX desk — `fxStatus` / `fxEnable` / `fxQuote` / `fxSwap`), `u5.1` (Terminal Console
+ * `openConsole` + `observer*`), `u5.0` (ENS Name Desk) and `u4.1` (`priority`, Okafor's hand scan).
  */
-export const BRIDGE_VERSION = 's2.0';
+export const BRIDGE_VERSION = 's2.1';
 
 /**
  * Where the bank computer points. `/accounts` is the Console screen that matters: it is where the player imports
@@ -247,6 +254,22 @@ const handlers: Record<string, Handler> = {
   /** U7: server-side Main-wing practice credit; no wallet or Passkey surface. */
   async faucet() {
     return requireAdapter().call('/faucet', {});
+  },
+  /**
+   * Load Account: adopt an AccountBlox the player already owns on the current wing (docs/LOAD-ACCOUNT.md).
+   *
+   * Address only, on purpose. Unlike `observerGrant`, an ENS name is not resolved here: a customer name points
+   * at whichever account the Name Desk recorded, which is precisely the account the player may be trying to
+   * move *away* from — so accepting one would quietly load the wrong vault. The desk terminal (and a passbook)
+   * is where a player gets the address; the desk then re-checks ownership on the chain before adopting it.
+   */
+  async loadAccount(args) {
+    const raw = String(args.account ?? args.address ?? '').trim();
+    if (!raw) throw bridgeError('BAD_ARGS', 'an account address is required', 'Write the account number you want me to load.');
+    if (!/^0x[0-9a-fA-F]{40}$/.test(raw)) {
+      throw bridgeError('BAD_ARGS', `not an address: ${raw.slice(0, 64)}`, 'That is not an account number — it should start 0x and be 40 characters after that. The desk terminal can find it for you.');
+    }
+    return requireAdapter().call('/account/load', { account: raw });
   },
 
   // --- U6: elevator ---

@@ -41,7 +41,7 @@
       ]
     },
     "console_open": {
-      "text": "The Console is up on the screen. Add a viewing wallet there, then import this account by its address and connect that wallet. Close the panel when you are done.",
+      "text": "The Console is up on the screen. Add a viewing wallet there, then import this account by its address and connect that wallet. Close the panel when you are done.\n\nIf you find another account of yours here, Ines can load it at Account Opening — hand her the number.",
       "choices": [ { "text": "OK.", "next": "end" } ]
     },
     "viewers": {

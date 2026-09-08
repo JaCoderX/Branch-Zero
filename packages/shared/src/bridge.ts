@@ -89,7 +89,14 @@ export type BridgeMethod =
   | 'openConsole'
   | 'observerGrant'
   | 'observerRevoke'
-  | 'observerList';
+  | 'observerList'
+  /**
+   * Load Account (docs/LOAD-ACCOUNT.md): Ines adopts an AccountBlox the player already owns on the current
+   * wing — the escape hatch from `recoverAccount`, which can only return the last `BloxCloned` for an owner.
+   * Ordinary Teller Desk call (`POST /account/load`), no new Privy surface: the desk re-pins the existing
+   * app-owned policy rules to the loaded address itself.
+   */
+  | 'loadAccount';
 
 /** How the owner's signature is obtained for meta-transactions. */
 export type SigningMode = 'session' | 'client';

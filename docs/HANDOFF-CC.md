@@ -6,18 +6,27 @@ created: 2026-09-06
 updated: 2026-09-08
 product: Branch-Zero
 objective: OBJ-2026-0004
-first_mission: Load Account via Ines (docs/KICKOFF-load-account.md) — prefer Claude Code Opus 5 high; Sepolia Ops Treasury MET 2026-09-08 (docs/SEPOLIA-TREASURY.md 8-9; one human faucet claim owed); U7 ship packaging still owed after polish re-playtest; U6 Arc G7 deferred
-prior_mission: Sepolia Ops Treasury MET 2026-09-08 - SEPOLIA_TREASURY_PK collects Live ETH + USDC and tops staff wallets to need x 1.25 (CLI, pre-cloneBlox hook, interval watcher, desk-debug row); killtests:treasury 7/7; owed: one faucet claim. Before it: Sepolia Live + Developer Mode MET 2026-09-08 — Live Main wing is Sepolia (CopyBlox 0x443ECf16…, account 0xf8EECc6B…, Lane A/B/Priority/faucet/OBSERVER/ENS/K7 on Etherscan); Remote EVM 1337 is Developer Mode behind the desk-debug toggle. Before it: S1b FX validate, Terminal Console + OBSERVER, U7 polish, practice faucet, U5 ENS
+first_mission: U7 ship packaging (docs/KICKOFF-U7-ship-package.md) once the principal re-playtests the ten polish findings; Load Account via Ines MET 2026-09-08 (docs/LOAD-ACCOUNT.md 7-8; a Live browser walk owed); Sepolia Ops Treasury MET 2026-09-08 (docs/SEPOLIA-TREASURY.md 8-9; one human faucet claim owed); U6 Arc G7 deferred
+prior_mission: Load Account (Ines) MET 2026-09-08 - POST /account/load adopts a player-owned AccountBlox on the current wing after getCode + owner() + initialized() + ISecureOwnable, re-pins the Privy policies before switching the file, and re-runs the Re-check sync with no cloneBlox; bridge s2.1; killtests:load 12/12 on 1337; owed: a Live browser walk. Before it: Sepolia Ops Treasury MET 2026-09-08 - SEPOLIA_TREASURY_PK collects Live ETH + USDC and tops staff wallets to need x 1.25 (CLI, pre-cloneBlox hook, interval watcher, desk-debug row); killtests:treasury 7/7; owed: one faucet claim. Before it: Sepolia Live + Developer Mode MET 2026-09-08 — Live Main wing is Sepolia (CopyBlox 0x443ECf16…, account 0xf8EECc6B…, Lane A/B/Priority/faucet/OBSERVER/ENS/K7 on Etherscan); Remote EVM 1337 is Developer Mode behind the desk-debug toggle. Before it: S1b FX validate, Terminal Console + OBSERVER, U7 polish, practice faucet, U5 ENS
 ---
 
 # Handoff — Claude Code (Fable 5.1)
 
 You are a **cold agent** unless the human says you are continuing a prior session. Prefer reading this file over chat memory. You have **freedom on how**. You do **not** have freedom on constraints, scope, or protocol semantics.
 
-**Authorized construction (2026-09-08): Load Account (Ines)** — prefer **Claude Code · Opus 5 high**.
-Plan: [`docs/LOAD-ACCOUNT.md`](./LOAD-ACCOUNT.md). Handoff: [`docs/HANDOFF-load-account.md`](./HANDOFF-load-account.md).
-Kickoff: [`docs/KICKOFF-load-account.md`](./KICKOFF-load-account.md).
-Ines loads a player-owned AccountBlox by address (non-latest CopyBlox clone / multi-account). Terminal discovers; Ines loads. Arc stays **DEFERRED**.
+> **Load Account (Ines) — MET 2026-09-08.** Ines adopts a player-owned AccountBlox by number on the current
+> wing (a non-latest CopyBlox clone, or a second account); the terminal still discovers, Ines loads. Gate:
+> `getCode` → `owner()` + `initialized()` + ERC-165 `ISecureOwnable` → `owner()` == the session's Privy owner,
+> then the policies are re-pinned **before** the file moves and the Re-check sync runs with **no** `cloneBlox`.
+> Bridge is **`s2.1`** (`loadAccount` → `POST /account/load`). `killtests:load` **12/12** on Remote EVM 1337.
+> Read [`docs/LOAD-ACCOUNT.md`](./LOAD-ACCOUNT.md) §8 and mission record **§5l**; local record
+> `docs/progress/2026-09-08-load-account.md`. Owed: a human browser walk on **Live**. Arc stays **DEFERRED**.
+
+> **Parallel art (optional, does not replace packaging):** Character style climb — more complex cartoon
+> cast, room unchanged. Research + DoD:
+> [`docs/HANDOFF-character-style.md`](./HANDOFF-character-style.md) ·
+> [`docs/KICKOFF-character-style.md`](./KICKOFF-character-style.md). Prefer **Opus 5 high** in a **separate**
+> CC session so it does not collide with Ines/desk files.
 
 > **Sepolia Ops Treasury — MET 2026-09-08** (§5k). `SEPOLIA_TREASURY_PK` is the Live-wing float: faucet drops
 > land there and staff wallets are topped to **need × 1.25** when they fall below **need** — from
@@ -196,7 +205,7 @@ Not: a wallet UI, DeFi protocol, Bloxchain fork, mainnet, Tactical-AI, GameLab m
 
 ## 2. Read order (before code)
 
-1. **This file** (§5j Sepolia Live **met** — Live wing is Sepolia; §5i Uniswap **met** — K7 PASS; §5h Terminal **met**; packaging §6 is the open unit; U6 §5g deferred)
+1. **This file** (§5l Load Account **met** — Ines adopts an owned AccountBlox by number; §5k treasury **met**; §5j Sepolia Live **met** — Live wing is Sepolia; §5i Uniswap **met** — K7 PASS; §5h Terminal **met**; packaging §6 is the open unit; U6 §5g deferred)
 2. [`docs/DEV-LOOP.md`](./DEV-LOOP.md) — U6 row; ENG-0006 **yes** (K3); U5 / G6 **met**
 3. [`docs/progress/2026-09-07-u5-ens-g6.md`](./progress/2026-09-07-u5-ens-g6.md) — Name Desk frozen; then
    [`…k6-yes.md`](./progress/2026-09-07-k6-yes.md) only if you need Sepolia address pins
@@ -206,9 +215,12 @@ Not: a wallet UI, DeFi protocol, Bloxchain fork, mainnet, Tactical-AI, GameLab m
 5. [`docs/SEPOLIA-LIVE.md`](./SEPOLIA-LIVE.md) §1–2, §6.1, §6.3 — Live is Sepolia and is the default; Dev is 1337
 5b. [`docs/SEPOLIA-TREASURY.md`](./SEPOLIA-TREASURY.md) §8–9 — faucet drops go to `SEPOLIA_TREASURY_PK`; staff
    wallets are topped to `need × 1.25`; the treasury holds **no** role and never sends Circle's USDC
+5c. [`docs/LOAD-ACCOUNT.md`](./LOAD-ACCOUNT.md) §8 — Ines loads an owned AccountBlox by number; the shape gate is
+   `owner()` + `initialized()` + `ISecureOwnable` (**not** `IBaseStateMachine`, which CopyBlox itself answers), and
+   the policy re-pin happens **before** the file moves
 6. [`docs/REMOTE-EVM.md`](./REMOTE-EVM.md) — **do not wipe**; 1337 is now **Developer Mode**, never public infra
 6. [`docs/GAME-DESIGN.md`](./GAME-DESIGN.md) + [`docs/WORLD-3D-ENVIRONMENT.md`](./WORLD-3D-ENVIRONMENT.md) — Arc wing / elevator
-7. [`docs/GODOT.md`](./GODOT.md) §4–5 — bridge is **`u5.1`** (preserve the ENS `u5.0` and terminal methods); MockChain (§5a), canvas focus (§5b)
+7. [`docs/GODOT.md`](./GODOT.md) §4–5 — bridge is **`s2.1`** (preserve `setMode`, the FX `s1.0`, ENS `u5.0` and terminal `u5.1` methods); MockChain (§5a), canvas focus (§5b)
 8. [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) §1–3, §5–6 (§3.5 wing switch)
 9. [`docs/BLOXCHAIN-INTEGRATION.md`](./BLOXCHAIN-INTEGRATION.md) §6–7 — do not regress ROLE_SET 3 / Priority
 10. [`docs/PRIVY.md`](./PRIVY.md) — Arc policy must include Arc `verifyingContract` when provisioning Arc accounts
@@ -837,10 +849,76 @@ automated faucet claiming; Remote EVM treasury.
 
 ---
 
+## 5l. Mission Load Account — Ines adopts an owned AccountBlox — **MET 2026-09-08**
+
+Ines has a second, named way to give a player their account: **Load an existing account**. The player hands
+her an `0x` number; the desk reads the chain and, only if that contract really is a player-owned AccountBlox
+on the wing this desk serves, files it as their Main account — policies re-pinned, guard/role sync re-run,
+**no clone**. Plan + as-built: [`docs/LOAD-ACCOUNT.md`](./LOAD-ACCOUNT.md) §7–§8. Handoff:
+[`docs/HANDOFF-load-account.md`](./HANDOFF-load-account.md). Local record:
+`docs/progress/2026-09-08-load-account.md`.
+
+**Why it exists.** CopyBlox has no `owner → clones` map (flat `_clones` + indexed `BloxCloned`), so
+`recoverAccount` can only ever take the **last** log. Reproduced live rather than argued: one owner with
+**five** clones, `recoverAccount` → the newest every time, and after a lost index "Open my account" re-adopts
+the newest — leaving **four** owned accounts, with their own balances and possibly their own cooling wires,
+unreachable from the game. Auto-recovery keeps that last-clone default; loading is the escape hatch.
+
+**Shape as built.** `apps/teller-desk/src/lanes/loadAccount.ts` → `POST /account/load { account }`, bridge
+**`s2.1`** `loadAccount`, Ines's slip `apps/game/scripts/load_account_form.gd` + `clerk.json`
+`loading` / `loaded` / `why_load`. The gate is four reads and no signature: `getAddress` → `getCode` on this
+wing → `owner()` answers **and** `initialized()` **and** ERC-165 `ISecureOwnable` → `owner()` == the session's
+Privy owner. Then the policies are re-pinned **before** the index moves, and the Re-check sync runs
+(`whitelistToken`, `syncRolePermissions`, zero-only `fundAccount`, owner gas).
+
+### Three things you will meet again
+
+1. **`ISecureOwnable`, not `IBaseStateMachine`.** Measured on 1337: **CopyBlox itself** has code, answers
+   `IBaseStateMachine` **true**, and fails `owner()` / `initialized()` / `ISecureOwnable`. A looser shape check
+   would let a player load the **factory** as their account. Kill test L5b keeps a permanent leg on it.
+2. **Pin before you switch.** Provisioning pins the Privy rule *after* the clone because there was nothing to
+   pin to. A load has an old address to move away from, so the order reverses: a refused re-pin (`LOAD_POLICY`)
+   abandons the load rather than filing account B while the enclave only signs for account A. L2b proves the
+   pin **moved** and did not widen — `policy_violation` on the account it was loaded away from.
+3. **`provision`'s pin is one-shot** (`!player.policyPinned`), so Re-check cannot repair a *stale* pin. Only a
+   lost `players.json` can produce one; hit while writing L0, left unchanged (Account Opening is Live-critical)
+   and named as a follow-up — the load lane is the honest fix for the same drift.
+
+### Out of scope (held)
+
+CopyBlox Solidity / `getClonesForOwner`; loading accounts the player does not own (that stays OBSERVER +
+Console); replacing auto-recovery; ENS resolve on the load slip (a customer name points at whichever account
+the Name Desk recorded — possibly the one being moved away from); Arc; treasury; ship packaging.
+
+### Definition of Done — met
+
+- [x] Load offered from `open`, `done` **and** `start_over`; `Open my account` still offers exactly one
+      `provision` choice (asserted by `run_checks.gd` `_check_load_account`)
+- [x] `owner()` == Privy owner on the current wing, or `ACCOUNT_NOT_OWNED`; EOAs / non-accounts /
+      cross-wing addresses → `ACCOUNT_NOT_A_VAULT`; malformed → `BAD_ARGS`
+- [x] Index, `/session` and passbook show the loaded account; sync without `cloneBlox`, and a repeat load
+      sends **no** role batch
+- [x] Typed-data **and** tx policies re-pinned to the loaded address, before the switch
+- [x] Bank lines + Ask why for all three refusals; `tests/run_load_walk.gd` (MockChain, 9 legs) and
+      `killtests:load` **12/12** on Remote EVM 1337, including a Lane A pay out of a loaded non-latest clone
+      (`0x4c93d37f…589e`)
+- [x] NPCS §4.2 as-built; LOAD-ACCOUNT §7 ticked + §8 as-built; 6 REFLECTION rows; progress note; this section
+
+### Owed by a human
+
+- **A browser walk on Live**: sign in → Ines → Load an existing account → paste a Sepolia account of your own.
+  Nobody has typed into the slip on the Live wing; the desk paths are headless-proven on Dev. Same shape as the
+  Console walk still owed from the stretch.
+- Optional stretch, **not** built: list this owner's `BloxCloned` clones as Ines choices, so the number need not
+  come from the terminal. Still a log filter, still no factory getter.
+
+---
+
 ## 6. After U5 / with U6 deferred
 
 | Next | Gate |
 |------|------|
+| **Load Account (Ines)** | **met** 2026-09-08 (§5l; adopt an owned AccountBlox by number, `killtests:load` 12/12; owed: a Live browser walk) |
 | **Sepolia ops treasury (S3)** | **met** 2026-09-08 (§5k; faucet → treasury → staff at need × 1.25; owed: one human faucet claim) |
 | **Sepolia Live + Developer Mode (S2)** | **met** 2026-09-08 (§5j; Live wing on Sepolia, Dev = 1337 toggle) |
 | **Uniswap v4 FX Desk (S1/S1b)** | K7 — **met** 2026-09-08 (§5i; live swap `0xd98efc64…`, re-run on the Live till `0xd1d9cd8e…`); owed: the sponsor feedback form |

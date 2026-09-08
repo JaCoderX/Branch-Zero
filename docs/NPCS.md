@@ -123,7 +123,7 @@ Ines: You'd be adding our branch as a signer on your wallet, limited by a policy
 [open / no account on file]
 Ines: Ready to open your account? …
   > Open my account        → action: provision (recover last clone or cloneBlox)
-  > Load an existing account → form: load_account { address }   (**planned** — docs/LOAD-ACCOUNT.md)
+  > Load an existing account → form: load_account { account } → node `loading` → action: load_account
   > Ask why
 
 [deploying]  (WORKING; progress lines are real stages)
@@ -132,7 +132,7 @@ Ines: Opening your account… Creating account · Registering services · Approv
 [done]
 Ines: Done. Here's your passbook. Your account lives at {short_address} on the {wing} wing. I've put 500 practice dollars in it.
   > Re-check my account
-  > Load an existing account → form: load_account { address }   (**planned** — non-latest clone / multi-account)
+  > Load an existing account → form: load_account { account }   (non-latest clone / multi-account)
   > Revoke teller access   → action: privy_remove_session_signer
   > Top up practice dollars→ action: faucet
   > Use the desk terminal  → action: open_console
@@ -142,9 +142,17 @@ Ines: Console is on the desk screen. Close the panel when you're done.
   > Done.                  → end
 ```
 
-Bridge actions: `privy_login`, `privy_add_session_signer`, `provision_account` (deploy + init + guard batch), `load_account` (**planned** — adopt owned Address after `owner()` check), `faucet`, `privy_remove_session_signer`, `open_console` (terminal only; viewing-wallet verbs remain at the terminal).
+Bridge actions: `privy_login`, `privy_add_session_signer`, `provision_account` (deploy + init + guard batch), `load_account` (adopt an owned AccountBlox after the `owner()` check — bridge `loadAccount` → `POST /account/load`), `faucet`, `privy_remove_session_signer`, `open_console` (terminal only; viewing-wallet verbs remain at the terminal).
 
 The desk terminal helps **discover** addresses; Ines **loads** them into the session. Auto-recovery still keeps the latest `BloxCloned` when the player chooses Open my account.
+
+**As built (2026-09-08).** The load slip is `scripts/load_account_form.gd` (one LineEdit, 0x + 40 hex checked
+locally and nothing else — whether an address is an account is the chain's answer, not the form's). It routes to
+the `loading` node, whose `enter_action` runs `load_account`; on success Ines reads the `loaded` line, on refusal
+the ordinary `refused` / Ask-why pair. Three refusals have their own bank lines: `ACCOUNT_NOT_OWNED` (the ledger
+names someone else), `ACCOUNT_NOT_A_VAULT` (nothing of ours at that number on this wing — which is also what a
+pasted address from the other wing looks like) and `LOAD_POLICY` (the signing rules could not be moved, so the
+file was left alone). Evidence: [`progress/2026-09-08-load-account.md`](./progress/2026-09-08-load-account.md).
 
 ### 4.3 Tellers — Dev (Counter), Ama (second teller)
 

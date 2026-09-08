@@ -10,6 +10,13 @@ extends Node
 const OWNER := "0xM0CK0000000000000000000000000000000000E7"
 const ACCOUNT := "0xM0CK0000000000000000000000000000000ACC7"
 const MANAGER := "0xE11BA2b4D45Eaed5996Cd0823791E0C93114882d"
+## Load Account (docs/LOAD-ACCOUNT.md), mocked. Two canned AccountBlox numbers stand in for the edge the real
+## lane exists for: `OLD_ACCOUNT` is an earlier clone of the same owner (what `recoverAccount` can never reach,
+## because it only keeps the last `BloxCloned`), and `FOREIGN_ACCOUNT` is a real account belonging to someone
+## else. Unlike the other mock addresses these are hex-only, because the load slip refuses anything that is not
+## 0x + 40 hex characters and a greybox walk has to be able to type one in.
+const OLD_ACCOUNT := "0xC10ded0000000000000000000000000000000001"
+const FOREIGN_ACCOUNT := "0xFACade0000000000000000000000000000000002"
 const TIMELOCK_SEC := 30
 const INSTANT_LIMIT := "100"
 const OPENING_BALANCE := 500.0
@@ -109,6 +116,8 @@ func call_method(method: String, args: Dictionary) -> Dictionary:
 				balance = OPENING_BALANCE
 				_stage(job, "PROVISION", "mined", "Ready.", {"account": account})
 			return _ok({"jobId": job, "account": account, "balance": _fmt(balance)})
+		"loadAccount":
+			return await _load_account(args)
 		"faucet":
 			return _faucet()
 		"ensAvailable":
@@ -364,6 +373,47 @@ func _pay(args: Dictionary) -> Dictionary:
 ## Practice faucet: an explicit, Main-wing-only top-up to the opening balance. Full is a no-op.
 ## Main wing means either payment mode — Live (Sepolia) or Developer Mode (1337); both have a practice till the
 ## branch can draw on. Only the deferred Arc wing is refused, because its money is real native USDC.
+## Load Account, mocked (docs/LOAD-ACCOUNT.md). The greybox needs three answers to be walkable: an owned
+## account loads, somebody else's is refused `ACCOUNT_NOT_OWNED`, and anything that is not one of the branch's
+## accounts is refused `ACCOUNT_NOT_A_VAULT`. The mock has no chain to read, so "owned" is a canned list —
+## which is exactly the part it cannot prove, and why the real gate has its own kill tests.
+func _load_account(args: Dictionary) -> Dictionary:
+	if not logged_in:
+		return _err("AUTH", "not signed in")
+	var wanted := str(args.get("account", args.get("address", ""))).strip_edges()
+	var is_owned := false
+	for a in [ACCOUNT, OLD_ACCOUNT]:
+		if str(a).to_lower() == wanted.to_lower():
+			is_owned = true
+	# The owned check runs first because MockChain's own account numbers are deliberately not valid hex
+	# (`0xM0CK…`), so a shape check would reject the very account the mock is holding.
+	if not is_owned and (wanted == "" or not wanted.begins_with("0x") or wanted.length() != 42):
+		return _err("BAD_ARGS", "not an address: %s" % wanted)
+	if wanted.to_lower() == FOREIGN_ACCOUNT.to_lower():
+		return _err("ACCOUNT_NOT_OWNED", "%s is owned by 0xM0CK…5747, not by %s" % [wanted, OWNER])
+	if not is_owned:
+		return _err("ACCOUNT_NOT_A_VAULT", "%s has no contract on %s" % [wanted, _chain_name()])
+	var previous := account
+	var changed := previous.to_lower() != wanted.to_lower()
+	var job := _new_job()
+	_stage(job, "PROVISION", "provisioning", "Looking that account up on the ledger…")
+	await get_tree().create_timer(0.6).timeout
+	if changed:
+		_stage(job, "PROVISION", "configuring", "Moving your file over to it…")
+		await get_tree().create_timer(0.5).timeout
+		account = wanted
+		# A different vault has its own money. The mock keeps one balance, so it plays the honest case: an
+		# older clone the player is coming back to still holds what it held (nothing is topped up on load).
+		balance = OPENING_BALANCE if previous == "" else balance
+	_stage(job, "PROVISION", "mined", "Loaded. That account is the one this desk will use for you.", {"account": account})
+	return _ok({
+		"jobId": job, "account": account, "previous": previous if previous != "" else null, "changed": changed,
+		"owner": OWNER, "chainId": chain_id, "chainName": _chain_name(), "mode": _mode(), "wing": "arc" if chain_id == ARC_CHAIN_ID else "main",
+		"timeLockSec": timelock_sec, "roleSet": 3, "priority": true, "roleChanges": [], "stranded": [],
+		"policyPinned": delegated, "txPolicyPinned": delegated, "balance": _fmt(balance), "symbol": str(_token()["symbol"]),
+	})
+
+
 func _faucet() -> Dictionary:
 	if account == "":
 		return _err("NO_ACCOUNT", "No account opened for this player")

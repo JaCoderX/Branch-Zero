@@ -3,6 +3,8 @@ type: handoff
 title: Handoff — Load Account (Ines custom AccountBlox)
 audience: cold agent (Claude Code · Opus 5 high)
 created: 2026-09-08
+updated: 2026-09-08
+status: met
 product: Branch-Zero
 objective: OBJ-2026-0004
 mission: Ines loads a player-owned AccountBlox by address (non-latest clone / multi-account)
@@ -12,6 +14,21 @@ baseline: Sepolia Live + Dev Mode MET; Terminal Console + OBSERVER MET; AO polis
 ---
 
 # Handoff — Load Account (Ines)
+
+> **MET 2026-09-08.** Ines offers *Load an existing account* from `open`, `done` and `start_over`; the desk
+> validates `getCode` → `owner()` → `initialized()` → ERC-165 `ISecureOwnable` → owner match on the current
+> wing, re-pins the Privy typed-data and tx rules to the loaded address **before** switching the file, then
+> runs the Re-check sync (guards, roles, zero-only balance) with **no** `cloneBlox`. Bridge is **`s2.1`**
+> (`loadAccount` → `POST /account/load`). Live proof on Remote EVM 1337:
+> `npm -w apps/teller-desk run killtests:load` **12/12** — including a Lane A payment out of a loaded
+> non-latest clone (`0x4c93d37f…589e`), `policy_violation` on the account it was loaded away from, and
+> `ACCOUNT_NOT_OWNED` for a real AccountBlox belonging to someone else. Evidence:
+> [`progress/2026-09-08-load-account.md`](./progress/2026-09-08-load-account.md); DoD ticks in
+> [`LOAD-ACCOUNT.md`](./LOAD-ACCOUNT.md) §7, as-built in §8.
+
+> **Still owed:** a human browser walk on the **Live** wing — nobody has typed an address into the slip on
+> Sepolia; the desk paths are headless-proven on Dev. The optional stretch (listing this owner's clones as
+> Ines choices) was **not** built.
 
 You are a **cold agent**. Prefer this file + the plan + kickoff over chat memory. Freedom on **how**.
 No freedom on constraints, scope, or protocol semantics.
@@ -60,7 +77,7 @@ wing. Prefer **Claude Code · Opus 5 high**.
 
 ## DoD
 
-See [`LOAD-ACCOUNT.md`](./LOAD-ACCOUNT.md) §7.
+See [`LOAD-ACCOUNT.md`](./LOAD-ACCOUNT.md) §7 — **all six boxes ticked 2026-09-08**.
 
 ---
 

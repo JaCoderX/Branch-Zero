@@ -22,6 +22,7 @@ import { pay, passbook } from './lanes/laneA.ts';
 import { approve, cancel, listPending, resumeWatchers, wire, type Actor } from './lanes/laneB.ts';
 import { preparePriority, submitPriority } from './lanes/priority.ts';
 import { ROLE_SET_VERSION, ensureTxPolicy, ensureTypedDataPolicy, faucetAccount, provision, recoverAccount } from './lanes/provision.ts';
+import { loadAccount } from './lanes/loadAccount.ts';
 import { available as ensAvailable, mint as ensMint, resolve as ensResolve, setText as ensSetText } from './ens.ts';
 import { enableFx, fxStatus, quote as fxQuote, swap as fxSwap } from './lanes/fx.ts';
 import { grantObserver, listObservers, observerPermissions, revokeObserver } from './lanes/observer.ts';
@@ -215,6 +216,34 @@ app.post('/provision', async (req, reply) => {
     const player = await requirePlayer(req as never);
     const jobId = newJobId();
     const result = await serialize(player.privyUserId, () => provision(getPlayer(player.privyUserId)!, jobId, auditFor(player)));
+    return { jobId, ...result };
+  } catch (e) {
+    return fail(reply, e);
+  }
+});
+
+/**
+ * Load Account (Ines) — adopt a specific AccountBlox the player owns on this wing (docs/LOAD-ACCOUNT.md).
+ *
+ * The escape hatch from `recoverAccount`, which can only ever return the **last** `BloxCloned` for an owner
+ * (CopyBlox has no owner→clones map). "Open my account" keeps that last-clone default; this route is how a
+ * player names an older vault or a second one and has the desk file it as their Main account instead.
+ *
+ * Deliberately **not** behind `requireConfigured`: a stranded account's whole problem is that its desk
+ * permissions were never confirmed, and the sync this route runs is what confirms them. It is still session-
+ * gated like everything else, and the lane refuses any address whose on-chain `owner()` is not the caller.
+ */
+app.post('/account/load', async (req, reply) => {
+  try {
+    const player = await requirePlayer(req as never);
+    const body = (req.body ?? {}) as { account?: string; address?: string };
+    const jobId = newJobId();
+    const current = getPlayer(player.privyUserId)!;
+    const result = await serialize(player.privyUserId, () => loadAccount(current, body.account ?? body.address, jobId, auditFor(player)));
+    app.log.info(
+      { owner: current.ownerAddress, previous: result.previous, account: result.account, changed: result.changed, chainId: result.chainId, policyPinned: result.policyPinned, txPolicyPinned: result.txPolicyPinned, roleChanges: result.roleChanges.length },
+      'account load: player-owned AccountBlox adopted as the Main account for this wing',
+    );
     return { jobId, ...result };
   } catch (e) {
     return fail(reply, e);

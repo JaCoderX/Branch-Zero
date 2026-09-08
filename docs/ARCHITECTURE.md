@@ -341,6 +341,7 @@ Godot only consumes `bankLine` on the main path and `technical` under "Ask why".
 |--------|------|------|------|--------|
 | POST | `/session` | `{ privyAccessToken }` | Privy JWT verify | upsert player |
 | POST | `/provision` | `{ chainId }` | session | deploy + init + guard batch + airdrop; returns `jobId` |
+| POST | `/account/load` | `{ account }` | session | Load Account (docs/LOAD-ACCOUNT.md): adopt an AccountBlox the player already owns on this wing. Refuses unless `getCode` + `owner()` + `initialized()` + ERC-165 `ISecureOwnable` pass and `owner()` == the session owner (`ACCOUNT_NOT_OWNED` / `ACCOUNT_NOT_A_VAULT`); re-pins the Privy rules **before** switching `player.account`, then runs the Re-check sync with **no** `cloneBlox`. Not behind `requireConfigured` — a stranded account's problem *is* unconfirmed permissions |
 | POST | `/pay` | `{ chainId, to, amount, memo }` | session | Lane A job |
 | POST | `/wire` | `{ chainId, to, amount, memo }` | session | Lane B request job |
 | POST | `/approve` | `{ txId }` | session | Ruth's wait path — owner timed approve after `releaseTime` (U4+: `as: 'manager'` → 400 `MANAGER_NO_STAMP`) |

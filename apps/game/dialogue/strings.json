@@ -26,6 +26,15 @@
   "name_claim_submit": "Check and claim",
   "name_claim_cancel": "Never mind",
 
+  "load_account_title": "LOAD AN ACCOUNT",
+  "load_account_label": "Account number",
+  "load_account_placeholder": "0x…",
+  "load_account_hint": "An account of yours on the {wing} wing ({chain}). The desk terminal lists your account numbers; Ines checks the ledger says you hold it before loading it.",
+  "load_account_bad_address": "That is not an account number — 0x followed by 40 characters.",
+  "load_account_hint_mock": "MockChain — nothing here is on a chain. Two canned numbers answer: 0xC10ded…0001 is an earlier account of yours, 0xFACade…0002 belongs to somebody else.",
+  "load_account_submit": "Load this account",
+  "load_account_cancel": "Never mind",
+
   "passbook_booting": "Opening the branch…",
   "passbook_anon": "No account yet — see Ines at Account Opening.",
   "passbook_owner": "Account holder {name}",

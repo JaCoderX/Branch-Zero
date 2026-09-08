@@ -164,6 +164,22 @@ Rules:
 - Every call has a timeout (15 s) and returns `{ error: { code, message } }` on failure; NPCs have a line for each `code` (see [NPCS.md](./NPCS.md) § 5).
 - On desktop (editor) `MockChain.gd` implements the same API with fake latency and canned data so gameplay can be iterated offline.
 
+### 4c. Bridge version `s2.1` (as built; adds Ines's load slip)
+
+`apps/web/src/bridge/branchZero.ts`. `s2.1` adds one method, **`loadAccount`** — Ines adopting an AccountBlox the
+player already owns on the current wing (docs/LOAD-ACCOUNT.md). It opens **no** Privy surface: the desk re-pins the
+app-owned policy rules to the loaded address on its own side, so the one consent from Account Opening still covers
+it, and `priority` remains the only method allowed to show a wallet sheet. The bridge checks the shape only
+(`0x` + 40 hex) and deliberately does **not** resolve an ENS name, unlike `observerGrant`: a customer name points at
+whichever account the Name Desk recorded, which may be exactly the account the player is trying to move away from.
+Godot routes it through `GameState.run_action("load_account", {account})` at a 300 s timeout (a load runs the same
+config batches as a Re-check), and the slip that collects the number is a Godot form
+(`scripts/load_account_form.gd`, the `name_claim` family) rather than an overlay. `MockChain` answers from two
+canned numbers so the greybox can walk the adopt, the foreign-owner refusal and the not-an-account refusal.
+
+`s2.0` before it added **`setMode`** (Live | Developer Mode) and the `mode` / `chainName` / `fxTillIsMain` fields on
+`getSession`. Everything below is unchanged.
+
 ### 4b. Bridge version `s1.0` (as built; adds Kenji's FX desk)
 
 `apps/web/src/bridge/branchZero.ts`. `s1.0` adds four methods — `fxStatus`, `fxQuote`, `fxEnable`, `fxSwap` — and

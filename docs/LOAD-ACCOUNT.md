@@ -1,7 +1,8 @@
 ---
 title: Load Account — Ines adopts a custom AccountBlox address
 created: 2026-09-08
-status: planned
+updated: 2026-09-08
+status: met
 product: Branch-Zero
 handoff: docs/HANDOFF-load-account.md
 kickoff: docs/KICKOFF-load-account.md
@@ -110,11 +111,69 @@ Optional stretch (same unit if cheap): after load failure for "not owner", or fr
 
 ---
 
-## 7. Definition of done
+## 7. Definition of done — **met 2026-09-08**
 
-- [ ] Ines dialogue exposes Load path (no account + has account)
-- [ ] Address form → desk validates `owner()` == Privy owner on current wing
-- [ ] Player index + session + passbook show the loaded account; Re-check sync without cloning
-- [ ] Policies re-pinned to the loaded account
-- [ ] Refusals have bank lines + Ask why; MockChain + Godot check and/or kill/smoke evidence
-- [ ] NPCS / PRIVY / ARCHITECTURE note updated; REFLECTION row; HANDOFF-CC when met
+Evidence: [`progress/2026-09-08-load-account.md`](./progress/2026-09-08-load-account.md).
+
+- [x] Ines dialogue exposes Load path (no account + has account) — `open`, `done` **and** `start_over` all offer
+  "Load an existing account"; `run_checks.gd` asserts all three and that Open my account still recovers the last clone
+- [x] Address form → desk validates `owner()` == Privy owner on current wing — `lanes/loadAccount.ts`
+  `assertOwnedAccount`: `getAddress` → `getCode` → `owner()` → `initialized()` → ERC-165 `ISecureOwnable` → owner match
+- [x] Player index + session + passbook show the loaded account; Re-check sync without cloning — `POST /account/load`
+  patches `player.account`, then runs `whitelistToken` + `syncRolePermissions` + zero-only `fundAccount`. **No**
+  `cloneBlox` anywhere in the lane; kill test L8 shows a repeat load sends no role batch at all
+- [x] Policies re-pinned to the loaded account — and pinned **before** the index moves, so a refused re-pin
+  (`LOAD_POLICY`) leaves the file alone instead of filing account B while the enclave still only signs for A.
+  L2b proves the pin *moved* rather than widened: after the load the signer signs for the loaded account and is
+  refused `policy_violation` on the account it was loaded away from
+- [x] Refusals have bank lines + Ask why; MockChain + Godot check and/or kill/smoke evidence —
+  `ACCOUNT_NOT_OWNED` / `ACCOUNT_NOT_A_VAULT` / `LOAD_POLICY` in `errors.json`; `tests/run_load_walk.gd` walks the
+  slip under MockChain; `npm -w apps/teller-desk run killtests:load` is the live Dev-wing proof
+- [x] NPCS / PRIVY / ARCHITECTURE note updated; REFLECTION row; HANDOFF-CC when met
+
+---
+
+## 8. As built
+
+| Layer | File |
+|-------|------|
+| Teller Desk lane | `apps/teller-desk/src/lanes/loadAccount.ts` — `assertOwnedAccount`, `repinPolicies`, `loadAccount` |
+| Route | `apps/teller-desk/src/server.ts` — `POST /account/load { account }`; session-gated, deliberately **not** behind `requireConfigured` |
+| Bridge | `apps/web/src/bridge/branchZero.ts` — `loadAccount` (bridge **`s2.1`**); address only, no ENS resolve |
+| Game | `dialogue/clerk.json` (`loading` / `loaded` / `why_load`), `scripts/load_account_form.gd`, `GameState.run_action("load_account")` |
+| MockChain | `autoload/mock_chain.gd` `_load_account` — canned owned clone `0xC10ded…0001`, foreign vault `0xFACade…0002` |
+| Tests | `tests/run_load_walk.gd`, `tests/run_checks.gd` `_check_load_account`, `scripts/kill-tests-load.ts` (`killtests:load`) |
+
+### 8.1 The shape gate, measured
+
+Four real addresses read on Remote EVM 1337 (2026-09-08). This table is why the gate is what it is:
+
+| Address | `getCode` | `owner()` | `initialized()` | `IBaseStateMachine` | `ISecureOwnable` |
+|---------|-----------|-----------|-----------------|---------------------|------------------|
+| a real AccountBlox clone | 20,853 bytes | the player | `true` | `true` | `true` |
+| an EOA | none | reverts | reverts | reverts | reverts |
+| the demo ERC-20 | 2,771 bytes | **reverts** | reverts | `false` | `false` |
+| **CopyBlox itself** | 11,227 bytes | **reverts** | `false` | **`true`** | **`false`** |
+
+`IBaseStateMachine` alone would have adopted the **factory**. `owner()` + `initialized()` + `ISecureOwnable` is the
+sharp edge, and kill test L5b keeps a leg on CopyBlox for exactly that reason.
+
+### 8.2 Order of operations, and why
+
+The policy re-pin happens **before** `patchPlayer`, which is the reverse of provisioning. Provisioning pins after
+the clone because there was nothing to pin to beforehand; a load has an old address to move away from, so the
+enclave must be able to sign for the new vault before the index says that is where the money is. A `LOAD_POLICY`
+refusal therefore changes nothing at all.
+
+Related: `provision`'s pin is **one-shot** (`if (policy && !player.policyPinned)`) — Account Opening pins once and
+never moves it. Moving a pin is this lane's job. The one way to reach a stale pin without it is to lose
+`players.json` while the Privy rule still names an older clone; recovery then adopts a different account and the
+silent lane is refused `policy_violation`. Reproduced in kill test L0 setup, mitigated there by clearing the flag
+with the index. Noted as a follow-up rather than changed, because Account Opening is Live-critical and the load
+lane is the honest fix for the same class of drift.
+
+### 8.3 What a load does *not* do
+
+No clone, no ownership transfer, no `getClonesForOwner`, and no top-up beyond the zero-only opening balance
+Account Opening already gives. Open my account keeps its last-`BloxCloned` default; loading is a second, named
+choice. OBSERVER, ENS, FX, Priority and the faucet are untouched.
