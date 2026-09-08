@@ -147,9 +147,10 @@ See [`KICKOFF-kaykit-bank-variants.md`](./KICKOFF-kaykit-bank-variants.md) DoD b
 | Stills | laptop-local `docs/progress/captures/2026-09-09-kaykit-bank-variants/` (before / after lobby 15 m, role frames) |
 | Untouched | Room, furniture, heroes, HUD, particles, lighting, dialogue, colliders, clip names, Kenney revert path |
 
-**Accessory debt (Pass B, not taken):** the Ranger quiver stays on Mo and the player (recoloured leather + accent);
-the Knight helmet + visor stay on Bob (reads as a guard). No weapons were vendored, so nothing else to hide. Take
-Pass B only if the principal wants the quiver gone — it is a Blender part-delete on `Ranger.glb` with the rig kept.
+**Accessory debt (Pass B, not taken at Pass A):** the Ranger quiver stays on Mo and the player (recoloured leather + accent);
+the Knight helmet + visor stay on Bob (reads as a guard). No weapons were vendored, so nothing else to hide.
+**Superseded for planning:** mesh / silhouette adaptation (helm, quiver, plate) is now the open lab quest —
+see [`HANDOFF-kaykit-artdeco-cast.md`](./HANDOFF-kaykit-artdeco-cast.md) and GameLab `ENG-2026-0015`. Pass A textures remain the live product cast until that exploration lands.
 
 ## Out of scope
 
