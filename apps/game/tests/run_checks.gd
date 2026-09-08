@@ -255,7 +255,7 @@ func _check_ao_desk_polish() -> void:
 			_fail(b)
 
 
-## AO geometry and west-column signage: preserve screen yaw, put the screen on the client side, and skip Counter2's
+## AO geometry and west-column signage: preserve screen yaw, keyboard between client and screen, skip Counter2's
 ## overhead plaque so the visible identity is Counter + Name Desk.
 func _check_counter_labels() -> void:
 	print("AO keyboard / Counter signage")
@@ -269,10 +269,10 @@ func _check_counter_labels() -> void:
 		bad.append("_counter does not guard empty plaque labels")
 	if interior.find("plaque(\"NAME DESK SERVICES") < 0 or interior.find("Pay by name at Counter") < 0:
 		bad.append("Name Desk service menu is missing the Counter wording")
-	if interior.find("PropKit.kit(self, \"AOScreen\", \"computerScreen\", Vector3(-8.6, 0.78, 7.55), PI)") < 0:
+	if interior.find("PropKit.kit(self, \"AOScreen\", \"computerScreen\", Vector3(-8.6, 0.78, 7.95), PI)") < 0:
 		bad.append("AOScreen position or client-facing yaw changed")
-	if interior.find("PropKit.kit(self, \"AOKeyboard\", \"computerKeyboard\", Vector3(-8.6, 0.78, 7.85), PI)") < 0:
-		bad.append("AOKeyboard position or yaw changed")
+	if interior.find("PropKit.kit(self, \"AOKeyboard\", \"computerKeyboard\", Vector3(-8.6, 0.78, 7.65), PI)") < 0:
+		bad.append("AOKeyboard is not between the client and the screen")
 	var player_copy := ["greeter", "teller", "vault_keeper", "dealer", "errors"]
 	for id in player_copy:
 		var text := FileAccess.get_file_as_string("res://dialogue/%s.json" % id)
@@ -281,8 +281,10 @@ func _check_counter_labels() -> void:
 	var main_text := FileAccess.get_file_as_string("res://scripts/main.gd")
 	if main_text.find("[\"teller\", \"Dev\", \"Teller · Counter\"") < 0:
 		bad.append("main.gd Dev display role is not Teller · Counter")
+	if main_text.find("[\"opening\", Vector3(-8.6, 0.4, 7.95)") < 0:
+		bad.append("opening terminal does not follow AO screen z")
 	if bad.is_empty():
-		_ok("AO order is screen 7.55 → keyboard 7.85 toward Ines · Counter plaque + Name Desk only")
+		_ok("AO order is keyboard 7.65 → screen 7.95 on desk · Counter plaque + Name Desk only")
 	else:
 		for b in bad:
 			_fail(b)

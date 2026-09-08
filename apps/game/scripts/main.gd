@@ -24,7 +24,7 @@ const NPCS := [
 ## [id, position (the screen), display name]
 const TERMINALS := [
 	["manager", Vector3(-8.6, 0.4, -8.5), "the manager's terminal"],
-	["opening", Vector3(-8.6, 0.4, 7.55), "the account desk terminal"],
+	["opening", Vector3(-8.6, 0.4, 7.95), "the account desk terminal"],
 ]
 
 const ARC_CHAIN_ID := 5042002

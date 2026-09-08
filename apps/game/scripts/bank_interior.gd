@@ -441,9 +441,10 @@ func _account_opening() -> void:
 	PropKit.kit(self, "AODeskW", "desk", Vector3(-9.65, 0, 8.0), PI, {"fit": Vector3(1.3, 0.78, 1.1)})
 	PropKit.kit(self, "AODeskE", "desk", Vector3(-8.35, 0, 8.0), PI, {"fit": Vector3(1.3, 0.78, 1.1)})
 	solid_box("AODesk", Vector3(-9.0, 0.4, 8.0), Vector3(2.6, 0.8, 1.1))
-	PropKit.kit(self, "AOScreen", "computerScreen", Vector3(-8.6, 0.78, 7.55), PI)
-	# Client approach is north (-z): chairs → screen → keyboard → Ines. Keep the screen facing the client.
-	PropKit.kit(self, "AOKeyboard", "computerKeyboard", Vector3(-8.6, 0.78, 7.85), PI)
+	# Client approach is north (-z): chairs → keyboard → screen → Ines. Desk top z ∈ [7.45, 8.55]; keep a small
+	# margin from the north edge so both props sit on the table (not hanging off). Screen faces the client (yaw PI).
+	PropKit.kit(self, "AOScreen", "computerScreen", Vector3(-8.6, 0.78, 7.95), PI)
+	PropKit.kit(self, "AOKeyboard", "computerKeyboard", Vector3(-8.6, 0.78, 7.65), PI)
 	_planter("AODeskPlant", Vector3(-9.9, 0.78, 8.3), 0.0, ["pot_small", Vector3(0.26, 0.2, 0.26)], [["plant_flatShort", Vector3(0.34, 0.3, 0.34)]], "Cream")
 	box_m("AOLeaflet", Vector3(-8.0, 0.79, 7.75), Vector3(0.2, 0.006, 0.28), PropKit.palette("Paper"), false)
 	PropKit.kit(self, "AOChairA", "chairCushion", Vector3(-10.0, 0, 6.7), 0.0, {}, Vector3(0.5, 0.5, 0.5), Vector3(0, 0.25, 0))
