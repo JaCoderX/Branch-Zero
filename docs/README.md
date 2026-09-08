@@ -23,7 +23,7 @@ Start with **[PLAN.md](./PLAN.md)**. Read order for a new contributor:
 | 13 | [DEMO-SCRIPT.md](./DEMO-SCRIPT.md) | Day 9–10 — video storyboard, submission checklist |
 | 14 | [REFLECTION.md](./REFLECTION.md) | When a decision feels wrong — design review, sponsor matrix, kill-test log, open questions |
 | 15 | [TERMINAL-CONSOLE.md](./TERMINAL-CONSOLE.md) | Stretch — bank computer iframe of bloxchain.app + OBSERVER view role (Privy↔SaaS parked) |
-| 15b | [HANDOFF-ao-desk-polish.md](./HANDOFF-ao-desk-polish.md) · [KICKOFF-ao-desk-polish.md](./KICKOFF-ao-desk-polish.md) | Optional polish — Ines → terminal, AO keyboard client-side, Counter / Name Desk labels |
+| 15b | [HANDOFF-ao-desk-polish.md](./HANDOFF-ao-desk-polish.md) · [KICKOFF-ao-desk-polish.md](./KICKOFF-ao-desk-polish.md) · [KICKOFF-desk-screen-keyboard-swap.md](./KICKOFF-desk-screen-keyboard-swap.md) | AO polish + screen↔keyboard swap at Ines and Okafor |
 
 **Not published** (gitignored; stay on the laptop): `docs/progress/` (daily notes + captures). Kickoffs and `HANDOFF-CC.md` stay in git for cold agents.
 

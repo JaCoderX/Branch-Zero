@@ -65,10 +65,15 @@
         { "text": "Revoke teller access", "if": "delegated", "action": "revoke", "working": "Revoking…", "on_ok": "revoked", "on_error": "refused" },
         { "text": "Let tellers act for me", "if": "!delegated", "action": "delegate", "working": "Waiting for your consent…", "on_ok": "done", "on_error": "refused" },
         { "text": "Top up practice dollars", "action": "faucet", "working": "Counting out practice dollars…", "on_ok": "done", "on_error": "refused" },
+        { "text": "Use the desk terminal", "action": "open_console", "working": "Waking the screen…", "on_ok": "console_open", "on_error": "refused" },
         { "text": "Sign out", "action": "logout", "working": "Closing your session…", "on_ok": "end", "on_error": "refused" },
         { "text": "Ask why", "next": "why_passbook" },
         { "text": "Thanks.", "next": "end" }
       ]
+    },
+    "console_open": {
+      "text": "Console is on the desk screen. Close the panel when you're done.",
+      "choices": [ { "text": "Done.", "next": "end" } ]
     },
     "why_passbook": {
       "text": "The balance is the demo token's balanceOf your account; the pending count is getPendingTransactions. Re-checking runs the provisioner again — it reads the chain first and only sends what's missing. Top up practice dollars is a separate request that restores a spent balance from the branch treasury, up to the opening amount.",
@@ -97,6 +102,7 @@
         { "text": "Let tellers act for me", "if": "logged_in && !delegated", "action": "delegate", "working": "Waiting for your consent…", "on_ok": "open", "on_error": "refused" },
         { "text": "Open my account", "if": "logged_in && !has_account", "action": "provision", "working": "Opening your account…", "on_ok": "done", "on_error": "refused" },
         { "text": "Show my passbook", "if": "has_account", "next": "done" },
+        { "text": "Use the desk terminal", "if": "has_account", "action": "open_console", "working": "Waking the screen…", "on_ok": "console_open", "on_error": "refused" },
         { "text": "Never mind.", "next": "end" }
       ]
     }

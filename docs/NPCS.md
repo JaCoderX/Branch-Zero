@@ -15,7 +15,7 @@ Related: [GAME-DESIGN.md](./GAME-DESIGN.md) § 4 mapping · [BLOXCHAIN-INTEGRATI
 | **Teller A** (Dev) / **Teller B** (Ama) | Counters | `BROADCASTER_ROLE` (Teller Desk hot wallet) | balance, whitelist, `getFunctionSchema`, ENS resolve | Lane A `requestAndApproveExecution`; Lane B `executeWithTimeLock` request | MVP |
 | **Vault Keeper** (Bob — was Ruth until U7 polish) | Vault antechamber | none (owner acts) | `getPendingTransactions`, `getTransaction` | **Wait path:** owner timed `approveTimeLockExecution` **after** `releaseTime`, silent session signer | MVP; U4+ wait-only |
 | **Branch Manager** (Mr. Okafor) | Manager's office | runtime role `BRANCH_MANAGER` | pending list (cooling vs ready), role membership | **Priority:** submits the owner's Passkey-signed `SIGN_META_APPROVE` via `approveTimeLockExecutionWithMetaTx` **before** the clock (`EXECUTE_META_APPROVE`); **recall** `cancelTimeLockExecution`. **No** post-clock timed stamp (removed in ROLE_SET 3) | U4+ **built 2026-09-07** |
-| **Registrar** (Petra) | Name Desk — serves from the **Counter 2** teller bay (U7 polish); names board on the west wall | bank's ENSv2 registrar key | availability, records | mint subname, `setText`, EAC delegation | T1 |
+| **Registrar** (Petra) | Name Desk — serves from the south teller bay; names board on the west wall | bank's ENSv2 registrar key | availability, records | mint subname, `setText`, EAC delegation | T1 |
 | **Dealer** (Kenji) | FX Desk | none | Uniswap quote | guarded swap | S1 |
 | **Security Officer** (Sgt. Bale) | Side door | `RECOVERY_ROLE` | `getRecovery()` | `transferOwnershipRequest` | S2 (MVP: lore) |
 | **Elevator voice** | Elevator | none | chain id | — | T2 |
@@ -84,7 +84,7 @@ Mo: Welcome to Branch Zero. First time? Account Opening is the desk with the pla
   > Thanks.                → end
 
 [enter, has account, pending == 0]
-Mo: Morning, {name}. Counters are open, the vault's quiet. Try the florist — Counter 1.
+Mo: Morning, {name}. Counters are open, the vault's quiet. Try the florist — Counter.
   > What's the vault for?  → why_vault
   > Thanks.                → end
 
@@ -100,7 +100,7 @@ Mo: Your account is a state machine. Large transfers are time-locked transaction
 
 ### 4.2 Account Clerk — Ines (Account Opening)
 
-Purpose: Privy login, delegation, account deployment, revoke, faucet.
+Purpose: Privy login, delegation, account deployment, revoke, faucet, and the desk terminal.
 
 ```text
 [no login]
@@ -127,17 +127,22 @@ Ines: Opening your account… Creating account · Registering services · Approv
 Ines: Done. Here's your passbook. Your account lives at {short_address} on the {wing} wing. I've put 500 practice dollars in it.
   > Revoke teller access   → action: privy_remove_session_signer
   > Top up practice dollars→ action: faucet
+  > Use the desk terminal  → action: open_console
+
+[console_open]
+Ines: Console is on the desk screen. Close the panel when you're done.
+  > Done.                  → end
 ```
 
-Bridge actions: `privy_login`, `privy_add_session_signer`, `provision_account` (deploy + init + guard batch), `faucet`, `privy_remove_session_signer`.
+Bridge actions: `privy_login`, `privy_add_session_signer`, `provision_account` (deploy + init + guard batch), `faucet`, `privy_remove_session_signer`, `open_console` (terminal only; viewing-wallet verbs remain at the terminal).
 
-### 4.3 Tellers — Dev (Counter 1), Ama (Counter 2)
+### 4.3 Tellers — Dev (Counter), Ama (second teller)
 
 Purpose: payment intake, lane routing, execution (Lane A), request (Lane B), refusal with reasons.
 
 ```text
 [idle]
-Dev: Counter 1. Paying someone?
+Dev: Counter. Paying someone?
   > Make a payment         → form: payment_slip {recipient, amount, memo}
   > Who can I pay?         → list: approved payees (from whitelist + ENS names)
   > What services here?    → list: service menu (from function schemas)
@@ -235,7 +240,7 @@ Okafor: I hold a runtime role — BRANCH_MANAGER. I cannot start a payment. I ca
 `tests/run_checks.gd` enforces the split: `manager.json` must offer `priority` and `cancel` and never `approve`;
 `vault_keeper.json` must offer `approve` and never `priority`; the copy line must be present.
 
-### 4.6 Registrar — Petra (Name Desk at Counter 2) — T1
+### 4.6 Registrar — Petra (Name Desk) — T1
 
 ```text
 Petra: Names! Pick one and people can pay you by it.
@@ -258,7 +263,7 @@ As built in `dialogue/dealer.json` (start node follows the chain, not memory: `f
 
 ```text
 [no FX deployment]                                        (node: desk_closed)
-Kenji: Board's dark today — the branch can't reach the exchange floor. Counter 1 and the vault are unaffected.
+Kenji: Board's dark today — the branch can't reach the exchange floor. Counter and the vault are unaffected.
 
 [no till on Sepolia]                                      (node: no_till)
 Kenji: You've no till on the exchange floor yet. I can open one — same account pattern, just on the other chain.

@@ -5,13 +5,13 @@ extends Node3D
 
 ## Yaw convention (player.gd / npc.gd): a body faces (-sin yaw, 0, -cos yaw) — yaw 0 looks north (-z), PI looks
 ## south (+z), -PI/2 looks east (+x, the lobby side of the counters). U7 polish (principal playtest): Ines stands
-## behind the Account Opening desk between it and the south wall, facing the room; Petra serves from the Counter 2
+## behind the Account Opening desk between it and the south wall, facing the room; Petra serves from the Name Desk
 ## teller bay (never north of the manager glass); Okafor faces his door; the vault keeper is Bob.
 const NPCS := [
 	# id, name, role, colour, position, yaw (radians), escort path
 	["greeter", "Mo", "Greeter", Color(0.85, 0.55, 0.25), Vector3(2.0, 0, 4.5), PI * 0.9, []],
 	["clerk", "Ines", "Account Clerk", Color(0.30, 0.60, 0.50), Vector3(-9.0, 0, 9.5), 0.0, []],
-	["teller", "Dev", "Teller · Counter 1", Color(0.55, 0.35, 0.70), Vector3(-11.6, 0, 3.0), -PI / 2, [Vector3(-11.6, 0, 5.6), Vector3(-8.5, 0, 5.6), Vector3(-2.0, 0, -1.0), Vector3(6.0, 0, -3.5), Vector3(8.0, 0, -6.8)]],
+	["teller", "Dev", "Teller · Counter", Color(0.55, 0.35, 0.70), Vector3(-11.6, 0, 3.0), -PI / 2, [Vector3(-11.6, 0, 5.6), Vector3(-8.5, 0, 5.6), Vector3(-2.0, 0, -1.0), Vector3(6.0, 0, -3.5), Vector3(8.0, 0, -6.8)]],
 	["registrar", "Petra", "Registrar · Name Desk", Color(0.25, 0.60, 0.45), Vector3(-11.6, 0, -1.0), -PI / 2, []],
 	["vault_keeper", "Bob", "Vault Keeper", Color(0.75, 0.30, 0.30), Vector3(10.0, 0, -7.5), PI * 0.6, []],
 	["manager", "Mr. Okafor", "Branch Manager", Color(0.25, 0.30, 0.55), Vector3(-8.0, 0, -9.8), PI, []],
@@ -23,8 +23,8 @@ const NPCS := [
 ## props bank_interior.gd already places; the player leans over the keyboard side of the desk.
 ## [id, position (the screen), display name]
 const TERMINALS := [
-	["manager", Vector3(-8.6, 0.4, -8.95), "the manager's terminal"],
-	["opening", Vector3(-8.6, 0.4, 7.85), "the account desk terminal"],
+	["manager", Vector3(-8.6, 0.4, -8.5), "the manager's terminal"],
+	["opening", Vector3(-8.6, 0.4, 7.55), "the account desk terminal"],
 ]
 
 const ARC_CHAIN_ID := 5042002
@@ -218,7 +218,7 @@ func _process(_delta: float) -> void:
 	if near != _near_elevator:
 		_near_elevator = near
 		_update_prompt()
-	# Interact zones overlap (Petra at Counter 2 is four metres from Dev): re-pick the nearest talkable NPC every
+	# Interact zones overlap (Petra at the Name Desk bay is four metres from Dev): re-pick the nearest talkable NPC every
 	# frame so the prompt follows the player instead of sticking to whoever's zone was entered first.
 	else:
 		var pick := _pick()
@@ -297,11 +297,11 @@ func _update_prompt() -> void:
 ## the product path. [position, view yaw]. F5 is left alone: in a browser it reloads the page.
 const TELEPORTS := {
 	KEY_F2: [Vector3(-9.0, 0.1, 6.3), PI],         # Account Opening, looking south across the desk at Ines
-	KEY_F3: [Vector3(-9.5, 0.1, 3.0), PI / 2],     # Counter 1, looking west at Dev
+	KEY_F3: [Vector3(-9.5, 0.1, 3.0), PI / 2],     # Counter, looking west at Dev
 	KEY_F4: [Vector3(8.0, 0.1, -6.5), 0.0],        # Vault antechamber, looking north at the door
 	KEY_F6: [Vector3(3.0, 0.1, 6.0), 0.0],         # Lobby, near Mo
 	KEY_F7: [Vector3(-8.0, 0.1, -7.3), 0.0],       # Manager's office, looking north at the desk
-	KEY_F8: [Vector3(-9.5, 0.1, -1.0), PI / 2],    # Counter 2 / Name Desk, looking west at Petra
+	KEY_F8: [Vector3(-9.5, 0.1, -1.0), PI / 2],    # Name Desk bay, looking west at Petra
 	KEY_F9: [Vector3(12.0, 0.1, -3.0), -PI / 2],   # FX desk, looking east at Kenji and the quote board
 }
 

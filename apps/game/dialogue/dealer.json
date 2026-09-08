@@ -19,7 +19,7 @@
       "choices": [ { "text": "OK.", "next": "end" } ]
     },
     "desk_closed": {
-      "text": "Board's dark today — the branch can't reach the exchange floor. Counter 1 and the vault are unaffected.",
+      "text": "Board's dark today — the branch can't reach the exchange floor. Counter and the vault are unaffected.",
       "choices": [
         { "text": "Ask why", "next": "why_desk_closed" },
         { "text": "OK.", "next": "end" }

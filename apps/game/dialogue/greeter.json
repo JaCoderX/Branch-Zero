@@ -21,7 +21,7 @@
       ]
     },
     "has_account": {
-      "text": "Morning, {name}. Counters are open, the vault's quiet. Try the florist — Counter 1, that's Dev.",
+      "text": "Morning, {name}. Counters are open, the vault's quiet. Try the florist — Counter, that's Dev.",
       "choices": [
         { "text": "What's the vault for?", "next": "why_vault" },
         { "text": "Thanks.", "next": "end" }

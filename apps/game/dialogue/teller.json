@@ -1,7 +1,7 @@
 {
   "id": "teller",
   "name": "Dev",
-  "role": "Teller · Counter 1",
+  "role": "Teller · Counter",
   "start": [
     { "if": "!booted", "node": "booting" },
     { "if": "!has_account", "node": "no_account" },
@@ -9,11 +9,11 @@
   ],
   "nodes": {
     "booting": {
-      "text": "Counter 1 — opening up, one second.",
+      "text": "Counter — opening up, one second.",
       "choices": [ { "text": "Sure.", "next": "end" } ]
     },
     "no_account": {
-      "text": "Counter 1. I can't take a slip without an account — Ines at Account Opening opens them, the desk with the plant.",
+      "text": "Counter. I can't take a slip without an account — Ines at Account Opening opens them, the desk with the plant.",
       "choices": [
         { "text": "Ask why", "next": "why_no_account" },
         { "text": "OK.", "next": "end" }
@@ -24,7 +24,7 @@
       "choices": [ { "text": "OK.", "next": "end" } ]
     },
     "idle": {
-      "text": "Counter 1. Paying someone? Up to {limit} {symbol} I do right here; more than that goes through the vault.",
+      "text": "Counter. Paying someone? Up to {limit} {symbol} I do right here; more than that goes through the vault.",
       "choices": [
         { "text": "Make a payment", "form": "payment_slip", "on_instant": "pay_now", "on_vault": "over_limit" },
         { "text": "Who can I pay?", "next": "payees" },

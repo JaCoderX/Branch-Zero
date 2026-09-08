@@ -19,7 +19,7 @@
       "choices": [ { "text": "OK.", "next": "end" } ]
     },
     "quiet": {
-      "text": "Quiet day. Nothing cooling. Wires come in through Counter 1 when a slip is over {limit} {symbol}.",
+      "text": "Quiet day. Nothing cooling. Wires come in through Counter when a slip is over {limit} {symbol}.",
       "choices": [
         { "text": "Ask why", "next": "why_cooling" },
         { "text": "Check the board again", "action": "refresh", "working": "Reading the vault register…", "on_ok": "end", "on_error": "refused" },

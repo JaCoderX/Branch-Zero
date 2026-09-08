@@ -302,8 +302,8 @@ func _north_strip() -> void:
 	PropKit.kit(self, "MgrDeskE", "desk", Vector3(-7.25, 0, -8.6), PI, {"fit": Vector3(1.5, 0.78, 1.15)})
 	solid_box("MgrDesk", Vector3(-8.0, 0.4, -8.6), Vector3(3.0, 0.8, 1.2))
 	PropKit.hero(self, "MgrStamp", "prop_stamp", Vector3(-7.0, 0.78, -8.6))
-	PropKit.kit(self, "MgrScreen", "computerScreen", Vector3(-8.6, 0.78, -8.95), PI)
-	PropKit.kit(self, "MgrKeyboard", "computerKeyboard", Vector3(-8.6, 0.78, -8.5), PI)
+	PropKit.kit(self, "MgrScreen", "computerScreen", Vector3(-8.6, 0.78, -8.5), PI)
+	PropKit.kit(self, "MgrKeyboard", "computerKeyboard", Vector3(-8.6, 0.78, -8.95), PI)
 	# Stage 6a: KayKit fill — shaded table lamp, padded guest chairs (they face +z, so yaw PI turns them to the desk),
 	# striped rug, a dressed cabinet on the old bookcase collider, a credenza with ledgers west of the poster, pictures
 	# in the north-wall panels either side of it, a standing lamp in the south-west corner
@@ -352,11 +352,11 @@ func _north_strip() -> void:
 # ---------------------------------------------------------------- west column: counters 1 & 2 and the Name Desk
 
 func _west_column() -> void:
-	_counter("Counter1", 3.0, "COUNTER 1")
-	# U7 polish finding 3: Petra serves from the Counter 2 teller bay (main.gd NPCS), so Counter 2 is the Name Desk
+	_counter("Counter1", 3.0, "COUNTER")
+	# U7 polish finding 3: Petra serves from the south teller bay (main.gd NPCS), so that bay is the Name Desk
 	# window — the engraver replaces its stamp and the wall sign behind it lists the name services. The old Name
 	# Desk table north of it stays as her records annex, under the names board on the west wall.
-	_counter("Counter2", -1.0, "COUNTER 2 · NAME DESK", "prop_engraver")
+	_counter("Counter2", -1.0, "", "prop_engraver")
 	# Stage 6a fill behind the tellers (unreachable for the player, so the two solids change no walkable footprint):
 	# a credenza under the payee list, a ledger shelf under the service menu, a stool behind each teller
 	PropKit.kaykit(self, "Counter1Credenza", "cabinet_medium", Vector3(-14.55, 0, 3.0), PI / 2, {"fit": Vector3(2.0, 0.85, 0.5)}, Vector3(0.5, 0.85, 2.0), Vector3(0, 0.425, 0))
@@ -380,7 +380,7 @@ func _west_column() -> void:
 	plaque("NAME DESK", Vector3(-12.5, 2.2, -4.9), 0.0, 0.3, theme.graphite_color)
 	plaque("Approved payees\n• Florist\n• Landlord\n• Demo merchant", Vector3(-14.8, 2.4, 3.0), PI / 2, 0.24, theme.graphite_color, "PayeeList")
 	box_m("PayeeListBoard", Vector3(-14.83, 2.4, 3.0), Vector3(0.03, 1.2, 2.6), PropKit.palette("Paper"), false)
-	plaque("Name Desk · Counter 2\n• Claim a name under branchzero.eth\n• Update your passbook records\n• Pay by name at Counter 1", Vector3(-14.8, 2.4, -1.0), PI / 2, 0.24, theme.graphite_color, "ServiceMenu")
+	plaque("NAME DESK SERVICES\n• Claim a name under branchzero.eth\n• Update your passbook records\n• Pay by name at Counter", Vector3(-14.8, 2.4, -1.0), PI / 2, 0.24, theme.graphite_color, "ServiceMenu")
 	box_m("ServiceMenuBoard", Vector3(-14.83, 2.4, -1.0), Vector3(0.03, 1.2, 3.2), PropKit.palette("Paper"), false)
 
 
@@ -428,7 +428,8 @@ func _counter(name: String, z: float, label: String, tool: String = "prop_stamp"
 	box_m(name + "Shelf", Vector3(-11.15, 1.02, z), Vector3(0.3, 0.05, 3.6), PropKit.palette("Wood"), false)
 	PropKit.hero(self, name + "Printer", "prop_printer", Vector3(-11.15, 1.045, z + 1.2), PI / 2)
 	PropKit.hero(self, name + "Tool", tool, Vector3(-11.15, 1.045, z - 1.0), PI / 2 if tool != "prop_stamp" else 0.0)
-	plaque(label, Vector3(-10.5, 3.0, z), PI / 2, 0.5, theme.graphite_color)
+	if not label.is_empty():
+		plaque(label, Vector3(-10.5, 3.0, z), PI / 2, 0.5, theme.graphite_color)
 
 
 # ---------------------------------------------------------------- account opening (the desk with the plant)
@@ -440,8 +441,9 @@ func _account_opening() -> void:
 	PropKit.kit(self, "AODeskW", "desk", Vector3(-9.65, 0, 8.0), PI, {"fit": Vector3(1.3, 0.78, 1.1)})
 	PropKit.kit(self, "AODeskE", "desk", Vector3(-8.35, 0, 8.0), PI, {"fit": Vector3(1.3, 0.78, 1.1)})
 	solid_box("AODesk", Vector3(-9.0, 0.4, 8.0), Vector3(2.6, 0.8, 1.1))
-	PropKit.kit(self, "AOScreen", "computerScreen", Vector3(-8.6, 0.78, 7.85), PI)
-	PropKit.kit(self, "AOKeyboard", "computerKeyboard", Vector3(-8.6, 0.78, 8.3), PI)
+	PropKit.kit(self, "AOScreen", "computerScreen", Vector3(-8.6, 0.78, 7.55), PI)
+	# Client approach is north (-z): chairs → screen → keyboard → Ines. Keep the screen facing the client.
+	PropKit.kit(self, "AOKeyboard", "computerKeyboard", Vector3(-8.6, 0.78, 7.85), PI)
 	_planter("AODeskPlant", Vector3(-9.9, 0.78, 8.3), 0.0, ["pot_small", Vector3(0.26, 0.2, 0.26)], [["plant_flatShort", Vector3(0.34, 0.3, 0.34)]], "Cream")
 	box_m("AOLeaflet", Vector3(-8.0, 0.79, 7.75), Vector3(0.2, 0.006, 0.28), PropKit.palette("Paper"), false)
 	PropKit.kit(self, "AOChairA", "chairCushion", Vector3(-10.0, 0, 6.7), 0.0, {}, Vector3(0.5, 0.5, 0.5), Vector3(0, 0.25, 0))

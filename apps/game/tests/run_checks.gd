@@ -52,6 +52,8 @@ func _initialize() -> void:
 	_check_terminal()
 	_check_fx_desk()
 	_check_vault_desks()
+	_check_ao_desk_polish()
+	_check_counter_labels()
 	_check_polish()
 	_check_eval(Dlg)
 	print("\n%s — %d failure(s)" % ["PASS" if failures == 0 else "FAIL", failures])
@@ -212,6 +214,78 @@ func _check_faucet_choice() -> void:
 		_fail("clerk done has no faucet choice")
 	else:
 		_ok("Ines offers Top up practice dollars from the done/passbook node")
+
+
+## AO desk polish: Ines can open the existing terminal from the post-account path, but never edits OBSERVER wallets.
+func _check_ao_desk_polish() -> void:
+	print("Account Opening terminal choice")
+	var clerk := _load("res://dialogue/clerk.json")
+	var nodes: Dictionary = clerk.get("nodes", {})
+	var bad: PackedStringArray = []
+	var done_console := false
+	for c in nodes.get("done", {}).get("choices", []):
+		if str(c.get("action", "")) != "open_console":
+			continue
+		done_console = true
+		if str(c.get("text", "")) != "Use the desk terminal":
+			bad.append("clerk done terminal choice has unexpected text")
+		if str(c.get("working", "")) != "Waking the screen…":
+			bad.append("clerk done terminal choice has unexpected working copy")
+		if str(c.get("on_ok", "")) != "console_open" or str(c.get("on_error", "")) != "refused":
+			bad.append("clerk done terminal choice must return to console_open or refused")
+	if not done_console:
+		bad.append("clerk done has no open_console choice")
+	var start_over_console := false
+	for c in nodes.get("start_over", {}).get("choices", []):
+		if str(c.get("action", "")) == "open_console" and str(c.get("if", "")) == "has_account":
+			start_over_console = true
+	if not start_over_console:
+		bad.append("clerk start_over has no has_account open_console choice")
+	var console_text := str(nodes.get("console_open", {}).get("text", ""))
+	if console_text.find("desk screen") < 0 or console_text.to_lower().find("close") < 0:
+		bad.append("clerk console_open does not say the Console is on the desk screen and to close the panel")
+	var actions := _actions_in(clerk)
+	for forbidden in ["observer_grant", "observer_revoke", "observer_list"]:
+		if actions.has(forbidden):
+			bad.append("clerk.json must not run %s" % forbidden)
+	if bad.is_empty():
+		_ok("Ines: done + start_over open_console paths · close copy present · no OBSERVER verbs")
+	else:
+		for b in bad:
+			_fail(b)
+
+
+## AO geometry and west-column signage: preserve screen yaw, put the screen on the client side, and skip Counter2's
+## overhead plaque so the visible identity is Counter + Name Desk.
+func _check_counter_labels() -> void:
+	print("AO keyboard / Counter signage")
+	var interior := FileAccess.get_file_as_string("res://scripts/bank_interior.gd")
+	var bad: PackedStringArray = []
+	if interior.find("_counter(\"Counter1\", 3.0, \"COUNTER\")") < 0:
+		bad.append("Counter1 plaque is not COUNTER")
+	if interior.find("_counter(\"Counter2\", -1.0, \"\", \"prop_engraver\")") < 0:
+		bad.append("Counter2 does not skip its overhead plaque")
+	if interior.find("if not label.is_empty():") < 0:
+		bad.append("_counter does not guard empty plaque labels")
+	if interior.find("plaque(\"NAME DESK SERVICES") < 0 or interior.find("Pay by name at Counter") < 0:
+		bad.append("Name Desk service menu is missing the Counter wording")
+	if interior.find("PropKit.kit(self, \"AOScreen\", \"computerScreen\", Vector3(-8.6, 0.78, 7.55), PI)") < 0:
+		bad.append("AOScreen position or client-facing yaw changed")
+	if interior.find("PropKit.kit(self, \"AOKeyboard\", \"computerKeyboard\", Vector3(-8.6, 0.78, 7.85), PI)") < 0:
+		bad.append("AOKeyboard position or yaw changed")
+	var player_copy := ["greeter", "teller", "vault_keeper", "dealer", "errors"]
+	for id in player_copy:
+		var text := FileAccess.get_file_as_string("res://dialogue/%s.json" % id)
+		if text.find("Counter 1") >= 0 or text.find("Counter 2") >= 0 or text.find("COUNTER 1") >= 0 or text.find("COUNTER 2") >= 0:
+			bad.append("%s.json still contains numbered Counter copy" % id)
+	var main_text := FileAccess.get_file_as_string("res://scripts/main.gd")
+	if main_text.find("[\"teller\", \"Dev\", \"Teller · Counter\"") < 0:
+		bad.append("main.gd Dev display role is not Teller · Counter")
+	if bad.is_empty():
+		_ok("AO order is screen 7.55 → keyboard 7.85 toward Ines · Counter plaque + Name Desk only")
+	else:
+		for b in bad:
+			_fail(b)
 
 
 ## Terminal Console stretch: the bank computer opens the Console panel and edits the viewing list — and it must never
