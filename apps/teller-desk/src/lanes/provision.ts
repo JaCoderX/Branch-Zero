@@ -33,7 +33,7 @@ import {
   roleConfigBatchExecutionParams,
   toContractValue,
 } from '@bloxchain/sdk';
-import { copyBloxAbi, erc20Abi } from '@branch-zero/shared';
+import { copyBloxAbi, erc20Abi, mintableErc20Abi } from '@branch-zero/shared';
 import { broadcaster, broadcasterAddress, chain, deployer, deployerAddress, managerAddress, metaTxDuration, publicClient } from '../chain.ts';
 import { config, deployments } from '../config.ts';
 import { TYPED_DATA_RULE_VERSION, createTxRules, pinPolicyToAccount, pinTxRulesToAccount } from '../privy.ts';
@@ -58,6 +58,12 @@ export const BROADCASTER_ROLE = keccak256(toBytes('BROADCASTER_ROLE'));
 export const BRANCH_MANAGER_ROLE = keccak256(toBytes('BRANCH_MANAGER'));
 const BRANCH_MANAGER_ROLE_NAME = 'BRANCH_MANAGER';
 
+/**
+ * What `cloneBlox` actually needs, measured on Remote EVM in U1: 16.20 M used, ~16.65 M required. Used as the
+ * floor below which we refuse to send at all, rather than mining a clone that runs out of gas mid-`initialize`.
+ */
+const CLONE_BLOX_MIN_GAS = 16_650_000n;
+
 /** Clone a fresh AccountBlox owned by the player's Privy wallet. One transaction, ~16.2M gas. */
 export async function cloneAccount(owner: Address): Promise<{ account: Address; hash: Hex; gasUsed: bigint }> {
   const { copyBlox, accountBloxImplementation } = d();
@@ -74,14 +80,34 @@ export async function cloneAccount(owner: Address): Promise<{ account: Address; 
     }),
   });
   const { gasLimit } = await publicClient.getBlock();
-  if (gas > gasLimit) throw new Error(`cloneBlox needs ${gas} gas but the block ceiling is ${gasLimit}`);
+  /**
+   * The ceiling a single transaction may declare. Two different things can impose it and both bite here:
+   *
+   *  - the **block** gas limit (Remote EVM: 16,777,216 — `cloneBlox` uses 99.2 % of it);
+   *  - the **RPC's** `rpc.gascap`, which public Sepolia providers set well below the 60 M block limit.
+   *    publicnode's is 16,777,216, and it applies to `eth_estimateGas` *and* `eth_sendRawTransaction`.
+   *
+   * That second one is a trap worth naming: when the cap is below what the call needs to be measured at,
+   * `eth_estimateGas` stops binary-searching and returns **the cap itself** — a round `0x1000000` that looks
+   * like a real estimate. Add the usual headroom to it and the send comes back `gas limit too high`, which
+   * reads like "we asked for too much" when the truth is "the estimate was never a requirement". So headroom
+   * is only ever added *below* the ceiling, and at the ceiling we send the ceiling. `cloneBlox` needs ~16.65 M
+   * (measured on 1337), so 2^24 is sufficient — but if a provider ever caps lower, this fails loudly with the
+   * numbers rather than mining a half-made account.
+   */
+  const ceiling = config.maxTxGas < gasLimit ? config.maxTxGas : gasLimit;
+  const wanted = gas + 100_000n;
+  const send = wanted > ceiling ? ceiling : wanted;
+  if (send < CLONE_BLOX_MIN_GAS) {
+    throw new Error(`cloneBlox needs about ${CLONE_BLOX_MIN_GAS} gas but this chain/RPC caps a transaction at ${send} (block limit ${gasLimit}, tx cap ${config.maxTxGas}) — raise MAX_TX_GAS or use an RPC with a higher gascap`);
+  }
 
   const hash = await deployer.writeContract({
     address: copyBlox,
     abi: copyBloxAbi,
     functionName: 'cloneBlox',
     args: [accountBloxImplementation, owner, broadcasterAddress, config.recoveryAddress, config.timeLockSec],
-    gas: gas > gasLimit - 10_000n ? gasLimit : gas + 100_000n,
+    gas: send,
     chain,
     account: deployer.account!,
   });
@@ -115,7 +141,18 @@ export async function recoverAccount(owner: Address): Promise<Address | undefine
     toBlock: 'latest',
   });
   const last = logs[logs.length - 1];
-  return last ? getAddress((last.args as { clone: string }).clone) : undefined;
+  if (last) return getAddress((last.args as { clone: string }).clone);
+
+  /**
+   * No clone — but this owner may already hold an AccountBlox recorded in the deployment file, from before
+   * CopyBlox existed on this chain. On Sepolia that is exactly the case: the S1 FX till was deployed
+   * directly, and its owner is a player. Adopting it instead of cloning a duplicate is not a shortcut — it
+   * is the honest answer to "which account is this owner's on this chain", it is what `tillFor` already does
+   * for the FX desk (so Live's Main account and FX till stay the *same* contract), and on Sepolia it saves a
+   * 16.2 M-gas clone that a faucet has to pay for. Provisioning then upgrades that account in place, which is
+   * the same chain-reconciling path a U1-era account takes.
+   */
+  return d().fixtures.find((f) => f.owner.toLowerCase() === owner.toLowerCase())?.address;
 }
 
 /** Owner signs, broadcaster executes: the one meta-transaction shape every configuration change uses. */
@@ -341,11 +378,35 @@ function roleName(role: Hex): string {
   return role === OWNER_ROLE ? 'OWNER' : role === BROADCASTER_ROLE ? 'BROADCASTER' : role === BRANCH_MANAGER_ROLE ? 'BRANCH_MANAGER' : role;
 }
 
+/**
+ * Make sure the bank's practice till can cover `needed` display-units of demo dollars.
+ *
+ * On the lab chain the till was pre-minted a million dUSDC at bootstrap and this never fires. On the Live
+ * wing the practice token is the U5 Sepolia mock, whose `mint` is permissionless — so the till refills
+ * itself rather than draining Circle's faucet USDC, which is a **different token** and never the in-game
+ * balance (docs/SEPOLIA-LIVE.md §4.2). A mint that reverts is not fatal: the caller falls through to its own
+ * `FAUCET_EMPTY` / revert path, so a token that turns out not to be open-mint degrades to the old behaviour
+ * instead of pretending money exists.
+ */
+async function ensurePracticeTill(needed: bigint): Promise<Hex | undefined> {
+  if (!config.practiceTokenOpenMint) return undefined;
+  const { token } = d();
+  const held = (await publicClient.readContract({ address: token.address, abi: erc20Abi, functionName: 'balanceOf', args: [deployerAddress] })) as bigint;
+  if (held >= needed) return undefined;
+  // Mint a whole float, not the exact shortfall: one 52k-gas mint then serves many openings.
+  const float = needed * 20n > parseUnits(config.openingBalance, token.decimals) * 20n ? needed * 2n : parseUnits(config.openingBalance, token.decimals) * 20n;
+  const hash = await deployer.writeContract({ address: token.address, abi: mintableErc20Abi, functionName: 'mint', args: [deployerAddress, float - held], chain, account: deployer.account! });
+  const receipt = await publicClient.waitForTransactionReceipt({ hash });
+  if (receipt.status !== 'success') return undefined;
+  return hash;
+}
+
 /** Opening balance from the demo-token treasury — only when the account holds nothing yet. */
 export async function fundAccount(account: Address): Promise<Hex | undefined> {
   const { token } = d();
   const balance = (await publicClient.readContract({ address: token.address, abi: erc20Abi, functionName: 'balanceOf', args: [account] })) as bigint;
   if (balance > 0n) return undefined;
+  await ensurePracticeTill(parseUnits(config.openingBalance, token.decimals)).catch(() => undefined);
   const hash = await deployer.writeContract({
     address: token.address,
     abi: erc20Abi,
@@ -364,7 +425,10 @@ export async function fundAccount(account: Address): Promise<Hex | undefined> {
  * Ines's faucet action transfers only the missing delta from the deployer treasury.
  */
 export async function faucetAccount(account: Address): Promise<{ balance: string; symbol: string; targetBalance: string; toppedUp: boolean; amount?: string; hash?: Hex }> {
-  if (config.target !== 'remote') {
+  // Live (Sepolia) and Dev (Remote EVM) both have a mintable practice token whose treasury is the deployer, so
+  // Ines can top up on either. Arc's payment token is *native USDC* — real faucet money with no treasury of
+  // ours to draw on — so the faucet stays closed there and Ines says so (`FAUCET_OFF`).
+  if (config.target === 'arc') {
     throw Object.assign(new Error('the practice faucet is only available on the Main wing'), { statusCode: 400, code: 'FAUCET_OFF' });
   }
 
@@ -380,6 +444,7 @@ export async function faucetAccount(account: Address): Promise<{ balance: string
   }
 
   const delta = target - balance;
+  await ensurePracticeTill(delta).catch(() => undefined);
   const treasury = await balanceOf(deployerAddress);
   if (treasury < delta) {
     throw Object.assign(

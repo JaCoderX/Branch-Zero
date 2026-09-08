@@ -6,7 +6,14 @@ updated: 2026-09-06
 
 # Remote EVM
 
-Default execution chain for **development and lab kill tests**. Public testnets are for sponsor proofs and things a private chain cannot fake (ENSv2, Uniswap v4, Arc USDC-gas).
+> **Since 2026-09-08 this chain is Branch Zero's *Developer Mode*, not the product default.** The Live Main
+> payment wing is **Sepolia `11155111`** and it is what every player and judge gets
+> ([SEPOLIA-LIVE.md](./SEPOLIA-LIVE.md)). `1337` is reached only from the desk-debug **Live | Dev** toggle or
+> `?mode=dev`, served by a second Teller Desk (`npm run dev:teller:dev`, `:8788`, Vite `/dev-api`). It is
+> **never** exposed as public infra — no Tailscale share for judges — and it is neither Arc's `switchWing` nor
+> MockChain. Everything below still describes the chain itself and remains accurate.
+
+Execution chain for **development and lab kill tests**. Public testnets are for sponsor proofs and things a private chain cannot fake (ENSv2, Uniswap v4, Arc USDC-gas).
 
 Infra lives in **particle-tool-box**, not this repo. Do not vendor Nethermind here.
 
@@ -132,6 +139,7 @@ Demo USDC: deploy a **minimal mintable ERC-20 from a public well-known artifact 
 
 | Need | Chain |
 |------|--------|
+| **Anything a player or judge sees (the Live wing)** | **Sepolia** |
 | ENSv2 name | Sepolia |
 | Uniswap v4 | Sepolia |
 | Arc bounty / USDC-as-gas | Arc Testnet |

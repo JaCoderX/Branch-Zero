@@ -6,17 +6,50 @@ created: 2026-09-06
 updated: 2026-09-08
 product: Branch-Zero
 objective: OBJ-2026-0004
-first_mission: U7 ship packaging (docs/KICKOFF-U7-ship-package.md) — owed: the principal's polish re-playtest; U6 Arc G7 deferred — revive via docs/ARC.md §5b
-prior_mission: S1b FX validate MET 2026-09-08 — guards/roles landed on Sepolia and K7-a…f green (live swap 0xd98efc64…); Terminal Console + OBSERVER met; U7 polish met; practice faucet met; U5 ENS met
+first_mission: U7 ship packaging (docs/KICKOFF-U7-ship-package.md) — still gated on the principal's polish re-playtest; prefer Fable 5.1. U6 Arc G7 deferred
+prior_mission: Sepolia Live + Developer Mode MET 2026-09-08 — Live Main wing is Sepolia (CopyBlox 0x443ECf16…, account 0xf8EECc6B…, Lane A/B/Priority/faucet/OBSERVER/ENS/K7 on Etherscan); Remote EVM 1337 is Developer Mode behind the desk-debug toggle. Before it: S1b FX validate, Terminal Console + OBSERVER, U7 polish, practice faucet, U5 ENS
 ---
 
 # Handoff — Claude Code (Fable 5.1)
 
 You are a **cold agent** unless the human says you are continuing a prior session. Prefer reading this file over chat memory. You have **freedom on how**. You do **not** have freedom on constraints, scope, or protocol semantics.
 
+> **Sepolia Live + Developer Mode — MET 2026-09-08.** The Main payment wing is now **Sepolia `11155111`** and it
+> is the **default**: `CHAIN_ID` unset means Live, the shell's `/api` is the Live desk, and a player who never
+> touches the debug panel never sees the lab. Remote EVM `1337` survives as **Developer Mode** — a second desk
+> (`npm run dev:teller:dev`, `:8788`, Vite `/dev-api`), chosen from the desk-debug **Live | Dev** toggle or
+> `?mode=dev`. It is not Arc's `switchWing` and not MockChain. Read
+> [`docs/SEPOLIA-LIVE.md`](./SEPOLIA-LIVE.md) **§6.1 (evidence) and §6.3 (findings)** first; mission record **§5j**.
+> Bridge is **`s2.0`** (`setMode`, plus `mode` / `chainName` / `fxTillIsMain` on `getSession`); `s1.0` FX,
+> `u5.1` terminal, `u5.0` ENS and `u4.1` Priority are unchanged.
+>
+> Live evidence on Etherscan: CopyBlox `0x443ECf1678963D2E49B4B3Ed4f77Af5182DE824b`, a real `cloneBlox` account
+> [`0xf8EECc6B…A984`](https://sepolia.etherscan.io/address/0xf8EECc6B3e612811C697B5F006a89C975D5eA984),
+> Lane A `0x9e77e5b8…`, timed release `0xf729d387…`, **Priority 84 s early** `0xb2a202ca…`, faucet `0x1d9bee7f…`,
+> OBSERVER grant `0x36aea1e3…`, ENS pay-by-name `0x44bfdb21…`, and K7 re-run on the **unified** Live till
+> `0xd1d9cd8e…`. Every earlier suite is green on Sepolia, plus a new `killtests:s2` on both wings.
+>
+> Three findings you will meet again. **(1)** A public RPC's `eth_estimateGas` may return its own **gascap**
+> rather than a requirement — publicnode's is `0x1000000`, `cloneBlox` needs ~16.65 M, so the estimate arrives
+> *at* the cap and the usual `+100k` headroom makes the send fail `gas limit too high`. **(2)** Two lab-shaped
+> defaults cost real money on a public chain: `OWNER_GAS_ETH` 0.05 is a whole faucet drop per player (Live uses
+> 0.003), and `tickChain()`'s empty-block mine would have fired before every vault operation (now lab-only).
+> **(3)** On Sepolia the player already *had* an AccountBlox (the S1 FX till), so recovery now adopts a
+> deployment fixture whose owner matches instead of cloning a duplicate — which is what makes the Live Main
+> account and the FX till the same contract.
+>
+> **Named, not hidden:** the Live keys were funded by rebalancing the ENS registrar's ETH (principal-authorised),
+> not a fresh faucet drop — the deployer holds ~0.034 ETH, about one more account opening. A public demo needs a
+> real top-up first. And no human has driven **Live** through the browser end to end (OTP → consent → pay); the
+> desk paths are headless-proven and the toggle is browser-proven.
+
+**Authorized construction:** back to **U7 ship packaging** (below), still gated on the principal's re-playtest.
+Live Main = Sepolia (public default). Remote EVM `1337` = Developer Mode (desk debug only). ENS/FX stay Sepolia;
+FX requires a real Sepolia account. Do **not** share Remote EVM. Arc stays **DEFERRED**.
+
 **S1 / S1b Uniswap v4 FX Desk — MET 2026-09-08.** Spec: [`docs/UNISWAP.md`](./UNISWAP.md). Mission record: **§5i**.
-Arc stays **DEFERRED**; Uniswap is the activated **sponsor #3**. Official pitch: Privy + ENS + Uniswap.
-Next authorized construction is **U7 ship packaging** (below), still gated on the principal's polish re-playtest.
+Uniswap remains activated **sponsor #3**. Official pitch: Privy + ENS + Uniswap.
+**Also open:** U7 ship packaging (below), still gated on the principal's polish re-playtest.
 
 > **K7 is PASS.** The FX till `0xB5e8ab92…` completed a Uniswap v4 swap on Sepolia —
 > [`0xd98efc64…`](https://sepolia.etherscan.io/tx/0xd98efc64e579758b04aa338b2ec777536839b7e48908000e6c6a0b93e8f686b3),
@@ -149,14 +182,15 @@ Not: a wallet UI, DeFi protocol, Bloxchain fork, mainnet, Tactical-AI, GameLab m
 
 ## 2. Read order (before code)
 
-1. **This file** (§5i Uniswap **met** — K7 PASS; §5h Terminal **met**; packaging §6 is the open unit; U6 §5g deferred)
+1. **This file** (§5j Sepolia Live **met** — Live wing is Sepolia; §5i Uniswap **met** — K7 PASS; §5h Terminal **met**; packaging §6 is the open unit; U6 §5g deferred)
 2. [`docs/DEV-LOOP.md`](./DEV-LOOP.md) — U6 row; ENG-0006 **yes** (K3); U5 / G6 **met**
 3. [`docs/progress/2026-09-07-u5-ens-g6.md`](./progress/2026-09-07-u5-ens-g6.md) — Name Desk frozen; then
    [`…k6-yes.md`](./progress/2026-09-07-k6-yes.md) only if you need Sepolia address pins
 4. [`docs/ARC.md`](./ARC.md) + GameLab ENG-2026-0006
    [`handoff.md`](https://github.com/D9-Studio/GameLab/blob/main/work/ENG-2026-0006-accountblox-on-arc/handoff.md)
    — attach library fixtures; CopyBlox-style clone; never Ganache keys on Arc
-5. [`docs/REMOTE-EVM.md`](./REMOTE-EVM.md) — **do not wipe**; Main-wing payments stay on 1337
+5. [`docs/SEPOLIA-LIVE.md`](./SEPOLIA-LIVE.md) §1–2, §6.1, §6.3 — Live is Sepolia and is the default; Dev is 1337
+6. [`docs/REMOTE-EVM.md`](./REMOTE-EVM.md) — **do not wipe**; 1337 is now **Developer Mode**, never public infra
 6. [`docs/GAME-DESIGN.md`](./GAME-DESIGN.md) + [`docs/WORLD-3D-ENVIRONMENT.md`](./WORLD-3D-ENVIRONMENT.md) — Arc wing / elevator
 7. [`docs/GODOT.md`](./GODOT.md) §4–5 — bridge is **`u5.1`** (preserve the ENS `u5.0` and terminal methods); MockChain (§5a), canvas focus (§5b)
 8. [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) §1–3, §5–6 (§3.5 wing switch)
@@ -185,7 +219,7 @@ GitHub mirrors under `https://github.com/JaCoderX/Branch-Zero/blob/main/docs/…
 2. Derive behaviour from SDK types + public Bloxchain docs. Mark unknowns `VERIFY`.
 3. Godot 4.5 GDScript, web, **threads OFF**. No keys / no RPC in Godot. No `JavaScriptBridge.eval`.
 4. **One wallet modal** (Account Opening). Second modal = bug unless K2 client-side fallback is chosen and logged.
-5. **Remote EVM first** (`1337`, `http://127.0.0.1:8545`). **Do not** `docker compose down -v` or wipe volumes. Live block gas limit is **16,777,216** (measured in U1; the earlier "≈20M" is retracted) — design under it, and note `cloneBlox` already uses 99.2 % of a block.
+5. **Remote EVM is Developer Mode** (`1337`, `http://127.0.0.1:8545`) — the *Live* default is Sepolia. **Do not** `docker compose down -v` or wipe volumes, and never expose 1337 as public infra. Live block gas limit is **16,777,216** (measured in U1; the earlier "≈20M" is retracted) — design under it, and note `cloneBlox` already uses 99.2 % of a block.
 6. Keep existing `infra/deployments/remote-evm.json` AccountBlox as the **lab fixture**. New players: prefer **CopyBlox.cloneBlox** (protocol `npm run create-wallet` pattern) once CopyBlox is on-chain; if CopyBlox is not deployed yet, you may deploy **CopyBlox only** (no foundation wipe) or use the fixture owner for K2 — document which.
 7. Never use Ganache-parity keys on public nets. No secrets in git.
 8. Never merge GameLab ENG trees into this repo.
@@ -660,20 +694,87 @@ npm -w apps/teller-desk run killtests:s1 -- --amount 0.5
 
 ---
 
+## 5j. Mission S2 — Sepolia Live + Developer Mode — **MET 2026-09-08**
+
+Promote Sepolia to the **Live** Main payment wing (product default); keep Remote EVM `1337` as **Developer
+Mode** behind the desk-debug toggle. Plan + funding runbook: [`docs/SEPOLIA-LIVE.md`](./SEPOLIA-LIVE.md).
+Handoff: [`docs/HANDOFF-sepolia-live.md`](./HANDOFF-sepolia-live.md). Kickoff:
+[`docs/KICKOFF-sepolia-live.md`](./KICKOFF-sepolia-live.md). Evidence + findings: **SEPOLIA-LIVE §6.1 / §6.3**;
+local record `docs/progress/2026-09-08-s2-sepolia-live.md`.
+
+**Shape as built.** A Teller Desk pins its chain at boot, so Live/Dev is a choice of **desk**, never a chain
+swap inside one process: `CHAIN_ID` unset → Sepolia on `:8787` behind Vite `/api`; `--dev` → Remote EVM on
+`:8788` behind `/dev-api` (Arc moves to `:8789` / `/arc-api`, still DEFERRED). Keys are namespaced per wing
+(`SEPOLIA_*` vs the unprefixed lab slots) and both the desk and infra refuse a Ganache-parity key by **derived
+address**. The player index was already per chain, so the same Privy user holds a different Main account in each
+mode with no bleed — checked by `killtests:s2` S2-2 from both sides.
+
+### Freedom envelope (as used)
+
+- Proxy names: kept Arc's shape — `/api` (Live) + `/dev-api` (Dev), Arc rehomed to `:8789`
+- Dev selected by a `--dev` **argv flag** rather than an env var, so both desks start from `package.json` on
+  cmd.exe and neither can inherit the other's `PORT`
+- Live **unifies** the FX till with the Main account (`fxTillIsMain`); Dev keeps them apart, because a 1337
+  account cannot be a Sepolia till
+- Bridge version `s2.0`; the Live | Dev toggle is the desk-debug panel's primary control and works **before**
+  sign-in (it reads the desk's public `/healthz`), because choosing a wing precedes Account Opening
+
+### Out of scope (held)
+
+Arc revive; ship packaging; exposing Remote EVM; migrating the practice token to Circle USDC; Privy Global
+Wallet / bloxchain.app SaaS; GameLab ENG trees; custom Solidity.
+
+### Definition of Done — met
+
+- [x] **Live: the whole Main wing on Sepolia**, with Etherscan evidence — a real `cloneBlox` account
+      [`0xf8EECc6B…A984`](https://sepolia.etherscan.io/address/0xf8EECc6B3e612811C697B5F006a89C975D5eA984)
+      (CopyBlox `0x443ECf16…`, bootstrapped this unit), K2 / K5, Lane A `0x9e77e5b8…`, wire + timed release
+      `0xf729d387…` with an early approve refused `BeforeReleaseTime`, recall `0x1399fdb4…`, **Priority 84 s
+      early** `0xb2a202ca…`, practice faucet `0x1d9bee7f…`, OBSERVER grant/revoke `0x36aea1e3…` /
+      `0xdd6b0c8c…` (9/9, zero function permissions), ENS pay-by-name `0x44bfdb21…`
+- [x] **Dev: the toggle really reaches 1337** — `/dev-api` desk green, `killtests:s2 -- --dev` 6/6, and the
+      toggle driven in the browser (`LIVE · Sepolia · 11155111` ⇄ `DEVELOPER MODE · Remote EVM · 1337`)
+- [x] **ENS and FX stay Sepolia on both wings.** Live pay-by-name resolves on Sepolia and pays on Sepolia;
+      FX requires a live Sepolia AccountBlox owned by the player (`FX_TILL_NOT_SEPOLIA`, refused before
+      anything is signed — S2-4) and says "Sepolia only" in bank words (`FX_SEPOLIA_ONLY`, `{fx_chain_note}`)
+- [x] **Live Main == FX till**, proven by re-running K7 on it: the account the counter pays from executed the
+      Uniswap v4 swap [`0xd1d9cd8e…`](https://sepolia.etherscan.io/tx/0xd1d9cd8eaac73cdc52eb5e6ce8327c868e91ee8c08e22d37d864e93391feadd6);
+      wrong door still `TargetNotWhitelisted`. K7-a…f green
+- [x] **Live is the default** and the board never lies: `mode` / `chainName` / `explorer` on `/healthz` and
+      `/session`, `GameState.chain_label()` feeds `{chain}` into the ledger board, passbook, greeter, Petra and
+      the terminal. The hard-coded "Remote EVM 1337" string is gone
+- [x] **No regressions.** `killtests`, `killtests:u2`, `killtests:u4plus`, `killtests:observer`, `smoke:faucet`,
+      `killtests:u5`, `killtests:s1` all green **on Sepolia**; Godot `run_checks`, `run_mock_walk`,
+      `run_fx_walk`, `run_faucet_walk`, `run_viz_budget` all PASS on a 4.5.2 host — which also closes U5's
+      long-standing "`run_checks.gd` owed on a Godot host" item. `npm run typecheck` clean
+- [x] Progress note + REFLECTION row; SEPOLIA-LIVE §6 ticked; this file's mission pointer moved on
+
+### Owed by a human
+
+- A **real faucet top-up** before any public demo: the Live keys were funded by rebalancing the ENS registrar's
+  ETH (authorised in session), and the deployer is left with ~0.034 ETH ≈ one more Account Opening.
+- The **browser walk on Live** (Privy OTP → consent → pay), as was owed on 1337. Desk paths are headless-proven.
+- Still outstanding from S1: the [Uniswap hackathon feedback form](https://developers.uniswap.org/hackathon-feedback).
+
+---
+
 ## 6. After U5 / with U6 deferred
 
 | Next | Gate |
 |------|------|
-| **Uniswap v4 FX Desk (S1/S1b)** | K7 — **met** 2026-09-08 (§5i; live swap `0xd98efc64…`); owed: the sponsor feedback form |
+| **Sepolia Live + Developer Mode (S2)** | **met** 2026-09-08 (§5j; Live wing on Sepolia, Dev = 1337 toggle) |
+| **Uniswap v4 FX Desk (S1/S1b)** | K7 — **met** 2026-09-08 (§5i; live swap `0xd98efc64…`, re-run on the Live till `0xd1d9cd8e…`); owed: the sponsor feedback form |
 | **Terminal Console + OBSERVER** | Stretch — **met** 2026-09-08 (§5h; local `docs/progress/2026-09-08-terminal-observer.md`) |
 | U7 polish | Principal playtest — **met** 2026-09-07 ([`KICKOFF-U7-polish.md`](./KICKOFF-U7-polish.md); owed: principal re-playtest) |
 | **U7 ship packaging** | G8–G10 — **open** after re-playtest ([`KICKOFF-U7-ship-package.md`](./KICKOFF-U7-ship-package.md)) |
 | U6 Arc + manager role | G7 — **deferred** (revive ARC.md §5b) |
 
 **Now:** staged art Stage 1–5 **met**; ship reel **met**; polish **met** (code); practice faucet **met**;
-Terminal/OBSERVER stretch **met**; **Uniswap S1/S1b met** (K7 PASS on Sepolia). Do not reopen Arc funding; elevator
-refuses with coming-soon. Packaging waits on the principal's re-walk of the ten findings. The one thing owed to a
-sponsor is the Uniswap feedback form — it is a prize requirement, not paperwork.
+Terminal/OBSERVER stretch **met**; **Uniswap S1/S1b met** (K7 PASS on Sepolia); **Sepolia Live met** — the
+product default is now the public testnet and outside players need nothing of ours to play. Do not reopen Arc
+funding; elevator refuses with coming-soon. Packaging waits on the principal's re-walk of the ten findings. The
+one thing owed to a sponsor is the Uniswap feedback form — it is a prize requirement, not paperwork. Before a
+hosted demo, top up the Live Sepolia keys (SEPOLIA-LIVE §4) — they are on rebalanced change, not a fresh drop.
 
 Cut order unchanged: Uniswap → Manager → Arc → ENS EAC → ENS mint. **Never cut Privy or Lane B.**
 

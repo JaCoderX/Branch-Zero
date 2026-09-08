@@ -26,6 +26,11 @@ This is not "a swap UI"; it is "swaps as a permissioned treasury operation."
 
 **Reset:** v4 only · Sepolia for FX · no custom SwapHelper · no new Privy modal · K7 = live Sepolia evidence.
 
+**S2 (2026-09-08):** FX is Sepolia on **both** wings and now refuses a till that is not a live Sepolia
+`AccountBlox` owned by the player (`FX_TILL_NOT_SEPOLIA`, one `eth_call` before anything is signed); the bank
+says "Sepolia only" in words (`FX_SEPOLIA_ONLY`, `{fx_chain_note}`). K7 re-run on the unified Live till:
+[`0xd1d9cd8e…`](https://sepolia.etherscan.io/tx/0xd1d9cd8eaac73cdc52eb5e6ce8327c868e91ee8c08e22d37d864e93391feadd6).
+
 ---
 
 ## 2. Contracts (Sepolia — pinned 2026-09-08 from the [deployments page](https://developers.uniswap.org/contracts/v4/deployments))
@@ -43,7 +48,7 @@ Recorded in [`infra/deployments/sepolia.json`](../infra/deployments/sepolia.json
 | Demo pool | `USDC(demo) / WETH`, fee 0.30 %, tick spacing 60, no hook | id `0xfd32332c7bc1c1ab4b2cd2971b6e1eef513d610457504b8a19745413b678581f` |
 | — pool `currency0` | the U5 Sepolia mock USDC, 6 decimals, open `mint` | `0xD3322B29a7BdEe707D1684676f149bf41Aa3422f` |
 | — pool `currency1` | Sepolia WETH9 (the one the Uniswap deployments use) | `0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14` |
-| **FX till** | the player's `AccountBlox` on Sepolia — the account that trades | `0xB5e8ab92467663F50c6Ba237Cb062cE6Bf66B2Af` |
+| **FX till** | the player's `AccountBlox` on Sepolia — the account that trades. **Since S2 (2026-09-08) this is the player's Live Main account itself** (`fxTillIsMain`): the Live wing is Sepolia, so Kenji trades out of the account the counter pays from. In Developer Mode it stays a separate Sepolia account, because a 1337 account cannot be a Sepolia till. | `0xB5e8ab92467663F50c6Ba237Cb062cE6Bf66B2Af` |
 
 The pool did not exist, so we created and seeded it: `npm -w infra run fx:pool`
 ([`infra/scripts/uniswap-pool.ts`](../infra/scripts/uniswap-pool.ts)) initialises it at 1 ETH = 2,000 practice dollars

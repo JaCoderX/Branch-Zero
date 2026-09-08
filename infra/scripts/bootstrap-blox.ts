@@ -10,6 +10,7 @@
  *
  *   BLOXCHAIN_PROTOCOL_DIR="D:/My Git Projects/ParticleCS/Bloxchain-protocol" npm run chain:bootstrap -- --chain remote
  *   BLOXCHAIN_PROTOCOL_DIR="D:/My Git Projects/ParticleCS/Bloxchain-protocol" npm run chain:bootstrap -- --chain arc
+ *   BLOXCHAIN_PROTOCOL_DIR="D:/My Git Projects/ParticleCS/Bloxchain-protocol" npm run chain:bootstrap -- --chain sepolia
  *
  * Idempotent: contracts already recorded in the deployments file (and still carrying code) are skipped.
  * Never wipes anything. Refuses to send a transaction whose estimate does not fit the live block gas limit.
@@ -19,7 +20,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { encodeDeployData, formatEther, getAddress, parseUnits, type Abi, type Address, type Hex } from 'viem';
 import { ARC_USDC_ADDRESS, type ChainTarget } from '@branch-zero/shared';
-import { connect, deployerWallet, targetFromArg } from './lib/chain.ts';
+import { connect, deployerWallet, deploymentsFile as deploymentsFileFor, targetFromArg } from './lib/chain.ts';
 import { loadEnv, env, DEPLOYMENTS_DIR } from './lib/env.ts';
 
 loadEnv();
@@ -66,7 +67,7 @@ async function main() {
   const protocolDir = env('BLOXCHAIN_PROTOCOL_DIR');
   const { chain, publicClient, clientVersion } = await connect(target);
   const { account: deployer, walletClient } = deployerWallet(chain, target);
-  const deploymentsFile = path.join(DEPLOYMENTS_DIR, target === 'arc' ? 'arc-testnet.json' : 'remote-evm.json');
+  const deploymentsFile = path.join(DEPLOYMENTS_DIR, deploymentsFileFor(target));
 
   const block = await publicClient.getBlock();
   const gasCeiling = block.gasLimit;
@@ -122,7 +123,18 @@ async function main() {
   const copyBlox = await deployOnce('CopyBlox', file.applications, copyBloxSrc, [], { EngineBlox: engineBlox });
 
   let paymentToken: Address;
-  if (target === 'arc') {
+  if (target === 'sepolia') {
+    // The Live wing's practice dollars are the open-mint demo USDC already pinned in sepolia.json (U5 / S1:
+    // Kenji quotes it against WETH and the FX pool's currency0 is this token). Deploying a second "demo USDC"
+    // here would silently fork the practice balance away from the FX pool, so this branch only verifies.
+    // Circle's faucet USDC is a *different* token and is never the in-game balance (docs/SEPOLIA-LIVE.md §4.2).
+    const recorded = file.tokens.demoUsdc?.address as string | undefined;
+    if (!recorded) throw new Error('sepolia.json has no tokens.demoUsdc — the practice token must be pinned before bootstrap (docs/SEPOLIA-LIVE.md §4.2)');
+    paymentToken = getAddress(recorded);
+    const code = await publicClient.getCode({ address: paymentToken });
+    if (!code || code === '0x') throw new Error(`practice token ${paymentToken} has no code on chain ${chain.id}`);
+    console.log(`demoUsdc: reusing the pinned open-mint practice token ${paymentToken} — not redeploying`);
+  } else if (target === 'arc') {
     // Arc's native USDC also exposes this ERC-20-compatible interface. Never deploy a fake token on Arc.
     paymentToken = getAddress(ARC_USDC_ADDRESS);
     file.tokens.usdc = {
@@ -154,7 +166,7 @@ async function main() {
   fs.writeFileSync(deploymentsFile, `${JSON.stringify(file, null, 2)}\n`);
   console.log(`\nwrote ${path.relative(process.cwd(), deploymentsFile)}`);
   console.log(`  CopyBlox   ${copyBlox}  (clone implementation: ${accountBloxImpl})`);
-  console.log(`  payment   ${paymentToken}${target === 'remote' ? `  (treasury: ${deployer.address})` : '  (Arc native USDC)'}`);
+  console.log(`  payment   ${paymentToken}${target === 'remote' ? `  (treasury: ${deployer.address})` : target === 'sepolia' ? '  (open-mint practice USDC, pinned)' : '  (Arc native USDC)'}`);
 }
 
 main().catch((e) => {

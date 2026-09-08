@@ -1,7 +1,7 @@
 {
   "chainId": 11155111,
   "chainName": "Sepolia",
-  "updatedAt": "2026-09-08T00:04:25.321Z",
+  "updatedAt": "2026-09-08T10:28:25.754Z",
   "parentName": "branchzero.eth",
   "parentLabel": "branchzero",
   "registrar": "0xc4d7cCabc561c7D9360481404DA8A80886a49277",
@@ -56,6 +56,12 @@
       "url": "https://raw.githubusercontent.com/PracticalParticle/Bloxchain-Protocol/99beac2d6e6d7567c23b25cecaf6f4053f31c987/contracts/examples/templates/AccountBlox.sol",
       "commit": "99beac2d6e6d7567c23b25cecaf6f4053f31c987",
       "sha256": "a1c2d7c19f59969fb4bf717b15146121a1c68ddc7d802412e0cc023cddbd74c1"
+    },
+    "protocolArtifacts": {
+      "CopyBlox": {
+        "path": "artifacts/contracts/examples/applications/CopyBlox/CopyBlox.sol/CopyBlox.json",
+        "sha256": "1168f8f6ee4a5061b5c499cba0b9bb1cd0ded6a7ee22f3c58076900539f8bb54"
+      }
     }
   },
   "accounts": [
@@ -109,6 +115,16 @@
       "lp": "0xDD46DA5d8d27817b78989FdA1C686724CFEBFB63",
       "initTx": "0x8f87fcbb976b65707b500d1c05db256b73037d0ea580cc54fd928201355892a8",
       "seedTx": "0x1fe38f2267eb32228a8c39752fa67e2fdcb3f18f667e99ef321380643ad1d712"
+    }
+  },
+  "applications": {
+    "CopyBlox": {
+      "address": "0x443ECf1678963D2E49B4B3Ed4f77Af5182DE824b",
+      "txHash": "0x16c76a9a4159cb3292b7c899d7093eadf2624a01f5ac542212ab96ee203bbb06",
+      "deployedAtBlock": 11660508,
+      "role": "wallet factory (cloneBlox) - new player accounts",
+      "cloneImplementation": "0xB5e8ab92467663F50c6Ba237Cb062cE6Bf66B2Af",
+      "note": "Clones the U0 AccountBlox fixture: Clones.clone copies runtime code only, so the clone starts uninitialised."
     }
   }
 }

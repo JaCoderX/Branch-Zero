@@ -12,7 +12,8 @@
  *             routes that already exist (`/session`, `/status`); U3 added no chain semantics.
  * U4+ method: priority (Okafor's desk) — the one call allowed to open a second Privy surface: the player's own
  *             signer signs the meta-approve bypass behind a Passkey, the Branch Manager submits it before the clock.
- * U5 methods: ensAvailable / ensMint / ensSetText / resolveName — ENSv2 identity on Sepolia; payments remain 1337.
+ * U5 methods: ensAvailable / ensMint / ensSetText / resolveName — ENSv2 identity on Sepolia, on either wing.
+ * S2 method:  setMode ('live' | 'dev') — which Teller Desk, and so which payment chain, the bank runs against.
  *             `approve` is owner-only from here (Bob's wait path); `as: 'manager'` is refused by the desk.
  * Terminal Console (stretch): openConsole (asks the shell for the terminal overlay — an iframe of bloxchain.app, or
  *             a top-level tab if the Console ever refuses framing) and observerGrant / observerRevoke / observerList
@@ -24,18 +25,20 @@
  */
 import { createPublicClient, http, type Address } from 'viem';
 import { SecureOwnable } from '@bloxchain/sdk';
-import { ARC_TESTNET_CHAIN_ID, REMOTE_EVM_CHAIN_ID, remoteEvmWithRpc, type BranchZeroBridge, type BridgeError, type BridgeMessage, type BridgeResponse, type DeskSession, type StageEvent } from '@branch-zero/shared';
+import { ARC_TESTNET_CHAIN_ID, REMOTE_EVM_CHAIN_ID, SEPOLIA_CHAIN_ID, remoteEvmWithRpc, type BranchZeroBridge, type BridgeError, type BridgeMessage, type BridgeResponse, type DeskSession, type StageEvent } from '@branch-zero/shared';
 import deployments from '../../../../infra/deployments/remote-evm.json';
 import type { DeskLink } from '../shell/deskEvents';
 import { focusCanvas } from '../shell/focus';
 
 /**
- * `s1.0`: Kenji's FX desk — `fxStatus` / `fxEnable` / `fxQuote` / `fxSwap` over the Teller Desk's `/fx/*` routes.
- * `u5.1` (Terminal Console `openConsole` + `observer*`), `u5.0` (ENS Name Desk) and `u4.1` (`priority`, Okafor's hand
- * scan) are unchanged and must stay that way: the FX desk adds no Privy surface — the swap is signed by the same
- * silent session signer that stamps counter slips, only on a Sepolia account instead of the Main wing's.
+ * `s2.0`: Sepolia Live — `setMode` picks the payment wing (`live` = Sepolia, the default; `dev` = Remote EVM
+ * 1337, Developer Mode) and `getSession` now carries `mode` / `chainName` / `fxTillIsMain` so the board and the
+ * passbook name the chain they are actually on. Everything before it is unchanged and must stay that way:
+ * `s1.0` (Kenji's FX desk — `fxStatus` / `fxEnable` / `fxQuote` / `fxSwap`), `u5.1` (Terminal Console
+ * `openConsole` + `observer*`), `u5.0` (ENS Name Desk) and `u4.1` (`priority`, Okafor's hand scan). `setMode`
+ * opens no Privy surface — the one consent already on the player's wallet covers both desks.
  */
-export const BRIDGE_VERSION = 's1.0';
+export const BRIDGE_VERSION = 's2.0';
 
 /**
  * Where the bank computer points. `/accounts` is the Console screen that matters: it is where the player imports
@@ -71,6 +74,12 @@ export interface WalletAdapter {
   revoke(): Promise<void>;
   /** U6: change only the active payment wing; the existing Privy consent is reused. */
   switchWing(chainId: number): Promise<DeskSessionSource>;
+  /**
+   * Sepolia Live: re-point the shell at the Live or Dev Teller Desk. Not a wing switch, not MockChain.
+   * Resolves to `undefined` when nobody is signed in — the wing is still chosen, there is just no session
+   * to rebind yet, which is the normal state for an operator picking a desk before Account Opening.
+   */
+  switchMode(mode: 'live' | 'dev'): Promise<DeskSessionSource | undefined>;
   /** U4+: prepare → Passkey + user-signer typed data (UI shown) → submit. The only second Privy surface. */
   priority(txId: string): Promise<unknown>;
   call<T>(path: string, body?: unknown): Promise<T>;
@@ -87,6 +96,9 @@ export interface DeskSessionSource {
   signingMode: string;
   delegated: boolean;
   chainId?: number;
+  mode?: 'live' | 'dev' | 'arc';
+  chainName?: string;
+  fxTillIsMain?: boolean;
   timeLockSec?: number;
   instantLimit?: string;
   manager?: string | null;
@@ -245,6 +257,31 @@ const handlers: Record<string, Handler> = {
     }
     const s = await requireAdapter().switchWing(chainId);
     return { wing: chainId === ARC_TESTNET_CHAIN_ID ? 'arc' : 'main', chainId, account: s.account, owner: s.owner };
+  },
+
+  // --- Sepolia Live: the payment wing's mode. Operator surface (desk debug / `?mode=dev`), not a lobby door. ---
+  /**
+   * Live | Dev. Live is Sepolia and the default for every normal player; Dev is the private Remote EVM lab and
+   * exists so an operator can iterate quickly. Switching re-points the shell at the other Teller Desk and
+   * re-reads `/session` from it, because the player's Main account differs per chain.
+   */
+  async setMode(args) {
+    const mode = String(args.mode ?? '').toLowerCase();
+    if (mode !== 'live' && mode !== 'dev') {
+      throw bridgeError('BAD_ARGS', `unsupported mode ${args.mode}`, 'The branch runs in Live or Developer Mode.');
+    }
+    const s = await requireAdapter().switchMode(mode);
+    // No session yet is a real answer, not a failure: say which wing is now selected and leave the account
+    // fields null rather than inventing them. Godot's board reads `chainId` either way.
+    return {
+      mode: s?.mode ?? mode,
+      chainId: s?.chainId ?? (mode === 'dev' ? REMOTE_EVM_CHAIN_ID : SEPOLIA_CHAIN_ID),
+      chainName: s?.chainName ?? null,
+      account: s?.account ?? null,
+      owner: s?.owner ?? null,
+      fxTillIsMain: s?.fxTillIsMain ?? null,
+      loggedIn: Boolean(s),
+    };
   },
 
   // --- U5: Petra's ENSv2 Name Desk (Sepolia only) ---
@@ -420,6 +457,9 @@ const handlers: Record<string, Handler> = {
       delegated: s.delegated,
       signingMode: s.signingMode as DeskSession['signingMode'],
       chainId: s.chainId,
+      mode: s.mode,
+      chainName: s.chainName,
+      fxTillIsMain: s.fxTillIsMain,
       timeLockSec: s.timeLockSec,
       instantLimit: s.instantLimit,
       manager: s.manager ?? null,

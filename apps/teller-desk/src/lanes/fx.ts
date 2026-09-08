@@ -63,6 +63,7 @@ import {
   RuntimeRBAC,
   RUNTIME_RBAC_FUNCTION_SELECTORS as RB_SEL,
   RUNTIME_RBAC_OPERATION_TYPES as RB_OP,
+  SecureOwnable,
   TxAction,
   createBitmapFromActions,
   encodeAddFunctionToRole,
@@ -390,13 +391,58 @@ async function metaTxDuration(): Promise<bigint> {
 // ---------------------------------------------------------------- the till (the player's Sepolia AccountBlox)
 
 /**
- * Which Sepolia AccountBlox is this player's. Order of trust: the player record; an infra fixture whose owner is the
+ * FX only works on Sepolia, and only through an account that is really *there*.
+ *
+ * The whole FX story is "a swap executed by a governed account", so the till has to be a live AccountBlox on
+ * Sepolia whose owner is this player — not an address a stale record remembers, and above all not the player's
+ * Main account from another chain. A 1337 account address will usually have **no code** on Sepolia, and if some
+ * unrelated contract happens to sit there, `owner()` will not be the player. One `eth_call` settles it, and the
+ * refusal is a bank line (`FX_TILL_NOT_SEPOLIA`) rather than a revert three meta-transactions later.
+ */
+async function assertSepoliaTill(till: Address, owner: Address): Promise<Address> {
+  const { publicClient, chain } = fxClients();
+  const code = await readFx(() => publicClient.getCode({ address: till }));
+  if (!code || code === '0x') {
+    throw fxError('FX_TILL_NOT_SEPOLIA', `${till} has no contract on ${chain.name} (${chain.id}) — the FX desk only trades through a Sepolia AccountBlox`, 400);
+  }
+  /**
+   * `getCode` just answered, so the RPC is demonstrably reachable — which means a failing `owner()` here is a
+   * fact about the *contract*, not the network, and must not be reported as `FX_RPC` ("Kenji can't reach the
+   * exchange floor"). A contract with no `owner()` is simply not an AccountBlox: that is the same refusal as
+   * an account owned by someone else, and the player deserves the same honest line.
+   */
+  let onChainOwner: string;
+  try {
+    onChainOwner = await new SecureOwnable(publicClient as never, undefined, till, chain).owner();
+  } catch (e) {
+    throw fxError('FX_TILL_NOT_SEPOLIA', `${till} on ${chain.name} does not answer owner() — it is not an AccountBlox (${(e as Error).message.split('\n')[0]})`, 400);
+  }
+  if (onChainOwner.toLowerCase() !== owner.toLowerCase()) {
+    throw fxError('FX_TILL_NOT_SEPOLIA', `${till} on ${chain.name} is owned by ${onChainOwner}, not by ${owner}`, 400);
+  }
+  return getAddress(till);
+}
+
+/**
+ * Which Sepolia AccountBlox is this player's. Order of trust: Live's Main account; the player record; an infra fixture whose owner is the
  * player's Privy wallet (the rig's till); a CopyBlox clone found by `BloxCloned` log; a fresh clone if CopyBlox is on
  * Sepolia and the FX deployer is funded. Otherwise the till is honestly closed (`FX_TILL_CLOSED`) — the operator's
  * continuation is in docs/UNISWAP.md §5.
  */
 export async function tillFor(player: Player, open = false, jobId?: string): Promise<Address> {
-  if (player.fxAccount) return player.fxAccount;
+  /**
+   * Live: the till **is** the Main account. On the Live wing the player's AccountBlox is already a Sepolia
+   * contract, so Kenji trades out of the same account the counter pays from — one balance to fund, one guard
+   * list to read, and the FX door is registered on the account the player can see in their passbook
+   * (docs/SEPOLIA-LIVE.md §1). Dev cannot do this: a 1337 account and a Sepolia till are different contracts
+   * on different chains, so Developer Mode keeps them apart.
+   */
+  if (config.fxTillIsMain && player.account) {
+    const main = await assertSepoliaTill(player.account, player.ownerAddress);
+    if (player.fxAccount?.toLowerCase() !== main.toLowerCase()) patchPlayer(player.privyUserId, { fxAccount: main });
+    return main;
+  }
+  if (player.fxAccount) return assertSepoliaTill(player.fxAccount, player.ownerAddress);
   const d = fxDeployment();
   const fixture = d.fixtures.find((f) => f.owner.toLowerCase() === player.ownerAddress.toLowerCase());
   if (fixture) {

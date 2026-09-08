@@ -1,5 +1,10 @@
 # ENSv2 Integration — The Name Desk
 
+> **S2 (2026-09-08):** ENS is Sepolia-only and unchanged, on **both** payment wings. On the Live wing (Sepolia)
+> pay-by-name now resolves *and* pays on Sepolia — proven by
+> [`0x44bfdb21…`](https://sepolia.etherscan.io/tx/0x44bfdb2163a5d4a97e1cf8737646eadf1a0454658bd105276f1019fafa767640);
+> in Developer Mode it still resolves on Sepolia and pays on `1337`. See [SEPOLIA-LIVE.md](./SEPOLIA-LIVE.md).
+
 > Names are not decoration here. Your bank name *is* your account pointer, your passbook fields *are* text records, and what staff may edit *is* Enhanced Access Control.
 
 Related: [GAME-DESIGN.md](./GAME-DESIGN.md) § 5.4 · [NPCS.md](./NPCS.md) § 4.6 · [ARCHITECTURE.md](./ARCHITECTURE.md) § 3.4

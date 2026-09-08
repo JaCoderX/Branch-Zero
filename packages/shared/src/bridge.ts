@@ -168,6 +168,16 @@ export interface DeskSession {
   delegated?: boolean;
   signingMode?: SigningMode;
   chainId?: number;
+  /**
+   * Which payment wing answered: `live` (Sepolia, the product default) or `dev` (Remote EVM 1337, Developer
+   * Mode). The board and the passbook label the chain from this and `chainId` — never from a constant, so a
+   * Live player is never told they are on 1337 (docs/SEPOLIA-LIVE.md §6).
+   */
+  mode?: 'live' | 'dev' | 'arc';
+  /** Display name of the active payment chain, straight from the desk (`Sepolia`, `Remote EVM`, …). */
+  chainName?: string;
+  /** Live: Kenji trades out of the Main account itself. Dev: the FX till is a separate Sepolia account. */
+  fxTillIsMain?: boolean;
   timeLockSec?: number;
   instantLimit?: string;
   /** Branch Manager address when the Teller Desk has one; enables the shredder and (U4+) the Priority desk. */

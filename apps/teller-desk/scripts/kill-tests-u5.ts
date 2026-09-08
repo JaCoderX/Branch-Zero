@@ -3,7 +3,8 @@
  *
  * This deliberately stays outside MockChain. It claims a fresh customer label on ENSv2 Sepolia through the
  * product `ensMint` path, resolves it through the pinned Universal Resolver, then gives that address to the
- * existing Remote EVM 1337 Lane A `pay` path. The second claim must be refused as NAME_TAKEN.
+ * existing Lane A `pay` path on whichever wing the desk is pinned to — ENS is a Sepolia side-module in both
+ * Live and Developer Mode, and only answers "which address". The second claim must be refused as NAME_TAKEN.
  *
  *   npm -w apps/teller-desk run killtests:u5
  *   npm -w apps/teller-desk run killtests:u5 -- --fresh
@@ -112,7 +113,7 @@ async function main(): Promise<void> {
     const paid = await pay(player, getAddress(resolved.address) as Address, '1', 'kt-u5-pay-by-name');
     const receipt = await publicClient.getTransactionReceipt({ hash: paid.hash });
     const ok = receipt.status === 'success' && paid.to.toLowerCase() === resolved.address.toLowerCase();
-    record('G6-pay-by-name', ok ? 'PASS' : 'FAIL', `resolved address was handed to Lane A on Remote EVM 1337: ${paid.hash} → ${paid.to}`);
+    record('G6-pay-by-name', ok ? 'PASS' : 'FAIL', `resolved address was handed to Lane A on ${chain.name} ${chain.id}: ${paid.hash} → ${paid.to}`);
   } catch (e) {
     record('G6-pay-by-name', 'FAIL', `${errorCode(e)}: ${(e as Error).message.slice(0, 220)}`);
   }

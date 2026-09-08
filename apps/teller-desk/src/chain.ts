@@ -1,9 +1,25 @@
-import { createPublicClient, createWalletClient, http, type Address, type Chain, type PublicClient, type WalletClient } from 'viem';
+import { createPublicClient, createWalletClient, defineChain, http, parseGwei, type Address, type Chain, type PublicClient, type WalletClient } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { ARC_TESTNET_CHAIN_ID, REMOTE_EVM_CHAIN_ID, arcTestnetWithRpc, isGanacheParityAddress, remoteEvmWithRpc } from '@branch-zero/shared';
+import { ARC_TESTNET_CHAIN_ID, REMOTE_EVM_CHAIN_ID, SEPOLIA_CHAIN_ID, arcTestnetWithRpc, isGanacheParityAddress, remoteEvmWithRpc, sepoliaWithRpc } from '@branch-zero/shared';
 import { config } from './config.ts';
 
-export const chain: Chain = config.chainId === ARC_TESTNET_CHAIN_ID ? arcTestnetWithRpc(config.rpcUrl) : remoteEvmWithRpc(config.rpcUrl);
+/**
+ * The Live wing runs on faucet money, so it does not bid like a mainnet.
+ *
+ * viem's default priority fee on Sepolia is ~1.5 gwei, and this wing's largest transaction is `cloneBlox` at
+ * 16.78 M gas — a tip that size costs 0.025 ETH per account opened, half a day's faucet drop, purely to
+ * outbid an empty mempool. Sepolia's base fee sits near 1 gwei and blocks are not full, so 0.05 gwei is ample
+ * (`lanes/fx.ts` reached the same conclusion at 0.02 for its swaps). viem still pays `1.2 × base + tip`, so
+ * this lowers the bid without risking a stuck transaction.
+ */
+const SEPOLIA_PRIORITY_FEE = parseGwei('0.05');
+
+export const chain: Chain =
+  config.chainId === ARC_TESTNET_CHAIN_ID
+    ? arcTestnetWithRpc(config.rpcUrl)
+    : config.chainId === SEPOLIA_CHAIN_ID
+      ? defineChain({ ...sepoliaWithRpc(config.rpcUrl), fees: { defaultPriorityFee: SEPOLIA_PRIORITY_FEE } })
+      : remoteEvmWithRpc(config.rpcUrl);
 
 /** Fail closed if an operator points the service at the wrong network. */
 const chainProbe = createPublicClient({ transport: http(config.rpcUrl) });
@@ -80,9 +96,15 @@ const TICK_STALENESS_SEC = 2n;
  * So before a vault operation we mine one empty block by sending the broadcaster a 0-value self-transfer
  * (21,000 gas of dev ETH). Simulation and estimation then see the current time, and the contract remains the
  * only thing deciding whether the clock has run down — an early approval is still refused, now for the right
- * reason. On a chain that mines on a schedule this is a no-op: the staleness check simply never fires.
+ * reason.
+ *
+ * **Lab chain only.** A public network mines on a schedule, so its head is at most a block-time behind and
+ * nothing here is needed — but the staleness check would still fire (Sepolia blocks are ~12 s apart, the
+ * threshold is 2 s) and we would pay real gas for an empty self-transfer before every single vault
+ * operation. On Live the honest answer is to send nothing and let the next scheduled block carry the time.
  */
 export async function tickChain(): Promise<boolean> {
+  if (chain.id !== REMOTE_EVM_CHAIN_ID) return false;
   const latest = await chainNow();
   const now = BigInt(Math.floor(Date.now() / 1000));
   if (now <= latest + TICK_STALENESS_SEC) return false;

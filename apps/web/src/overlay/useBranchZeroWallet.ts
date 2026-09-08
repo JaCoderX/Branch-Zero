@@ -26,7 +26,7 @@ import {
   useSignTypedData,
   useWallets,
 } from '@privy-io/react-auth';
-import { ARC_TESTNET_CHAIN_ID, REMOTE_EVM_CHAIN_ID, type PriorityTypedData, type SigningMode } from '@branch-zero/shared';
+import { ARC_TESTNET_CHAIN_ID, REMOTE_EVM_CHAIN_ID, SEPOLIA_CHAIN_ID, type PriorityTypedData, type SigningMode } from '@branch-zero/shared';
 
 export interface Session {
   privyUserId: string;
@@ -40,6 +40,11 @@ export interface Session {
   /** U2 (V6): how the owner's `eth_signTransaction` rules are scoped, and whether they name the account yet. */
   txPolicy?: { mode: 'calldata' | 'to-only'; pinnedToAccount: boolean; rules: number } | null;
   chainId: number;
+  /** Which desk answered. Read back from the server rather than trusted from local state. */
+  mode?: DeskMode | 'arc';
+  chainName?: string;
+  /** Live trades FX out of the Main account itself; Dev keeps a separate Sepolia till. */
+  fxTillIsMain?: boolean;
   token: { address: string; symbol: string; decimals: number };
   timeLockSec?: number;
   instantLimit?: string;
@@ -76,9 +81,38 @@ export interface PriorityResult {
   mfaPrompted: boolean;
 }
 
-const MAIN_TELLER = import.meta.env.VITE_TELLER_DESK_URL || '/api';
+/**
+ * Which payment wing the player is standing in. **Live is the product default** — a normal player and a judge
+ * both land on Sepolia and never see the private lab (docs/SEPOLIA-LIVE.md §1).
+ *
+ * `dev` is Developer Mode: the same bank against Remote EVM `1337`, reachable from the desk-debug toggle or by
+ * launching the shell with `?mode=dev`. It is *not* Arc's `switchWing` (a different wing of the same product,
+ * still DEFERRED) and *not* MockChain (`?mock=`, canned offline data). The three are independent.
+ */
+export type DeskMode = 'live' | 'dev';
+
+/** One proxy per Teller Desk process — a desk pins its chain at boot, so choosing a mode chooses a desk. */
+const LIVE_TELLER = import.meta.env.VITE_TELLER_DESK_URL || '/api';
+const DEV_TELLER = import.meta.env.VITE_DEV_TELLER_DESK_URL || '/dev-api';
 const ARC_TELLER = import.meta.env.VITE_ARC_TELLER_DESK_URL || '/arc-api';
-const tellerFor = (chainId: number) => (chainId === ARC_TESTNET_CHAIN_ID ? ARC_TELLER : MAIN_TELLER);
+
+export const chainIdForMode = (mode: DeskMode): number => (mode === 'dev' ? REMOTE_EVM_CHAIN_ID : SEPOLIA_CHAIN_ID);
+export const modeForChainId = (chainId: number): DeskMode => (chainId === REMOTE_EVM_CHAIN_ID ? 'dev' : 'live');
+
+const tellerFor = (chainId: number) =>
+  chainId === ARC_TESTNET_CHAIN_ID ? ARC_TELLER : chainId === REMOTE_EVM_CHAIN_ID ? DEV_TELLER : LIVE_TELLER;
+
+/**
+ * Live unless the operator asked for Dev. Only an explicit `?mode=dev` opts out, so an omitted, empty or
+ * misspelled value is Live — the default has to be the safe, public one (docs/SEPOLIA-LIVE.md §6).
+ */
+function initialMode(): DeskMode {
+  try {
+    return new URLSearchParams(location.search).get('mode') === 'dev' ? 'dev' : 'live';
+  } catch {
+    return 'live';
+  }
+}
 
 export function useBranchZeroWallet() {
   const { ready, authenticated, getAccessToken, user } = usePrivy();
@@ -100,7 +134,14 @@ export function useBranchZeroWallet() {
   const { addSessionSigners, removeSessionSigners } = useSessionSigners();
 
   const [session, setSession] = useState<Session | undefined>();
-  const [activeChainId, setActiveChainId] = useState(REMOTE_EVM_CHAIN_ID);
+  /**
+   * What the selected desk says about itself, from the unauthenticated `/healthz`. The Live | Dev choice is an
+   * operator decision that comes *before* signing in, so the panel must be able to name the wing (and prove the
+   * desk is reachable) with no Privy session at all. After sign-in `/session` is the authority and this is just
+   * the fallback label.
+   */
+  const [desk, setDesk] = useState<{ mode?: string; chainName?: string; chainId?: number; explorer?: string | null; reachable: boolean } | undefined>();
+  const [activeChainId, setActiveChainId] = useState(() => chainIdForMode(initialMode()));
   const [busy, setBusy] = useState<string | undefined>();
   const [error, setError] = useState<string | undefined>();
 
@@ -169,10 +210,62 @@ export function useBranchZeroWallet() {
     }
   }, [ensureWallet, call]);
 
+  /**
+   * Live | Dev — the payment wing the whole bank runs against.
+   *
+   * This re-points the browser at the *other Teller Desk*: nothing switches chain inside a desk, and the
+   * player's single Privy consent is reused, because the consent is on their wallet and the per-mode policy
+   * rules are app-owned. A player may well hold a different Main account in each mode (the accounts are on
+   * different chains and cannot be the same contract), so `/session` on the target desk is the authority for
+   * which account, balance and roleSet apply — never a local guess.
+   *
+   * ENS stays on Sepolia in both modes and FX writes stay on Sepolia in both modes; only the payment wing moves.
+   */
+  /** Read the selected desk's public `/healthz`. No token, so this also works before sign-in. */
+  const probeDesk = useCallback(async (chainId: number) => {
+    try {
+      const res = await fetch(`${tellerFor(chainId)}/healthz`);
+      const j = (await res.json()) as { ok?: boolean; mode?: string; chainName?: string; explorer?: string | null; chains?: Record<string, { chainId?: number }> };
+      setDesk({ mode: j.mode, chainName: j.chainName, chainId: Object.values(j.chains ?? {})[0]?.chainId, explorer: j.explorer ?? null, reachable: Boolean(j.ok) });
+    } catch {
+      setDesk({ reachable: false });
+    }
+  }, []);
+
+  const switchMode = useCallback(
+    async (mode: DeskMode): Promise<Session | undefined> => {
+      const chainId = chainIdForMode(mode);
+      setBusy(mode === 'dev' ? 'Switching to Developer Mode (Remote EVM 1337)…' : 'Switching to the live branch (Sepolia)…');
+      try {
+        setActiveChainId(chainId);
+        await probeDesk(chainId);
+        // Nobody is signed in yet: the wing is chosen, and there is no session to rebind. The Dev desk being
+        // down is a normal state for an operator (Remote EVM not running) and must not read as an error.
+        if (!authenticated) {
+          setSession(undefined);
+          return undefined;
+        }
+        const owner = session?.owner ?? embedded?.address ?? (await ensureWallet());
+        const s = await callOnChain<Session>(chainId, '/session', {}, owner);
+        setSession(s);
+        return s;
+      } finally {
+        setBusy(undefined);
+      }
+    },
+    [authenticated, session?.owner, embedded?.address, ensureWallet, callOnChain, probeDesk],
+  );
+
+  /** Name the wing as soon as the panel mounts, and again whenever the mode changes. */
+  useEffect(() => {
+    void probeDesk(activeChainId);
+  }, [activeChainId, probeDesk]);
+
   /** Switch only the payment wing. ENS stays on Sepolia and the user's single Privy consent is reused. */
   const switchWing = useCallback(
     async (chainId: number): Promise<Session> => {
-      if (chainId !== REMOTE_EVM_CHAIN_ID && chainId !== ARC_TESTNET_CHAIN_ID) throw new Error(`unsupported wing chain ${chainId}`);
+      // U6 Arc stays DEFERRED; "Main" is whichever chain the active mode runs on (Live Sepolia / Dev 1337).
+      if (chainId !== REMOTE_EVM_CHAIN_ID && chainId !== SEPOLIA_CHAIN_ID && chainId !== ARC_TESTNET_CHAIN_ID) throw new Error(`unsupported wing chain ${chainId}`);
       const owner = session?.owner ?? embedded?.address ?? (await ensureWallet());
       setBusy(chainId === ARC_TESTNET_CHAIN_ID ? 'Taking the elevator to Arc…' : 'Taking the elevator to Main…');
       try {
@@ -333,7 +426,11 @@ export function useBranchZeroWallet() {
     callOnChain,
     activeChainId,
     activeWing: activeChainId === ARC_TESTNET_CHAIN_ID ? 'arc' : 'main',
+    /** Live | Dev. Derived from the active desk, so a failed switch cannot leave the label lying. */
+    mode: modeForChainId(activeChainId),
+    desk,
     tellerBase: tellerFor(activeChainId),
+    switchMode,
     switchWing,
     getAccessToken,
   };

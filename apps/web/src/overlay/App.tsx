@@ -4,7 +4,7 @@ import { connectDeskEvents, type DeskLink } from '../shell/deskEvents';
 import { focusCanvas } from '../shell/focus';
 import { Terminal } from './Terminal';
 import { useBranchZeroWallet } from './useBranchZeroWallet';
-import { ARC_TESTNET_CHAIN_ID, REMOTE_EVM_CHAIN_ID, type PendingWire } from '@branch-zero/shared';
+import { ARC_TESTNET_CHAIN_ID, type PendingWire } from '@branch-zero/shared';
 
 interface Line {
   t: string;
@@ -79,6 +79,7 @@ export function App({ engineState }: { engineState: string }) {
       delegate: () => latest.current.delegate(),
       revoke: () => latest.current.revoke(),
       switchWing: (chainId) => latest.current.switchWing(chainId),
+      switchMode: (mode) => latest.current.switchMode(mode),
       priority: (txId) => latest.current.priority(txId),
       call: (path, body) => latest.current.call(path, body),
       isAuthenticated: () => latest.current.authenticated,
@@ -182,6 +183,7 @@ export function App({ engineState }: { engineState: string }) {
 
   const s = w.session;
   const delegated = Boolean(s?.delegated);
+  const live = w.mode === 'live';
   const now = Math.floor(Date.now() / 1000) + clockOffset;
 
   const terminal = console_ ? (
@@ -231,6 +233,46 @@ export function App({ engineState }: { engineState: string }) {
         </span>
       </div>
 
+          {/*
+        The primary control of this panel: which payment wing the whole bank runs against.
+        Live (Sepolia) is what every normal player and every judge gets. Dev (Remote EVM 1337) is the
+        operator's lab and is only reachable from here or with `?mode=dev`. This is NOT the Arc elevator
+        (still deferred, below) and NOT MockChain — see docs/SEPOLIA-LIVE.md §1.
+      */}
+      <div style={row}>
+        <span style={label}>mode</span>
+        <span style={{ color: live ? '#7ee787' : '#e3b341' }}>
+          {live ? 'LIVE · public testnet' : 'DEVELOPER MODE · private lab'}
+          {' · '}
+          {s?.chainName ?? w.desk?.chainName ?? (live ? 'Sepolia' : 'Remote EVM')} · {s?.chainId ?? w.desk?.chainId ?? w.activeChainId}
+          {!live && ' · operator only, never shared'}
+        </span>
+      </div>
+      {w.desk && !w.desk.reachable && (
+        <div style={{ color: '#ff7b72', marginBottom: 4 }}>
+          {live
+            ? 'the Live desk is not answering — start it with `npm run dev:teller`'
+            : 'the Dev desk is not answering — Developer Mode needs Remote EVM up and `npm run dev:teller:dev`; Live is unaffected'}
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', margin: '6px 0', alignItems: 'center' }}>
+        <button
+          style={{ ...btn, borderColor: live ? '#7ee787' : '#2a3140', fontWeight: live ? 700 : 400 }}
+          title="Sepolia 11155111 — the product default. Provision, pay, wire, Priority, faucet and OBSERVER all on the public testnet."
+          onClick={() => run('Switching to the live branch…', () => w.switchMode('live'))}
+        >
+          Live (Sepolia)
+        </button>
+        <button
+          style={{ ...btn, borderColor: !live ? '#e3b341' : '#2a3140', fontWeight: !live ? 700 : 400 }}
+          title="Remote EVM 1337 — Developer Mode. Private lab chain, fast iteration, never exposed as public infra."
+          onClick={() => run('Switching to Developer Mode…', () => w.switchMode('dev'))}
+        >
+          Dev (1337)
+        </button>
+        <span style={{ color: '#556' }}>desk {w.tellerBase}</span>
+      </div>
+
       {!w.ready && <div style={{ color: '#9aa4b2' }}>loading Privy…</div>}
 
       {w.ready && !w.authenticated && (
@@ -248,19 +290,20 @@ export function App({ engineState }: { engineState: string }) {
             <span style={label}>owner</span>
             <code style={{ color: '#8ab4f8' }}>{s?.owner ?? w.embedded?.address ?? '—'}</code>
           </div>
+          {/* U6 Arc stays DEFERRED: the control is visible so the shape is honest, and refuses like the elevator. */}
           <div style={row}>
             <span style={label}>wing</span>
             <span style={{ color: w.activeWing === 'arc' ? '#7ee787' : '#8ab4f8' }}>
-              {w.activeWing === 'arc' ? 'Arc Testnet · 5042002 · native USDC gas' : 'Main wing · Remote EVM · 1337'}
+              {w.activeWing === 'arc' ? 'Arc Testnet · 5042002 · native USDC gas' : 'Main wing'}
+              <button
+                style={{ ...btn, padding: '1px 8px', marginLeft: 8, opacity: 0.5, cursor: 'not-allowed' }}
+                disabled
+                title="ARC floor — coming soon. U6 is deferred (docs/ARC.md §5b); Dev/Live is not the Arc elevator."
+                onClick={() => run('Taking the elevator to Arc…', () => w.switchWing(ARC_TESTNET_CHAIN_ID))}
+              >
+                Arc wing — coming soon
+              </button>
             </span>
-          </div>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', margin: '6px 0' }}>
-            <button style={{ ...btn, borderColor: w.activeWing === 'main' ? '#8ab4f8' : '#2a3140' }} onClick={() => run('Taking the elevator to Main…', () => w.switchWing(REMOTE_EVM_CHAIN_ID))}>
-              Main wing
-            </button>
-            <button style={{ ...btn, borderColor: w.activeWing === 'arc' ? '#7ee787' : '#2a3140' }} onClick={() => run('Taking the elevator to Arc…', () => w.switchWing(ARC_TESTNET_CHAIN_ID))}>
-              Arc wing
-            </button>
           </div>
           <div style={row}>
             <span style={label}>account</span>
@@ -282,6 +325,22 @@ export function App({ engineState }: { engineState: string }) {
                 {` · roleSet ${s.roleSet ?? '?'}/${s.roleSetWanted ?? '?'}`}
                 {w.mfaEnrolled ? ' · MFA enrolled' : ' · no MFA enrolled (sign sheet only)'}
               </span>
+            </div>
+          )}
+          {s?.account && (
+            <div style={row}>
+              <span style={label}>FX till</span>
+              <span style={{ color: '#9aa4b2' }}>
+                {/* FX writes are Sepolia in both modes; Live's till is the Main account itself. */}
+                {s.fxTillIsMain ? 'the Main account above — one balance, one guard list' : 'a separate Sepolia account (Developer Mode: Main is on the lab chain)'}
+                {' · Sepolia only'}
+              </span>
+            </div>
+          )}
+          {s?.account && (
+            <div style={row}>
+              <span style={label}>ENS</span>
+              <span style={{ color: s.ensName ? '#7ee787' : '#667' }}>{s.ensName ? `${s.ensName} · Sepolia` : 'no name claimed · Petra mints on Sepolia'}</span>
             </div>
           )}
           {passbook && (

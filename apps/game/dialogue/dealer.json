@@ -26,11 +26,11 @@
       ]
     },
     "why_desk_closed": {
-      "text": "The FX desk trades on Sepolia, a different chain from the one your payments and wires use. When that side isn't configured or won't answer, I close the board rather than quote you a price I can't honour.",
+      "text": "{fx_chain_note} When that side isn't configured or won't answer, I close the board rather than quote you a price I can't honour.",
       "choices": [ { "text": "OK.", "next": "end" } ]
     },
     "no_till": {
-      "text": "You've no till on the exchange floor yet. I can open one — same account pattern as your current account, just on the other chain.",
+      "text": "You've no till on the exchange floor yet. I can open one — {fx_till_note}.",
       "choices": [
         { "text": "Open my FX till", "action": "fx_enable", "working": "Opening your till and registering the exchange door…", "on_ok": "opened", "on_error": "refused" },
         { "text": "Ask why", "next": "why_till" },
@@ -38,7 +38,7 @@
       ]
     },
     "why_till": {
-      "text": "Your FX till is a second account contract of your own, on the chain the exchange lives on. Same owner, same tellers, same rules — it just keeps trading money and counter money in separate books.",
+      "text": "Your FX till is {fx_till_note}. Same owner, same tellers, same rules — and either way the exchange itself is on Sepolia, because that is where the pool is.",
       "choices": [ { "text": "OK.", "next": "end" } ]
     },
     "closed_door": {

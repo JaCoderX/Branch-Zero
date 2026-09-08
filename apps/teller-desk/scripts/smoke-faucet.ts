@@ -1,5 +1,6 @@
 /**
- * Live Main-wing practice-faucet smoke against Remote EVM 1337.
+ * Main-wing practice-faucet smoke. Runs on whichever wing the desk is pinned to — Live (Sepolia) or
+ * Developer Mode (Remote EVM 1337); the Arc wing has no practice till and is refused.
  *
  *   npm -w apps/teller-desk run smoke:faucet
  *
@@ -48,7 +49,9 @@ async function balanceOf(account: Address): Promise<bigint> {
 }
 
 async function main() {
-  if (config.target !== 'remote') throw new Error(`expected Main wing; got target=${config.target}`);
+  // Arc's payment token is real native USDC with no treasury of ours, so there is no faucet to smoke there.
+  if (config.target === 'arc') throw new Error(`the practice faucet is a Main-wing desk; got target=${config.target}`);
+  console.log(`wing ${config.target} · mode ${config.mode} · chain ${config.chainId}`);
   const { token } = deployments();
   const opening = parseUnits(config.openingBalance, token.decimals);
   let player = await rigPlayer();

@@ -12,7 +12,8 @@
     "arc:kill": "tsx scripts/arc-kill.ts",
     "typecheck": "tsc -p tsconfig.json",
     "bootstrap": "tsx scripts/bootstrap-blox.ts",
-    "fx:pool": "tsx scripts/uniswap-pool.ts"
+    "fx:pool": "tsx scripts/uniswap-pool.ts",
+    "funding:sepolia": "tsx scripts/sepolia-funding.ts"
   },
   "dependencies": {
     "@bloxchain/sdk": "1.0.0",

@@ -26,3 +26,11 @@ export const erc20Abi = parseAbi([
   'function symbol() view returns (string)',
   'function name() view returns (string)',
 ]);
+
+/**
+ * The practice-dollar mint. Only the *demo* tokens carry it, and only where it is permissionless: the U5
+ * Sepolia mock USDC (`0xD332…422f`, 6 decimals) lets anyone mint, which is how the Live wing's bank till
+ * refills itself without touching Circle's faucet USDC (docs/SEPOLIA-LIVE.md §4.2). Never assume a real
+ * token exposes this — Arc's native USDC does not, which is why the faucet stays closed there.
+ */
+export const mintableErc20Abi = parseAbi(['function mint(address to, uint256 amount)']);

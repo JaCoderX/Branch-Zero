@@ -17,6 +17,9 @@ Related: [ARCHITECTURE.md](./ARCHITECTURE.md) · [PRIVY.md](./PRIVY.md) § 4 (po
 | **Recovery key** | Cold — env only on the operator laptop, not on the server | `RECOVERY_ROLE` on every account | `transferOwnershipRequest` (time-locked) | execute without the timelock |
 | **Bank ENS key** | Teller Desk env (`ENS_REGISTRAR_PK`) | owner of `branchzero.eth` on Sepolia | mint subnames, set records under EAC roles | touch player accounts |
 
+Every key above exists once **per wing** (§ 4.1): the Live desk reads `SEPOLIA_*`, the Dev desk reads the
+unprefixed lab slots. Nobody holds two of the roles, and no key holds the same role on two chains.
+
 Separation is the demo: the Manager approves, the Teller broadcasts, the Security Officer recovers, the Registrar names. Nobody holds two of those.
 
 ---
@@ -49,27 +52,62 @@ Full JSON lives in `infra/privy/policy.json` and is shown in-game on the Manager
 
 | Env | Where | Chains | Keys |
 |-----|-------|--------|------|
-| `local` | laptop; **Remote EVM** (`1337`) default; Anvil fork optional | Remote EVM + optional Sepolia / Arc RPCs | Remote EVM uses Ganache-parity keys **only on 1337**. Separate throwaway keys for Sepolia/Arc in `.env.local` |
-| `demo` | single VPS or Fly.io machine for Teller Desk; static host for web | Sepolia + Arc Testnet | dedicated keys, funded from faucets, rotated after the event |
+| `local` | laptop; **Live (Sepolia)** is the default desk, **Dev (Remote EVM `1337`)** runs beside it | Sepolia + Remote EVM | Ganache-parity keys **only on 1337**; separate `SEPOLIA_*` throwaways for Live |
+| `demo` | single VPS or Fly.io machine for the **Live desk only**; static host for web | Sepolia | dedicated keys, funded from faucets, rotated after the event. **Never run or expose the Dev desk here** — Remote EVM is private lab infra (docs/SEPOLIA-LIVE.md §4.6) |
 
-`.env.example` (Teller Desk):
+### 4.1 Per-wing key namespaces (Sepolia Live, 2026-09-08)
+
+One Teller Desk process serves one payment wing, pinned at boot, and **keys never cross networks**. The env
+prefix is the boundary: unprefixed = Remote EVM `1337` (Ganache-parity, public knowledge), `SEPOLIA_` = the
+Live wing, `ARC_` = the deferred Arc wing. `config.ts` reads only its own wing's prefix, and both `chain.ts`
+and `infra/scripts/lib/chain.ts` re-check the **derived address** against the Ganache-parity list and refuse
+to sign if a lab key turns up on a public chain — a comment is not a control.
+
+| Role | Live (Sepolia) | Dev (Remote EVM 1337) | Needs gas? |
+|------|----------------|------------------------|-----------|
+| Deployer — clones accounts, mints/holds practice dollars, tops owner gas | `SEPOLIA_DEPLOYER_PK` | `DEPLOYER_PK` (acct 0) | **Yes** — `cloneBlox` ~16.2 M gas |
+| Broadcaster — submits owner-signed meta-txs, pays their gas | `SEPOLIA_BROADCASTER_PK` | `BROADCASTER_PK` (acct 1) | **Yes** |
+| Branch Manager — Priority submit / recall | `SEPOLIA_MANAGER_PK` | `MANAGER_PK` (acct 3) | Yes (small) |
+| Recovery — address only, cold | `SEPOLIA_RECOVERY_ADDRESS` | `RECOVERY_ADDRESS` (acct 2) | No — never hot-fund |
+| ENS registrar — Sepolia in **both** modes | `ENS_REGISTRAR_PK` | same key (ENS is never on 1337) | Yes (small) |
+| FX teller — Sepolia in **both** modes | `SEPOLIA_BROADCASTER_PK` / `SEPOLIA_DEPLOYER_PK` | same keys | Yes |
+
+`npm -w infra run funding:sepolia` prints every configured Sepolia address, what it pays for, what it holds
+and what is short, and **fails** rather than warns if a Ganache-parity key is sitting in a `SEPOLIA_*` slot.
+Funding runbook and faucet limits: [SEPOLIA-LIVE.md](./SEPOLIA-LIVE.md) § 4.
+
+`.env.example` (Teller Desk) — names only, see the file for the full annotated list:
 
 ```
-PORT=8787
-REMOTE_EVM_RPC_URL=http://127.0.0.1:8545
+# Live is the default: CHAIN_ID unset -> 11155111. The Dev desk is started with `--dev`.
+CHAIN_ID=11155111
+PORT=8787                     # Live  -> Vite /api
+DEV_PORT=8788                 # Dev   -> Vite /dev-api   (npm run dev:teller:dev)
+ARC_PORT=8789                 # Arc   -> Vite /arc-api   (DEFERRED)
 SEPOLIA_RPC_URL=
+REMOTE_EVM_RPC_URL=http://127.0.0.1:8545
 ARC_RPC_URL=
+MAX_TX_GAS=16777216           # 2^24 — the RPC gascap public providers use; cloneBlox needs ~16.65M
+SEPOLIA_DEPLOYER_PK=          # Live wing throwaways — never Ganache-parity keys
+SEPOLIA_BROADCASTER_PK=
+SEPOLIA_MANAGER_PK=
+SEPOLIA_RECOVERY_ADDRESS=
+DEPLOYER_PK=                  # Remote EVM (1337) lab keys only
 BROADCASTER_PK=
-DEPLOYER_PK=
-ENS_REGISTRAR_PK=
+MANAGER_PK=
+RECOVERY_ADDRESS=
+ENS_REGISTRAR_PK=             # Sepolia, both modes
+OWNER_GAS_ETH=0.05            # lab: free dev ETH
+SEPOLIA_OWNER_GAS_ETH=0.003   # Live: a wire + a release is <0.0015 ETH; 0.05 would be a day's faucet drop
 PRIVY_APP_ID=
 PRIVY_APP_SECRET=
 PRIVY_AUTHORIZATION_KEY=      # P-256 private key, PEM, base64
+PRIVY_SIGNER_ID=
 PRIVY_POLICY_ID=
-DEFINITIONS_SEPOLIA_JSON=infra/deployments/sepolia.json
-DEFINITIONS_ARC_JSON=infra/deployments/arc-testnet.json
-DEMO_USDC_SEPOLIA=
 ALLOWED_ORIGINS=https://branchzero.app,http://localhost:5173
+VITE_TELLER_DESK_URL=/api
+VITE_DEV_TELLER_DESK_URL=/dev-api
+VITE_ARC_TELLER_DESK_URL=/arc-api
 ```
 
 Rules: `.env*` git-ignored; secrets only via host env or Fly secrets; `git secrets`/`gitleaks` pre-commit hook; never print keys in logs; addresses (not keys) checked into `infra/deployments/*.json`.

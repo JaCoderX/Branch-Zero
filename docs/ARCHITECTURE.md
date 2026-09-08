@@ -33,8 +33,8 @@ flowchart TB
   end
 
   subgraph Chains["Chains"]
-    DEV[("Remote EVM 1337<br/>dev / lab — default")]
-    SEP[("Sepolia<br/>AccountBlox · demo USDC · ENSv2 · Uniswap v4")]
+    SEP[("Sepolia 11155111<br/>LIVE — AccountBlox · practice USDC · ENSv2 · Uniswap v4")]
+    DEV[("Remote EVM 1337<br/>Developer Mode — private lab")]
     ARC[("Arc Testnet 5042002<br/>AccountBlox · native USDC")]
   end
 
@@ -230,6 +230,20 @@ sequenceDiagram
 
 `resolve_name("bob.branchzero.eth")` → viem `getEnsAddress({ name, universalResolverAddress: '0x85ed…b92cf' })` on Sepolia (**pin ENSv2 UR V2** from ENG-0007; default/legacy proxy returns null for native children) → address → Lane A. Display name of a payee: viem `getEnsName` (reverse) with forward check enforced on-chain by ENSv2's Universal Resolver.
 
+### 3.4a Live | Dev — the payment wing's mode (S2)
+
+`setMode('live'|'dev')` re-points the shell at the **other Teller Desk**. A desk pins its chain at boot, so
+this is never a chain swap inside one process: `/api` is the Live desk (Sepolia `11155111`, the default) and
+`/dev-api` is the Developer Mode desk (Remote EVM `1337`, operator only). The player's single Privy consent is
+reused — it lives on their wallet, and the per-mode policy *rules* are app-owned — but `/session` on the target
+desk is the authority for which account, balance and `roleSet` apply, because a player holds a **different**
+Main account in each mode (different chains, different contracts; the player index is per chain).
+
+ENS is Sepolia in both modes, and FX writes are Sepolia in both modes. On Live the FX till *is* the Main
+account; in Dev it is a separate Sepolia account, because a 1337 account cannot be a Sepolia till. This is
+distinct from § 3.5's Arc wing switch (DEFERRED) and from MockChain (`?mock=`, canned offline data).
+See [SEPOLIA-LIVE.md](./SEPOLIA-LIVE.md) § 1–2.
+
 ### 3.5 Wing switch (T2)
 
 `switch_wing("arc")` → bridge swaps `PublicClient` + account address from `players.accounts[5042002]`; Teller Desk uses a broadcaster funded with faucet USDC on Arc; same lanes. If the player has no Arc account yet, the Clerk in the Arc wing provisions one (same provisioner, chainId param).
@@ -276,6 +290,8 @@ interface BranchZero {
 
   // account
   provision(chainId: number): Promise<{ account: string; timelockSec: number }>;
+  /** S2: which payment wing — 'live' (Sepolia, default) or 'dev' (Remote EVM 1337, operator only). */
+  setMode(mode: 'live'|'dev'): Promise<{ mode: string; chainId: number; chainName: string|null; account: string|null }>;
   getPassbook(): Promise<{ owner: string; ensName?: string; chainId: number; account?: string;
                           balance: string; pending: number }>;
   switchWing(chainId: number): Promise<{ chainId: number; account?: string }>;

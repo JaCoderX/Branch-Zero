@@ -118,16 +118,49 @@ func owner() -> String:
 	return str(session.get("owner", ""))
 
 
+const SEPOLIA_CHAIN_ID := 11155111   ## Live — the public payment chain (product default)
+const DEV_CHAIN_ID := 1337           ## Developer Mode — the private Remote EVM lab, never published
+const ARC_CHAIN_ID := 5042002        ## U6 Arc wing — DEFERRED
+
+
 func active_chain_id() -> int:
-	return int(session.get("chainId", 1337))
+	return int(session.get("chainId", SEPOLIA_CHAIN_ID))
 
 
 func active_wing() -> String:
-	return "arc" if active_chain_id() == 5042002 else "main"
+	return "arc" if active_chain_id() == ARC_CHAIN_ID else "main"
+
+
+## Live (Sepolia, the product default) or Developer Mode (Remote EVM 1337, operator only). The desk tells us
+## which one answered; we never assume, because a Live player must never be shown a lab chain
+## (docs/SEPOLIA-LIVE.md §6). Arc keeps its own label and stays deferred.
+func mode() -> String:
+	var m := str(session.get("mode", ""))
+	if m != "":
+		return m
+	return "dev" if active_chain_id() == DEV_CHAIN_ID else "live"
+
+
+## What the board, the passbook and the NPCs call the chain the money is actually on.
+func chain_label() -> String:
+	if Chain.use_mock:
+		return "MockChain"
+	var named := str(session.get("chainName", ""))
+	var id := active_chain_id()
+	if id == ARC_CHAIN_ID:
+		return "Arc Testnet 5042002"
+	if id == DEV_CHAIN_ID:
+		return "%s %d (Developer Mode)" % [named if named != "" else "Remote EVM", id]
+	return "%s %d" % [named if named != "" else "Sepolia", id]
 
 
 func switch_wing(chain_id: int) -> Dictionary:
 	return await run_action("switch_wing", {"chainId": chain_id})
+
+
+## Live | Developer Mode. Operator path (desk debug / `?mode=dev`); see docs/SEPOLIA-LIVE.md §1.
+func set_mode(target: String) -> Dictionary:
+	return await run_action("set_mode", {"mode": target})
 
 
 func instant_limit() -> float:
@@ -227,6 +260,8 @@ func facts() -> Dictionary:
 		"mock": Chain.use_mock,
 		"web": Chain.is_web,
 		"arc": active_wing() == "arc",
+		"live": mode() == "live",
+		"dev_mode": mode() == "dev",
 	}
 
 
@@ -245,7 +280,13 @@ func vars(extra: Dictionary = {}) -> Dictionary:
 		"cooling": str(cooling_count()),
 		"release_in": fmt_duration(soonest_remaining()),
 		"wing": active_wing(),
-		"chain": ("Arc Testnet 5042002" if active_wing() == "arc" else "Remote EVM 1337") if not Chain.use_mock else "MockChain",
+		"chain": chain_label(),
+		"mode": mode(),
+		"mode_label": "Developer Mode" if mode() == "dev" else "Live",
+		# FX is Sepolia in both modes. What differs is whether the till is the account Ines opened (Live) or a
+		# second account on another chain (Dev) — Kenji says whichever is true rather than one line for both.
+		"fx_till_note": ("a second account of your own on Sepolia, where the exchange lives — separate books from your counter money" if mode() == "dev" else "the very account Ines opened for you: the exchange lives on this same chain, so there is one balance and one guard list"),
+		"fx_chain_note": ("Currency exchange is on Sepolia only — that is where the pool is. Your payments and wires are on the development chain in this mode." if mode() == "dev" else "Currency exchange is on Sepolia only — the same chain your payments and wires already use."),
 		"manager_name": "Mr. Okafor",
 		"priority_copy": str(strings.get("priority_copy", "Skip the cooling period — hand scan required.")),
 		"ens_name": ens_name() if has_ens_name() else "no name yet",
@@ -411,11 +452,21 @@ func run_action(action: String, args: Dictionary = {}) -> Dictionary:
 		"logout":
 			r = await Chain.call_async("logout", {}, 30.0)
 		"switch_wing":
-			var target_chain := int(args.get("chainId", 1337))
-			if target_chain != 1337 and target_chain != 5042002:
-				r = {"ok": false, "error": {"code": "BAD_ARGS", "message": "the elevator only serves Main 1337 and Arc 5042002"}}
+			# The elevator: Main wing (whichever chain the current mode runs on) or Arc. Arc is DEFERRED and the
+			# lobby refuses it with "ARC floor — coming soon" before it ever reaches here.
+			var target_chain := int(args.get("chainId", active_chain_id()))
+			if target_chain != SEPOLIA_CHAIN_ID and target_chain != DEV_CHAIN_ID and target_chain != ARC_CHAIN_ID:
+				r = {"ok": false, "error": {"code": "BAD_ARGS", "message": "the elevator only serves the Main wing and Arc %d" % ARC_CHAIN_ID}}
 			else:
 				r = await Chain.call_async("switchWing", {"chainId": target_chain}, 60.0)
+		"set_mode":
+			# Live | Developer Mode. Operator surface only (desk debug or `?mode=dev`): no NPC offers it, so no
+			# dialogue action reaches this branch in normal play. It re-points the shell at the other Teller Desk.
+			var target_mode := str(args.get("mode", "live")).to_lower()
+			if target_mode != "live" and target_mode != "dev":
+				r = {"ok": false, "error": {"code": "BAD_ARGS", "message": "the branch runs in Live or Developer Mode"}}
+			else:
+				r = await Chain.call_async("setMode", {"mode": target_mode}, 90.0)
 		"provision":
 			r = await Chain.call_async("provision", {}, 300.0)         # clone + config batches + funding
 		"faucet":

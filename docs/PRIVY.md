@@ -56,6 +56,9 @@ domain, so K2 ran on Remote EVM without touching Sepolia. Two live facts worth k
 3. Enable **Server-side access** (signers) and **Require signed requests**; generate the authorization key → `PRIVY_AUTHORIZATION_KEY`. Record signer / key-quorum ID → `VITE_PRIVY_SIGNER_ID`.
 4. Create policies (§ 4). Domain name = **`Bloxchain`**. Record policy ID → `PRIVY_POLICY_ID`.
 5. Chains: Sepolia (`11155111`); try custom **Remote EVM `1337`** for local K2 — if refused, K2 on Sepolia.
+   **S2 (2026-09-08):** the overlay's `PrivyProvider` declares `supportedChains: [sepolia, remoteEvm, arcTestnet]`
+   with `defaultChain: sepolia`, because Live (Sepolia) is the product default. A chain missing from that list is
+   a signing failure on that wing.
 6. Fill local `.env` / Vite env (never commit secrets). Wrap overlay in `PrivyProvider`.
 
 ---
@@ -103,6 +106,19 @@ await privy.policies().create({
 > `META_TX_TYPED_DATA_TYPES_AS_SIGNED` is the set that matches. Rules are app-owned, so existing players are re-written
 > in place (`player.typedDataRule` = 2; `ensureTypedDataPolicy`). Verified in `killtests:u4plus` Y8a/Y8b: the session
 > signer is refused the Priority payload with `policy_violation` and still signs a counter pay right after.
+
+> **S2 (2026-09-08) — one policy, one rule per wing.** A player has a *different* Main account in each mode
+> (Live on Sepolia, Dev on `1337`: different chains, different contracts), so the rule that pins
+> `chainId` + `verifyingContract` has to exist once per wing. Rules are named per chain
+> (`chainRuleName(name, chainId)`), so both live inside the **same** app-owned policy object on the player's
+> wallet: `/session` on a desk recovers that policy (`recoverPolicy`) and adds its own chain's rule if it is
+> missing (`ensureTypedDataRule`), then pins it to that wing's account once provisioning knows it. No second
+> consent is ever needed — the consent is on the wallet, the rules are ours. The FX rule is a Sepolia rule in
+> both modes, because FX writes are always Sepolia.
+>
+> This also bit the kill-test rig: it read the policy id only from the *per-chain* player index, so on a wing it
+> had never run on it found none and asked an unpoliced signer to refuse something (K5 "passed" as a FAIL). It
+> now recovers the policy the same way `/session` does.
 
 Pinning `verifyingContract` is the stronger half of the original intent: it is the player's own AccountBlox,
 so a signature obtained under this policy cannot address anyone else's account. Losing the `name` clause costs

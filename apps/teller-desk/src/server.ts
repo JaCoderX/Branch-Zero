@@ -16,7 +16,7 @@ import Fastify from 'fastify';
 import { formatEther, getAddress, isAddress, type Address, type Hex } from 'viem';
 import type { StageEvent } from '@branch-zero/shared';
 import { broadcasterAddress, chain, deployerAddress, managerAddress, publicClient } from './chain.ts';
-import { config, deployments, redact } from './config.ts';
+import { config, deployments, explorerTx, redact } from './config.ts';
 import { createPlayerPolicy, ensureTypedDataRule, identify, recoverPolicy } from './privy.ts';
 import { pay, passbook } from './lanes/laneA.ts';
 import { approve, cancel, listPending, resumeWatchers, wire, type Actor } from './lanes/laneB.ts';
@@ -81,8 +81,16 @@ app.get('/healthz', async () => {
     ]);
     return {
       ok: chainId === chain.id,
-      unit: 'S1',
+      unit: 'S2',
+      /**
+       * `live` = Sepolia, the product default; `dev` = Remote EVM Developer Mode. The board, the passbook and
+       * this endpoint all name the **active payment chain** rather than assuming 1337 (docs/SEPOLIA-LIVE.md §6).
+       */
+      mode: config.mode,
       wing: config.target,
+      chainName: chain.name,
+      /** Where a judge can follow this wing's hashes. `null` on the private lab chain, which has no explorer. */
+      explorer: explorerTx('hash')?.replace(/\/tx\/hash$/, '') ?? null,
       priorityRelease: config.priorityRelease,
       roleSetVersion: ROLE_SET_VERSION,
       chains: { [config.target]: { chainId, expected: chain.id, block: block.toString(), reachable: true } },
@@ -94,7 +102,7 @@ app.get('/healthz', async () => {
       timeLockSec: Number(config.timeLockSec),
     };
   } catch (e) {
-    return { ok: false, unit: 'U6', wing: config.target, chains: { [config.target]: { reachable: false, error: (e as Error).message } } };
+    return { ok: false, unit: 'S2', mode: config.mode, wing: config.target, chainName: chain.name, chains: { [config.target]: { reachable: false, error: (e as Error).message } } };
   }
 });
 
@@ -153,6 +161,11 @@ app.post('/session', async (req, reply) => {
       policyPinnedToAccount: Boolean(player.policyPinned),
       txPolicy: player.txRuleIds?.length ? { mode: player.txPolicyMode, pinnedToAccount: Boolean(player.txPolicyPinned), rules: player.txRuleIds.length } : null,
       chainId: chain.id,
+      /** Which desk answered: the overlay's Live | Dev toggle reads this back rather than trusting its own state. */
+      mode: config.mode,
+      chainName: chain.name,
+      /** Live trades out of the Main account itself; Dev's FX till is a separate Sepolia account (docs/SEPOLIA-LIVE.md §1). */
+      fxTillIsMain: config.fxTillIsMain,
       token: deployments().token,
       timeLockSec: Number(config.timeLockSec),
       instantLimit: config.instantLimit,

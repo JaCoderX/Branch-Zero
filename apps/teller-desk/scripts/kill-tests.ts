@@ -23,7 +23,7 @@ import {
 import { erc20Abi } from '@branch-zero/shared';
 import { broadcaster, broadcasterAddress, chain, publicClient } from '../src/chain.ts';
 import { config, deployments } from '../src/config.ts';
-import { authorizationContext, createPlayerPolicy, embeddedWalletOf, pinPolicyToAccount, privy } from '../src/privy.ts';
+import { authorizationContext, createPlayerPolicy, embeddedWalletOf, ensureTypedDataRule, pinPolicyToAccount, recoverPolicy, privy } from '../src/privy.ts';
 import { signMetaTx } from '../src/signing/privySigner.ts';
 import { META_TX_TTL_SEC, pay } from '../src/lanes/laneA.ts';
 import { provision } from '../src/lanes/provision.ts';
@@ -56,13 +56,29 @@ async function rigPlayer(): Promise<Player> {
     console.log(`reusing Privy user ${existing.id}
   wallet ${w.walletId} → ${w.ownerAddress} (delegated: ${w.delegated})`);
     const stored = getPlayer(existing.id);
+    /**
+     * The player index is per chain (`store.ts` suffixes the file with the chain id), so a rig that was first
+     * used on another wing arrives here with no policy id — and without one, K5 would be asking an unpoliced
+     * signer to refuse something, which it never will. `/session` solves this by *recovering* the policy that
+     * is already attached to the wallet (only the browser consent can attach one), so the rig does the same.
+     */
+    let policyId = stored?.policyId ?? process.env.KILLTEST_POLICY_ID;
+    let policyRuleId = stored?.policyRuleId ?? process.env.KILLTEST_POLICY_RULE_ID;
+    if (!policyId) {
+      const recovered = await recoverPolicy(w.walletId, chain.id).catch(() => undefined);
+      if (recovered?.policyId) {
+        policyId = recovered.policyId;
+        policyRuleId = recovered.ruleId ?? (await ensureTypedDataRule(recovered.policyId, chain.id));
+        console.log(`recovered policy ${policyId} from the wallet (rule ${policyRuleId}) for chain ${chain.id}`);
+      }
+    }
     return upsertPlayer({
       privyUserId: existing.id,
       ownerAddress: w.ownerAddress,
       walletId: w.walletId,
       signingMode: w.delegated ? 'session' : 'client',
-      policyId: stored?.policyId ?? process.env.KILLTEST_POLICY_ID,
-      policyRuleId: stored?.policyRuleId ?? process.env.KILLTEST_POLICY_RULE_ID,
+      policyId,
+      policyRuleId,
     });
   }
 
@@ -139,8 +155,18 @@ async function k2(player: Player, account: Address) {
 
 /** K5 — with the per-player policy attached, does Privy refuse typed data for someone else's account? */
 async function k5(player: Player, account: Address) {
-  const { fixtureAccount } = deployments();
   const gc = new GuardController(publicClient, broadcaster, account, chain);
+
+  /**
+   * An account this wallet does **not** own. The deployment fixture is the natural choice and is what this test
+   * used on 1337 — but on Sepolia the fixture *is* this player's account (the S1 FX till, which provisioning
+   * now adopts rather than duplicating), and asking Privy to sign for your own account proves nothing. So pick
+   * the first fixture that is not this player's, and fall back to CopyBlox: any address other than the player's
+   * account is out of policy scope, which is precisely the claim under test.
+   */
+  const { fixtures, copyBlox } = deployments();
+  const stranger = fixtures.find((f) => f.address.toLowerCase() !== account.toLowerCase())?.address ?? copyBlox;
+  const fixtureAccount = stranger;
 
   // Build a genuine Bloxchain payload, then swap the verifyingContract for the U0 fixture — the account
   // this player does *not* own. Everything else about the request is legitimate.

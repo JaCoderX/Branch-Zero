@@ -46,7 +46,13 @@ var fx_weth := 0.0
 var _fx_quotes: Dictionary = {}
 var _next_tx_id := 1
 var _job := 0
-var chain_id := 1337
+## The mock plays the **Live** branch by default, like the real shell does: a mock walk should look like what a
+## player gets, not like the operator's lab. `setMode` moves it, and MockChain is still a third thing entirely —
+## it is not Live and not Developer Mode, it is canned offline data, and it says so (docs/SEPOLIA-LIVE.md §1).
+const SEPOLIA_CHAIN_ID := 11155111
+const DEV_CHAIN_ID := 1337
+const ARC_CHAIN_ID := 5042002
+var chain_id := SEPOLIA_CHAIN_ID
 
 
 ## `?mock=account`: start as a signed-in, delegated player with an open, funded account.
@@ -77,7 +83,9 @@ func call_method(method: String, args: Dictionary) -> Dictionary:
 			delegated = false
 			return _ok({"ok": true})
 		"switchWing":
-			return _switch_wing(int(args.get("chainId", 1337)))
+			return _switch_wing(int(args.get("chainId", chain_id)))
+		"setMode":
+			return _set_mode(str(args.get("mode", "live")))
 		"addSessionSigner":
 			if not logged_in:
 				return _err("AUTH", "not signed in")
@@ -354,16 +362,19 @@ func _pay(args: Dictionary) -> Dictionary:
 
 
 ## Practice faucet: an explicit, Main-wing-only top-up to the opening balance. Full is a no-op.
+## Main wing means either payment mode — Live (Sepolia) or Developer Mode (1337); both have a practice till the
+## branch can draw on. Only the deferred Arc wing is refused, because its money is real native USDC.
 func _faucet() -> Dictionary:
 	if account == "":
 		return _err("NO_ACCOUNT", "No account opened for this player")
-	if chain_id != 1337:
+	if chain_id == ARC_CHAIN_ID:
 		return _err("FAUCET_OFF", "the practice faucet is only available on the Main wing")
+	var sym := str(_token()["symbol"])
 	if balance >= OPENING_BALANCE:
-		return _ok({"balance": _fmt(balance), "symbol": "dUSDC", "targetBalance": _fmt(OPENING_BALANCE), "toppedUp": false})
+		return _ok({"balance": _fmt(balance), "symbol": sym, "targetBalance": _fmt(OPENING_BALANCE), "toppedUp": false})
 	var delta := OPENING_BALANCE - balance
 	balance = OPENING_BALANCE
-	return _ok({"balance": _fmt(balance), "symbol": "dUSDC", "targetBalance": _fmt(OPENING_BALANCE), "toppedUp": true, "amount": _fmt(delta), "hash": _hash()})
+	return _ok({"balance": _fmt(balance), "symbol": sym, "targetBalance": _fmt(OPENING_BALANCE), "toppedUp": true, "amount": _fmt(delta), "hash": _hash()})
 
 
 func _ens_available(args: Dictionary) -> Dictionary:
@@ -531,6 +542,24 @@ func _watch(tx_id: int, job: String) -> void:
 			_stage(job, "B", "pending", "The vault clock is running.", {"txId": str(tx_id), "releaseTime": rec["releaseTime"], "status": "PENDING"})
 
 
+## The practice token's name and precision follow the wing, as they do for real: Live (Sepolia) hands out
+## `USDC` at 6 decimals, the lab chain `dUSDC` at 18, Arc native `USDC` at 6.
+func _mode() -> String:
+	return "dev" if chain_id == DEV_CHAIN_ID else "live"
+
+
+func _chain_name() -> String:
+	if chain_id == ARC_CHAIN_ID:
+		return "Arc Testnet"
+	return "Remote EVM" if chain_id == DEV_CHAIN_ID else "Sepolia"
+
+
+func _token() -> Dictionary:
+	if chain_id == DEV_CHAIN_ID:
+		return {"address": "0xM0CK00000000000000000000000000000000dUSD", "symbol": "dUSDC", "decimals": 18}
+	return {"address": "0xM0CK00000000000000000000000000000000dUSD", "symbol": "USDC", "decimals": 6}
+
+
 func _session() -> Dictionary:
 	if not logged_in:
 		return {"loggedIn": false, "ready": true}
@@ -538,8 +567,9 @@ func _session() -> Dictionary:
 		"loggedIn": true, "ready": true, "userId": "did:privy:mock", "owner": OWNER,
 		"account": account if account != "" else null, "delegated": delegated, "ensName": ens_name if ens_name != "" else null,
 		"signingMode": "session" if delegated else "client", "chainId": chain_id,
+		"mode": _mode(), "chainName": _chain_name(), "fxTillIsMain": _mode() == "live",
 		"timeLockSec": timelock_sec, "instantLimit": INSTANT_LIMIT, "manager": MANAGER, "priority": true,
-		"token": {"address": "0xM0CK00000000000000000000000000000000dUSD", "symbol": "USDC" if chain_id == 5042002 else "dUSDC", "decimals": 6 if chain_id == 5042002 else 18},
+		"token": _token(),
 	}
 
 
@@ -548,7 +578,7 @@ func _status() -> Dictionary:
 		w["released"] = int(w["releaseTime"]) <= _now()
 	return {
 		"owner": OWNER, "chainId": chain_id, "signingMode": "session" if delegated else "client",
-		"account": account if account != "" else null, "balance": _fmt(balance), "symbol": "USDC" if chain_id == 5042002 else "dUSDC",
+		"account": account if account != "" else null, "balance": _fmt(balance), "symbol": str(_token()["symbol"]),
 		"pending": wires.size(), "wires": wires.duplicate(true), "serverNow": _now_str(),
 		"timeLockSec": timelock_sec, "receipts": receipts.duplicate(true),
 	}
@@ -557,10 +587,19 @@ func _status() -> Dictionary:
 func _switch_wing(target: int) -> Dictionary:
 	if not logged_in:
 		return _err("AUTH", "sign in before taking the elevator")
-	if target != 1337 and target != 5042002:
-		return _err("BAD_ARGS", "the elevator only serves Main 1337 and Arc 5042002")
+	if target != SEPOLIA_CHAIN_ID and target != DEV_CHAIN_ID and target != ARC_CHAIN_ID:
+		return _err("BAD_ARGS", "the elevator only serves the Main wing and Arc %d" % ARC_CHAIN_ID)
 	chain_id = target
-	return _ok({"wing": "arc" if chain_id == 5042002 else "main", "chainId": chain_id, "account": account if account != "" else null, "owner": OWNER})
+	return _ok({"wing": "arc" if chain_id == ARC_CHAIN_ID else "main", "chainId": chain_id, "account": account if account != "" else null, "owner": OWNER})
+
+
+## Live | Developer Mode against canned data. No session to rebind and no second desk to reach: the mock just
+## relabels itself, so a mock walk can show either wing's copy without a chain or a Teller Desk anywhere.
+func _set_mode(target: String) -> Dictionary:
+	if target != "live" and target != "dev":
+		return _err("BAD_ARGS", "the branch runs in Live or Developer Mode")
+	chain_id = DEV_CHAIN_ID if target == "dev" else SEPOLIA_CHAIN_ID
+	return _ok({"mode": target, "chainId": chain_id, "chainName": "Remote EVM" if target == "dev" else "Sepolia", "account": account if account != "" else null, "owner": OWNER, "fxTillIsMain": target == "live"})
 
 
 func _stage(job: String, lane: String, stage: String, bank_line: String, extra: Dictionary = {}) -> void:

@@ -67,7 +67,7 @@
       ]
     },
     "why_ens": {
-      "text": "You're getting a subname under branchzero.eth on ENSv2. Your name points to your AccountBlox; bz.tier is a text record; the counter resolves on Sepolia, then pays that address on Remote EVM 1337.",
+      "text": "You're getting a subname under branchzero.eth on ENSv2. Your name points to your AccountBlox; bz.tier is a text record; the counter resolves the name on Sepolia, then pays that address on {chain}.",
       "choices": [ { "text": "Back", "next": "idle" } ]
     },
     "refused": {

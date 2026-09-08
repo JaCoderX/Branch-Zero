@@ -74,7 +74,17 @@ docs/               plan, architecture, integration notes, reflection (agent ops
 
 ## Run it (Windows, Node ≥ 20)
 
-### 1. Remote EVM (default dev chain, id 1337)
+### 1. Chains: Live (Sepolia) is the default; Remote EVM is Developer Mode
+
+The Main payment wing runs on **Sepolia `11155111`** and that is what an unconfigured checkout uses
+(`CHAIN_ID` unset → Live). **Remote EVM `1337`** remains available as **Developer Mode** — a second Teller Desk
+started with `npm run dev:teller:dev`, reached from the desk-debug **Live | Dev** toggle or `?mode=dev`. It is
+private lab infra and is never exposed publicly. See [`docs/SEPOLIA-LIVE.md`](./docs/SEPOLIA-LIVE.md).
+
+`npm -w infra run funding:sepolia` lists every Sepolia address the Live wing needs, what it pays for, what it
+holds and what is short.
+
+#### Remote EVM (Developer Mode, id 1337)
 
 The chain lives in particle-tool-box `Docker Apps/Remote EVM` (Nethermind). Start it there, then verify:
 
@@ -123,7 +133,9 @@ npm run export:web      # → apps/web/public/game/ (git-ignored). Web preset: C
 ### 5. Serve the shell
 
 ```bash
-npm run dev:web         # http://localhost:5173 — Godot canvas + bridge traffic overlay. Proxies /rpc → Remote EVM, /api → Teller Desk
+npm run dev:web         # http://localhost:5173 — Godot canvas + bridge traffic overlay. Proxies /api → Live desk (Sepolia), /dev-api → Dev desk (1337), /rpc → Remote EVM
+npm run dev:teller      # Live  Teller Desk :8787 (Sepolia — the default)
+npm run dev:teller:dev  # Dev   Teller Desk :8788 (Remote EVM 1337; needs the lab chain up)
 npm run dev:teller      # http://127.0.0.1:8787/healthz
 ```
 
