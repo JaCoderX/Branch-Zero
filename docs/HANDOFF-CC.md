@@ -6,19 +6,22 @@ created: 2026-09-06
 updated: 2026-09-08
 product: Branch-Zero
 objective: OBJ-2026-0004
-first_mission: S1 Uniswap v4 FX Desk (docs/KICKOFF-S1-uniswap-fx.md) — sponsor #3 while Arc deferred; U7 ship packaging owed after principal polish re-playtest; U6 Arc G7 deferred — revive via docs/ARC.md §5b
-prior_mission: Terminal Console + OBSERVER stretch met 2026-09-08 (§5h); U7 polish met 2026-09-07; U7 ship reel met; practice faucet met; U5 ENS (G6) — met 2026-09-07
+first_mission: S1b FX validate (docs/KICKOFF-S1-fx-validate.md) — land Sepolia guards/roles + live K7; teller funded; U7 ship packaging owed after principal polish re-playtest; U6 Arc G7 deferred — revive via docs/ARC.md §5b
+prior_mission: S1 FX desk built 2026-09-08 (1d2f558) PARTIAL — pool/till/quotes live, guards OOG; Terminal Console + OBSERVER met; U7 polish met; practice faucet met; U5 ENS met
 ---
 
 # Handoff — Claude Code (Fable 5.1)
 
 You are a **cold agent** unless the human says you are continuing a prior session. Prefer reading this file over chat memory. You have **freedom on how**. You do **not** have freedom on constraints, scope, or protocol semantics.
 
-**Authorized construction (2026-09-08): S1 Uniswap v4 FX Desk** — prefer **Fable 5.1**. Spec:
-[`docs/UNISWAP.md`](./UNISWAP.md). Kickoff (infra → viz):
+**Authorized construction (2026-09-08): S1b FX validate** — prefer **Fable 5.1**. Spec:
+[`docs/UNISWAP.md`](./UNISWAP.md). Kickoff (guards + K7):
+[`docs/KICKOFF-S1-fx-validate.md`](./KICKOFF-S1-fx-validate.md). Prior build kickoff:
 [`docs/KICKOFF-S1-uniswap-fx.md`](./KICKOFF-S1-uniswap-fx.md). Mission record: **§5i**.
-Arc stays **DEFERRED**; Uniswap is the activated **sponsor #3** for submission unless Arc revives first.
-Official pitch still names at most three sponsors (Privy + ENS + Uniswap **or** Arc).
+Arc stays **DEFERRED**; Uniswap is the activated **sponsor #3**. Official pitch: Privy + ENS + Uniswap.
+
+> **Principal funded the FX teller** `0x83Af7CAA74b62a268887b4eDA92e0efDDFACd4DC` (2026-09-08).
+> Gas blocker is lifted — run S1b. Do **not** soft-send undersized gas limits (`budget()` must hard-fail).
 
 > **Terminal Console + OBSERVER met 2026-09-08** (local `docs/progress/2026-09-08-terminal-observer.md`; **§5h**).
 > The bank computers in the manager's office and at Account Opening open a terminal overlay: an iframe of
@@ -135,7 +138,7 @@ Not: a wallet UI, DeFi protocol, Bloxchain fork, mainnet, Tactical-AI, GameLab m
 
 ## 2. Read order (before code)
 
-1. **This file** (§5i Uniswap FX is authorized; §5h Terminal stretch **met**; packaging §6; U6 §5g deferred)
+1. **This file** (§5i S1b FX validate authorized — teller funded; §5h Terminal **met**; packaging §6; U6 §5g deferred)
 2. [`docs/DEV-LOOP.md`](./DEV-LOOP.md) — U6 row; ENG-0006 **yes** (K3); U5 / G6 **met**
 3. [`docs/progress/2026-09-07-u5-ens-g6.md`](./progress/2026-09-07-u5-ens-g6.md) — Name Desk frozen; then
    [`…k6-yes.md`](./progress/2026-09-07-k6-yes.md) only if you need Sepolia address pins
@@ -602,30 +605,30 @@ MockChain for greybox only — **K7 evidence must be live Sepolia**.
 - Arc revive / funding; Terminal/OBSERVER; ship packaging title cards; Unichain; CCA; custom v4 hooks;
   v2/v3 as the primary path; custom Solidity; wiping Remote EVM; ENS mainnet
 
-**S1 status (2026-09-08): PARTIAL → one named blocker, Sepolia gas.** Everything except the live swap is built and
-verified; read [`docs/progress/2026-09-08-s1-uniswap-fx.md`](./progress/2026-09-08-s1-uniswap-fx.md) **first**.
-Live on Sepolia now: the v4 pool this desk trades (`0xfd32332c7b…`, USDC/WETH 0.30 %, seeded by
-`npm -w infra run fx:pool`), the player's FX till `0xB5e8ab92467663F50c6Ba237Cb062cE6Bf66B2Af` (deployed + initialised, `owner()` read back
-through the SDK), and real `V4Quoter` prices against that pool. **Not** live: the three guarded calls. The FX teller
-`0x83Af…d4DC` holds ~0.0015 ETH and the pass needs ≈0.007 ETH; Sepolia faucets are captcha-gated, so an operator must
-top it up and re-run `npm -w apps/teller-desk run killtests:s1`. Measured gas is in the progress note — the code is
-sized for it, and the last attempt reverted only because the *outer* limit was under the measured 2.99 M.
+**S1 status (2026-09-08): PARTIAL → S1b validate.** Build met (`1d2f558`): pool, till, quotes, desk/bridge/Kenji/board,
+`FEEDBACK.md`. **Not** met: on-chain FX permissions + live swap. Guard batch OOG (`0x2d3b6b27…`); role batch never
+sent — till has **no** Uniswap door yet. Read
+[`docs/progress/2026-09-08-s1-uniswap-fx.md`](./progress/2026-09-08-s1-uniswap-fx.md) and
+[`docs/KICKOFF-S1-fx-validate.md`](./KICKOFF-S1-fx-validate.md) **first**.
+
+**Funded (principal):** FX teller `0x83Af7CAA74b62a268887b4eDA92e0efDDFACd4DC`. Continue with
+`npm -w apps/teller-desk run killtests:s1 -- --amount 0.5` after hardening `budget()` (hard-fail when short).
 
 ### Definition of Done
 
 - [x] Sepolia v4 addresses + liquid pool documented in `infra/deployments/sepolia.json` / UNISWAP.md — pool created
       and seeded live; addresses pinned from the official deployments page
-- [x] Guard whitelist: token `approve`, Permit2 `approve`, UniversalRouter `execute` — built in
-      `apps/teller-desk/src/lanes/fx.ts` (`enableFx`), idempotent against the chain; **not yet landed on Sepolia** (gas)
-- [ ] **Live K7: AccountBlox completes a v4 swap on Sepolia** — blocked on ≈0.007 ETH of Sepolia gas. Pool, till and
-      quoter are live; the swap is implemented, typechecked, pre-flighted against the live router and walked on the mock
+- [ ] **FX guard + role config live on till `0xB5e8…`** — code in `enableFx`; **not landed** (prior OOG). Need three
+      schemas + three whitelist targets (USDC / Permit2 / Universal Router) + OWNER sign + BROADCASTER execute on each
+- [ ] **Live K7: AccountBlox completes a v4 swap on Sepolia** — teller funded; run S1b. Pool / till / quoter already live
 - [x] Desk `/fx/status` `/fx/quote` `/fx/enable` `/fx/swap` + bridge `s1.0` + Kenji dialogue (mock + live paths)
 - [x] In-world FX desk + Kenji + quote board + sponsor signage; `run_viz_budget` green (35 materials, 37 with
       particles, ≤ 40) and named shots `33_fx_desk_close` / `34_fx_talk` / `35_fx_board_close`
 - [x] `FEEDBACK.md` committed; README points at integration lines; form reminder in the progress note
 - [x] `run_checks` green (120 codes, Kenji's verb split enforced), `run_fx_walk` green, `run_mock_walk` green,
       `npm run typecheck` green; no freeze / Priority / ENS / faucet regression
-- [x] REFLECTION K7 row + three decision-log rows; this §5i DoD updated
+- [x] REFLECTION K7 row (PARTIAL) + S1 decision-log rows; this §5i updated for S1b
+- [ ] S1b: `budget()` never soft-sends undersized gas; kill-test gas comment ≈0.007–0.01 ETH; README + K7 = PASS after live swap
 
 ---
 

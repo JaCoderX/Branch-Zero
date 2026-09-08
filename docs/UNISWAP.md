@@ -1,10 +1,11 @@
 # Uniswap v4 Integration — The FX Desk (S1)
 
-> Status: **PARTIAL / built 2026-09-08** as sponsor **#3** while Arc G7 stays deferred. Pool, FX till and live quotes
-> are on Sepolia; the guarded swap is blocked on Sepolia gas (HANDOFF §5i, `docs/progress/2026-09-08-s1-uniswap-fx.md`).
-> Kickoff:
-> [`KICKOFF-S1-uniswap-fx.md`](./KICKOFF-S1-uniswap-fx.md) (infra → visualization). HANDOFF **§5i**.
-> Prize paperwork: `FEEDBACK.md` + [Uniswap hackathon feedback form](https://developers.uniswap.org/hackathon-feedback).
+> Status: **PARTIAL → S1b validate** (sponsor **#3**; Arc deferred). Build met; pool, FX till and live quotes are on
+> Sepolia; **FX guard/role config and live swap not on chain** (prior OOG). Principal funded FX teller `0x83Af…d4DC`.
+> Continuation: [`KICKOFF-S1-fx-validate.md`](./KICKOFF-S1-fx-validate.md). Build kickoff:
+> [`KICKOFF-S1-uniswap-fx.md`](./KICKOFF-S1-uniswap-fx.md). HANDOFF **§5i**. Local progress:
+> `docs/progress/2026-09-08-s1-uniswap-fx.md`. Prize: `FEEDBACK.md` +
+> [Uniswap hackathon feedback form](https://developers.uniswap.org/hackathon-feedback).
 
 Related: [PLAN.md](./PLAN.md) § 3 (tier S1) · [REFLECTION.md](./REFLECTION.md) § Sponsor matrix · [BLOXCHAIN-INTEGRATION.md](./BLOXCHAIN-INTEGRATION.md) § 3 (guard config batch) · [HANDOFF-CC.md](./HANDOFF-CC.md) §5i
 
