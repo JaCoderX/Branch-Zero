@@ -4,8 +4,9 @@
 
 Kenney's "Animated Characters" packs ship skater / criminal / cyborg / survivor / zombie skins: flat vector art
 in exactly the language the art bible wants (WORLD-3D §1) but the wrong wardrobe for a bank. This script keeps
-each skin's **head and hands** — Kenney's faces are the part we could not author — and repaints every clothing
-region in the wing palette (`themes/wing_main.tres`: deep green, brass, cream, graphite, oxblood, wood).
+each skin's **head and hands** as a backing layer and repaints every clothing region in the wing palette
+(`themes/wing_main.tres`: deep green, brass, cream, graphite, oxblood, wood). The face sheet carries the legible
+front-of-face art; these graphic hair cuts keep the silhouette varied behind it.
 
 Nothing is guessed about the layout. The regions come from the exported `bank_staff.glb` itself: every triangle
 is assigned to the joint that carries most of its weight (`REGION`), the belt line splits the hips into jacket
@@ -22,7 +23,7 @@ import os
 import struct
 import sys
 
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter, ImageChops
 
 TILE = 340
 STRIDE = 341
@@ -49,6 +50,10 @@ CAMEL_D = (120, 92, 56)
 NAVY = (46, 56, 87)
 NAVY_D = (33, 40, 63)
 GREY_HAIR = (176, 176, 172)
+EMERALD = (0, 139, 98)
+MUSTARD = (210, 157, 36)
+CORAL = (214, 83, 70)
+TEAL = (0, 137, 157)
 
 # joint → clothing region. Head / neck / hands keep Kenney's own art.
 REGION = {
@@ -76,22 +81,22 @@ BELT_Y = 1.30          # model units; Hips' head sits at 1.242, the jacket hem j
 # One tile per NPC role (`scripts/npc.gd` SKINS) plus the player. `head` names the Kenney skin whose face,
 # hands and hair are kept; `hair` recolours that skin's hair field so repeated faces still read as two people.
 ROLES = [
-    dict(name="greeter", head="skaterMaleA", coat=GREEN, sleeve=GREEN, trouser=GRAPHITE, shoe=WOOD_D,
-         shirt=CREAM, tie=BRASS, buttons=BRASS, lapel=GREEN_D),
-    dict(name="clerk", head="skaterFemaleA", coat=BRASS, sleeve=BRASS, trouser=GRAPHITE, shoe=WOOD_D,
-         shirt=CREAM, tie=GREEN, buttons=GREEN_D, lapel=BRASS_D, hair=(122, 68, 42)),
-    dict(name="teller", head="survivorMaleB", coat=GRAPHITE, sleeve=CREAM, trouser=GRAPHITE, shoe=WOOD_D,
-         shirt=CREAM, tie=OXBLOOD, buttons=BRASS, lapel=GRAPHITE_D),
-    dict(name="vault_keeper", head="criminalMaleA", coat=GRAPHITE, sleeve=GRAPHITE, trouser=GRAPHITE_D,
-         shoe=BLACK, shirt=CREAM, tie=BRASS, buttons=BRASS, lapel=BRASS_D),
-    dict(name="manager", head="criminalMaleA", coat=CHARCOAL, sleeve=CHARCOAL, trouser=CHARCOAL, shoe=BLACK,
-         shirt=CREAM, tie=OXBLOOD, buttons=BRASS, lapel=(56, 60, 68), hair=GREY_HAIR),
-    dict(name="registrar", head="survivorFemaleA", coat=GREEN_D, sleeve=CREAM, trouser=GRAPHITE, shoe=WOOD,
-         shirt=CREAM, tie=BRASS, buttons=BRASS, lapel=GREEN),
-    dict(name="dealer", head="skaterMaleA", coat=OXBLOOD, sleeve=CREAM, trouser=GRAPHITE, shoe=WOOD,
-         shirt=CREAM, tie=GRAPHITE, buttons=BRASS, lapel=OXBLOOD_D, hair=(38, 32, 30)),
-    dict(name="player", head="skaterFemaleA", coat=CAMEL, sleeve=CAMEL, trouser=NAVY, shoe=WOOD_D,
-         shirt=CREAM, tie=NAVY_D, buttons=CAMEL_D, lapel=CAMEL_D),
+    dict(name="greeter", cut="suit", head="skaterMaleA", coat=GRAPHITE, sleeve=GRAPHITE, trouser=GRAPHITE_D, shoe=WOOD_D,
+         shirt=CREAM, tie=EMERALD, accent=EMERALD, buttons=BRASS, lapel=GRAPHITE_D, hair=(42, 32, 29), hair_style="round"),
+    dict(name="clerk", cut="sheath", head="skaterFemaleA", coat=GREEN_D, sleeve=MUSTARD, trouser=GREEN_D, shoe=WOOD_D,
+         shirt=CREAM, tie=MUSTARD, accent=MUSTARD, buttons=BRASS, lapel=GREEN_D, hair=(122, 68, 42), hair_style="up"),
+    dict(name="teller", cut="waistcoat", head="survivorMaleB", coat=GRAPHITE, sleeve=CREAM, trouser=GRAPHITE, shoe=WOOD_D,
+         shirt=CREAM, tie=OXBLOOD, accent=OXBLOOD, buttons=BRASS, lapel=GRAPHITE_D, hair=(35, 38, 45), hair_style="crop"),
+    dict(name="vault_keeper", cut="suit", head="criminalMaleA", coat=CHARCOAL, sleeve=CHARCOAL, trouser=GRAPHITE_D,
+         shoe=BLACK, shirt=CREAM, tie=CORAL, accent=CORAL, buttons=BRASS, lapel=BRASS_D, hair=(52, 39, 35), hair_style="receding"),
+    dict(name="manager", cut="three_piece", head="criminalMaleA", coat=BLACK, sleeve=CHARCOAL, trouser=CHARCOAL, shoe=BLACK,
+         shirt=CREAM, tie=OXBLOOD, accent=OXBLOOD, buttons=BRASS, lapel=(56, 60, 68), hair=GREY_HAIR, hair_style="temples"),
+    dict(name="registrar", cut="skirt_suit", head="survivorFemaleA", coat=NAVY, sleeve=NAVY, trouser=NAVY, shoe=WOOD,
+         shirt=CREAM, tie=CORAL, accent=CORAL, buttons=BRASS, lapel=NAVY_D, hair=(72, 44, 32), hair_style="bun"),
+    dict(name="dealer", cut="braces", head="skaterMaleA", coat=WOOD, sleeve=CREAM, trouser=WOOD_D, shoe=WOOD,
+         shirt=CREAM, tie=TEAL, accent=TEAL, buttons=BRASS, lapel=WOOD_D, hair=(38, 32, 30), hair_style="slick"),
+    dict(name="player", cut="overcoat", head="skaterFemaleA", coat=CAMEL, sleeve=CAMEL, trouser=NAVY, shoe=WOOD_D,
+         shirt=CREAM, tie=NAVY, accent=NAVY, buttons=CAMEL_D, lapel=CAMEL_D, hair=(64, 48, 42), hair_style="bob"),
 ]
 
 
@@ -198,6 +203,55 @@ def skin_tone(src: Image.Image, tris: list):
     return src.convert("RGB").getpixel((min(SOURCE - 1, int(x)), min(SOURCE - 1, int(y))))
 
 
+def graphic_hair(img: Image.Image, mask: Image.Image, tris: list, role: dict) -> None:
+    """Paint a restrained graphic hair cut inside the measured head island.
+
+    The face sheet supplies the new eyes / brows / mouths, but the atlas still owns the head silhouette. Keeping the
+    drawing clipped to the source head triangles means no new mesh or material is needed.
+    """
+    keep = [t for t in tris if t["region"] == "keep"]
+    if not keep:
+        return
+    xs = [p[0] for t in keep for p in t["uv"]]
+    ys = [p[1] for t in keep for p in t["uv"]]
+    x0, x1, y0, y1 = min(xs), max(xs), min(ys), max(ys)
+    w, h = x1 - x0, y1 - y0
+    layer = Image.new("RGBA", (SOURCE, SOURCE), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(layer)
+    hair = role.get("hair", (48, 38, 34))
+    dark = shade(hair, 0.72)
+    crown = y0 + h * 0.32
+    style = role.get("hair_style", "crop")
+    if style == "round":
+        draw.ellipse([x0 + w * 0.04, y0 - h * 0.03, x1 - w * 0.04, crown + h * 0.10], fill=hair)
+        draw.polygon([(x0 + w * .04, crown), (x0 + w * .18, crown - h * .08), (x0 + w * .82, crown - h * .08), (x1 - w * .04, crown)], fill=dark)
+    elif style in ("up", "bun"):
+        draw.ellipse([x0 + w * .28, y0 - h * .19, x0 + w * .72, y0 + h * .16], fill=dark)
+        draw.ellipse([x0 + w * .08, y0 - h * .04, x1 - w * .08, crown + h * .10], fill=hair)
+        draw.polygon([(x0 + w * .08, crown), (x0 + w * .28, crown - h * .12), (x0 + w * .72, crown - h * .12), (x1 - w * .08, crown)], fill=hair)
+    elif style == "receding":
+        draw.ellipse([x0 + w * .17, y0 + h * .03, x1 - w * .17, y0 + h * .38], fill=hair)
+        draw.rectangle([x0 + w * .12, y0 + h * .14, x0 + w * .28, crown], fill=dark)
+        draw.rectangle([x1 - w * .28, y0 + h * .14, x1 - w * .12, crown], fill=dark)
+    elif style == "temples":
+        draw.pieslice([x0 + w * .05, y0 - h * .04, x0 + w * .50, y0 + h * .46], 180, 350, fill=hair)
+        draw.pieslice([x0 + w * .50, y0 - h * .04, x1 - w * .05, y0 + h * .46], 190, 360, fill=hair)
+        draw.rectangle([x0 + w * .08, y0 + h * .16, x0 + w * .22, crown], fill=hair)
+        draw.rectangle([x1 - w * .22, y0 + h * .16, x1 - w * .08, crown], fill=hair)
+    elif style == "slick":
+        draw.polygon([(x0 + w * .03, crown), (x0 + w * .15, y0 + h * .02), (x0 + w * .88, y0 + h * .06),
+                      (x1 - w * .03, crown), (x1 - w * .17, crown + h * .03), (x0 + w * .22, crown + h * .01)], fill=hair)
+        draw.line([(x0 + w * .30, y0 + h * .03), (x0 + w * .42, crown)], fill=dark, width=max(2, int(w * .02)))
+    elif style == "bob":
+        draw.ellipse([x0 + w * .03, y0 - h * .04, x1 - w * .03, crown + h * .12], fill=hair)
+        draw.rounded_rectangle([x0 + w * .03, crown - h * .02, x0 + w * .22, y0 + h * .62], radius=int(w * .07), fill=dark)
+        draw.rounded_rectangle([x1 - w * .22, crown - h * .02, x1 - w * .03, y0 + h * .62], radius=int(w * .07), fill=dark)
+    else:
+        draw.rounded_rectangle([x0 + w * .08, y0, x1 - w * .08, crown + h * .08], radius=int(w * .18), fill=hair)
+    hair_mask = ImageChops.multiply(layer.getchannel("A"), mask)
+    img.paste(layer, (0, 0), hair_mask)
+
+
 def paint(role: dict, tris: list, skins: dict) -> Image.Image:
     src = skins[role["head"]].convert("RGBA")
     role = dict(role, skin=skin_tone(src, tris))
@@ -215,7 +269,7 @@ def paint(role: dict, tris: list, skins: dict) -> Image.Image:
             lift *= 0.94                                                    # the back reads a touch darker
         draw.polygon(t["uv"], fill=shade(color, lift))
 
-    # the chest panel: collar, shirt V, tie and buttons, placed on the run of forward-facing torso triangles
+    # the chest panel: period cuts are graphic lines and blocks, placed on the run of forward-facing torso triangles
     front = [t for t in tris if t["bone"] in ("Spine", "Chest", "UpperChest") and t["front"] > 0.3]
     if front:
         xs = [p[0] for t in front for p in t["uv"]]
@@ -223,15 +277,33 @@ def paint(role: dict, tris: list, skins: dict) -> Image.Image:
         x0, x1, v0, v1 = min(xs), max(xs), min(vs), max(vs)
         w, h = x1 - x0, v1 - v0
         mid = (x0 + x1) / 2.0
-        draw.polygon([(mid - w * 0.20, v0), (mid + w * 0.20, v0), (mid, v0 + h * 0.42)],
-                     fill=shade(role["shirt"], 1.0))                        # open collar / shirt front
-        draw.polygon([(mid - w * 0.30, v0), (mid - w * 0.06, v0 + h * 0.30), (mid - w * 0.30, v0 + h * 0.46)],
-                     fill=shade(role["lapel"], 1.02))                       # lapels
-        draw.polygon([(mid + w * 0.30, v0), (mid + w * 0.06, v0 + h * 0.30), (mid + w * 0.30, v0 + h * 0.46)],
-                     fill=shade(role["lapel"], 1.02))
-        draw.polygon([(mid - w * 0.055, v0 + h * 0.06), (mid + w * 0.055, v0 + h * 0.06),
-                      (mid + w * 0.035, v0 + h * 0.40), (mid, v0 + h * 0.46), (mid - w * 0.035, v0 + h * 0.40)],
-                     fill=shade(role["tie"], 1.0))                          # tie
+        cut = role.get("cut", "suit")
+        if cut == "sheath":
+            # Sheath dress with a mustard cardigan: green remains the dress, the saturated colour is a clean edge.
+            draw.polygon([(x0, v0), (x0 + w * .20, v0 + h * .10), (x0 + w * .16, v0 + h * .78), (x0, v0 + h * .82)], fill=shade(role["accent"], 1.0))
+            draw.polygon([(x1, v0), (x1 - w * .20, v0 + h * .10), (x1 - w * .16, v0 + h * .78), (x1, v0 + h * .82)], fill=shade(role["accent"], 1.0))
+            draw.polygon([(mid - w * .17, v0), (mid + w * .17, v0), (mid, v0 + h * .24)], fill=shade(role["shirt"], 1.0))
+            draw.polygon([(mid - w * .10, v0 + h * .12), (mid, v0 + h * .23), (mid + w * .10, v0 + h * .12), (mid, v0 + h * .34)], fill=shade(role["accent"], 1.0))
+        else:
+            draw.polygon([(mid - w * 0.20, v0), (mid + w * 0.20, v0), (mid, v0 + h * 0.42)], fill=shade(role["shirt"], 1.0))
+            draw.polygon([(mid - w * 0.30, v0), (mid - w * 0.06, v0 + h * 0.30), (mid - w * 0.30, v0 + h * 0.46)], fill=shade(role["lapel"], 1.02))
+            draw.polygon([(mid + w * 0.30, v0), (mid + w * 0.06, v0 + h * 0.30), (mid + w * 0.30, v0 + h * 0.46)], fill=shade(role["lapel"], 1.02))
+            draw.polygon([(mid - w * 0.055, v0 + h * 0.06), (mid + w * 0.055, v0 + h * 0.06),
+                          (mid + w * 0.035, v0 + h * 0.40), (mid, v0 + h * 0.46), (mid - w * 0.035, v0 + h * 0.40)],
+                         fill=shade(role["tie"], 1.0))
+            if cut == "three_piece":
+                draw.polygon([(mid - w * .16, v0 + h * .34), (mid + w * .16, v0 + h * .34),
+                              (mid + w * .12, v0 + h * .72), (mid - w * .12, v0 + h * .72)], fill=shade(role["coat"], .95))
+            if cut == "braces":
+                for bx in (mid - w * .14, mid + w * .14):
+                    draw.line([(bx, v0 + h * .18), (bx, v0 + h * .76)], fill=shade(role["accent"], 1.0), width=max(3, int(w * .028)))
+            if cut == "overcoat":
+                draw.rectangle([mid - w * .05, v0 + h * .12, mid + w * .05, v0 + h * .78], fill=shade(role["accent"], 1.0))
+        # The pocket square and tie bar are brass / cream; the saturated accent remains unique to the wearer.
+        if cut not in ("sheath", "overcoat"):
+            draw.polygon([(mid + w * .16, v0 + h * .10), (mid + w * .27, v0 + h * .10),
+                          (mid + w * .24, v0 + h * .18), (mid + w * .16, v0 + h * .16)], fill=shade(CREAM, 1.0))
+            draw.line([(mid - w * .06, v0 + h * .23), (mid + w * .06, v0 + h * .23)], fill=shade(BRASS, 1.0), width=max(2, int(w * .015)))
         r = w * 0.022
         for i in range(3):
             cy = v0 + h * (0.52 + 0.13 * i)
@@ -248,10 +320,70 @@ def paint(role: dict, tris: list, skins: dict) -> Image.Image:
     if role.get("hair"):
         recolor_hair(head, mask, role["hair"])
     img.paste(head, (0, 0), mask)
+    graphic_hair(img, mask, tris, role)
     return img
 
 
+def repaint_existing_atlas(src_path: str, out_path: str) -> None:
+    """Upgrade a previously generated derivative atlas when the non-redistributable source pack is not local.
+
+    Normal regeneration still uses the measured triangle regions above. This small recovery path only adds the same
+    authored wardrobe cuts to the already-committed derivative output; it never imports or redistributes Kenney source
+    pixels. It keeps the local tree reproducible on a cold machine while the full source-pack regeneration remains
+    available for an artist with the CC0 zips.
+    """
+    atlas = Image.open(src_path).convert("RGBA")
+    draw = ImageDraw.Draw(atlas)
+    for i, role in enumerate(ROLES):
+        ox, oy = (i % 3) * STRIDE, (i // 3) * STRIDE
+        x0, x1, top, bottom = ox + 62, ox + 278, oy + 176, oy + 330
+        mid = (x0 + x1) / 2.0
+        w, h = x1 - x0, bottom - top
+        cut = role.get("cut", "suit")
+        if cut == "sheath":
+            draw.polygon([(x0, top), (x0 + 35, top + 14), (x0 + 27, bottom - 16), (x0, bottom - 10)], fill=role["accent"])
+            draw.polygon([(x1, top), (x1 - 35, top + 14), (x1 - 27, bottom - 16), (x1, bottom - 10)], fill=role["accent"])
+            draw.polygon([(mid - 34, top + 3), (mid + 34, top + 3), (mid, top + 42)], fill=role["shirt"])
+            draw.polygon([(mid - 20, top + 23), (mid, top + 42), (mid + 20, top + 23), (mid, top + 58)], fill=role["accent"])
+        else:
+            draw.polygon([(mid - 38, top + 2), (mid + 38, top + 2), (mid, top + 55)], fill=role["shirt"])
+            draw.polygon([(mid - 56, top), (mid - 12, top + 38), (mid - 54, top + 58)], fill=role["lapel"])
+            draw.polygon([(mid + 56, top), (mid + 12, top + 38), (mid + 54, top + 58)], fill=role["lapel"])
+            draw.polygon([(mid - 9, top + 6), (mid + 9, top + 6), (mid + 6, top + 58), (mid, top + 66), (mid - 6, top + 58)], fill=role["tie"])
+            if cut == "three_piece":
+                draw.polygon([(mid - 29, top + 46), (mid + 29, top + 46), (mid + 23, bottom - 20), (mid - 23, bottom - 20)], fill=shade(role["coat"], .94))
+            if cut == "braces":
+                for bx in (mid - 28, mid + 28):
+                    draw.line([(bx, top + 32), (bx, bottom - 14)], fill=role["accent"], width=9)
+            if cut == "overcoat":
+                draw.rectangle([mid - 8, top + 28, mid + 8, bottom - 16], fill=role["accent"])
+        if cut not in ("sheath", "overcoat"):
+            draw.polygon([(mid + 31, top + 13), (mid + 58, top + 13), (mid + 50, top + 32), (mid + 31, top + 28)], fill=CREAM)
+            draw.line([(mid - 10, top + 42), (mid + 10, top + 42)], fill=BRASS, width=5)
+        # A measured, head-only graphic cap: the face and hands remain untouched in this recovery path.
+        hx0, hx1, hy0, hy1 = ox + 8, ox + 204, oy + 8, oy + 86
+        style = role.get("hair_style", "crop")
+        hair = role.get("hair", (48, 38, 34))
+        if style in ("up", "bun"):
+            draw.ellipse([hx0 + 58, hy0 - 10, hx0 + 138, hy0 + 28], fill=shade(hair, .72))
+        if style == "slick":
+            draw.polygon([(hx0, hy0 + 55), (hx0 + 25, hy0 + 5), (hx1 - 20, hy0 + 13), (hx1, hy0 + 55), (hx1 - 42, hy0 + 48), (hx0 + 40, hy0 + 33)], fill=hair)
+        elif style == "temples":
+            draw.rectangle([hx0 + 8, hy0 + 20, hx0 + 38, hy0 + 68], fill=hair)
+            draw.rectangle([hx1 - 38, hy0 + 20, hx1 - 8, hy0 + 68], fill=hair)
+        else:
+            draw.ellipse([hx0, hy0 - 7, hx1, hy0 + 58], fill=hair)
+            if style == "receding":
+                draw.rectangle([hx0 + 10, hy0 + 28, hx0 + 40, hy0 + 66], fill=shade(hair, .72))
+                draw.rectangle([hx1 - 40, hy0 + 28, hx1 - 10, hy0 + 66], fill=shade(hair, .72))
+    atlas.convert("RGB").save(out_path)
+    print("WROTE", out_path, os.path.getsize(out_path), "B", atlas.size, "from existing derivative")
+
+
 def main() -> None:
+    if len(sys.argv) >= 4 and sys.argv[1] == "--existing":
+        repaint_existing_atlas(sys.argv[2], sys.argv[3])
+        return
     packs, glb, out = sys.argv[1], sys.argv[2], sys.argv[3]
     skins = {}
     for pack in packs.split(","):

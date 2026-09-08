@@ -10,6 +10,8 @@ extends SceneTree
 ## every StaticBody3D under the interior is layer 1 / mask 0, the six zone volumes are where U3 put them, and
 ## nothing solid sits in the manager door, the vault opening or on the escort waypoints. Stage 3 adds the
 ## characters: clips present, U3 capsules unchanged, head height, one shared atlas material, Petra's skin entry.
+## The charm pass adds one shadowless face carrier per character and one shared face-sheet material; this check counts
+## that surface explicitly and rejects an outline / shadow on the carrier.
 ## Stage 4 adds the shell: the wall / ceiling modules exist and all went into the static batch, the skylight glass
 ## and NamesBoardQuad stayed out of it, and the pendant count is still eight shadowless omnis (a ninth is unlit
 ## on the merged mesh under Compatibility). Stage 5 adds the feel layer: at most two particle systems (CPU, shadowless,
@@ -123,7 +125,10 @@ func _run() -> void:
 	var bodies3: Array = main.get_tree().get_nodes_in_group("npc")
 	bodies3.append(main.get_node("Player"))
 	var char_surfaces := 0
+	var char_shadow_surfaces := 0
 	var char_mats := {}
+	var face_mats := {}
+	var face_count := 0
 	var char_bad: PackedStringArray = []
 	for c in bodies3:
 		var body := (c as Node).get_node_or_null("Body") as Node3D
@@ -131,7 +136,7 @@ func _run() -> void:
 		if body == null or anim == null:
 			char_bad.append("%s: no animated body" % c.name)
 			continue
-		var want := ["idle", "walk", "work", "refuse"] if c is Npc else ["idle", "walk", "sprint"]
+		var want := ["idle", "walk", "work", "refuse", "greet"] if c is Npc else ["idle", "walk", "sprint"]
 		for clip in want:
 			if not anim.has_animation(clip):
 				char_bad.append("%s: missing clip %s" % [c.name, clip])
@@ -154,15 +159,20 @@ func _run() -> void:
 		for mi in PropKit._meshes(body):
 			if mi.mesh == null:
 				continue
+			var is_face_mesh := mi.has_meta("face_carrier")
 			for i in mi.mesh.get_surface_count():
 				var m := mi.get_active_material(i)
 				if m == null:
 					continue
 				char_surfaces += 1
+				if not is_face_mesh:
+					char_shadow_surfaces += 1
 				char_mats[m.get_instance_id()] = m
 				var pass_mat: Material = m.next_pass
 				while pass_mat != null:            # an outline pass is a surface submitted again
 					char_surfaces += 1
+					if not is_face_mesh:
+						char_shadow_surfaces += 1
 					char_mats[pass_mat.get_instance_id()] = pass_mat
 					if pass_mat is BaseMaterial3D and (pass_mat as BaseMaterial3D).cull_mode == BaseMaterial3D.CULL_FRONT \
 							and (pass_mat as BaseMaterial3D).grow:
@@ -170,15 +180,30 @@ func _run() -> void:
 					pass_mat = pass_mat.next_pass
 		if not outlined:
 			char_bad.append("%s: no inverted-hull outline pass" % c.name)
-	print("  %d characters · %d surfaces incl. outline passes (≈ %d draw calls with 2 shadow splits if all on screen) · %d character material(s)" % [bodies3.size(), char_surfaces, char_surfaces * 3, char_mats.size()])
+		var face := body.find_child("FaceCarrier", true, false) as MeshInstance3D
+		if face == null or face.mesh == null or face.mesh.get_surface_count() != 1:
+			char_bad.append("%s: missing one face carrier surface" % c.name)
+		else:
+			face_count += 1
+			var fm := face.get_active_material(0)
+			if fm == null:
+				char_bad.append("%s: face carrier has no shared material" % c.name)
+			else:
+				face_mats[fm.get_instance_id()] = fm
+				if fm.next_pass != null:
+					char_bad.append("%s: face carrier has an outline next_pass" % c.name)
+			if face.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
+				char_bad.append("%s: face carrier casts a shadow" % c.name)
+	var char_draws := char_shadow_surfaces * 3 + face_count # body / outline receive the two shadow splits; face does not
+	print("  %d characters · %d surfaces incl. outline + %d face carriers (≈ %d honest draw calls with 2 shadow splits) · %d character material(s), %d shared face material(s)" % [bodies3.size(), char_surfaces, face_count, char_draws, char_mats.size(), face_mats.size()])
 	if char_bad.is_empty():
-		_ok("seven staff + player: clips idle / walk / work / refuse (player: sprint), U3 capsules, adult heights, outline pass on every body")
+		_ok("seven staff + player: clips idle / walk / work / refuse / greet (player: sprint), U3 capsules, adult heights, outline + shadowless face on every body")
 	else:
 		_fail("characters: %s" % "; ".join(char_bad))
-	if char_mats.size() <= 2:
-		_ok("the cast shares one atlas material + one outline pass (%d)" % char_mats.size())
+	if char_mats.size() <= 3 and face_mats.size() == 1 and face_count == bodies3.size():
+		_ok("the cast shares one atlas material + one outline pass + one face material (%d total)" % char_mats.size())
 	else:
-		_fail("characters use %d materials (one shared atlas + one outline expected)" % char_mats.size())
+		_fail("characters use %d materials / %d face materials / %d face carriers (one shared atlas + one outline + one face expected)" % [char_mats.size(), face_mats.size(), face_count])
 	var skins: Dictionary = Npc.SKINS
 	if skins.has("registrar"):
 		_ok("npc.gd SKINS has an explicit registrar entry (%s) for U5" % skins["registrar"])
@@ -420,10 +445,10 @@ func _run() -> void:
 		var m: Material = mats[id]
 		if m is StandardMaterial3D and (m as StandardMaterial3D).metallic >= 0.95 and (m as StandardMaterial3D).roughness >= 0.95:
 			kit_mats.append(m.resource_name)   # the Nature Kit's own factors — nothing in the palette is metallic 1 / rough 1
-	if kit_mats.is_empty() and mats.size() <= 36:
-		_ok("no Nature Kit material survives (metallic 1 / roughness 1); %d unique mesh materials ≤ 36 (Stage 6c had 36 — plants cost +0)" % mats.size())
+	if kit_mats.is_empty() and mats.size() <= 37:
+		_ok("no Nature Kit material survives (metallic 1 / roughness 1); %d unique mesh materials ≤ 37 (Stage 6c had 36; charm face sheet is +1; plants cost +0)" % mats.size())
 	else:
-		_fail("Nature Kit remap leaked: raw kit materials %s; %d unique mesh materials (Stage 6c: 36)" % [", ".join(kit_mats), mats.size()])
+		_fail("Nature Kit remap leaked: raw kit materials %s; %d unique mesh materials (≤ 37 with charm face)" % [", ".join(kit_mats), mats.size()])
 	var retired6d: PackedStringArray = []
 	for f in ["pottedPlant", "plantSmall1", "plantSmall2", "plantSmall3"]:
 		if ResourceLoader.exists("res://assets/models/kenney_furniture/" + f + ".glb"):

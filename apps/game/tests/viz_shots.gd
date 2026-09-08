@@ -57,6 +57,11 @@ const VIEWS := [
 	["37_bob_refuse_close", Vector3(8.6, 0.1, -6.2), -0.85, {"pose": ["vault_keeper", Npc.State.REFUSING]}],
 	["38_mo_walk_close", Vector3(2.0, 0.1, 7.0), 0.0, {"clip": ["greeter", "walk"]}],
 	["39_ines_work_close", Vector3(-9.0, 0.1, 7.0), PI, {"pose": ["clerk", Npc.State.WORKING]}],
+	# Charm DoD readability pair: counter framing is the ~5 m gameplay read, lobby framing is the ~15 m silhouette read.
+	# Charm face-readability: ~5 m at Ines (AO desk — teller glass occludes Dev); name ends `_close` so the
+	# player body is hidden. ~15 m lobby must tell Mo by silhouette + accent.
+	["40_face_read_5m_close", Vector3(-9.0, 0.1, 7.2), PI, {"pose": ["clerk", Npc.State.TALKING]}],
+	["41_face_read_lobby_15m", Vector3(3.0, 0.1, 6.0), 0.0, {"pose": ["greeter", Npc.State.IDLE]}],
 ]
 
 var out_dir := ""

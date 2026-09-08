@@ -11,6 +11,7 @@ Related: [GAME-DESIGN.md](./GAME-DESIGN.md) · [NPCS.md](./NPCS.md) · [GODOT.md
 | Aspect | Decision | Rationale |
 |--------|----------|-----------|
 | Style | Stylised low-poly, flat-shaded with subtle AO; strong silhouettes; no PBR micro-detail | Reads at small canvas sizes; cheap on integrated GPUs; fast to author |
+| Cast | Cartoon Modern — flat graphic faces with large readable eyes, ~5.5-heads proportion, one accent colour per person, ink outline on cast only. Room stays low-poly flat-shaded cream / brass / deep green. | Gives the eight people an inviting, period-bank read without changing the accepted room language or web renderer |
 | Palette | Warm marble cream, brass, deep green (main wing); cool graphite, white, USDC blue accents (Arc wing) | Wings must be distinguishable in a glance in the demo video |
 | Lighting | One `DirectionalLight3D` through skylights + baked-look ambient via `Environment` (no real-time GI on web); a handful of `OmniLight3D` with shadows off | Web single-thread cannot afford SDFGI/VoxelGI |
 | Camera | Third-person over-the-shoulder, 55° FOV, spring arm 3.2 m; snaps to fixed "counter cam" during dialogue | Dialogue framing like a film two-shot |

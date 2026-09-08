@@ -3,7 +3,8 @@ extends CharacterBody3D
 ## NPC — one on-chain role or read surface each (docs/NPCS.md §2). State machine:
 ## IDLE → TALKING → WORKING → TALKING | REFUSING → TALKING → ESCORTING → IDLE.
 ## The body is a bank-staff build of Kenney's CC0 Animated Characters rig (assets/characters/kenney_staff, character
-## style climb): states play its clips (idle · work while working · refuse while refusing · walk while escorting).
+## style climb): states play its clips (idle · work while working · refuse while refusing · walk while escorting ·
+## greet once on approach).
 ## `tint` colours the nameplate.
 
 signal player_near(npc: Npc, near: bool)
@@ -13,15 +14,16 @@ enum State { IDLE, TALKING, WORKING, ESCORTING, REFUSING }
 
 ## npc_id → the staff wardrobe worn on the shared rig; each name is an atlas tile painted by
 ## tools/bank_staff_atlas.py and mapped in `PropKit.STAFF_TILES`. `registrar` is Petra's explicit U5 entry.
-## Unlisted ids fall back to `default`.
+## Unlisted ids fall back to `default`. The wardrobe accent is kept in the atlas; the face portrait is a distinct
+## column in the shared face sheet.
 const SKINS := {
-	"greeter": "greeter",            # deep-green jacket, brass buttons — the lobby's friendly face
-	"clerk": "clerk",                # brass waistcoat, green tie — Account Opening
-	"teller": "teller",              # graphite waistcoat over shirtsleeves — Counter 1
-	"vault_keeper": "vault_keeper",  # graphite uniform, brass trim — the vault window
-	"manager": "manager",            # charcoal suit, oxblood tie, grey hair — the corner office
-	"registrar": "registrar",        # deep-green waistcoat — Petra, Name Desk
-	"dealer": "dealer",              # oxblood waistcoat, rolled sleeves — Kenji, FX desk (S1)
+	"greeter": "greeter",            # graphite suit, emerald tie — the lobby's friendly face
+	"clerk": "clerk",                # deep-green sheath, mustard cardigan — Account Opening
+	"teller": "teller",              # graphite waistcoat, oxblood tie — Counter 1
+	"vault_keeper": "vault_keeper",  # charcoal suit, coral tie — the vault window
+	"manager": "manager",            # black three-piece, oxblood tie, grey temples — the corner office
+	"registrar": "registrar",        # navy skirt-suit, coral bow — Petra, Name Desk
+	"dealer": "dealer",              # wood braces, teal tie — Kenji, FX desk (S1)
 	"default": "greeter",
 }
 
@@ -38,11 +40,17 @@ const _HEIGHTS := {
 @export var escort_path: Array[Vector3] = []
 
 var state: State = State.IDLE
+var face_state: String = "neutral"
 var home: Vector3
 var home_yaw: float = 0.0
 
 var _body: Node3D
 var _anim: AnimationPlayer
+var _face: MeshInstance3D
+var _skeleton: Skeleton3D
+var _head_bone := -1
+var _head_base_pose := Quaternion.IDENTITY
+var _gaze_active := false
 var _plate: Label3D
 var _bubble: Label3D
 var _zone: Area3D
@@ -54,6 +62,7 @@ var _wait := 0.0
 var _escort_t := 0.0
 var _leg_t := 0.0
 var _escort_ignore: Array[PhysicsBody3D] = []
+var _greeted_in_approach := false
 
 const _ESCORT_SPEED := 3.2
 const _ARRIVE := 0.45
@@ -85,6 +94,12 @@ func _ready() -> void:
 	ch_root.rotation.y = PI   # Kenney glTF characters face +Z; a Godot body faces -Z
 	_body.add_child(ch_root)
 	_anim = ch["anim"]
+	_face = ch["face"]
+	_skeleton = ch["skeleton"]
+	_head_bone = _skeleton.find_bone("Head") if _skeleton != null else -1
+	_set_face_state("smile")
+	if _anim != null:
+		_anim.animation_finished.connect(_on_animation_finished)
 	_play("idle")
 
 	_plate = Label3D.new()
@@ -122,15 +137,26 @@ func _ready() -> void:
 	_zone.body_entered.connect(func(b: Node3D) -> void:
 		if b.is_in_group("player"):
 			_player = b
+			if state == State.IDLE:
+				_set_face_state("smile")
+				if not _greeted_in_approach:
+					_greeted_in_approach = true
+					_greet_once()
 			player_near.emit(self, true))
 	_zone.body_exited.connect(func(b: Node3D) -> void:
 		if b.is_in_group("player"):
+			if b == _player:
+				_player = null
+				_greeted_in_approach = false
+				if state == State.IDLE:
+					_set_face_state("neutral")
 			player_near.emit(self, false))
 	add_child(_zone)
 
 	Dialogue.opened.connect(func(id: String) -> void:
 		if id == npc_id:
-			_set_state(State.TALKING))
+			_set_state(State.TALKING)
+			_dialogue_face_beat())
 	Dialogue.closed.connect(func(id: String) -> void:
 		if id == npc_id and state != State.ESCORTING:
 			_set_state(State.IDLE))
@@ -161,14 +187,26 @@ func _set_state(s: State) -> void:
 	state = s
 	_t = 0.0
 	duty_changed.emit()
+	# A greet is a one-shot approach beat, never a state pose. Stop it before any non-IDLE state
+	# selects its own clip so opening dialogue mid-greet cannot leave the body on the last greet frame.
+	if s != State.IDLE and _anim != null and _anim.current_animation == "greet":
+		_anim.stop()
+		_play("idle")
 	match s:
 		State.WORKING:
+			_set_face_state("neutral")
 			_play("work")
 		State.REFUSING:
+			_set_face_state("concern")
 			_play("refuse")
 		State.ESCORTING:
+			_set_face_state("smile")
 			_play("walk", _ESCORT_SPEED / PropKit.STAFF_WALK_MPS)
+		State.TALKING:
+			_set_face_state("talk")
+			_play("idle")
 		_:
+			_set_face_state("smile" if _player != null else "neutral")
 			_play("idle")
 	if s == State.REFUSING:
 		_say(str(GameState.strings.get("refusing_bubble", "…")))
@@ -176,6 +214,55 @@ func _set_state(s: State) -> void:
 			if state == State.REFUSING:
 				_set_state(State.TALKING)
 				_bubble.visible = false)
+
+
+func _set_face_state(face_state: String) -> void:
+	self.face_state = face_state
+	if _face == null:
+		return
+	PropKit.set_face_state(_face, str(SKINS.get(npc_id, SKINS["default"])), face_state)
+
+
+func _dialogue_face_beat() -> void:
+	_set_face_state("surprised")
+	await get_tree().create_timer(0.4).timeout
+	if state == State.TALKING:
+		_set_face_state("talk")
+
+
+func _greet_once() -> void:
+	if _anim == null or not _anim.has_animation("greet") or state != State.IDLE:
+		return
+	_anim.speed_scale = 1.0
+	_anim.play("greet", 0.12)
+
+
+func _on_animation_finished(clip: StringName) -> void:
+	if clip == &"greet" and state == State.IDLE:
+		_play("idle")
+
+
+func _process(delta: float) -> void:
+	if _skeleton == null or _head_bone < 0:
+		return
+	# Imported glTF clips carry constant scale tracks; re-assert the role's authored silhouette after AnimationPlayer.
+	PropKit.apply_role_scale(_skeleton, str(SKINS.get(npc_id, SKINS["default"])))
+	var active := state == State.IDLE and _player != null
+	if active and not _gaze_active:
+		_head_base_pose = _skeleton.get_bone_pose_rotation(_head_bone)
+		_gaze_active = true
+	elif not active and _gaze_active:
+		_skeleton.set_bone_pose_rotation(_head_bone, _head_base_pose)
+		_gaze_active = false
+	if not active:
+		return
+	var local := to_local(_player.global_position)
+	var yaw := clampf(atan2(-local.x, -local.z), deg_to_rad(-40.0), deg_to_rad(40.0))
+	var flat := Vector2(local.x, local.z).length()
+	var pitch := clampf(atan2(local.y - 1.45, maxf(flat, 0.05)), deg_to_rad(-15.0), deg_to_rad(15.0))
+	var aim := Quaternion(Vector3.UP, yaw) * Quaternion(Vector3.RIGHT, pitch)
+	var target := aim * _head_base_pose
+	_skeleton.set_bone_pose_rotation(_head_bone, _skeleton.get_bone_pose_rotation(_head_bone).slerp(target, clampf(delta * 8.0, 0.0, 1.0)))
 
 
 func _say(text: String) -> void:

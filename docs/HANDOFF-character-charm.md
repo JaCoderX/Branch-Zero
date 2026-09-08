@@ -177,6 +177,24 @@ See [`KICKOFF-character-charm.md`](./KICKOFF-character-charm.md) DoD block.
 
 ---
 
+## Outcome (2026-09-08) — met
+
+Codex built the cast offline; Godot 4.5.2 gates were run on a host with the official console binary. Local record: `docs/progress/2026-09-08-character-charm.md`.
+
+| Gate | Result |
+|------|--------|
+| `run_checks` / `run_mock_walk` / `run_viz_budget` | **PASS** |
+| Materials | 37 mesh / **39 with particles** ≤ 40 (face sheet is the +1) |
+| Cast accounting | 8 face carriers, 1 shared face material, outline intact; ≈ 56 honest character draws with 2 shadow splits |
+| Worst viz view | **206** draws / 205k prims (entrance) |
+| Readability | `40_face_read_5m_close` (Ines) · `41_face_read_lobby_15m` (Mo) |
+| `.pck` | **2,919,012 B** |
+| Follow-up fixes | greet interrupt on non-IDLE; face alpha scissor; CREDITS one hash set |
+
+Room / Load Account / chain untouched. Human playtest of gaze + mid-greet dialogue feel still useful; headless gates are green.
+
+---
+
 ## Out of scope
 
 Room / furniture / heroes / HUD / particles; new NPCs or lines; blendshape or bone-driven facial rigs; Forward+;

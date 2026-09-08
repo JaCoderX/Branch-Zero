@@ -9,7 +9,8 @@ extends RefCounted
 ##    colours collapse into one shared StandardMaterial3D, and `recolor` re-tints named kit colours into the bank palette;
 ##  - the bank staff (assets/characters/kenney_staff, Kenney Animated Characters CC0, character style climb) are
 ##    one skinned mesh worn eight ways: `character()` folds the role's atlas tile into a copy of the UVs, so the
-##    cast costs one albedo material plus one inverted-hull outline pass — see `staff_material` / `staff_outline`;
+##    cast costs one albedo material plus one inverted-hull outline pass, and adds one shared face-sheet material on
+##    a shadowless head carrier — see `staff_material` / `staff_outline` / `face_material`;
 ##  - KayKit Furniture Bits (assets/models/kaykit_furniture, CC0, U7 viz Stage 6a) were authored against one flat-colour
 ##    palette atlas that tools/kaykit_pack.py strips out of the .glb: at load `_split_kaykit` reads each triangle's UV
 ##    cell and hands it the matching WingTheme palette material, so the denser fill costs zero new materials and
@@ -34,20 +35,37 @@ const SURFACES := "res://assets/textures/surfaces/"
 # The cast: one skinned .glb + one atlas, both regenerable (tools/bank_staff_rig.py, tools/bank_staff_atlas.py).
 const STAFF_GLB := CHARACTERS + "bank_staff.glb"
 const STAFF_ATLAS := CHARACTERS + "Textures/staff_atlas.png"
+const STAFF_FACE_SHEET := CHARACTERS + "Textures/face_sheet.png"
 const STAFF_TILE := 340.0        # tile side in atlas pixels
 const STAFF_STRIDE := 341.0      # tile pitch — a 1 px gutter keeps mip filtering out of the neighbour
 const STAFF_ATLAS_PX := 1024.0
 const STAFF_COLS := 3
 const STAFF_OUTLINE := 0.042     # inverted-hull grow, model space (see staff_outline)
+const STAFF_FACE_COLS := 8
+const STAFF_FACE_ROWS := 5
+const STAFF_FACE_PAD_PX := 2.0
 ## npc.gd `npc_id` / player → atlas tile, in the order tools/bank_staff_atlas.py paints them.
 const STAFF_TILES := {
 	"greeter": 0, "clerk": 1, "teller": 2, "vault_keeper": 3,
 	"manager": 4, "registrar": 5, "dealer": 6, "player": 7,
 }
-const STAFF_CLIPS := ["idle", "walk", "sprint", "work", "refuse"]
+const STAFF_CLIPS := ["idle", "walk", "sprint", "work", "refuse", "greet"]
 ## Ground speed each locomotion clip was authored for, so callers can scale `speed_scale` instead of skating.
 const STAFF_WALK_MPS := 1.5
 const STAFF_SPRINT_MPS := 3.8
+
+# Mirrors the authoring table in tools/bank_staff_rig.py. The common glb stays one mesh; these pose scales are applied
+# to each Skeleton3D instance so stocky / slight / tall cues cost no mesh, atlas tile, or material.
+const STAFF_ROLE_SCALES := {
+	"greeter": {"Spine": Vector3(1.08, 1.02, 0.96), "Chest": Vector3(1.08, 1.02, 0.96), "Head": Vector3(1.06, 1.06, 1.06), "Neck": Vector3(1.03, 1.03, 1.0), "LeftUpLeg": Vector3(0.96, 0.96, 0.95), "RightUpLeg": Vector3(0.96, 0.96, 0.95)},
+	"clerk": {"Spine": Vector3(0.94, 0.96, 0.96), "Chest": Vector3(0.94, 0.96, 0.96), "Head": Vector3(1.02, 1.02, 1.02), "Neck": Vector3(1.01, 1.01, 1.0), "LeftUpLeg": Vector3(1.03, 1.03, 1.04), "RightUpLeg": Vector3(1.03, 1.03, 1.04)},
+	"teller": {"Spine": Vector3(1.02, 1.0, 0.98), "Chest": Vector3(1.02, 1.0, 0.98), "Head": Vector3.ONE, "LeftUpLeg": Vector3(0.99, 0.99, 0.98), "RightUpLeg": Vector3(0.99, 0.99, 0.98)},
+	"vault_keeper": {"Spine": Vector3(1.07, 1.04, 0.96), "Chest": Vector3(1.07, 1.04, 0.96), "Head": Vector3(1.03, 1.03, 1.03), "Neck": Vector3(1.02, 1.02, 1.0), "LeftUpLeg": Vector3(0.95, 0.95, 0.94), "RightUpLeg": Vector3(0.95, 0.95, 0.94)},
+	"manager": {"Spine": Vector3(1.10, 1.05, 0.95), "Chest": Vector3(1.10, 1.05, 0.95), "Head": Vector3.ONE, "Neck": Vector3.ONE, "LeftUpLeg": Vector3(0.94, 0.94, 0.93), "RightUpLeg": Vector3(0.94, 0.94, 0.93)},
+	"registrar": {"Spine": Vector3(0.92, 0.95, 0.95), "Chest": Vector3(0.92, 0.95, 0.95), "Head": Vector3(0.98, 0.98, 0.98), "LeftUpLeg": Vector3(1.05, 1.05, 1.06), "RightUpLeg": Vector3(1.05, 1.05, 1.06)},
+	"dealer": {"Spine": Vector3(0.96, 0.98, 0.98), "Chest": Vector3(0.96, 0.98, 0.98), "Head": Vector3.ONE, "LeftUpLeg": Vector3(1.07, 1.07, 1.08), "RightUpLeg": Vector3(1.07, 1.07, 1.08)},
+	"player": {"Head": Vector3(1.02, 1.02, 1.02), "Neck": Vector3(1.01, 1.01, 1.0)},
+}
 
 static var theme: WingTheme = null
 static var _mats: Dictionary = {}
@@ -459,6 +477,8 @@ static func aabb(root: Node3D) -> AABB:
 	var out := AABB()
 	var first := true
 	for mi in _meshes(root):
+		if mi.has_meta("face_carrier"):
+			continue # a face carrier is a visual overlay, not part of the body's height fit
 		var bb := rel_xform(mi, root) * mi.get_aabb()
 		out = bb if first else out.merge(bb)
 		first = false
@@ -552,9 +572,9 @@ static func _no_batch(node: Node, root: Node) -> bool:
 ## rather than into a per-role material — so the cast still costs one albedo material plus one outline
 ## (GameDevOS `atlas-skins-to-one-material`), and the tiled meshes are cached per role.
 ##
-## Scaled so the head top sits at `height`; returns {root, anim}. Characters animate, so they never join
-## bake_static: budget them as 2 surfaces (body + outline next_pass) × (1 colour + 2 shadow passes) = 6 draws
-## each (GameDevOS `animated-nodes-cost-surfaces-times-passes`) — the Blocky cast cost 18.
+## Scaled so the head top sits at `height`; returns {root, anim, face, skeleton}. Characters animate, so they never
+## join bake_static: budget them as 3 surfaces (body + outline next_pass + shadowless face) × (1 colour + 2 shadow
+## passes) = 9 worst-case submissions each. The face carrier itself is one unshadowed draw and has no outline pass.
 static func character(role: String, height: float = 1.8) -> Dictionary:
 	var root := instance(STAFF_GLB, {"center": true, "ground": true, "keep_materials": true})
 	var tile := int(STAFF_TILES.get(role, STAFF_TILES["greeter"]))
@@ -568,12 +588,55 @@ static func character(role: String, height: float = 1.8) -> Dictionary:
 	var s := height / maxf(bb.size.y, 0.01)
 	root.scale = Vector3.ONE * s
 	root.position = Vector3(-(bb.position.x + bb.size.x / 2.0) * s, -bb.position.y * s, -(bb.position.z + bb.size.z / 2.0) * s)
+	var skeleton := _find_skeleton(root)
+	apply_role_scale(skeleton, role)
+	var face := _face_carrier(root, skeleton, role)
 	var anim := root.find_child("AnimationPlayer", true, false) as AnimationPlayer
 	if anim != null:
 		for clip in STAFF_CLIPS:
 			if anim.has_animation(clip):
-				anim.get_animation(clip).loop_mode = Animation.LOOP_LINEAR
-	return {"root": root, "anim": anim}
+				anim.get_animation(clip).loop_mode = Animation.LOOP_NONE if clip == "greet" else Animation.LOOP_LINEAR
+	return {"root": root, "anim": anim, "face": face, "skeleton": skeleton}
+
+
+static func _find_skeleton(root: Node) -> Skeleton3D:
+	for n in _all_nodes(root):
+		if n is Skeleton3D:
+			return n as Skeleton3D
+	return null
+
+
+static func apply_role_scale(skeleton: Skeleton3D, role: String) -> void:
+	if skeleton == null:
+		return
+	var scales: Dictionary = STAFF_ROLE_SCALES.get(role, {})
+	for bone_name in scales:
+		var bone := skeleton.find_bone(str(bone_name))
+		if bone >= 0:
+			skeleton.set_bone_pose_scale(bone, scales[bone_name])
+
+
+static func _face_carrier(root: Node3D, skeleton: Skeleton3D, role: String) -> MeshInstance3D:
+	if skeleton == null or skeleton.find_bone("Head") < 0:
+		push_warning("PropKit: staff face carrier could not find the Head bone")
+		return null
+	var attachment := BoneAttachment3D.new()
+	attachment.name = "FaceAttachment"
+	attachment.bone_name = "Head"
+	attachment.set_meta("face_attachment", true)
+	skeleton.add_child(attachment)
+	var face := MeshInstance3D.new()
+	face.name = "FaceCarrier"
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.30, 0.30)
+	face.mesh = quad
+	face.position = Vector3(0.0, 0.11, 0.165)
+	face.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	face.material_override = face_material()
+	face.set_instance_shader_parameter("frame", face_frame(role, "smile" if role != "player" else "neutral"))
+	face.set_meta("face_carrier", true)
+	attachment.add_child(face)
+	return face
 
 
 ## The cast's albedo: the staff atlas, linear-filtered (the faces are vector art with soft gradients, unlike the
@@ -593,6 +656,53 @@ static func staff_material() -> StandardMaterial3D:
 	m.next_pass = staff_outline()
 	_mats["staff"] = m
 	return m
+
+
+## One shared, unshaded face-sheet material. `frame` is an instance uniform so eight characters can show eight
+## portraits and five states without duplicating a material. The 2 px inset is the mip-safe gutter inside each 64 px
+## cell (8 × 5 cells, 512 × 320 sheet).
+static func face_material() -> ShaderMaterial:
+	if _mats.has("staffFace"):
+		return _mats["staffFace"] as ShaderMaterial
+	var shader := Shader.new()
+	shader.code = """
+	shader_type spatial;
+	// Alpha scissor keeps the face as an opaque Compatibility cutout: no soft transparent plate to sort against glass/counters.
+	render_mode unshaded, cull_disabled, depth_draw_opaque;
+instance uniform int frame = 0;
+uniform sampler2D face_sheet;
+
+void fragment() {
+	int col = frame - (frame / 8) * 8;
+	int row = frame / 8;
+	vec2 cell = vec2(1.0 / 8.0, 1.0 / 5.0);
+	vec2 pad = vec2(2.0 / 512.0, 2.0 / 320.0);
+	vec2 uv = vec2(float(col), float(row)) * cell + pad + UV * (cell - pad * 2.0);
+	vec4 face = texture(face_sheet, uv);
+	ALBEDO = face.rgb;
+	ALPHA = face.a;
+	ALPHA_SCISSOR_THRESHOLD = 0.5;
+}
+"""
+	var m := ShaderMaterial.new()
+	m.resource_name = "staffFace"
+	m.shader = shader
+	m.set_shader_parameter("face_sheet", load(STAFF_FACE_SHEET))
+	_mats["staffFace"] = m
+	return m
+
+
+static func face_frame(role: String, state: String) -> int:
+	var rows := {"neutral": 0, "smile": 1, "talk": 2, "concern": 3, "surprised": 4}
+	var state_row: int = int(rows.get(state, 0))
+	var role_col: int = int(STAFF_TILES.get(role, STAFF_TILES["greeter"]))
+	return state_row * STAFF_FACE_COLS + role_col
+
+
+static func set_face_state(face: MeshInstance3D, role: String, state: String) -> void:
+	if face == null:
+		return
+	face.set_instance_shader_parameter("frame", face_frame(role, state))
 
 
 ## Character-only ink: an inverted hull (grow along the normal, cull the front faces, unshaded near-black).

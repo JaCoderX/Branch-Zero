@@ -39,6 +39,8 @@ var _arm: SpringArm3D
 var _cam: Camera3D
 var _body: Node3D
 var _anim: AnimationPlayer
+var _face: MeshInstance3D
+var _skeleton: Skeleton3D
 var _dragging := false
 var _rmb_held := false
 var _mouse_steer := false      # steer_target came from the mouse (cancel on WASD / lock; no camera follow)
@@ -65,6 +67,9 @@ func _ready() -> void:
 	ch_root.rotation.y = PI   # glTF characters face +Z; a Godot body faces -Z
 	_body.add_child(ch_root)
 	_anim = ch["anim"]
+	_face = ch["face"]
+	_skeleton = ch["skeleton"]
+	PropKit.set_face_state(_face, SKIN, "neutral")
 	_play("idle")
 
 	var pivot := Node3D.new()
@@ -90,9 +95,16 @@ func _ready() -> void:
 	rotation.y = 0.0
 	# the talk two-shot: main.gd calls look_at_point(npc) right before the NPC opens its dialogue
 	Dialogue.opened.connect(func(_id: String) -> void:
+		PropKit.set_face_state(_face, SKIN, "smile")
 		talk_framing = _has_talk_point)
 	Dialogue.closed.connect(func(_id: String) -> void:
+		PropKit.set_face_state(_face, SKIN, "neutral")
 		talk_framing = false)
+
+
+func _process(_delta: float) -> void:
+	# Imported glTF clips carry constant scale tracks; keep the player's neutral silhouette after animation updates.
+	PropKit.apply_role_scale(_skeleton, SKIN)
 
 
 func _unhandled_input(event: InputEvent) -> void:
