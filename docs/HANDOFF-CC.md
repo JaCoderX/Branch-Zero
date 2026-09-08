@@ -30,7 +30,8 @@ You are a **cold agent** unless the human says you are continuing a prior sessio
 > [`docs/KICKOFF-character-style.md`](./KICKOFF-character-style.md). Prefer **Opus 5 high** in a **separate**
 > CC session so it does not collide with Ines/desk files.
 >
-> **Explore set dressing (optional):** SE partners / ETH Online notice board (Bloxchain + Particle panels) —
+> **Explore set dressing (optional):** SE partners / ETH Online notice board (Bloxchain + Particle panels)
+> **and** a standalone lobby terminal (no NPC, reuses Terminal Console) —
 > [`docs/HANDOFF-partners-board.md`](./HANDOFF-partners-board.md) ·
 > [`docs/KICKOFF-partners-board.md`](./KICKOFF-partners-board.md). Prefer **Codex Luna** in a **separate**
 > session; does not replace packaging or the polish re-playtest gate.

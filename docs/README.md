@@ -29,7 +29,7 @@ Start with **[PLAN.md](./PLAN.md)**. Read order for a new contributor:
 | 17 | [SEPOLIA-TREASURY.md](./SEPOLIA-TREASURY.md) · [HANDOFF-sepolia-treasury.md](./HANDOFF-sepolia-treasury.md) · [KICKOFF-sepolia-treasury.md](./KICKOFF-sepolia-treasury.md) | `SEPOLIA_TREASURY_PK` collects ETH+USDC; staff top-ups at need × 1.25 (**met** 2026-09-08; owed: one faucet claim) |
 | 18 | [LOAD-ACCOUNT.md](./LOAD-ACCOUNT.md) · [HANDOFF-load-account.md](./HANDOFF-load-account.md) · [KICKOFF-load-account.md](./KICKOFF-load-account.md) | Ines loads owned AccountBlox by address (**met** 2026-09-08; owed: Live walk) |
 | 19 | [HANDOFF-character-style.md](./HANDOFF-character-style.md) · [KICKOFF-character-style.md](./KICKOFF-character-style.md) | **Parallel art:** cast climb beyond Kenney Blocky (Borderlands-adjacent outline; room stays) — Opus / CC |
-| 20 | [HANDOFF-partners-board.md](./HANDOFF-partners-board.md) · [KICKOFF-partners-board.md](./KICKOFF-partners-board.md) | **Explore:** SE partners / ETH Online notice board (Bloxchain + Particle panels) — Codex Luna |
+| 20 | [HANDOFF-partners-board.md](./HANDOFF-partners-board.md) · [KICKOFF-partners-board.md](./KICKOFF-partners-board.md) | **Explore:** SE partners / ETH Online board **+** standalone lobby terminal (no NPC) — Codex Luna |
 
 **Not published** (gitignored; stay on the laptop): `docs/progress/` (daily notes + captures). Kickoffs and `HANDOFF-CC.md` stay in git for cold agents.
 
