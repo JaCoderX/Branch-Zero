@@ -24,11 +24,12 @@ You are a **cold agent** unless the human says you are continuing a prior sessio
 > Read [`docs/LOAD-ACCOUNT.md`](./LOAD-ACCOUNT.md) §8 and mission record **§5l**; local record
 > `docs/progress/2026-09-08-load-account.md`. Owed: a human browser walk on **Live**. Arc stays **DEFERRED**.
 
-> **Parallel art (optional, does not replace packaging):** Character style climb — more complex cartoon
-> cast, room unchanged. Research + DoD:
-> [`docs/HANDOFF-character-style.md`](./HANDOFF-character-style.md) ·
-> [`docs/KICKOFF-character-style.md`](./KICKOFF-character-style.md). Prefer **Opus 5 high** in a **separate**
-> CC session so it does not collide with Ines/desk files.
+> **Parallel art (optional, does not replace packaging):** Character style climb **met** 2026-09-08
+> ([`docs/HANDOFF-character-style.md`](./HANDOFF-character-style.md) §Outcome). Next art pass is the **charm**
+> pass — legible faces with expressions, ~5.5-heads proportion, mid-50s dress code, one accent per person; room
+> unchanged: [`docs/HANDOFF-character-charm.md`](./HANDOFF-character-charm.md) ·
+> [`docs/KICKOFF-character-charm.md`](./KICKOFF-character-charm.md). Codex Luna or CC in a **separate** session so
+> it does not collide with Ines/desk files.
 >
 > **Explore set dressing (optional):** SE partners / ETH Online notice board (Bloxchain + Particle panels)
 > **and** a standalone lobby terminal (no NPC, reuses Terminal Console) —

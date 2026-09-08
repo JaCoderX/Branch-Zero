@@ -120,6 +120,12 @@ Two facts in the Research above are now historical: the cast is no longer Kenney
 and it remains the documented fallback), and `tools/character_atlas.py` is replaced by
 `tools/bank_staff_rig.py` + `tools/bank_staff_atlas.py`.
 
+**Principal review (same day):** visualisation "a lot better", but the people read "boring and flat / dull" next
+to the charm the Blocky cast had. Diagnosed as faces too small at the game camera, adult proportion without
+silhouette identity, and uniforms painted in the room's own palette — not a mesh-complexity problem. The follow-up
+is a separate pass on this pipeline: [`HANDOFF-character-charm.md`](./HANDOFF-character-charm.md) ·
+[`KICKOFF-character-charm.md`](./KICKOFF-character-charm.md). This file stays the pipeline record.
+
 ---
 
 ## Baseline (do not regress)
