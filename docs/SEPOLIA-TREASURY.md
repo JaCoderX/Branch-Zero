@@ -211,8 +211,10 @@ BLOCKER - the treasury cannot fill every shortfall.
 ```
 
 That is the honest state of the branch, not a failure of the unit: the deployer is one Account Opening short,
-the treasury is 0.010546 ETH short of covering it after its reserve, and **a human claims the faucet**
-(sign-in / captcha — agents do not). `/healthz` reports the same numbers, the desk-debug row shows them in
+the treasury is ~0.0105 ETH short of covering it after its reserve, and **a human claims the faucet**
+(sign-in / captcha — agents do not). Read the deficit as a **snapshot, not a constant** — while the treasury
+shares the registrar's key (see the concession below), every ENS write moves it; `treasury:topup` and
+`funding:sepolia` recompute it from chain state on each run. `/healthz` reports the same numbers, the desk-debug row shows them in
 amber, and `killtests:treasury` is green on both wings.
 
 **No regressions.** `killtests:s2` 6/6 on both wings; `npm run typecheck` clean; and the Dev wing's
