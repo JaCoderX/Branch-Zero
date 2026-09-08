@@ -29,6 +29,11 @@ You are a **cold agent** unless the human says you are continuing a prior sessio
 > [`docs/HANDOFF-character-style.md`](./HANDOFF-character-style.md) ·
 > [`docs/KICKOFF-character-style.md`](./KICKOFF-character-style.md). Prefer **Opus 5 high** in a **separate**
 > CC session so it does not collide with Ines/desk files.
+>
+> **Explore set dressing (optional):** SE partners / ETH Online notice board (Bloxchain + Particle panels) —
+> [`docs/HANDOFF-partners-board.md`](./HANDOFF-partners-board.md) ·
+> [`docs/KICKOFF-partners-board.md`](./KICKOFF-partners-board.md). Prefer **Codex Luna** in a **separate**
+> session; does not replace packaging or the polish re-playtest gate.
 
 > **Sepolia Ops Treasury — MET 2026-09-08** (§5k). `SEPOLIA_TREASURY_PK` is the Live-wing float: faucet drops
 > land there and staff wallets are topped to **need × 1.25** when they fall below **need** — from

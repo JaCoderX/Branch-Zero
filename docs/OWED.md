@@ -49,6 +49,7 @@ Related: [HANDOFF-CC.md](./HANDOFF-CC.md) · [DEV-LOOP.md](./DEV-LOOP.md) · [RE
 
 ## 5. Explore / nice-to-have (not blocking ship)
 
+- [ ] **SE partners notice board** — fill unused southeast corner (south of elevator) with diegetic ETH Online / partners / Bloxchain / Particle board — [HANDOFF-partners-board.md](./HANDOFF-partners-board.md) · [KICKOFF-partners-board.md](./KICKOFF-partners-board.md) (Codex Luna)
 - [ ] **Provision pin follow-up** — Re-check / recovery path that re-pins when `policyPinned` is stale after a lost `players.json` (load lane already moves pins; Account Opening is one-shot today — [LOAD-ACCOUNT.md](./LOAD-ACCOUNT.md) §8.2)
 - [ ] **Ines clone list stretch** — offer this owner’s `BloxCloned` addresses as dialogue choices (log filter; no CopyBlox Solidity)
 - [ ] Doc hygiene: keep [DEV-LOOP.md](./DEV-LOOP.md) unit rows in sync with HANDOFF-CC when units close
