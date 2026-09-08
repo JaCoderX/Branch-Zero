@@ -100,7 +100,7 @@ Mo: Your account is a state machine. Large transfers are time-locked transaction
 
 ### 4.2 Account Clerk — Ines (Account Opening)
 
-Purpose: Privy login, delegation, account deployment, revoke, faucet, and the desk terminal.
+Purpose: Privy login, delegation, account deployment / **load by address**, revoke, faucet, and the desk terminal.
 
 ```text
 [no login]
@@ -120,11 +120,19 @@ Ines: One more thing. Would you like our tellers to act on your instructions wit
 [why_delegate]
 Ines: You'd be adding our branch as a signer on your wallet, limited by a policy to signing bank slips for your own account. Nothing else. Technically: a scoped session signer for eth_signTypedData_v4 on the Bloxchain EIP-712 domain.
 
+[open / no account on file]
+Ines: Ready to open your account? …
+  > Open my account        → action: provision (recover last clone or cloneBlox)
+  > Load an existing account → form: load_account { address }   (**planned** — docs/LOAD-ACCOUNT.md)
+  > Ask why
+
 [deploying]  (WORKING; progress lines are real stages)
 Ines: Opening your account… Creating account · Registering services · Approving payees · Ready.
 
 [done]
 Ines: Done. Here's your passbook. Your account lives at {short_address} on the {wing} wing. I've put 500 practice dollars in it.
+  > Re-check my account
+  > Load an existing account → form: load_account { address }   (**planned** — non-latest clone / multi-account)
   > Revoke teller access   → action: privy_remove_session_signer
   > Top up practice dollars→ action: faucet
   > Use the desk terminal  → action: open_console
@@ -134,7 +142,9 @@ Ines: Console is on the desk screen. Close the panel when you're done.
   > Done.                  → end
 ```
 
-Bridge actions: `privy_login`, `privy_add_session_signer`, `provision_account` (deploy + init + guard batch), `faucet`, `privy_remove_session_signer`, `open_console` (terminal only; viewing-wallet verbs remain at the terminal).
+Bridge actions: `privy_login`, `privy_add_session_signer`, `provision_account` (deploy + init + guard batch), `load_account` (**planned** — adopt owned Address after `owner()` check), `faucet`, `privy_remove_session_signer`, `open_console` (terminal only; viewing-wallet verbs remain at the terminal).
+
+The desk terminal helps **discover** addresses; Ines **loads** them into the session. Auto-recovery still keeps the latest `BloxCloned` when the player chooses Open my account.
 
 ### 4.3 Tellers — Dev (Counter), Ama (second teller)
 

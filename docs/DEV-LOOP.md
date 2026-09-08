@@ -67,6 +67,7 @@ Ordered so that after U2 we can stop and still demo a coherent bank-on-a-chain (
 | **Stretch — Terminal Console** | Iframe `bloxchain.app` + opt-in `OBSERVER` role (empty permissions) for MetaMask/ENS view access | — | **met** 2026-09-08 — [TERMINAL-CONSOLE.md](./TERMINAL-CONSOLE.md) · §5h; Privy↔SaaS Global Wallet **parked**. Human Console+MetaMask walk still owed |
 | **Sepolia Live + Dev Mode (S2)** | Live Main = Sepolia; Remote EVM = Developer Mode (desk debug); FX Sepolia-only honesty; funding runbook | public demo | **met** 2026-09-08 — whole wing on Sepolia with Etherscan evidence; `killtests:s2` 6/6 on both wings — [SEPOLIA-LIVE.md](./SEPOLIA-LIVE.md) §6.1 · HANDOFF-CC §5j |
 | **Sepolia Ops Treasury** | `SEPOLIA_TREASURY_PK` collects ETH+USDC; background staff top-ups at need × 1.25 | Live ops | **planned** 2026-09-08 — [SEPOLIA-TREASURY.md](./SEPOLIA-TREASURY.md) · [KICKOFF-sepolia-treasury.md](./KICKOFF-sepolia-treasury.md) (Opus 5 high) |
+| **Load Account (Ines)** | Paste/load a player-owned AccountBlox address (non-latest clone / multi-account); terminal discovers, Ines loads | Account Opening | **planned** 2026-09-08 — [LOAD-ACCOUNT.md](./LOAD-ACCOUNT.md) · [KICKOFF-load-account.md](./KICKOFF-load-account.md) (Opus 5 high) |
 
 Each unit ends with: commit, a local note under `docs/progress/` (gitignored), and a kill/decision line in [REFLECTION.md](./REFLECTION.md) if anything changed.
 

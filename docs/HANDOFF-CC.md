@@ -6,7 +6,7 @@ created: 2026-09-06
 updated: 2026-09-08
 product: Branch-Zero
 objective: OBJ-2026-0004
-first_mission: Sepolia Ops Treasury (docs/KICKOFF-sepolia-treasury.md) — prefer Claude Code Opus 5 high; U7 ship packaging still owed after polish re-playtest; U6 Arc G7 deferred
+first_mission: Load Account via Ines (docs/KICKOFF-load-account.md) — prefer Claude Code Opus 5 high; Sepolia Ops Treasury still planned (KICKOFF-sepolia-treasury.md); U7 ship packaging still owed after polish re-playtest; U6 Arc G7 deferred
 prior_mission: Sepolia Live + Developer Mode MET 2026-09-08 — Live Main wing is Sepolia (CopyBlox 0x443ECf16…, account 0xf8EECc6B…, Lane A/B/Priority/faucet/OBSERVER/ENS/K7 on Etherscan); Remote EVM 1337 is Developer Mode behind the desk-debug toggle. Before it: S1b FX validate, Terminal Console + OBSERVER, U7 polish, practice faucet, U5 ENS
 ---
 
@@ -14,11 +14,12 @@ prior_mission: Sepolia Live + Developer Mode MET 2026-09-08 — Live Main wing i
 
 You are a **cold agent** unless the human says you are continuing a prior session. Prefer reading this file over chat memory. You have **freedom on how**. You do **not** have freedom on constraints, scope, or protocol semantics.
 
-**Authorized construction (2026-09-08): Sepolia Ops Treasury** — prefer **Claude Code · Opus 5 high**.
-Plan: [`docs/SEPOLIA-TREASURY.md`](./SEPOLIA-TREASURY.md). Handoff: [`docs/HANDOFF-sepolia-treasury.md`](./HANDOFF-sepolia-treasury.md).
-Kickoff: [`docs/KICKOFF-sepolia-treasury.md`](./KICKOFF-sepolia-treasury.md).
-`SEPOLIA_TREASURY_PK` collects Live ETH + USDC; background/CLI top-ups to staff roles at **need × 1.25**.
-Role keys stay separate. Not a lobby desk. Arc stays **DEFERRED**.
+**Authorized construction (2026-09-08): Load Account (Ines)** — prefer **Claude Code · Opus 5 high**.
+Plan: [`docs/LOAD-ACCOUNT.md`](./LOAD-ACCOUNT.md). Handoff: [`docs/HANDOFF-load-account.md`](./HANDOFF-load-account.md).
+Kickoff: [`docs/KICKOFF-load-account.md`](./KICKOFF-load-account.md).
+Ines loads a player-owned AccountBlox by address (non-latest CopyBlox clone / multi-account). Terminal discovers; Ines loads. Arc stays **DEFERRED**.
+
+**Queued:** Sepolia Ops Treasury — [`docs/KICKOFF-sepolia-treasury.md`](./KICKOFF-sepolia-treasury.md).
 
 > **Sepolia Live + Developer Mode — MET 2026-09-08.** The Main payment wing is now **Sepolia `11155111`** and it
 > is the **default**: `CHAIN_ID` unset means Live, the shell's `/api` is the Live desk, and a player who never
