@@ -73,6 +73,15 @@ func start(id: String) -> void:
 	_ctx = {}
 	GameState.ui_locked = true
 	opened.emit(id)
+	# Kenji's start node depends on `fx_desk` / `fx_open` from the last fxStatus. Login and Re-check used to skip
+	# that read, so the board stayed dark even when Sepolia was fine — refresh before picking the node.
+	if id == "dealer" and GameState.logged_in():
+		is_working = true
+		working.emit(id, str(GameState.strings.get("fx_board_warming", "Checking the exchange board…")))
+		await GameState.refresh_fx(true)
+		is_working = false
+		if not active or npc_id != id:
+			return
 	_goto(pick_start(_data, GameState.facts()))
 
 

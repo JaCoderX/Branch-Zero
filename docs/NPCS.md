@@ -281,7 +281,9 @@ stops quoting either pair or starts talking about ether again. Kenji is not a te
 build if `dealer.json` ever grows a verb other than `fx_quote` / `fx_enable` / `fx_swap`. The FX till is a **second**
 `AccountBlox`, on the chain the exchange lives on; the Main wing's counter and vault stay on Remote EVM 1337.
 
-As built in `dialogue/dealer.json` (start node follows the chain, not memory: `fx_desk` → `fx_till` → `fx_open` → `fx_quoted`):
+As built in `dialogue/dealer.json` (start node follows the chain, not memory: `fx_desk` → `fx_till` → `fx_open` → `fx_quoted`).
+Talking to Kenji always re-reads `fxStatus` first so a Re-check / late login cannot leave him on `desk_closed` with an empty board;
+`refresh_all` also loads FX when `pairs` are missing (provision / login).
 
 ```text
 [no FX deployment]                                        (node: desk_closed)

@@ -35,7 +35,10 @@ var errors: Dictionary = {}
 var strings: Dictionary = {}
 
 var _reconcile_at: float = 0.0
+var _fx_at: float = 0.0            # last successful fxStatus wall time — throttle pool reads in refresh_all
 var _last_error: Dictionary = {}
+
+const FX_REFRESH_SEC := 12.0       # Sepolia pair reads are not free; refresh_all reuses a warm board within this window
 
 
 func _ready() -> void:
@@ -316,6 +319,8 @@ func vars(extra: Dictionary = {}) -> Dictionary:
 # ---------------------------------------------------------------- reads
 
 func refresh_session() -> void:
+	var prev_account := account()
+	var prev_mode := mode()
 	var r := await Chain.call_async("getSession", {}, 20.0)
 	if r.get("ok", false) and r.get("result") is Dictionary:
 		session = r["result"]
@@ -323,6 +328,14 @@ func refresh_session() -> void:
 			balance = "0"
 			wires = []
 			receipts = []
+			fx = {}
+			fx_quote = {}
+			_fx_at = 0.0
+		elif account() != prev_account or mode() != prev_mode:
+			# New till / Live↔Dev: drop the stale board so refresh_all forces fxStatus.
+			fx = {}
+			fx_quote = {}
+			_fx_at = 0.0
 	else:
 		session = {"loggedIn": false, "ready": false}
 		_note_error(r.get("error", {}))
@@ -385,17 +398,25 @@ func fx_quoted() -> bool:
 	return not fx_quote.is_empty() and fx_quote_remaining() > 0
 
 
-## Kenji's till and his pool. Silent on failure: the FX desk is a side wing, and a Sepolia hiccup must never make
-## Account Opening or the Main-wing lanes unusable (same rule as the names board).
-func refresh_fx() -> void:
+## Kenji's till and his pools. Silent on failure: a Sepolia hiccup must never break Account Opening or the Main lanes.
+## Pass `force` when the player is at the FX desk — a Re-check / late login must not leave the board dark for 12 s.
+func refresh_fx(force: bool = false) -> void:
 	if not logged_in():
 		fx = {}
+		fx_quote = {}
+		_fx_at = 0.0
+		return
+	if not force and fx.has("pairs") and (Time.get_unix_time_from_system() - _fx_at) < FX_REFRESH_SEC:
 		return
 	var r := await Chain.call_async("fxStatus", {}, 30.0)
 	if not r.get("ok", false):
+		# Keep a warm board on a transient RPC blip; clear only when we never had pairs (so Kenji stays honest).
+		if not fx.has("pairs"):
+			print("GameState: fxStatus failed — Kenji's board stays dark (%s)" % str(r.get("error", {}).get("code", "unknown")))
 		return
 	if r.get("result") is Dictionary:
 		fx = r["result"]
+		_fx_at = Time.get_unix_time_from_system()
 		_sync_clock(fx.get("serverNow"))
 	changed.emit()
 
@@ -443,6 +464,9 @@ func refresh_all() -> void:
 	await refresh_session()
 	if logged_in():
 		await refresh_passbook()
+		# Provision / login / Re-check used to skip FX — Kenji then stayed on desk_closed with an empty `fx`.
+		# Force when the board has never loaded; otherwise reuse a warm status within FX_REFRESH_SEC.
+		await refresh_fx(not fx.has("pairs"))
 
 
 # ---------------------------------------------------------------- writes (every desk action lands here)
