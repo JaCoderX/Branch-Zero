@@ -27,7 +27,7 @@ Paste into a **new** session (dual-root: GameLab write for ENG-0018; Branch-Zero
 | Jacket land `fec5aa1` | Live meshes are `*_jacket_*`; do not remesh |
 | Principal | Cast look OK; animation next — "base stance with hands spread" |
 | `KAYKIT_CLIP_SRC` | idle←Idle_A · walk←Walking_A · work←Interact · greet←Waving · refuse←Hit_A · sprint←Running_A |
-| Lab vs product AnimationPlayer | Product wants `root_node = "."`; lab sometimes used `".."` — diagnose before baking clips |
+| Lab vs product AnimationPlayer | `root_node` is relative to the player, so both need `".."` (glb root); `"."` was the Stage 0A bug — landed 2026-09-09 |
 | Tools library | Not vendored yet; intake only if Stage 1 needs it and CC0 redistribution is green |
 
 ---
@@ -76,7 +76,7 @@ AVOID: jacket remesh; room; dialogue; Mad Men face sheet; Mixamo/Quaternius; Loa
 
 SEQUENCE:
 0. DIAGNOSE — run desktop or web lobby; confirm current_animation; compare stock vs jacket; inspect AnimationPlayer.root_node on character_kaykit path; note verdict A (wiring) / B (authoring) / both.
-1. If A — fix _kaykit_ensure_anim_player to always use a product-owned player with root_node "."; reinstall bank clips; smoke + export:web; stop for principal feel check.
+1. If A — fix _kaykit_ensure_anim_player so every player (product-created or embedded) has root_node ".."; reinstall bank clips; smoke + export:web; stop for principal feel check. [DONE 2026-09-09 — Stage 0A landed]
 2. If B — mint ENG-2026-0018 from template; census clips in vendored Rig_Medium_* (+ Tools only if intake approved); board Idle_A vs Idle_B vs candidates on jacket bodies.
 3. SPIKE — remap KAYKIT_CLIP_SRC in lab harness (or bake minimal bank idle in Blender, same bones); Godot proof idle/walk/greet on Mo + Ines + Bob.
 4. FINDINGS — clip table; wiring notes; proposed product KAYKIT_CLIP_SRC; CREDITS if new files.

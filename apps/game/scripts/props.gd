@@ -813,12 +813,16 @@ static func character_kenney(role: String, height: float = 1.8) -> Dictionary:
 static func _kaykit_ensure_anim_player(root: Node, _skeleton: Skeleton3D) -> AnimationPlayer:
 	var existing := root.find_child("AnimationPlayer", true, false) as AnimationPlayer
 	if existing != null:
+		# An embedded glb player must also resolve `Rig_Medium/Skeleton3D:*` from the glb root, wherever it sits.
+		existing.root_node = existing.get_path_to(root)
 		return existing
 	var anim := AnimationPlayer.new()
 	anim.name = "AnimationPlayer"
-	# KayKit libraries author tracks as `Rig_Medium/Skeleton3D:bone` from the scene root — mirror that.
+	# KayKit libraries author tracks as `Rig_Medium/Skeleton3D:bone` from the glb root. `root_node` is resolved
+	# relative to the AnimationPlayer itself, so the player (a child of `root`) must point at its parent: `..`.
+	# `.` made every track miss silently and left the cast in the T-pose bind (2026-09-09 Stage 0A).
 	root.add_child(anim)
-	anim.root_node = NodePath(".")
+	anim.root_node = NodePath("..")
 	return anim
 
 

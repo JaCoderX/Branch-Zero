@@ -1,5 +1,7 @@
 extends SceneTree
 ## Headless smoke: import KayKit jacket cast and print clip / skeleton / accessory diagnostics.
+## Also plays `idle` for a few frames in-tree and asserts the arms leave the T-pose bind (Stage 0A, 2026-09-09:
+## `root_node = "."` made every `Rig_Medium/Skeleton3D:*` track miss silently and the cast stood in bind pose).
 ## Usage: Godot --headless --path apps/game -s res://tests/smoke_kaykit_cast.gd
 
 
@@ -29,6 +31,47 @@ func _role_ok(role: String, height: float, expect_bones: int, forbid: Array) -> 
 	if not _absent(root, forbid):
 		ok = false
 	root.free()
+	return ok
+
+
+## Angle (deg) between the left upper arm and straight down: 90 = T-pose bind, Idle_A ≈ 41.
+func _upperarm_deg(skeleton: Skeleton3D) -> float:
+	var up := skeleton.find_bone("upperarm.l")
+	var lo := skeleton.find_bone("lowerarm.l")
+	if up < 0 or lo < 0:
+		return -1.0
+	var v: Vector3 = (skeleton.get_bone_global_pose(lo).origin - skeleton.get_bone_global_pose(up).origin).normalized()
+	return rad_to_deg(acos(clampf(v.dot(Vector3.DOWN), -1.0, 1.0)))
+
+
+## In-tree: play idle, advance frames, require every idle track to resolve and the arms to drop out of bind pose.
+func _idle_not_bind(role: String) -> bool:
+	var ch: Dictionary = PropKit.character(role, 1.8)
+	var root: Node3D = ch["root"]
+	var anim: AnimationPlayer = ch["anim"]
+	var skeleton: Skeleton3D = ch["skeleton"]
+	get_root().add_child(root)
+	var ok := anim != null and skeleton != null
+	if ok:
+		var base := anim.get_node_or_null(anim.root_node)
+		var idle: Animation = anim.get_animation("idle")
+		var unresolved := 0
+		for i in idle.get_track_count():
+			var p: NodePath = idle.track_get_path(i)
+			var n := base.get_node_or_null(NodePath(String(p).split(":")[0])) if base != null else null
+			if not (n is Skeleton3D) or (n as Skeleton3D).find_bone(String(p.get_subname(0))) < 0:
+				unresolved += 1
+		var rest_deg := _upperarm_deg(skeleton)
+		anim.play("idle")
+		for i in 12:
+			await process_frame
+		var deg := _upperarm_deg(skeleton)
+		print("idle pose role=", role, " root_node=", anim.root_node, " base=", base.name if base else "null",
+			" unresolved=", unresolved, "/", idle.get_track_count(), " upperarm bind=", snappedf(rest_deg, 0.1), " idle=", snappedf(deg, 0.1))
+		if unresolved > 0 or anim.current_animation != "idle" or deg < 0.0 or deg > 70.0 or absf(deg - rest_deg) < 10.0:
+			print(" FAIL: idle tracks miss or the cast is still in bind / T-pose")
+			ok = false
+	root.queue_free()
 	return ok
 
 
@@ -91,6 +134,11 @@ func _run() -> void:
 		ok = false
 	if not _role_ok("teller", 1.76, 23, []):
 		ok = false
+
+	# Stage 0A: idle must actually drive the skeleton (not the T-pose bind) on a shared and a derivative body.
+	for role in ["greeter", "vault_keeper", "dealer"]:
+		if not await _idle_not_bind(role):
+			ok = false
 
 	print("SMOKE_KAYKIT=", "PASS" if ok else "FAIL")
 	quit(0 if ok else 1)
