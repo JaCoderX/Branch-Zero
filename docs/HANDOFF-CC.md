@@ -3,11 +3,11 @@ type: handoff
 title: Handoff — Claude Code / Fable 5.1
 audience: cold agent
 created: 2026-09-06
-updated: 2026-09-08
+updated: 2026-09-09
 product: Branch-Zero
 objective: OBJ-2026-0004
-first_mission: U7 ship packaging (docs/KICKOFF-U7-ship-package.md) once the principal re-playtests the ten polish findings; Load Account via Ines MET 2026-09-08 (docs/LOAD-ACCOUNT.md 7-8; a Live browser walk owed); Sepolia Ops Treasury MET 2026-09-08 (docs/SEPOLIA-TREASURY.md 8-9; one human faucet claim owed); U6 Arc G7 deferred
-prior_mission: Load Account (Ines) MET 2026-09-08 - POST /account/load adopts a player-owned AccountBlox on the current wing after getCode + owner() + initialized() + ISecureOwnable, re-pins the Privy policies before switching the file, and re-runs the Re-check sync with no cloneBlox; bridge s2.1; killtests:load 12/12 on 1337; owed: a Live browser walk. Before it: Sepolia Ops Treasury MET 2026-09-08 - SEPOLIA_TREASURY_PK collects Live ETH + USDC and tops staff wallets to need x 1.25 (CLI, pre-cloneBlox hook, interval watcher, desk-debug row); killtests:treasury 7/7; owed: one faucet claim. Before it: Sepolia Live + Developer Mode MET 2026-09-08 — Live Main wing is Sepolia (CopyBlox 0x443ECf16…, account 0xf8EECc6B…, Lane A/B/Priority/faucet/OBSERVER/ENS/K7 on Etherscan); Remote EVM 1337 is Developer Mode behind the desk-debug toggle. Before it: S1b FX validate, Terminal Console + OBSERVER, U7 polish, practice faucet, U5 ENS
+first_mission: U7 ship packaging (docs/KICKOFF-U7-ship-package.md) once the principal re-playtests the ten polish findings; Live OTP walk MET 2026-09-09 (OWED); Load Account via Ines MET 2026-09-08 (docs/LOAD-ACCOUNT.md 7-8; Live load walk still owed); Sepolia Ops Treasury MET 2026-09-08 (docs/SEPOLIA-TREASURY.md 8-9; one human faucet claim owed); KayKit cast ladder MET 2026-09-09 (Idle_A accepted; ENG-0018 parked); U6 Arc G7 deferred
+prior_mission: Live OTP walk MET 2026-09-09 — provision + ENS + Lane A + Lane B wire release on Sepolia. Before it: Load Account (Ines) MET 2026-09-08 - POST /account/load adopts a player-owned AccountBlox on the current wing after getCode + owner() + initialized() + ISecureOwnable, re-pins the Privy policies before switching the file, and re-runs the Re-check sync with no cloneBlox; bridge s2.1; killtests:load 12/12 on 1337; owed: a Live load walk. Before it: Sepolia Ops Treasury MET 2026-09-08 - SEPOLIA_TREASURY_PK collects Live ETH + USDC and tops staff wallets to need x 1.25 (CLI, pre-cloneBlox hook, interval watcher, desk-debug row); killtests:treasury 7/7; owed: one faucet claim. Before it: Sepolia Live + Developer Mode MET 2026-09-08 — Live Main wing is Sepolia (CopyBlox 0x443ECf16…, account 0xf8EECc6B…, Lane A/B/Priority/faucet/OBSERVER/ENS/K7 on Etherscan); Remote EVM 1337 is Developer Mode behind the desk-debug toggle. Before it: S1b FX validate, Terminal Console + OBSERVER, U7 polish, practice faucet, U5 ENS
 ---
 
 # Handoff — Claude Code (Fable 5.1)
@@ -29,6 +29,10 @@ You are a **cold agent** unless the human says you are continuing a prior sessio
 > **met** 2026-09-08 — faces + expressions, ~5.5-heads, mid-50s dress, one accent per person:
 > [`docs/HANDOFF-character-charm.md`](./HANDOFF-character-charm.md) ·
 > [`docs/KICKOFF-character-charm.md`](./KICKOFF-character-charm.md). Room unchanged.
+>
+> **KayKit bank cast ladder — met 2026-09-09.** Wardrobe ENG-0015–0017 → jacket land `fec5aa1`; Stage 0A fixed
+> T-pose (`AnimationPlayer.root_node` → `..`, `639ffd2`); Idle_A feel accepted; ENG-0018 parked. See
+> [`docs/HANDOFF-kaykit-bank-performance.md`](./HANDOFF-kaykit-bank-performance.md) and [`docs/OWED.md`](./OWED.md).
 >
 > **Explore set dressing (optional):** SE partners / ETH Online notice board (Bloxchain + Particle panels)
 > **and** a standalone lobby terminal (no NPC, reuses Terminal Console) —

@@ -20,9 +20,11 @@ You are a **cold agent**. Prefer this file + kickoff over chat memory.
 
 **Authorized construction:** bank **motion language** on the live jacket cast (Rig_Medium). Diagnose whether arms-out is dead tracks or Adventurers `Idle_A`, then remap / pick / lightly bake clips so idle reads as staff, not dungeon rest.
 
-**Principal (2026-09-09):** Jacket cast is good enough for now. Next move is animation — people currently use a **base stance with hands spread**.
+**Principal (2026-09-09):** Jacket cast is good enough. Stage 0A landed — "hands spread" was dead tracks (`root_node = "."`), not Idle_A. Principal accepted Idle_A feel after the fix. **ENG-2026-0018 not opened**; open only if Idle_A still reads wrong (clip census in §Stage 0 outcome).
 
-**Product today:** `PropKit.USE_KAYKIT_CAST` + jacket meshes (`Ranger_jacket_nocape`, `Mage_jacket_nocape`, `Rogue_jacket_nocape`, `Kenji_jacket`, `Okafor_jacket`, `Bob_jacket_cape`) + wardrobe `*_bank_texture.png`. Clips: idle←`Idle_A`, walk←`Walking_A`, sprint←`Running_A`, greet←`Waving`, work←`Interact`, refuse←`Hit_A`.
+**Status:** Stage 0A **met** (commits `639ffd2` / handoff `f31a1bd`). Cast art + idle wiring parked. Product focus → OWED walks / U7 packaging.
+
+**Product today:** `PropKit.USE_KAYKIT_CAST` + jacket meshes (`Ranger_jacket_nocape`, `Mage_jacket_nocape`, `Rogue_jacket_nocape`, `Kenji_jacket`, `Okafor_jacket`, `Bob_jacket_cape`) + wardrobe `*_bank_texture.png`. Clips: idle←`Idle_A`, walk←`Walking_A`, sprint←`Running_A`, greet←`Waving`, work←`Interact`, refuse←`Hit_A`. AnimationPlayer `root_node` = `..` (Stage 0A).
 
 **Kickoff (paste):** [`docs/KICKOFF-kaykit-bank-performance.md`](./KICKOFF-kaykit-bank-performance.md)
 
