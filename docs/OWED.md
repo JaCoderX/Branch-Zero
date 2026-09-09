@@ -49,6 +49,7 @@ Related: [HANDOFF-CC.md](./HANDOFF-CC.md) · [DEV-LOOP.md](./DEV-LOOP.md) · [RE
 - [x] Optional parallel: **KayKit bank cast ladder** — wardrobe ENG-0015–0017 → jacket land `fec5aa1`; Stage 0A idle wiring `639ffd2`; Idle_A feel accepted; ENG-0018 parked ([HANDOFF-kaykit-bank-performance.md](./HANDOFF-kaykit-bank-performance.md))
 - [x] Optional parallel: **FX fiat pairs** — Practice EUR + ILS, USD pools ≈ $100M TVL each — [HANDOFF-fx-fiat-pairs.md](./HANDOFF-fx-fiat-pairs.md) · [KICKOFF-fx-fiat-pairs.md](./KICKOFF-fx-fiat-pairs.md) (**met 2026-09-09** — both pairs swapped live on the Main till; desk pull-west is the separate Codex Luna unit)
 - [x] Optional parallel: **FX desk spacing** — pull Kenji west for staff clearance — [HANDOFF-fx-desk-spacing.md](./HANDOFF-fx-desk-spacing.md) · [KICKOFF-fx-desk-spacing.md](./KICKOFF-fx-desk-spacing.md) (**Codex Luna**) — **met 2026-09-09** (1.2 m west; quote board left on vault partition)
+- [ ] Optional parallel: **Dialogue box fit** — long choice lists stay on screen — [HANDOFF-dialogue-box-fit.md](./HANDOFF-dialogue-box-fit.md) · [KICKOFF-dialogue-box-fit.md](./KICKOFF-dialogue-box-fit.md) (**Codex Luna**)
 
 ---
 

@@ -39,10 +39,11 @@ You are a **cold agent** unless the human says you are continuing a prior sessio
 > unchanged S1 whitelist; WETH is off the product path; `killtests:s1` K7-a…g, `run_checks`, `run_fx_walk` green.
 > Spec: [`docs/UNISWAP.md`](./UNISWAP.md) §2b. Brief: [`docs/HANDOFF-fx-fiat-pairs.md`](./HANDOFF-fx-fiat-pairs.md) ·
 > [`docs/KICKOFF-fx-fiat-pairs.md`](./KICKOFF-fx-fiat-pairs.md).
-> Desk spacing (pull west) is a **separate** Codex Luna unit:
-> [`docs/HANDOFF-fx-desk-spacing.md`](./HANDOFF-fx-desk-spacing.md) ·
-> [`docs/KICKOFF-fx-desk-spacing.md`](./KICKOFF-fx-desk-spacing.md). Neither replaces packaging or the
-> Uniswap feedback form owed on OWED.
+> Desk spacing (pull west) is a **separate** Codex Luna unit (**met**):
+> [`docs/HANDOFF-fx-desk-spacing.md`](./HANDOFF-fx-desk-spacing.md).
+> Dialogue overflow (long choice lists off the bottom) is another Luna unit:
+> [`docs/HANDOFF-dialogue-box-fit.md`](./HANDOFF-dialogue-box-fit.md) ·
+> [`docs/KICKOFF-dialogue-box-fit.md`](./KICKOFF-dialogue-box-fit.md).
 >
 > **Explore set dressing (optional):** SE partners / ETH Online notice board (Bloxchain + Particle panels)
 > **and** a standalone lobby terminal (no NPC, reuses Terminal Console) —
