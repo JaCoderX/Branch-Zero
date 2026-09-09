@@ -87,7 +87,7 @@ Related: [HANDOFF-CC.md](./missions/HANDOFF-CC.md) · [DEV-LOOP.md](./DEV-LOOP.m
 | When | Item |
 |------|------|
 | 2026-09-10 | ENS passbook polish — no "not chosen yet" placeholder for unnamed customers (passbook / Mo / Ines); named passbook shows bank name + Silver/Gold tier from the desk's `/session` `ensTier` mirror; Gold update flows through the existing session refresh — [HANDOFF-ens-passbook-polish.md](./missions/HANDOFF-ens-passbook-polish.md) |
-| 2026-09-10 | Player menu � title + Esc visitor's card (player_menu.gd); ui_locked not tree pause; high contrast deferred � [HANDOFF-player-menu.md](./missions/HANDOFF-player-menu.md)
+| 2026-09-10 | Player menu — title + Esc visitor's card (`player_menu.gd`); ui_locked not tree pause; high contrast deferred — [HANDOFF-player-menu.md](./missions/HANDOFF-player-menu.md) |
 | 2026-09-09 | Lane B #14 — Live timed Release fixed: Privy owner-tx rules reconciled by name (`reconcileTxRules`), `PolicyDenied` heal-and-retry, honest error codes; #14 + #15 mined on Sepolia |
 | 2026-09-09 | Camera wheel zoom (2.8–9.0 m) + wider Terminal panel (1480×860) for iframe room |
 | 2026-09-09 | Dialogue box fit — grow-up panel + choices ScrollContainer |
