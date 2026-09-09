@@ -15,7 +15,9 @@ extends RefCounted
 ##    `character()` instances a per-role Adventurers mesh and installs bank clip aliases (idle/walk/…) from the
 ##    Rig_Medium General / MovementBasic / Simulation libraries — no face sheet / outline / atlas tile. The bank
 ##    variants (2026-09-09) are recoloured palette sheets (`*_bank_texture.png`, tools/kaykit_bank_variants.py) plus a
-##    per-role UV cell remap for the roles that share a body (KAYKIT_ROLE_CELLS) — still five body materials;
+##    per-role UV cell remap for the roles that share a body (KAYKIT_ROLE_CELLS) — still five body materials.
+##    Art-deco land (ENG-2026-0015): vault_keeper hides `Knight_Helmet` / `Knight_HelmetVisor` and wears navy plate
+##    cells (guard tunic read) — no new glb;
 ##  - KayKit Furniture Bits (assets/models/kaykit_furniture, CC0, U7 viz Stage 6a) were authored against one flat-colour
 ##    palette atlas that tools/kaykit_pack.py strips out of the .glb: at load `_split_kaykit` reads each triangle's UV
 ##    cell and hands it the matching WingTheme palette material, so the denser fill costs zero new materials and
@@ -111,6 +113,11 @@ const KAYKIT_ROLE_CELLS := {
 	"dealer": {
 		Vector2i(0, 1): Vector2i(0, 3), Vector2i(1, 1): Vector2i(1, 3),
 	},
+}
+## Fantasy accessory MeshInstance3D names to free before aabb/scale (ENG-2026-0015). Separate skinned nodes under
+## Rig_Medium/Skeleton3D — deleting them leaves a complete head / torso; Rig_Medium bones stay untouched.
+const KAYKIT_HIDE_PARTS := {
+	"vault_keeper": ["Knight_Helmet", "Knight_HelmetVisor"],
 }
 ## Bank clip name → KayKit Rig_Medium clip (General / MovementBasic / Simulation).
 const KAYKIT_CLIP_SRC := {
@@ -674,6 +681,8 @@ static func character_kaykit(role: String, height: float = 1.8) -> Dictionary:
 			mi.mesh = _kaykit_role_mesh(mi.mesh as ArrayMesh, role, remap)
 		for i in mi.mesh.get_surface_count():
 			mi.set_surface_override_material(i, mat)
+	# Drop fantasy accessory shells before aabb so height scale uses the bare silhouette (Bob: helm + visor).
+	_kaykit_hide_parts(root, KAYKIT_HIDE_PARTS.get(role, []))
 	var bb := aabb(root)
 	var s := height / maxf(bb.size.y, 0.01)
 	root.scale = Vector3.ONE * s
@@ -686,6 +695,21 @@ static func character_kaykit(role: String, height: float = 1.8) -> Dictionary:
 	var anim := _kaykit_ensure_anim_player(root, skeleton)
 	_kaykit_install_bank_clips(anim)
 	return {"root": root, "anim": anim, "face": null, "skeleton": skeleton}
+
+
+## Free named MeshInstance3D children (KayKit accessory shells). Immediate free so aabb() excludes them this frame.
+static func _kaykit_hide_parts(root: Node, names: Array) -> void:
+	if names.is_empty():
+		return
+	var want: Dictionary = {}
+	for n in names:
+		want[str(n)] = true
+	var doomed: Array[Node] = []
+	for mi in _meshes(root):
+		if want.has(mi.name):
+			doomed.append(mi)
+	for n in doomed:
+		n.free()
 
 
 ## Bank-variant tint for a role that shares its body sheet with another role (KAYKIT_ROLE_CELLS): a copy of the

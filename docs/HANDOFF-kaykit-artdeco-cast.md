@@ -8,16 +8,19 @@ objective: OBJ-2026-0004
 mission: Prove in GameLab that KayKit Adventurers can be mesh-adapted toward bank / art-deco readable staff (e.g. vault keeper without full helm/plate) while Rig_Medium anims keep working — principal accepts lab evidence before any Branch-Zero land
 plan: this file §Direction + cast board; work in ENG-2026-0015
 kickoff: docs/KICKOFF-kaykit-artdeco-cast.md
-baseline: Pass A bank palette sheets live on main (b749e24); soft fantasy tints OK; accessory debt documented
+baseline: Art-deco Bob landed (helm/visor hide + navy plate cells); Pass A sheets for other roles; soft fantasy OK
 lab: ../GameLab/work/ENG-2026-0015-kaykit-artdeco-cast/
 parallel_to: Load Account / ship packaging — do not steal those product missions
-supersedes_in_part: docs/HANDOFF-kaykit-bank-variants.md Outcome “Pass B not needed” — mesh adaptation is now an open exploration; Pass A textures remain the live product cast until land is accepted
+supersedes_in_part: docs/HANDOFF-kaykit-bank-variants.md Outcome — Bob helm/plate path landed from ENG-2026-0015; quiver/hat still open
 ---
 
 # Handoff — KayKit art-deco cast adaptation
 
 You are a **cold agent**. Prefer this file + the kickoff + the lab ENG over chat memory.
-Freedom on **how** inside the lab. No freedom on product land without principal accept.
+
+**Status (2026-09-09):** Lab ENG-2026-0015 answered **Yes**. Preferred land (part-hide + navy sheet) is **in product**:
+`PropKit.KAYKIT_HIDE_PARTS` for `vault_keeper`, knight bank cells `(3,0)`/`(4,0)` navy. Softshoulder glb **not** vendored.
+Ranger quiver / Mage hat remain optional follow-ups. Soft jacket remesh is a separate spike if still wanted.
 
 **Authorized construction:** explore **mesh / silhouette adaptation** of KayKit Adventurers toward
 bank / art-deco readable body language, **keeping Rig_Medium** so idle / walk / greet (and the other bank
@@ -25,8 +28,7 @@ clip aliases) still drive the body. Soft fantasy is optional — full plate + he
 **over the top** for this lobby; the quest is our own variant cast, not “preserve pure dungeon Adventurers.”
 
 **Where the work happens:** GameLab [`ENG-2026-0015-kaykit-artdeco-cast`](../../GameLab/work/ENG-2026-0015-kaykit-artdeco-cast/README.md).
-**Branch-Zero stays on Pass A** (`*_bank_texture.png` + UV remaps) until the principal accepts lab stills + anim proof
-and a separate land kickoff is filed.
+**Bob land is live** (helm hide + navy sheet). Further roles (quiver / hat / soft remesh) still need lab or a follow-up land.
 
 **Kickoff (paste):** [`docs/KICKOFF-kaykit-artdeco-cast.md`](./KICKOFF-kaykit-artdeco-cast.md)
 

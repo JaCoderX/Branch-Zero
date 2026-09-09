@@ -52,5 +52,23 @@ func _run() -> void:
 				print("  ", sa.track_get_path(i), " type=", sa.track_get_type(i))
 		tmp.free()
 	root.free()
+
+	# Bob art-deco land (ENG-2026-0015): helm + visor gone, Rig_Medium still 23 bones, bank clips present.
+	var bob: Dictionary = PropKit.character("vault_keeper", 1.82)
+	var bob_root: Node3D = bob["root"]
+	var bob_skel: Skeleton3D = bob["skeleton"]
+	var bob_anim: AnimationPlayer = bob["anim"]
+	var helm := bob_root.find_child("Knight_Helmet", true, false)
+	var visor := bob_root.find_child("Knight_HelmetVisor", true, false)
+	print("bob bones=", bob_skel.get_bone_count() if bob_skel else -1)
+	print("bob helm=", helm != null, " visor=", visor != null)
+	if helm != null or visor != null:
+		ok = false
+	if bob_skel == null or bob_skel.get_bone_count() != 23:
+		ok = false
+	if bob_anim == null or not bob_anim.has_animation("idle") or not bob_anim.has_animation("walk") or not bob_anim.has_animation("greet"):
+		ok = false
+	bob_root.free()
+
 	print("SMOKE_KAYKIT=", "PASS" if ok else "FAIL")
 	quit(0 if ok else 1)

@@ -49,6 +49,8 @@ CORAL = "#e46f52"     # Petra — registrar · Bob's cape
 TEAL = "#1f8f96"      # Kenji — dealer
 TEAL_DARK = "#15656b"
 NAVY = "#27365f"      # player
+NAVY_GUARD = "#2f3d63"       # Bob — plate cells as guard tunic (ENG-2026-0015)
+NAVY_GUARD_DARK = "#1f2740"  # Bob — darker plate piping / arm bands
 COPPER = "#9a512f"    # Petra's hair (Ines keeps the black)
 
 # Per sheet: ("tint", cell, colour) recolours a cell in place, keeping its own gradient;
@@ -76,9 +78,11 @@ WARDROBE = {
         ("tint", (7, 1), CHARCOAL),
         ("spare", (0, 3), TEAL_DARK, (0, 1)), ("spare", (1, 3), TEAL, (1, 1)),
     ],
-    # Bob — dark-steel guard plate, brass trim, cream piping, coral cape, charcoal under-layer.
+    # Bob — navy guard tunic (was steel plate cells; helm/visor hidden at load in PropKit), brass trim,
+    # cream piping, coral cape, charcoal under-layer. Cells (3,0)/(4,0) from GameLab ENG-2026-0015.
     "knight": [
-        ("tint", (3, 0), STEEL_DARK), ("tint", (7, 0), BRASS), ("tint", (2, 1), BRASS), ("tint", (0, 1), CORAL),
+        ("tint", (3, 0), NAVY_GUARD), ("tint", (4, 0), NAVY_GUARD_DARK),
+        ("tint", (7, 0), BRASS), ("tint", (2, 1), BRASS), ("tint", (0, 1), CORAL),
         ("tint", (1, 1), CREAM), ("tint", (7, 1), CHARCOAL),
     ],
     # Mr. Okafor — oxblood sash / wrap, brass straps and buckles, cream teeth / trim, dark bear fur, charcoal hose.
