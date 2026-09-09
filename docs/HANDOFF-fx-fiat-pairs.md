@@ -17,9 +17,11 @@ parallel_to: U7 packaging / polish re-playtest — do not steal those gates
 You are a **cold agent**. Prefer this file + the kickoff + [`UNISWAP.md`](./UNISWAP.md) over chat memory.
 Freedom on **how**. No freedom on constraints, scope, or protocol semantics.
 
-**Authorized construction:** Kenji's FX desk trades **practice fiat** against practice USD through **two** Uniswap v4 pools on Sepolia — not WETH. Optional: pull the FX counter west so staff have space behind the desk.
+**Authorized construction:** Kenji's FX desk trades **practice fiat** against practice USD through **two** Uniswap v4 pools on Sepolia — not WETH.
 
-**Prefer:** **Claude Code · Fable** (Sepolia infra + `lanes/fx.ts` + guards + killtests). Codex Luna is the wrong seat for this unit.
+**Desk spacing:** owned by a separate Codex Luna unit — [`HANDOFF-fx-desk-spacing.md`](./HANDOFF-fx-desk-spacing.md). **Do not** pull the desk in this Fable session (avoid double-moves).
+
+**Prefer:** **Claude Code · Fable** (Sepolia infra + `lanes/fx.ts` + guards + killtests). Codex Luna is the wrong seat for tokens/pools.
 
 **Kickoff (paste):** [`docs/KICKOFF-fx-fiat-pairs.md`](./KICKOFF-fx-fiat-pairs.md)
 
@@ -33,7 +35,7 @@ Freedom on **how**. No freedom on constraints, scope, or protocol semantics.
 2. New open-mint tokens: **Practice EURO** and **Practice ILS**.
 3. Two pools: **USD ↔ EUR** and **USD ↔ ILS**.
 4. Each pool ≈ **$100M total value** at seed mid-market rates (both sides, ~50/50 by value).
-5. Optional same unit: move FX desk **away from the east wall** for space behind Kenji.
+5. Optional: move FX desk **away from the east wall** for space behind Kenji — **not in this unit**; see [`HANDOFF-fx-desk-spacing.md`](./HANDOFF-fx-desk-spacing.md) (Codex Luna).
 
 ---
 
@@ -70,7 +72,7 @@ Re-check Frankfurter (or Wise mid) on the day you seed; freeze `seedRate` + `see
 7. Guard enable: same three call shapes; whitelist targets include new token contracts where approve is needed (USD out is enough for one-way).
 8. Kenji dialogue + quote board: euros / shekels, not ether; board shows pair, rate, min out, fee, countdown.
 9. MockChain + `run_fx_walk` / killtests updated for pairs.
-10. Optional: `_fx_desk()` + Kenji spawn — pull counter **west** (lower x); keep quote board customer-readable.
+10. Optional desk pull-west — **skip here**; Luna owns [`HANDOFF-fx-desk-spacing.md`](./HANDOFF-fx-desk-spacing.md).
 
 ### C. Proof + docs
 

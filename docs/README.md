@@ -32,6 +32,7 @@ Start with **[PLAN.md](./PLAN.md)**. Read order for a new contributor:
 | 19b | [HANDOFF-character-charm.md](./HANDOFF-character-charm.md) · [KICKOFF-character-charm.md](./KICKOFF-character-charm.md) | **Parallel art:** cast charm — legible faces + expressions, ~5.5-heads, mid-50s dress, one accent per person (room stays) — **met** 2026-09-08 |
 | 19c | [HANDOFF-kaykit-bank-wardrobe.md](./HANDOFF-kaykit-bank-wardrobe.md) · [HANDOFF-kaykit-bank-jacket.md](./HANDOFF-kaykit-bank-jacket.md) · [HANDOFF-kaykit-bank-performance.md](./HANDOFF-kaykit-bank-performance.md) | **Parallel art:** KayKit bank cast ladder (wardrobe → jacket → Stage 0A idle wiring) — **met** 2026-09-09; ENG-0018 parked |
 | 19d | [HANDOFF-fx-fiat-pairs.md](./HANDOFF-fx-fiat-pairs.md) · [KICKOFF-fx-fiat-pairs.md](./KICKOFF-fx-fiat-pairs.md) | **Parallel FX:** Practice EUR + ILS vs USD (v4 pools ≈ $100M TVL) — Claude Code · Fable |
+| 19e | [HANDOFF-fx-desk-spacing.md](./HANDOFF-fx-desk-spacing.md) · [KICKOFF-fx-desk-spacing.md](./KICKOFF-fx-desk-spacing.md) | **Parallel layout:** FX desk pull west (staff clearance) — Codex Luna |
 | 20 | [HANDOFF-partners-board.md](./HANDOFF-partners-board.md) · [KICKOFF-partners-board.md](./KICKOFF-partners-board.md) | **Explore:** SE partners / ETH Online board **+** standalone lobby terminal (no NPC) — Codex Luna |
 
 **Not published** (gitignored; stay on the laptop): `docs/progress/` (daily notes + captures). Kickoffs and `HANDOFF-CC.md` stay in git for cold agents.

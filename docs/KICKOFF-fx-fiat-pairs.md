@@ -67,7 +67,7 @@ HARD RULES:
 - Respect currency0/1 address sort in encode + quoter.
 - Every new error → errors.json; run_checks / fx walk / killtests green.
 - Operator-funded Sepolia LP/deployer key only. Never Ganache-parity.
-- Optional same PR: pull FX desk west (bank_interior _fx_desk + Kenji spawn) for space behind the counter; keep quote board readable from the customer side.
+- Do NOT pull the FX desk geometry — that is Codex Luna ([docs/HANDOFF-fx-desk-spacing.md](./HANDOFF-fx-desk-spacing.md)).
 - Do not start U7 packaging or polish re-playtest work in this session.
 
 SEQUENCE:
@@ -84,7 +84,7 @@ B. DESK
 
 C. GODOT
    7. dealer.json + fx board: euros/shekels; pair choice in dialogue.
-   8. Optional desk pull-west.
+   8. (Desk pull-west is a separate Luna mission — skip.)
 
 D. PROOF + DOCS
    9. Live Sepolia evidence: both pairs swap on Main till; Etherscan links.
@@ -96,7 +96,6 @@ DONE WHEN:
 - Kenji can quote and complete USD→EUR and USD→ILS on Live
 - WETH is off the product FX path
 - checks/walks green; docs updated
-- (optional) FX desk has staff space behind the counter
 
 STOP AND ASK if: seed would spend real scarce ETH beyond gas; Circle USDC would enter a pool; packaging gate is blocked; reverse fiat→USD is demanded for v1.
 ```
