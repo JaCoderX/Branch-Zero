@@ -34,6 +34,11 @@ You are a **cold agent** unless the human says you are continuing a prior sessio
 > T-pose (`AnimationPlayer.root_node` → `..`, `639ffd2`); Idle_A feel accepted; ENG-0018 parked. See
 > [`docs/HANDOFF-kaykit-bank-performance.md`](./HANDOFF-kaykit-bank-performance.md) and [`docs/OWED.md`](./OWED.md).
 >
+> **Parallel FX (optional):** Fiat pairs Practice EUR + ILS vs USD on Uniswap v4 (~$100M TVL pools) —
+> [`docs/HANDOFF-fx-fiat-pairs.md`](./HANDOFF-fx-fiat-pairs.md) ·
+> [`docs/KICKOFF-fx-fiat-pairs.md`](./KICKOFF-fx-fiat-pairs.md). Prefer **Claude Code · Fable**. Does not replace
+> packaging or the Uniswap feedback form owed on OWED.
+>
 > **Explore set dressing (optional):** SE partners / ETH Online notice board (Bloxchain + Particle panels)
 > **and** a standalone lobby terminal (no NPC, reuses Terminal Console) —
 > [`docs/HANDOFF-partners-board.md`](./HANDOFF-partners-board.md) ·
