@@ -273,6 +273,15 @@ typed-data rule (`pinPolicyToAccount`) and reconciles the `eth_signTransaction` 
 re-pin in place, create if missing, drop duplicates) to the address being loaded. Stored rule ids are never used
 positionally: that pin-by-index path overwrote the release rule on Lane B #14 (2026-09-09) and was removed.
 
+### Debug order when owner `eth_signTransaction` "fails the contract"
+
+Lane B #14 taught the desk to stop guessing gas / RPC / the vault first:
+
+1. **Sign-only** (`npm -w apps/teller-desk run diag:sign`) — does `prepareTransactionRequest` succeed and does Privy refuse?
+2. If Privy returns **`policy_violation`**: GET the policy; confirm the three owner-tx rules exist **by name** for this chain (`Owner: file|release|recall a wire · <chainId>`). Do not trust `players*.json` `txRuleIds`.
+3. **`/session` or Load** runs `reconcileTxRules`; Release also heals once on `PolicyDenied`. A second denial is a real policy gap, not a vault line.
+4. Only then treat the failure as on-chain — and never decode a 20-byte `from` address as a string revert (`ReadableText`).
+
 Two properties, both deliberate:
 
 - **Pin before switch.** Provisioning pins *after* the clone, because there was nothing to pin to. A load has an
