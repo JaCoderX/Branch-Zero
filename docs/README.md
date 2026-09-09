@@ -34,6 +34,7 @@ Start with **[PLAN.md](./PLAN.md)**. Read order for a new contributor:
 | 19d | [HANDOFF-fx-fiat-pairs.md](./HANDOFF-fx-fiat-pairs.md) · [KICKOFF-fx-fiat-pairs.md](./KICKOFF-fx-fiat-pairs.md) | **Parallel FX:** Practice EUR + ILS vs USD (v4 pools ≈ $100M TVL) — Claude Code · Fable |
 | 19e | [HANDOFF-fx-desk-spacing.md](./HANDOFF-fx-desk-spacing.md) · [KICKOFF-fx-desk-spacing.md](./KICKOFF-fx-desk-spacing.md) | **Parallel layout:** FX desk pull west (staff clearance) — Codex Luna — **met** 2026-09-09 |
 | 19f | [HANDOFF-dialogue-box-fit.md](./HANDOFF-dialogue-box-fit.md) · [KICKOFF-dialogue-box-fit.md](./KICKOFF-dialogue-box-fit.md) | **Parallel UI:** dialogue / choice panel stays on screen — Codex Luna |
+| 19g | [HANDOFF-copy-ens-refinement.md](./HANDOFF-copy-ens-refinement.md) · [KICKOFF-copy-ens-refinement.md](./KICKOFF-copy-ens-refinement.md) | **Refinement:** dialogue review · ENS across the bank · plaque/UI bank text — Codex Luna |
 | 20 | [HANDOFF-partners-board.md](./HANDOFF-partners-board.md) · [KICKOFF-partners-board.md](./KICKOFF-partners-board.md) | **Explore:** SE partners / ETH Online board **+** standalone lobby terminal (no NPC) — Codex Luna |
 
 **Not published** (gitignored; stay on the laptop): `docs/progress/` (daily notes + captures). Kickoffs and `HANDOFF-CC.md` stay in git for cold agents.

@@ -1,7 +1,7 @@
 ---
 title: Owed / follow-up checklist
 created: 2026-09-08
-updated: 2026-09-09
+updated: 2026-09-10
 product: Branch-Zero
 audience: principal + cold agents
 ---
@@ -46,6 +46,7 @@ Related: [HANDOFF-CC.md](./HANDOFF-CC.md) · [DEV-LOOP.md](./DEV-LOOP.md) · [RE
 
 ## 4. Construction (after §2 polish gate)
 
+- [ ] **Copy · ENS · bank text refinement** — review dialogues, deepen ENS across the bank, fix plaque/UI placeholders — [HANDOFF-copy-ens-refinement.md](./HANDOFF-copy-ens-refinement.md) · [KICKOFF-copy-ens-refinement.md](./KICKOFF-copy-ens-refinement.md) (**Codex Luna**)
 - [ ] **U7 ship packaging** — [KICKOFF-U7-ship-package.md](./KICKOFF-U7-ship-package.md) · [DEMO-SCRIPT.md](./DEMO-SCRIPT.md) (G8–G10)
 - [x] Optional parallel (separate CC session): **character-style climb** — [HANDOFF-character-style.md](./HANDOFF-character-style.md) · [KICKOFF-character-style.md](./KICKOFF-character-style.md) (met 2026-09-08)
 - [x] Optional parallel (separate session): **character charm** — faces + expressions, proportion, mid-50s wardrobe — [HANDOFF-character-charm.md](./HANDOFF-character-charm.md) · [KICKOFF-character-charm.md](./KICKOFF-character-charm.md) (met 2026-09-08)
