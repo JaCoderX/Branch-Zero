@@ -14,7 +14,7 @@
       "choices": [ { "text": "Sure.", "next": "end" } ]
     },
     "no_account": {
-      "text": "Names point to accounts, so I need an AccountBlox before I can put one on your file. Ines at Account Opening can help.",
+      "text": "Names point to accounts, so I need an account before I can put one on your file. Ines at Account Opening can help.",
       "choices": [
         { "text": "Ask why", "next": "why_ens" },
         { "text": "OK.", "next": "end" }
@@ -30,7 +30,7 @@
       ]
     },
     "idle": {
-      "text": "Your name is {ens_name}. It points at your account on the board; the counter can resolve it before paying.",
+      "text": "Your bank name is {ens_name}. It points at your account on the board; Counter can check it before paying.",
       "choices": [
         { "text": "Claim another name", "form": "name_claim", "on_submit": "claim_name" },
         { "text": "Update my tier to Gold", "action": "ens_set_text", "args": { "key": "bz.tier", "value": "Gold" }, "working": "Writing your Gold passbook record…", "on_ok": "tier_updated", "on_error": "refused" },
@@ -44,7 +44,7 @@
       "enter_action": { "action": "ens_mint", "working": "Registering your name on Sepolia…", "on_ok": "claimed", "on_error": "refused" }
     },
     "claimed": {
-      "text": "{ens_name} is ready. It resolves to your AccountBlox, and the counter can now accept that name on a payment slip.",
+      "text": "{ens_name} is ready. It points to your account, and Counter can now accept that name on a payment slip.",
       "choices": [
         { "text": "Ask why", "next": "why_ens" },
         { "text": "Who's registered?", "next": "board" },
@@ -59,7 +59,7 @@
       ]
     },
     "board": {
-      "text": "That board is the customers registry's recent registration log. The names are real subnames under branchzero.eth, not a local guest list.",
+      "text": "That board shows the customer names Petra has recently put on file. They are real names under branchzero.eth, not a local guest list.",
       "choices": [
         { "text": "Claim a name", "form": "name_claim", "on_submit": "claim_name" },
         { "text": "Ask why", "next": "why_ens" },

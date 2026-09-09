@@ -10,14 +10,14 @@
 > practice pools seeded ≈ $100M TVL each (§2b). Both pairs swapped live on the Main till:
 > EUR [`0xf3cb83b4…`](https://sepolia.etherscan.io/tx/0xf3cb83b440a555accd9cb14a3378098af4f89b7e5cc801cb0be7142b4ce50e20) ·
 > ILS [`0xd6f63de9…`](https://sepolia.etherscan.io/tx/0xd6f63de93198f8fa48926fb68ae9bbd096fbd318dc3470819c1f49c040976fa7). The USDC/WETH pool stays on chain and is
-> **off the product path**. Brief: [`HANDOFF-fx-fiat-pairs.md`](./HANDOFF-fx-fiat-pairs.md); local record:
+> **off the product path**. Brief: [`HANDOFF-fx-fiat-pairs.md`](./missions/HANDOFF-fx-fiat-pairs.md); local record:
 > `docs/progress/2026-09-09-fx-fiat-pairs.md`.
-> Kickoff: [`KICKOFF-S1-fx-validate.md`](./KICKOFF-S1-fx-validate.md). Build kickoff:
-> [`KICKOFF-S1-uniswap-fx.md`](./KICKOFF-S1-uniswap-fx.md). HANDOFF **§5i**. Local progress:
+> Kickoff: [`KICKOFF-S1-fx-validate.md`](./missions/KICKOFF-S1-fx-validate.md). Build kickoff:
+> [`KICKOFF-S1-uniswap-fx.md`](./missions/KICKOFF-S1-uniswap-fx.md). HANDOFF **§5i**. Local progress:
 > `docs/progress/2026-09-08-s1-uniswap-fx.md`. Prize: `FEEDBACK.md` +
 > [Uniswap hackathon feedback form](https://developers.uniswap.org/hackathon-feedback).
 
-Related: [PLAN.md](./PLAN.md) § 3 (tier S1) · [REFLECTION.md](./REFLECTION.md) § Sponsor matrix · [BLOXCHAIN-INTEGRATION.md](./BLOXCHAIN-INTEGRATION.md) § 3 (guard config batch) · [HANDOFF-CC.md](./HANDOFF-CC.md) §5i
+Related: [PLAN.md](./PLAN.md) § 3 (tier S1) · [REFLECTION.md](./REFLECTION.md) § Sponsor matrix · [BLOXCHAIN-INTEGRATION.md](./BLOXCHAIN-INTEGRATION.md) § 3 (guard config batch) · [HANDOFF-CC.md](./missions/HANDOFF-CC.md) §5i
 
 Docs: [Universal Router](https://docs.uniswap.org/contracts/universal-router/overview) · [v4 swap via Universal Router](https://docs.uniswap.org/contracts/v4/quickstart/swap) · [v4 deployments](https://docs.uniswap.org/contracts/v4/deployments) · [Permit2](https://docs.uniswap.org/contracts/permit2/overview) · [v4 Quoter](https://docs.uniswap.org/contracts/v4/reference/periphery/lens/V4Quoter)
 

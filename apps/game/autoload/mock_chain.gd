@@ -323,9 +323,9 @@ func _fx_enable() -> Dictionary:
 	if fx_open:
 		return _ok(_fx_status())
 	var job := _new_job()
-	_stage(job, "FX", "configuring", "Registering the exchange door on your account… (MockChain: nothing on a chain)")
+	_stage(job, "FX", "configuring", "Setting up the exchange desk… (MockChain: nothing on a chain)")
 	await get_tree().create_timer(0.8).timeout
-	_stage(job, "FX", "configuring", "Authorising you to sign and the FX teller to submit…")
+	_stage(job, "FX", "configuring", "Preparing the exchange desk…")
 	await get_tree().create_timer(0.6).timeout
 	fx_open = true
 	var h := _hash()
@@ -359,13 +359,13 @@ func _fx_swap(args: Dictionary) -> Dictionary:
 		return _err("FX_TILL_SHORT", "the FX till holds %s USD; the order needs %s" % [_fmt(fx_usdc), _fmt(amount)])
 	var job := _new_job()
 	var steps: Array = []
-	_stage(job, "FX", "signing", "Letting the exchange counter draw practice dollars from your till…")
+	_stage(job, "FX", "signing", "Preparing the dollar payment at the exchange…")
 	await get_tree().create_timer(0.6).timeout
 	steps.append({"step": "approve", "hash": _hash(), "explorer": ""})
-	_stage(job, "FX", "signing", "Allowing the Universal Router to spend them, with an expiry…")
+	_stage(job, "FX", "signing", "Setting the trade's spending limit…")
 	await get_tree().create_timer(0.5).timeout
 	steps.append({"step": "permit2", "hash": _hash(), "explorer": ""})
-	_stage(job, "FX", "signing", "Swapping %s USD for %s through the Universal Router… (MockChain: no Uniswap here)" % [_fmt(amount), pair])
+	_stage(job, "FX", "signing", "Placing the %s USD → %s trade… (MockChain: no exchange here)" % [_fmt(amount), pair])
 	await get_tree().create_timer(0.8).timeout
 	var out := _fx_out(pair, amount)
 	fx_usdc -= amount
@@ -497,9 +497,9 @@ func _ens_mint(args: Dictionary) -> Dictionary:
 	ens_tier = "Silver"
 	var row := {"label": label, "name": ens_name, "address": account, "owner": OWNER, "expiry": str(_now() + 365 * 86400), "txHash": _hash()}
 	ens_names.append(row)
-	_stage(job, "ENS", "broadcasting", "Pointing the name at your AccountBlox…", {"txId": label})
+	_stage(job, "ENS", "broadcasting", "Pointing the name at your account…", {"txId": label})
 	await get_tree().create_timer(0.5).timeout
-	_stage(job, "ENS", "mined", "%s is ready — it points to your AccountBlox." % ens_name, {"hash": row["txHash"], "name": ens_name})
+	_stage(job, "ENS", "mined", "%s is ready — it points to your account." % ens_name, {"hash": row["txHash"], "name": ens_name})
 	return _ok({"jobId": job, "label": label, "name": ens_name, "address": account, "owner": OWNER, "expiry": row["expiry"], "txHash": row["txHash"], "txHashes": [row["txHash"]], "tier": "Silver", "account": account})
 
 
@@ -533,7 +533,7 @@ func _wire(args: Dictionary) -> Dictionary:
 	_stage(job, "B", "signing", "Filing your wire with the vault…")
 	await get_tree().create_timer(0.7).timeout
 	if amount > balance:
-		var line := "Free balance is %s dUSDC; requested wire is %s dUSDC. Nothing was filed." % [_fmt(balance), _fmt(amount)]
+		var line := "Available balance is %s dUSDC; requested wire is %s dUSDC. Nothing was filed." % [_fmt(balance), _fmt(amount)]
 		_stage(job, "B", "failed", line, {"reason": "InsufficientBalance"})
 		return _err("InsufficientBalance", line)
 	var tx_id := _next_tx_id
@@ -570,7 +570,7 @@ func _decide(args: Dictionary, kind: String) -> Dictionary:
 		var h := _hash()
 		var requested := float(rec["amount"])
 		if requested > balance:
-			var failed_line := "The release was mined, but execution failed — free balance may have been spent down, so nothing was sent."
+			var failed_line := "The release was mined, but execution failed — your available balance may have been spent down, so nothing was sent."
 			_stage(job, "B", "failed", failed_line, {"hash": h, "txId": tx_id, "status": "FAILED", "reason": "RECORD_FAILED"})
 			return _err("RECORD_FAILED", failed_line, {"hash": h, "txId": tx_id, "status": "FAILED"})
 		balance -= requested
@@ -607,7 +607,7 @@ func _priority(args: Dictionary) -> Dictionary:
 	var h := _hash()
 	var requested := float(rec["amount"])
 	if requested > balance:
-		var failed_line := "The release was mined, but execution failed — free balance may have been spent down, so nothing was sent."
+		var failed_line := "The release was mined, but execution failed — your available balance may have been spent down, so nothing was sent."
 		_stage(job, "B", "failed", failed_line, {"hash": h, "txId": tx_id, "status": "FAILED", "via": "priority", "reason": "RECORD_FAILED"})
 		return _err("RECORD_FAILED", failed_line, {"hash": h, "txId": tx_id, "status": "FAILED", "via": "priority"})
 	balance -= requested
@@ -657,6 +657,7 @@ func _session() -> Dictionary:
 	return {
 		"loggedIn": true, "ready": true, "userId": "did:privy:mock", "owner": OWNER,
 		"account": account if account != "" else null, "delegated": delegated, "ensName": ens_name if ens_name != "" else null,
+		"ensTier": ens_tier if ens_name != "" else null,
 		"signingMode": "session" if delegated else "client", "chainId": chain_id,
 		"mode": _mode(), "chainName": _chain_name(), "fxTillIsMain": _mode() == "live",
 		"timeLockSec": timelock_sec, "instantLimit": INSTANT_LIMIT, "manager": MANAGER, "priority": true,

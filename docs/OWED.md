@@ -11,7 +11,7 @@ audience: principal + cold agents
 Living list of what is still open after S2 (Live/Dev), S3 (treasury), Load Account, and the KayKit cast ladder.
 Tick items in place; move done rows to **Done** at the bottom with a date. Detail lives in the linked docs.
 
-Related: [HANDOFF-CC.md](./HANDOFF-CC.md) · [DEV-LOOP.md](./DEV-LOOP.md) · [REFLECTION.md](./REFLECTION.md)
+Related: [HANDOFF-CC.md](./missions/HANDOFF-CC.md) · [DEV-LOOP.md](./DEV-LOOP.md) · [REFLECTION.md](./REFLECTION.md)
 
 ---
 
@@ -25,9 +25,9 @@ Related: [HANDOFF-CC.md](./HANDOFF-CC.md) · [DEV-LOOP.md](./DEV-LOOP.md) · [RE
 
 ## 2. Principal walks (proof, not agent work)
 
-- [ ] **Polish re-playtest** — cold pass of the ten U7 polish findings ([KICKOFF-U7-polish.md](./KICKOFF-U7-polish.md)) — **gates packaging**
+- [ ] **Polish re-playtest** — cold pass of the ten U7 polish findings ([KICKOFF-U7-polish.md](./missions/KICKOFF-U7-polish.md)) — **gates packaging**
 - [x] **Live OTP walk** — Privy sign-in → consent → open (or load) → pay on Sepolia — **met 2026-09-09** (desk debug: provision + ENS `jacob.branchzero.eth` + Lane A 12.5 + Lane B wire 250 released; account `0xD70B…09eD`)
-- [x] **Lane B Release unblock** — **met 2026-09-09**: wire #14 released (`0x16b519b5…d46b`) + fresh #15 clean; root cause Privy `policy_violation` (release rule pinned away) — [HANDOFF-lane-b-release-opaque.md](./HANDOFF-lane-b-release-opaque.md)
+- [x] **Lane B Release unblock** — **met 2026-09-09**: wire #14 released (`0x16b519b5…d46b`) + fresh #15 clean; root cause Privy `policy_violation` (release rule pinned away) — [HANDOFF-lane-b-release-opaque.md](./missions/HANDOFF-lane-b-release-opaque.md)
 - [ ] **Ruth Live re-walk** — principal clicks Release on a fresh Live wire after the clock; expect `broadcasting → mined`, or an honest `PolicyDenied` / `OwnerGasDry` / `RpcError` line
 - [ ] **Next game export carries `PolicyDenied` / `SignerError` lines** in `apps/game/dialogue/errors.json` (edited; ships with the next scheduled export — no re-export for this alone)
 - [ ] **Live Load Account walk** — Ines → “Load an existing account” → paste an owned `0x` on Live ([LOAD-ACCOUNT.md](./LOAD-ACCOUNT.md); Dev killtests already 12/12)
@@ -46,23 +46,24 @@ Related: [HANDOFF-CC.md](./HANDOFF-CC.md) · [DEV-LOOP.md](./DEV-LOOP.md) · [RE
 
 ## 4. Construction (after §2 polish gate)
 
-- [x] **Copy · ENS · bank text refinement** — review dialogues, deepen ENS across the bank, fix plaque/UI placeholders — [HANDOFF-copy-ens-refinement.md](./HANDOFF-copy-ens-refinement.md) · [KICKOFF-copy-ens-refinement.md](./KICKOFF-copy-ens-refinement.md) (**Codex Luna**) — **met 2026-09-10** (passbook/name board/pay-by-name surfaces use existing ENS state; reverse names, staff directory and EAC deny-address remain proposals)
-- [x] **Player menu (title + pause)** — thin front door + Esc visitor's card; no operator/desk verbs — [HANDOFF-player-menu.md](./HANDOFF-player-menu.md) · [KICKOFF-player-menu.md](./KICKOFF-player-menu.md) (**Codex Luna**) — **met 2026-09-10** (`player_menu.gd` CanvasLayer; Enter the branch · Resume / Controls / Sound / Leave for today; Esc priority + canvas focus kept; high contrast skipped — needs a theme pass; export:web done)
-- [ ] **ENS passbook polish** — omit unclaimed bank-name noise; mirror `bz.tier` onto the passbook — [HANDOFF-ens-passbook-polish.md](./HANDOFF-ens-passbook-polish.md) · [KICKOFF-ens-passbook-polish.md](./KICKOFF-ens-passbook-polish.md) (**Claude Code**)
-- [ ] **U7 ship packaging** — [KICKOFF-U7-ship-package.md](./KICKOFF-U7-ship-package.md) · [DEMO-SCRIPT.md](./DEMO-SCRIPT.md) (G8–G10)
-- [x] Optional parallel (separate CC session): **character-style climb** — [HANDOFF-character-style.md](./HANDOFF-character-style.md) · [KICKOFF-character-style.md](./KICKOFF-character-style.md) (met 2026-09-08)
-- [x] Optional parallel (separate session): **character charm** — faces + expressions, proportion, mid-50s wardrobe — [HANDOFF-character-charm.md](./HANDOFF-character-charm.md) · [KICKOFF-character-charm.md](./KICKOFF-character-charm.md) (met 2026-09-08)
-- [x] Optional parallel: **KayKit bank cast ladder** — wardrobe ENG-0015–0017 → jacket land `fec5aa1`; Stage 0A idle wiring `639ffd2`; Idle_A feel accepted; ENG-0018 parked ([HANDOFF-kaykit-bank-performance.md](./HANDOFF-kaykit-bank-performance.md))
-- [x] Optional parallel: **FX fiat pairs** — Practice EUR + ILS, USD pools ≈ $100M TVL each — [HANDOFF-fx-fiat-pairs.md](./HANDOFF-fx-fiat-pairs.md) · [KICKOFF-fx-fiat-pairs.md](./KICKOFF-fx-fiat-pairs.md) (**met 2026-09-09** — both pairs swapped live on the Main till; desk pull-west is the separate Codex Luna unit)
-- [x] Optional parallel: **FX desk spacing** — pull Kenji west for staff clearance — [HANDOFF-fx-desk-spacing.md](./HANDOFF-fx-desk-spacing.md) · [KICKOFF-fx-desk-spacing.md](./KICKOFF-fx-desk-spacing.md) (**Codex Luna**) — **met 2026-09-09** (1.2 m west; quote board left on vault partition; Kenji/stool +0.55 m east of shelf for capsule clearance)
-- [x] Optional parallel: **Dialogue box fit** — long choice lists stay on screen — [HANDOFF-dialogue-box-fit.md](./HANDOFF-dialogue-box-fit.md) · [KICKOFF-dialogue-box-fit.md](./KICKOFF-dialogue-box-fit.md) (**Codex Luna**) — **met 2026-09-09** (grow-up + ScrollContainer)
-- [x] Optional parallel: **Camera zoom + Terminal width** — bounded wheel boom + wider Console iframe — [HANDOFF-camera-zoom-terminal-width.md](./HANDOFF-camera-zoom-terminal-width.md) · [KICKOFF-camera-zoom-terminal-width.md](./KICKOFF-camera-zoom-terminal-width.md) — **met 2026-09-09**
+- [x] **Copy · ENS · bank text refinement** — review dialogues, deepen ENS across the bank, fix plaque/UI placeholders — [HANDOFF-copy-ens-refinement.md](./missions/HANDOFF-copy-ens-refinement.md) · [KICKOFF-copy-ens-refinement.md](./missions/KICKOFF-copy-ens-refinement.md) (**Codex Luna**) — **met 2026-09-10** (passbook/name board/pay-by-name surfaces use existing ENS state; reverse names, staff directory and EAC deny-address remain proposals)
+- [x] **Player menu (title + pause)** — thin front door + Esc visitor's card; no operator/desk verbs — [HANDOFF-player-menu.md](./missions/HANDOFF-player-menu.md) · [KICKOFF-player-menu.md](./missions/KICKOFF-player-menu.md) (**Codex Luna**) — **met 2026-09-10** (`player_menu.gd` CanvasLayer; Enter the branch · Resume / Controls / Sound / Leave for today; Esc priority + canvas focus kept; high contrast skipped — needs a theme pass; export:web done)
+- [x] **ENS passbook polish** — omit unclaimed bank-name noise; mirror `bz.tier` onto the passbook (met 2026-09-10, mock + typecheck; Live tier glance is a principal walk) — [HANDOFF-ens-passbook-polish.md](./missions/HANDOFF-ens-passbook-polish.md) · [KICKOFF-ens-passbook-polish.md](./missions/KICKOFF-ens-passbook-polish.md) (**Claude Code**)
+- [ ] **U7 ship packaging** — [KICKOFF-U7-ship-package.md](./missions/KICKOFF-U7-ship-package.md) · [DEMO-SCRIPT.md](./DEMO-SCRIPT.md) (G8–G10)
+- [x] Optional parallel (separate CC session): **character-style climb** — [HANDOFF-character-style.md](./missions/HANDOFF-character-style.md) · [KICKOFF-character-style.md](./missions/KICKOFF-character-style.md) (met 2026-09-08)
+- [x] Optional parallel (separate session): **character charm** — faces + expressions, proportion, mid-50s wardrobe — [HANDOFF-character-charm.md](./missions/HANDOFF-character-charm.md) · [KICKOFF-character-charm.md](./missions/KICKOFF-character-charm.md) (met 2026-09-08)
+- [x] Optional parallel: **KayKit bank cast ladder** — wardrobe ENG-0015–0017 → jacket land `fec5aa1`; Stage 0A idle wiring `639ffd2`; Idle_A feel accepted; ENG-0018 parked ([HANDOFF-kaykit-bank-performance.md](./missions/HANDOFF-kaykit-bank-performance.md))
+- [x] Optional parallel: **FX fiat pairs** — Practice EUR + ILS, USD pools ≈ $100M TVL each — [HANDOFF-fx-fiat-pairs.md](./missions/HANDOFF-fx-fiat-pairs.md) · [KICKOFF-fx-fiat-pairs.md](./missions/KICKOFF-fx-fiat-pairs.md) (**met 2026-09-09** — both pairs swapped live on the Main till; desk pull-west is the separate Codex Luna unit)
+- [x] Optional parallel: **FX desk spacing** — pull Kenji west for staff clearance — [HANDOFF-fx-desk-spacing.md](./missions/HANDOFF-fx-desk-spacing.md) · [KICKOFF-fx-desk-spacing.md](./missions/KICKOFF-fx-desk-spacing.md) (**Codex Luna**) — **met 2026-09-09** (1.2 m west; quote board left on vault partition; Kenji/stool +0.55 m east of shelf for capsule clearance)
+- [x] Optional parallel: **Dialogue box fit** — long choice lists stay on screen — [HANDOFF-dialogue-box-fit.md](./missions/HANDOFF-dialogue-box-fit.md) · [KICKOFF-dialogue-box-fit.md](./missions/KICKOFF-dialogue-box-fit.md) (**Codex Luna**) — **met 2026-09-09** (grow-up + ScrollContainer)
+- [x] Optional parallel: **Camera zoom + Terminal width** — bounded wheel boom + wider Console iframe — [HANDOFF-camera-zoom-terminal-width.md](./missions/HANDOFF-camera-zoom-terminal-width.md) · [KICKOFF-camera-zoom-terminal-width.md](./missions/KICKOFF-camera-zoom-terminal-width.md) — **met 2026-09-09**
 
 ---
 
 ## 5. Explore / nice-to-have (not blocking ship)
 
-- [x] **SE partners board + lobby terminal** — southeast notice board (ETH Online / partners / Bloxchain / Particle) **and** a standalone Console terminal (no NPC) — [HANDOFF-partners-board.md](./HANDOFF-partners-board.md) · [KICKOFF-partners-board.md](./KICKOFF-partners-board.md) (Codex Luna) — met 2026-09-08
+- [x] **SE partners board + lobby terminal** — southeast notice board (ETH Online / partners / Bloxchain / Particle) **and** a standalone Console terminal (no NPC) — [HANDOFF-partners-board.md](./missions/HANDOFF-partners-board.md) · [KICKOFF-partners-board.md](./missions/KICKOFF-partners-board.md) (Codex Luna) — met 2026-09-08
+- [ ] **ENS follow-ups (proposals, principal call)** — reverse names on ledger / receipts / payee list; staff directory `*.staff.branchzero.eth` vs RBAC; Petra EAC deny-`setAddr` teaching beat — see "Not this mission" in [HANDOFF-ens-passbook-polish.md](./missions/HANDOFF-ens-passbook-polish.md)
 - [ ] **Provision pin follow-up** — Re-check / recovery path that re-pins when `policyPinned` is stale after a lost `players.json` (load lane already moves pins; Account Opening is one-shot today — [LOAD-ACCOUNT.md](./LOAD-ACCOUNT.md) §8.2)
 - [ ] **Ines clone list stretch** — offer this owner’s `BloxCloned` addresses as dialogue choices (log filter; no CopyBlox Solidity)
 - [ ] Doc hygiene: keep [DEV-LOOP.md](./DEV-LOOP.md) unit rows in sync with HANDOFF-CC when units close
@@ -77,7 +78,7 @@ Related: [HANDOFF-CC.md](./HANDOFF-CC.md) · [DEV-LOOP.md](./DEV-LOOP.md) · [RE
 - [ ] Walkable “Treasury Desk” quest
 - [ ] Privy Global Wallet / SaaS cross-app into Console
 - [ ] Share / expose Remote EVM `1337` as public infra
-- [ ] **ENG-2026-0018 KayKit clip authoring** — only if Idle_A still reads wrong after Stage 0A; census in [HANDOFF-kaykit-bank-performance.md](./HANDOFF-kaykit-bank-performance.md)
+- [ ] **ENG-2026-0018 KayKit clip authoring** — only if Idle_A still reads wrong after Stage 0A; census in [HANDOFF-kaykit-bank-performance.md](./missions/HANDOFF-kaykit-bank-performance.md)
 
 ---
 
@@ -85,6 +86,8 @@ Related: [HANDOFF-CC.md](./HANDOFF-CC.md) · [DEV-LOOP.md](./DEV-LOOP.md) · [RE
 
 | When | Item |
 |------|------|
+| 2026-09-10 | ENS passbook polish — no "not chosen yet" placeholder for unnamed customers (passbook / Mo / Ines); named passbook shows bank name + Silver/Gold tier from the desk's `/session` `ensTier` mirror; Gold update flows through the existing session refresh — [HANDOFF-ens-passbook-polish.md](./missions/HANDOFF-ens-passbook-polish.md) |
+| 2026-09-10 | Player menu � title + Esc visitor's card (player_menu.gd); ui_locked not tree pause; high contrast deferred � [HANDOFF-player-menu.md](./missions/HANDOFF-player-menu.md)
 | 2026-09-09 | Lane B #14 — Live timed Release fixed: Privy owner-tx rules reconciled by name (`reconcileTxRules`), `PolicyDenied` heal-and-retry, honest error codes; #14 + #15 mined on Sepolia |
 | 2026-09-09 | Camera wheel zoom (2.8–9.0 m) + wider Terminal panel (1480×860) for iframe room |
 | 2026-09-09 | Dialogue box fit — grow-up panel + choices ScrollContainer |

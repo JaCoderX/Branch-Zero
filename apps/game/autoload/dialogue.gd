@@ -5,7 +5,8 @@ extends Node
 ##   { "id", "name", "role",
 ##     "start": [ {"if": "<cond>", "node": "<id>"}, ... ],          first match wins; last entry may omit "if"
 ##     "nodes": { "<id>": {
-##         "text": "..." | ["...", "..."],                          `{vars}` interpolated from GameState.vars()
+##         "text": "..." | ["...", {"if": "<cond>", "text": "..."}],   lines joined; a conditioned line is dropped when
+##                                                                  its `if` fails; `{vars}` from GameState.vars()
 ##         "choices": [ {"text", "next" | "end", "if",
 ##                       "action", "args", "as", "working",        run through GameState.run_action
 ##                       "on_ok", "on_error", "escort"} ],
@@ -193,13 +194,28 @@ func _goto(id: String) -> void:
 
 
 func _show(node: Dictionary, choices: Array) -> void:
-	var text: Variant = node.get("text", "")
-	if text is Array:
-		text = "\n".join(PackedStringArray(text))
+	var text := resolve_text(node, GameState.facts())
 	var labels: Array = []
 	for c in choices:
 		labels.append(interpolate(str(c.get("text", "…")), GameState.vars(_ctx)))
-	node_changed.emit(str(_data.get("name", npc_id)), str(_data.get("role", "")), interpolate(str(text), GameState.vars(_ctx)), labels)
+	node_changed.emit(str(_data.get("name", npc_id)), str(_data.get("role", "")), interpolate(text, GameState.vars(_ctx)), labels)
+
+
+## A node's text before interpolation: a string, or an array of lines where an item may be {"if", "text"}. A line whose
+## condition fails is left out, so one node can name the bank name only for a customer who has one (ENS passbook polish).
+static func resolve_text(node: Dictionary, facts: Dictionary) -> String:
+	var text: Variant = node.get("text", "")
+	if not (text is Array):
+		return str(text)
+	var lines: PackedStringArray = []
+	for item in text:
+		if item is Dictionary:
+			if item.has("if") and not eval_condition(str(item["if"]), facts):
+				continue
+			lines.append(str(item.get("text", "")))
+		else:
+			lines.append(str(item))
+	return "\n".join(lines)
 
 
 func _resolve_choices(node: Dictionary) -> Array:

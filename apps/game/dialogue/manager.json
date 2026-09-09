@@ -19,7 +19,7 @@
       "choices": [ { "text": "OK.", "next": "end" } ]
     },
     "lore": {
-      "text": "Come in. Today I'm decoration — this branch has no manager key on the desk. Bob releases at the vault window once the clock runs down, and nobody skips the cooling.",
+      "text": "Come in. Today this desk is for decoration — the branch has no manager service open. Bob releases at the vault window once the clock runs down, and nobody skips the cooling.",
       "choices": [
         { "text": "Ask why", "next": "why_manager" },
         { "text": "OK.", "next": "end" }
@@ -89,7 +89,7 @@
       ]
     },
     "limits": {
-      "text": "Over the counter: up to {limit} {symbol}, done in one step. Above that: the vault, {timelock} of cooling, then Bob releases it — or you bring a hand scan here and I release it early. Honest footnote — the limit is this branch's policy, enforced at the counter; the vault clock is the contract's.",
+      "text": "Over the counter: up to {limit} {symbol}, done in one step. Above that: the vault, {timelock} of cooling, then Bob releases it — or you bring a hand scan here and I release it early. The counter sets the amount limit; the vault keeps its own clock.",
       "choices": [
         { "text": "Ask why", "next": "why_limits" },
         { "text": "Back", "next": "idle" }

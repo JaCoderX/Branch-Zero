@@ -3,8 +3,8 @@ title: Sepolia Ops Treasury — SEPOLIA_TREASURY_PK
 created: 2026-09-08
 status: met 2026-09-08
 product: Branch-Zero
-handoff: docs/HANDOFF-sepolia-treasury.md
-kickoff: docs/KICKOFF-sepolia-treasury.md
+handoff: docs/missions/HANDOFF-sepolia-treasury.md
+kickoff: docs/missions/KICKOFF-sepolia-treasury.md
 ---
 
 # Sepolia Ops Treasury
@@ -13,7 +13,7 @@ kickoff: docs/KICKOFF-sepolia-treasury.md
 > background. Role keys stay separate (identity ≠ gas float). Not a walkable desk; not a player mechanic.
 
 Related: [SEPOLIA-LIVE.md](./SEPOLIA-LIVE.md) · [SECURITY-AND-KEYS.md](./SECURITY-AND-KEYS.md) ·
-[HANDOFF-sepolia-treasury.md](./HANDOFF-sepolia-treasury.md)
+[HANDOFF-sepolia-treasury.md](./missions/HANDOFF-sepolia-treasury.md)
 
 ---
 

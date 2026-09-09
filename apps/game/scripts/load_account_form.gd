@@ -61,7 +61,7 @@ func _ready() -> void:
 	label.add_theme_color_override("font_color", Color(0.35, 0.3, 0.2))
 	v.add_child(label)
 	_account_edit = LineEdit.new()
-	_account_edit.placeholder_text = GameState.strings.get("load_account_placeholder", "0x…")
+	_account_edit.placeholder_text = GameState.strings.get("load_account_placeholder", "Paste the account address")
 	_account_edit.add_theme_font_size_override("font_size", 17)
 	_account_edit.text_submitted.connect(func(_text: String) -> void: _submit())
 	v.add_child(_account_edit)

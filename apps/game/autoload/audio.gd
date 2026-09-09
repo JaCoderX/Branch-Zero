@@ -5,6 +5,10 @@ extends Node
 ##   cancelled → shredder · a refused action → soft buzzer. No music, no loops, nothing on a timer — a sound only
 ##   follows a bridge event or a dialogue result, so the mock and the real bridge sound the same.
 ## Web: the browser unmutes the AudioContext on the first input, which every one of these follows anyway.
+## Sound switch (player menu): `set_muted` mutes the Master bus — so anything added later is covered too — and
+## remembers the choice in user://settings.cfg (IndexedDB on the web). Nothing else reads that file.
+
+const SETTINGS_PATH := "user://settings.cfg"
 
 const CLIPS := {
 	"stamp": "res://assets/audio/kenney/stamp.ogg",
@@ -18,6 +22,7 @@ const VOLUME_DB := -14.0
 const VOICES := 4
 
 var enabled: bool = true
+var muted: bool = false
 var _streams: Dictionary = {}
 var _players: Array[AudioStreamPlayer] = []
 var _next := 0
@@ -39,10 +44,26 @@ func _ready() -> void:
 	Dialogue.action_finished.connect(func(_id: String, ok: bool) -> void:
 		if not ok:
 			play("buzzer"))
+	var cfg := ConfigFile.new()
+	if cfg.load(SETTINGS_PATH) == OK:
+		set_muted(bool(cfg.get_value("sound", "muted", false)), false)
+
+
+## The player menu's Sound row. Master-bus mute rather than `enabled` alone, so a future loop or voice obeys it too.
+func set_muted(on: bool, persist: bool = true) -> void:
+	muted = on
+	var master := AudioServer.get_bus_index("Master")
+	if master >= 0:
+		AudioServer.set_bus_mute(master, on)
+	if persist:
+		var cfg := ConfigFile.new()
+		cfg.load(SETTINGS_PATH)
+		cfg.set_value("sound", "muted", on)
+		cfg.save(SETTINGS_PATH)
 
 
 func play(key: String) -> void:
-	if not enabled or not _streams.has(key):
+	if not enabled or muted or not _streams.has(key):
 		return
 	var t := Time.get_ticks_msec() / 1000.0
 	if key == _last_key and t - _last_at < 0.25:

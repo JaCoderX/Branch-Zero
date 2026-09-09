@@ -176,7 +176,7 @@ export function Terminal({ url, account, mode, onMode, onClose, call, loggedIn }
                 ref={field}
                 style={input_}
                 value={input}
-                placeholder="0x… or alice.branchzero.eth"
+                placeholder="0x… or name.branchzero.eth"
                 spellCheck={false}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {

@@ -54,16 +54,17 @@ func _ready() -> void:
 func _redraw() -> void:
 	if _title == null:
 		return
-	_title.text = "NAMES BOARD · ENSv2 SEPOLIA"
+	var s: Dictionary = GameState.strings
+	_title.text = str(s.get("names_board_title", "CUSTOMER NAMES · SEPOLIA"))
 	var lines: PackedStringArray = []
 	if GameState.ens_names.is_empty():
-		lines.append("No customer names claimed yet.")
-		lines.append("Petra can put yours on the board.")
+		lines.append(str(s.get("names_board_empty", "No customer names claimed yet.")))
+		lines.append(str(s.get("names_board_invite", "Petra can put yours on the board.")))
 	else:
 		var shown := 0
 		for row in GameState.ens_names:
 			if shown >= ROWS:
-				lines.append("…")
+				lines.append(str(s.get("names_board_more", "…")))
 				break
 			var name := str(row.get("name", "?"))
 			var address := GameState.short_address(str(row.get("address", "?")))

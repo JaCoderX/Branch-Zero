@@ -149,7 +149,7 @@ Pipeline rules:
 - Textures ≤ 1024², atlas props per zone; use vertex colours where possible (flat-shade look, zero texture memory).
 - Import presets in Godot: `Mesh → Generate LODs on`, `Lightmap UV off` (no lightmaps on web build v1), compress to **Basis Universal** for web.
 - Naming: `prop_<zone>_<name>.glb`, `npc_<role>.glb`, `mat_<name>.tres`.
-- **Public-repo intake:** only redistribution-safe licences (true CC0 / OFL fonts). "Free for commercial games" is not enough if the licence bans republishing raw assets. Style must pass the art bible (this §1) — see Stage 6 [`KICKOFF-U7-viz-stage6.md`](./KICKOFF-U7-viz-stage6.md) and GameDevOS card `public-repo-asset-intake`.
+- **Public-repo intake:** only redistribution-safe licences (true CC0 / OFL fonts). "Free for commercial games" is not enough if the licence bans republishing raw assets. Style must pass the art bible (this §1) — see Stage 6 [`KICKOFF-U7-viz-stage6.md`](./missions/KICKOFF-U7-viz-stage6.md) and GameDevOS card `public-repo-asset-intake`.
 
 ---
 

@@ -37,9 +37,13 @@ const TERMINALS := [
 const ARC_CHAIN_ID := 5042002
 const MAIN_CHAIN_ID := 1337
 
+## Where a visitor stands when the doors open — the boot spot, and where "Leave for today" walks them back to.
+const FRONT_DOOR := Vector3(5.0, 0.1, 7.0)
+
 var interior: Node3D
 var player: CharacterBody3D
 var hud: CanvasLayer
+var menu: PlayerMenu                    # title / visitor's card (docs/HANDOFF-player-menu.md); null in the test harnesses
 var debug_tools: bool = false          # F-key teleports + their legend; see debug_wanted()
 var _near: Array[Npc] = []
 var _near_terminals: Array[BankTerminal] = []
@@ -120,7 +124,7 @@ func _ready() -> void:
 
 	player = CharacterBody3D.new()
 	player.set_script(load("res://scripts/player.gd"))
-	player.position = Vector3(5.0, 0.1, 7.0)
+	player.position = FRONT_DOOR
 	add_child(player)
 	player.set_view(0.0)
 
@@ -147,13 +151,25 @@ func _ready() -> void:
 	load_form.set_script(load("res://scripts/load_account_form.gd"))
 	ui.add_child(load_form)
 
+	# Player menu, last so it sees `_unhandled_input` before the dialogue layer — it steps aside for Esc whenever a
+	# dialogue / slip / form / the Console holds the floor. The front door only gates the product path: viz_shots,
+	# run_viz_budget and the demo walk instantiate this scene themselves and start straight on the floor.
+	menu = PlayerMenu.new()
+	menu.set_script(load("res://scripts/player_menu.gd"))
+	add_child(menu)
+	menu.entered.connect(_on_entered)
+	menu.left.connect(_on_left)
+	menu.mode_changed.connect(_update_prompt)   # the prompt steps aside under a card and comes back on Resume
+	if get_tree().current_scene == self and not DemoWalk.wanted():
+		menu.show_title()
+
 	GameState.changed.connect(func() -> void:
 		interior.refresh_signs())
 	Dialogue.closed.connect(func(_id: String) -> void:
 		_update_prompt())
 	Dialogue.opened.connect(func(_id: String) -> void:
 		hud.set_prompt(""))
-	print("Branch Zero U7 · Godot %s · %s · bridge %s · debug tools %s" % [Engine.get_version_info().string, "web" if Chain.is_web else "desktop", "MockChain" if Chain.use_mock else Chain.bridge_version, "on (F-key teleports live)" if debug_tools else "off"])
+	print("Branch Zero U7 · Godot %s · %s · bridge %s · debug tools %s · front door %s" % [Engine.get_version_info().string, "web" if Chain.is_web else "desktop", "MockChain" if Chain.use_mock else Chain.bridge_version, "on (F-key teleports live)" if debug_tools else "off", "up" if menu.is_open() else "skipped"])
 
 	if DemoWalk.wanted():
 		var demo := Node.new()
@@ -203,6 +219,22 @@ func _take_elevator(target_chain: int) -> void:
 		await _apply_wing_theme()
 		GameState.toast.emit("Now serving the Main wing.", "info")
 	_update_prompt()
+
+
+## Through the front door: the legend gets its first look now, not behind the title.
+func _on_entered() -> void:
+	hud.show_help_again()
+	_update_prompt()
+
+
+## "Leave for today": a soft exit. The visitor walks back to the doors; the session, the account and the desks are
+## untouched (a wire keeps cooling, the passbook is still theirs when they come back in).
+func _on_left() -> void:
+	player.clear_steer()
+	player.global_position = FRONT_DOOR
+	player.velocity = Vector3.ZERO
+	player.set_view(0.0)
+	hud.set_prompt("")
 
 
 func _on_player_near(npc: Npc, near: bool) -> void:
@@ -280,6 +312,9 @@ func _pick() -> Array:
 
 func _update_prompt() -> void:
 	var s: Dictionary = GameState.strings
+	if menu != null and menu.is_open():
+		hud.set_prompt("")   # the title or the visitor's card is up; Space is not on offer
+		return
 	if _near_elevator and not Dialogue.active:
 		_prompt_npc = null
 		_prompt_terminal = null

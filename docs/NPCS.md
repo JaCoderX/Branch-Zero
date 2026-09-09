@@ -84,12 +84,12 @@ Mo: Welcome to Branch Zero. First time? Account Opening is the desk with the pla
   > Thanks.                → end
 
 [enter, has account, pending == 0]
-Mo: Morning, {name}. Counters are open, the vault's quiet. Try the florist — Counter.
+Mo: Morning, {name}. Bank name: {bank_name}. Counter is open and the vault's quiet; Dev can help with a florist payment.
   > What's the vault for?  → why_vault
   > Thanks.                → end
 
 [enter, pending > 0]
-Mo: You've got {pending} movement(s) cooling in the vault. Clock's on the wall — or bother Mr. Okafor.
+Mo: You've got {pending} wire(s) cooling in the vault. The clock's on the wall; Bob releases them when it runs down, or Mr. Okafor can recall one or skip the cooling with a hand scan.
 
 [why_vault]
 Mo: Big money doesn't move instantly here. It sits in the vault for a cooling period, then someone has to release it. If you didn't mean it, you can recall it before then.
@@ -104,7 +104,7 @@ Purpose: Privy login, delegation, account deployment / **load by address**, revo
 
 ```text
 [no login]
-Ines: Let's open your account. I'll need you to sign in — email, passkey, whatever you like.
+Ines: Let's open your account. Sign in with email, a passkey, or whatever suits you; it's the one pop-up you'll see in this building.
   > Sign in                → action: privy_login
   > Ask why                → why_login
 
@@ -112,7 +112,7 @@ Ines: Let's open your account. I'll need you to sign in — email, passkey, what
 Ines: Signing in creates a wallet for you that you control. We never see the key; it lives in a secure enclave.
 
 [logged in, no account]
-Ines: One more thing. Would you like our tellers to act on your instructions without you signing every slip? You can revoke this here any time.
+Ines: One more thing. Would you like our tellers to stamp slips on your instructions, so you don't sign each one? You can revoke that here any time.
   > Yes, let tellers act for me   → action: privy_add_session_signer  (policy: bz-typed-data)
   > No, I'll sign each slip       → set signing_mode = client
   > Ask why                       → why_delegate
@@ -121,16 +121,17 @@ Ines: One more thing. Would you like our tellers to act on your instructions wit
 Ines: You'd be adding our branch as a signer on your wallet, limited by a policy to signing bank slips for your own account. Nothing else. Technically: a scoped session signer for eth_signTypedData_v4 on the Bloxchain EIP-712 domain.
 
 [open / no account on file]
-Ines: Ready to open your account? …
+Ines: Ready to open your account? I'll put the desks and approved payees in order, then give you a practice balance.
   > Open my account        → action: provision (recover last clone or cloneBlox)
   > Load an existing account → form: load_account { account } → node `loading` → action: load_account
   > Ask why
 
 [deploying]  (WORKING; progress lines are real stages)
-Ines: Opening your account… Creating account · Registering services · Approving payees · Ready.
+Ines: Opening your account…
 
 [done]
-Ines: Done. Here's your passbook. Your account lives at {short_address} on the {wing} wing. I've put 500 practice dollars in it.
+Ines: Done. Here's your passbook. Your account lives at {short_address} on the {wing} wing, with {balance} practice dollars in it.
+      (named customers only) Your bank name is {bank_name}.
   > Re-check my account
   > Load an existing account → form: load_account { account }   (non-latest clone / multi-account)
   > Revoke teller access   → action: privy_remove_session_signer
@@ -160,9 +161,9 @@ Purpose: payment intake, lane routing, execution (Lane A), request (Lane B), ref
 
 ```text
 [idle]
-Dev: Counter. Paying someone?
+Dev: Counter. Paying someone? The slip takes an address or a registered customer name.
   > Make a payment         → form: payment_slip {recipient, amount, memo}
-  > Who can I pay?         → list: approved payees (from whitelist + ENS names)
+  > Who can I pay?         → the florist, landlord, demo merchant or a registered customer name
   > What services here?    → list: service menu (from function schemas)
 
 [slip submitted, amount <= limit]
@@ -172,7 +173,7 @@ Dev: Over the counter — one moment.   (WORKING: type → stamp → print)
   stage mined:        "Done. Here's your receipt."
   > Ask why            → why_instant
 [why_instant]
-Dev: You signed the slip; I executed it. That's a meta-transaction: your signature authorises, my desk pays the gas and submits. It was approved and executed in one step because it's within your instant limit.
+Dev: You sign the slip; I execute it. That's a meta-transaction: your signature authorises, my desk pays the gas and submits. Within your instant limit it's approved and executed in one step.
 
 [slip submitted, amount > limit]
 Dev: That's above what I can do here. It goes through the vault — there's a cooling period of {timelock} and then it needs a release. Walk with me.
@@ -267,7 +268,7 @@ Petra: Names! Pick one and people can pay you by it.
   > Who's registered?  → board
   > Ask why            → why_ens
 [why_ens]
-Petra: You're getting a subname under branchzero.eth on ENSv2. Your name points at your account; your passbook fields are text records; the staff only get the rights the registry grants them.
+Petra: You're getting a subname under branchzero.eth on ENSv2. Your name points at your account; the passbook tier is a text record; the staff only get the rights the registry grants them.
 ```
 
 ### 4.7 Dealer — Kenji (FX Desk) — S1 **built 2026-09-08** · **fiat pairs 2026-09-09**
@@ -299,19 +300,19 @@ Kenji: Till's there, but the exchange door isn't on your approved list yet. Thre
 
 [idle]
 Kenji: Dollars for euros or shekels? Board's live: {fx_rate_eur} · {fx_rate_ils}. You've {fx_usdc} USD, {fx_eur} EUR
-       and {fx_ils} ILS in the till; each pool takes {fx_pool_fee}.
+       and {fx_ils} ILS in the till; the exchange fee is {fx_pool_fee}.
   > Euros                           → euros     (node: pick a size)
   > Shekels                         → shekels
   > What can my account do here?    → whitelist  ("Three, and only three… and one-way")
   > Ask why                         → why_swap
 
 [euros | shekels]
-Kenji: Euros. {fx_rate_eur} on the board, mid-market — the price I quote is all-in for the size, pool fee included.
+Kenji: Euros. {fx_rate_eur} on the board — the price I quote includes the exchange fee.
   > Price 25 / 100 / 250 USD  → action: fx_quote {amount, pair: EUR|ILS}   (V4Quoter, an eth_call — signs nothing)
 
 [quoted]
-Kenji: {fx_amount_in} USD buys {fx_amount_out} {fx_symbol_out} — {fx_rate}. I'll not accept less than {fx_min_out} —
-       that's your {fx_slippage} slippage. Good for {fx_valid}.
+Kenji: {fx_amount_in} USD buys {fx_amount_out} {fx_symbol_out} — {fx_rate}. I won't accept less than {fx_min_out};
+       that leaves a little room for the rate to move. Good for {fx_valid}.
   > Take it                    → action: fx_swap  → swapped   (refused FX_QUOTE_EXPIRED once the deadline passes;
                                                                 the pair rides on the quote)
 

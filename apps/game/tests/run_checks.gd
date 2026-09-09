@@ -60,6 +60,8 @@ func _initialize() -> void:
 	_check_ao_desk_polish()
 	_check_counter_labels()
 	_check_polish()
+	_check_copy_ens_surface(Dlg)
+	_check_player_menu()
 	_check_eval(Dlg)
 	print("\n%s — %d failure(s)" % ["PASS" if failures == 0 else "FAIL", failures])
 	quit(0 if failures == 0 else 1)
@@ -384,8 +386,8 @@ func _check_terminal() -> void:
 		bad.append("prompt_terminal missing or not a [Space] prompt")
 	# The Console is a browser panel; a MockChain walk must be told so rather than shown an empty screen.
 	var errors := _load("res://dialogue/errors.json")
-	if str(errors.get("CONSOLE_UNAVAILABLE", {}).get("line", "")).find("shell") < 0:
-		bad.append("CONSOLE_UNAVAILABLE does not say the panel needs the bank shell")
+	if str(errors.get("CONSOLE_UNAVAILABLE", {}).get("line", "")).find("full bank window") < 0:
+		bad.append("CONSOLE_UNAVAILABLE does not say the panel needs the full bank window")
 	if bad.is_empty():
 		_ok("terminal: open_console + viewing list only, no write verbs · [Space] prompt · read-only copy present")
 	else:
@@ -518,6 +520,97 @@ func _check_polish() -> void:
 		bad.append("escort_arrived does not hand over to Bob")
 	if bad.is_empty():
 		_ok("Bob is the keeper · [Space] prompts · Space in the legend, F-keys only in help_debug · Arc elevator says coming soon")
+	else:
+		for b in bad:
+			_fail(b)
+
+
+## Copy/ENS refinement: the cheap truthful surfaces share one vocabulary — passbook, customer-name board and payment slip.
+## This check deliberately does not require a new reverse-resolution route: that remains an owed proposal.
+## ENS passbook polish: the name row and the tier row exist only for a named customer, and Mo / Ines never print a
+## "not chosen yet" placeholder; the tier comes from the desk mirror (`/session.ensTier`), never a local fake.
+func _check_copy_ens_surface(Dlg) -> void:
+	print("Copy and ENS surfaces")
+	var strings := _load("res://dialogue/strings.json")
+	var bad: PackedStringArray = []
+	if str(strings.get("passbook_name", "")).find("{bank_name}") < 0:
+		bad.append("passbook_name does not interpolate the chosen bank name")
+	if str(strings.get("name_claim_hint", "")).to_lower().find("counter") < 0:
+		bad.append("name_claim_hint does not explain pay-by-name at Counter")
+	if str(strings.get("slip_name_toggle", "")).to_lower().find("customer name") < 0:
+		bad.append("payment slip still hides the customer-name route behind protocol wording")
+	if str(strings.get("slip_hint", "")).find("{limit}") < 0 or str(strings.get("slip_hint", "")).find("{timelock}") < 0:
+		bad.append("slip_hint lost {limit}/{timelock} interpolation")
+	var hud := FileAccess.get_file_as_string("res://scripts/hud.gd")
+	if hud.find("passbook_name") < 0:
+		bad.append("hud.gd does not show the bank name in the passbook")
+	if str(strings.get("passbook_tier", "")).find("{bank_tier}") < 0:
+		bad.append("passbook_tier does not interpolate the desk's tier mirror")
+	if hud.find("passbook_tier") < 0 or hud.find("has_ens_name") < 0:
+		bad.append("hud.gd does not condition the bank-name and tier rows on has_ens_name")
+	var gs_src := FileAccess.get_file_as_string("res://autoload/game_state.gd")
+	if gs_src.find("not chosen yet") >= 0 or gs_src.find("\"bank_tier\"") < 0 or gs_src.find("\"has_ens_name\"") < 0:
+		bad.append("game_state.gd still prints a bank-name placeholder, or lacks bank_tier / the has_ens_name fact")
+	var mock_src := FileAccess.get_file_as_string("res://autoload/mock_chain.gd")
+	if mock_src.find("\"ensTier\"") < 0:
+		bad.append("MockChain session does not carry ensTier like the Teller Desk /session")
+	# Mo and Ines mention the bank name only for a named customer; an unnamed one hears nothing about it.
+	var unnamed := {"booted": true, "logged_in": true, "has_account": true, "has_ens_name": false}
+	var named := unnamed.duplicate()
+	named["has_ens_name"] = true
+	for probe in [["greeter", "has_account"], ["clerk", "done"], ["clerk", "loaded"]]:
+		var node: Dictionary = _load("res://dialogue/%s.json" % probe[0]).get("nodes", {}).get(probe[1], {})
+		var quiet: String = Dlg.resolve_text(node, unnamed)
+		var loud: String = Dlg.resolve_text(node, named)
+		if quiet.find("{bank_name}") >= 0 or quiet.to_lower().find("bank name") >= 0 or quiet.find("not chosen") >= 0:
+			bad.append("%s.%s names the bank name for an unnamed customer: %s" % [probe[0], probe[1], quiet])
+		if probe[1] != "loaded" and loud.find("{bank_name}") < 0:
+			bad.append("%s.%s no longer mentions the bank name for a named customer" % [probe[0], probe[1]])
+	var board := FileAccess.get_file_as_string("res://scripts/names_board.gd")
+	if board.find("ENSv2 SEPOLIA") >= 0:
+		bad.append("names_board.gd still exposes ENSv2 in its player-facing title")
+	var interior := FileAccess.get_file_as_string("res://scripts/bank_interior.gd")
+	if interior.find("Customer names") < 0:
+		bad.append("payee plaque does not mention customer names")
+	if bad.is_empty():
+		_ok("passbook bank name + tier only when named · Mo / Ines quiet when unnamed · customer-name board · pay-by-name slip · honest limit/cooling hints")
+	else:
+		for b in bad:
+			_fail(b)
+
+
+## Player menu (docs/HANDOFF-player-menu.md): the front door and the visitor's card use everyday bank words and never
+## carry a desk or operator verb — Sign in / Load Account stay with Ines, Live / Dev / Mock with desk-debug, the wing
+## switch with the elevator, the Console with the terminals. No SaaS chrome (New Game / Options / Quit) either.
+func _check_player_menu() -> void:
+	print("Player menu strings")
+	var strings := _load("res://dialogue/strings.json")
+	var bad: PackedStringArray = []
+	var keys := ["menu_brand", "menu_tagline", "menu_enter", "menu_controls", "menu_about", "menu_about_text", "menu_back",
+		"pause_title", "pause_resume", "pause_controls", "pause_sound_on", "pause_sound_off", "pause_leave", "pause_leave_ask",
+		"pause_leave_yes", "pause_leave_no"]
+	var blob := ""
+	for k in keys:
+		var v := str(strings.get(k, ""))
+		if v == "":
+			bad.append("strings.json has no %s" % k)
+		blob += "\n" + v.to_lower()
+	if str(strings.get("menu_brand", "")) != "Branch Zero":
+		bad.append("menu_brand must read Branch Zero")
+	if str(strings.get("menu_enter", "")) != "Enter the branch":
+		bad.append("menu_enter must read Enter the branch")
+	if str(strings.get("menu_tagline", "")).to_lower().find("bank you can walk through") < 0:
+		bad.append("menu_tagline must carry the DEMO-SCRIPT line (a bank you can walk through)")
+	if str(strings.get("pause_leave", "")) != "Leave for today":
+		bad.append("pause_leave must read Leave for today")
+	for forbidden in ["sign in", "load account", "live", "dev ", "mock", "arc", "wing", "console", "achievement", "save slot",
+		"new game", "options", "quit", "settings"]:
+		if blob.find(forbidden) >= 0:
+			bad.append("menu / pause strings must not say '%s' (it has an owner elsewhere or is SaaS chrome)" % forbidden)
+	if str(strings.get("help", "")).to_lower().find("visitor") < 0:
+		bad.append("help legend does not tell the player Esc opens the visitor's card")
+	if bad.is_empty():
+		_ok("front door + visitor's card: bank words only · Enter the branch · Leave for today · no desk / operator verbs")
 	else:
 		for b in bad:
 			_fail(b)

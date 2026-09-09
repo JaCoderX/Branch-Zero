@@ -114,7 +114,7 @@ const stageFor =
 const nowSec = () => String(Math.floor(Date.now() / 1000));
 
 /** Shared player-facing line for a mined release whose AccountBlox record is FAILED. */
-export const RECORD_FAILED_BANK_LINE = 'The release was mined, but execution failed — free balance may have been spent down, so nothing was sent.';
+export const RECORD_FAILED_BANK_LINE = 'The release was mined, but execution failed — your available balance may have been spent down, so nothing was sent.';
 
 /**
  * Selectors for the protocol errors the vault actually produces. The SDK's `GuardController` ABI does not
@@ -300,7 +300,7 @@ export function explainRevert(e: unknown): { code: string; message: string; bank
         : name === 'TransactionNotPending' || name === 'CanOnlyApprovePending' || name === 'CanOnlyCancelPending'
           ? 'That wire is no longer waiting in the vault.'
           : name === 'OwnerGasDry'
-            ? 'Your wallet needs a little more ETH for gas — ask Ines to re-check your account.'
+            ? 'Your account needs a little more network credit — ask Ines to re-check your account.'
             : name === 'RpcError'
               ? 'The chain did not answer clearly — try Release again in a moment.'
               : 'The vault would not accept that.';
@@ -369,7 +369,7 @@ export async function wire(player: Player, to: Address, amount: string, jobId: s
   })) as bigint;
   if (value > freeBalance) {
     const free = formatUnits(freeBalance, token.decimals);
-    const message = `Free balance is ${free} ${token.symbol}; requested wire is ${amount} ${token.symbol}. Nothing was filed.`;
+    const message = `Available balance is ${free} ${token.symbol}; requested wire is ${amount} ${token.symbol}. Nothing was filed.`;
     stage('failed', message, { reason: `InsufficientBalance: ${message}` });
     throw Object.assign(new Error(message), { statusCode: 400, code: 'InsufficientBalance' });
   }
@@ -456,7 +456,7 @@ async function decide(player: Player, txId: bigint, actor: Actor, kind: 'approve
     if (ownerWei < targetWei / 2n) {
       const bal = formatEther(ownerWei);
       const message = `Owner wallet holds ${bal} ETH; need ~${formatEther(targetWei / 2n)} for a vault call (target ${config.ownerGasEth}). Ask Ines to re-check.`;
-      stage('failed', 'Your wallet needs a little more ETH for gas — ask Ines to re-check your account.', {
+      stage('failed', 'Your account needs a little more network credit — ask Ines to re-check your account.', {
         txId: String(txId),
         reason: `OwnerGasDry: ${message}`,
         releaseTime: before.releaseTime,

@@ -116,6 +116,11 @@ func _refresh() -> void:
 		lines.append(Dialogue.interpolate(str(s.get("passbook_owner", "Account holder {name}")), v))
 		if GameState.has_account():
 			lines.append(Dialogue.interpolate(str(s.get("passbook_account", "Account {short_address} · {chain}")), v))
+			# A bank name is a row the customer earned at Petra's desk; until then the passbook says nothing about it.
+			if GameState.has_ens_name():
+				lines.append(Dialogue.interpolate(str(s.get("passbook_name", "Bank name · {bank_name}")), v))
+				if str(v.get("bank_tier", "")) != "":
+					lines.append(Dialogue.interpolate(str(s.get("passbook_tier", "Tier · {bank_tier}")), v))
 			lines.append(Dialogue.interpolate(str(s.get("passbook_balance", "{balance} {symbol}")), v))
 			if GameState.pending_count() > 0:
 				lines.append(Dialogue.interpolate(str(s.get("passbook_pending", "{pending} in the vault · next release {release_in}")), v))
@@ -144,6 +149,12 @@ func show_toast(text: String, kind: String = "error") -> void:
 func set_prompt(text: String) -> void:
 	_prompt.text = text
 	_prompt.visible = text != ""
+
+
+## The legend's first look starts over — the player menu calls this when the player walks in through the front door,
+## so the 25 s are not spent behind the title.
+func show_help_again() -> void:
+	_help_until = Time.get_unix_time_from_system() + HELP_SECONDS
 
 
 ## With the debug flag the legend also lists the F-key teleports; without it they are not bound, so they are not shown.

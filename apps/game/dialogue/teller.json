@@ -13,7 +13,7 @@
       "choices": [ { "text": "Sure.", "next": "end" } ]
     },
     "no_account": {
-      "text": "Counter. I can't take a slip without an account — Ines at Account Opening opens them, the desk with the plant.",
+      "text": "Counter. I can only take a payment for a Branch Zero account — Ines at Account Opening can open one, by the plant.",
       "choices": [
         { "text": "Ask why", "next": "why_no_account" },
         { "text": "OK.", "next": "end" }
@@ -24,7 +24,7 @@
       "choices": [ { "text": "OK.", "next": "end" } ]
     },
     "idle": {
-      "text": "Counter. Paying someone? Up to {limit} {symbol} I do right here; more than that goes through the vault.",
+      "text": "Counter. Paying someone? The slip takes an address or a registered customer name. Up to {limit} {symbol} I do right here; more goes through the vault.",
       "choices": [
         { "text": "Make a payment", "form": "payment_slip", "on_instant": "pay_now", "on_vault": "over_limit" },
         { "text": "Who can I pay?", "next": "payees" },
@@ -34,7 +34,7 @@
       ]
     },
     "payees": {
-      "text": "Anyone with an address — the florist, the landlord, the demo merchant are on the slip. What's actually approved on your account is the demo token for the transfer service; that's the list on my wall.",
+      "text": "The slip has the florist, landlord and demo merchant ready to choose. You can also enter a registered customer name; the branch checks where it points before paying.",
       "choices": [
         { "text": "Ask why", "next": "why_payees" },
         { "text": "Back", "next": "idle" }
@@ -64,7 +64,7 @@
       "enter_action": { "action": "pay", "working": "Stamping your slip…", "on_ok": "paid", "on_error": "refused" }
     },
     "paid": {
-      "text": "Done. Here's your receipt: {amount} {symbol} to {payee}, record #{txId}. Balance now {balance} {symbol}.",
+      "text": "Done. Here's your receipt: {amount} {symbol} to {payee}, slip #{txId}. Balance now {balance} {symbol}.",
       "choices": [
         { "text": "Ask why", "next": "why_instant" },
         { "text": "Another payment", "form": "payment_slip", "on_instant": "pay_now", "on_vault": "over_limit" },

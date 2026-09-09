@@ -11,23 +11,19 @@ For [ETHOnline 2026](https://ethglobal.com/events/ethonline2026) · Start Fresh.
 ## Screenshots
 
 <p align="center">
-  <img src="docs/media/readme/00_entrance.jpg" width="48%" alt="Branch Zero entrance — EST. BLOCK 0" />
   <img src="docs/media/readme/01_lobby.jpg" width="48%" alt="Lobby with Mo the greeter and the vault" />
-</p>
-<p align="center">
   <img src="docs/media/readme/02_account_opening.jpg" width="48%" alt="Account Opening desk with Ines" />
-  <img src="docs/media/readme/03_counter.jpg" width="48%" alt="Teller counter" />
 </p>
 <p align="center">
-  <img src="docs/media/readme/04_vault.jpg" width="48%" alt="Vault antechamber — the cooling clock" />
+  <img src="docs/media/readme/03_counter.jpg" width="48%" alt="Teller counter with Dev" />
+  <img src="docs/media/readme/04_vault.jpg" width="48%" alt="Vault antechamber with Bob" />
+</p>
+<p align="center">
   <img src="docs/media/readme/05_fx_desk.jpg" width="48%" alt="Kenji at the FX desk" />
-</p>
-<p align="center">
-  <img src="docs/media/readme/06_manager.jpg" width="48%" alt="Mr. Okafor — Priority release" />
-  <img src="docs/media/readme/07_name_desk.jpg" width="48%" alt="Name Desk — bank names on ENSv2" />
+  <img src="docs/media/readme/06_name_desk.jpg" width="48%" alt="Name Desk with Petra — ENSv2 bank names" />
 </p>
 
-> Captures from the web build. Mock HUD appears in some shots; Live Main runs on Sepolia.
+> Fresh desktop MockChain captures (2026-09-10). Live Main runs on Sepolia.
 
 ---
 

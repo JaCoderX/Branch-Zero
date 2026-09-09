@@ -45,6 +45,8 @@ export interface Player {
   typedDataRule?: number;
   /** U5: latest customer subname claimed at Petra's Name Desk. The chain remains source of truth for resolution. */
   ensName?: string;
+  /** Passbook tier as the Name Desk last wrote it (`bz.tier` Silver | Gold). Mirrored onto `/session`; the chain stays SoT. */
+  ensTier?: string;
   /** S1: this player's AccountBlox on Sepolia — the FX till Kenji trades from. Never the Main-wing account. */
   fxAccount?: Address;
   /** S1: the FX guard batch (three schemas + whitelist + grants) landed. `lanes/fx.ts` still re-reads the chain. */

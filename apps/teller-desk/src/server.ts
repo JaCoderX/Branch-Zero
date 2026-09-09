@@ -147,6 +147,9 @@ app.get('/healthz', async () => {
  * U2: a player the index has forgotten (restart, upgrade) is rehydrated from the chain (their clone) and
  * from Privy (their policy and rules) instead of being opened twice.
  */
+/** Names whose missing passbook tier this desk process already tried to read from `bz.tier` (see /session). */
+const ensTierBackfillTried = new Set<string>();
+
 app.post('/session', async (req, reply) => {
   try {
     let player = await requirePlayer(req as never);
@@ -180,6 +183,17 @@ app.post('/session', async (req, reply) => {
     } catch (e) {
       app.log.warn({ err: (e as Error).message }, 'typed-data rule not tightened');
     }
+    // ENS passbook tier: a name claimed before the desk mirrored `bz.tier` reads the record once and keeps it on file.
+    // One attempt per name per desk process: a desk without ENS configured must not warn on every /session.
+    if (player.ensName && !player.ensTier && !ensTierBackfillTried.has(player.ensName)) {
+      ensTierBackfillTried.add(player.ensName);
+      try {
+        const tier = (await ensResolve(player.ensName)).tier;
+        if (tier) player = patchPlayer(player.privyUserId, { ensTier: tier });
+      } catch (e) {
+        app.log.warn({ err: (e as Error).message, name: player.ensName }, 'ENS tier not mirrored');
+      }
+    }
     return {
       privyUserId: player.privyUserId,
       owner: player.ownerAddress,
@@ -201,6 +215,8 @@ app.post('/session', async (req, reply) => {
       instantLimit: config.instantLimit,
       manager: managerAddress ?? null,
       ensName: player.ensName ?? null,
+      /** Passbook tier (Silver | Gold) from the last Name Desk write, or read once from `bz.tier` for older names. */
+      ensTier: player.ensTier ?? null,
       /** U4+: this branch runs the Priority desk (manager key + PRIORITY_RELEASE) and this account carries the split. */
       priority: config.priorityRelease && Boolean(player.priority),
       roleSet: player.roleSet ?? 0,

@@ -54,6 +54,8 @@ export interface Session {
   priority?: boolean;
   /** U5: the latest customer subname claimed under branchzero.eth. */
   ensName?: string | null;
+  /** Passbook tier (Silver | Gold) mirrored from the name's `bz.tier` record. */
+  ensTier?: string | null;
   roleSet?: number;
   roleSetWanted?: number;
 }

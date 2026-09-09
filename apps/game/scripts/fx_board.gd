@@ -86,11 +86,11 @@ func _redraw() -> void:
 		if GameState.fx_quoted():
 			lines.append(Dialogue.interpolate(str(s.get("fx_board_quote", "{fx_amount_in} {fx_symbol_in}  →  {fx_amount_out} {fx_symbol_out}")), v))
 			lines.append(Dialogue.interpolate(str(s.get("fx_board_rate", "{fx_rate}")), v))
-			lines.append(Dialogue.interpolate(str(s.get("fx_board_min", "floor {fx_min_out} {fx_symbol_out} · slippage {fx_slippage}")), v))
+			lines.append(Dialogue.interpolate(str(s.get("fx_board_min", "minimum {fx_min_out} {fx_symbol_out} · rate room {fx_slippage}")), v))
 			lines.append(Dialogue.interpolate(str(s.get("fx_board_valid", "quote valid {fx_valid}")), v))
 		else:
 			# Both pairs' mid rates, read from each pool's own slot0 by the desk — a reading, not a quote.
-			lines.append(Dialogue.interpolate(str(s.get("fx_board_idle", "{fx_rate_eur} · {fx_rate_ils} · pool fee {fx_pool_fee}")), v))
+			lines.append(Dialogue.interpolate(str(s.get("fx_board_idle", "{fx_rate_eur} · {fx_rate_ils} · exchange fee {fx_pool_fee}")), v))
 			lines.append(str(s.get("fx_board_ask", "Ask Kenji for a euro or shekel price.")))
 		lines.append("")
 		if GameState.has_fx_till():
@@ -100,10 +100,10 @@ func _redraw() -> void:
 		if not GameState.fx_open():
 			lines.append(str(s.get("fx_board_closed", "exchange door not on your approved list")))
 		else:
-			lines.append(Dialogue.interpolate(str(s.get("fx_board_whitelist", "approved: dollar approve · Permit2 approve · router execute")), v))
+			lines.append(Dialogue.interpolate(str(s.get("fx_board_whitelist", "approved services: prepare dollars · authorise exchange · place trade")), v))
 		for pair in ["EUR", "ILS"]:
 			var pool: Dictionary = GameState.fx_pair(pair).get("pool", {})
 			if str(pool.get("tick", "")) != "":
-				lines.append(Dialogue.interpolate(str(s.get("fx_board_pool", "{pair} pool tick {tick} · liquidity {liq}")), {"pair": pair, "tick": str(pool.get("tick", "?")), "liq": str(pool.get("liquidity", "?"))}))
+				lines.append(Dialogue.interpolate(str(s.get("fx_board_pool", "{pair} exchange · available depth {liq}")), {"pair": pair, "tick": str(pool.get("tick", "?")), "liq": str(pool.get("liquidity", "?"))}))
 	_rows.text = "\n".join(lines)
 	_vp.render_target_update_mode = SubViewport.UPDATE_ONCE

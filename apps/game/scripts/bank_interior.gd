@@ -404,7 +404,7 @@ func _north_strip() -> void:
 	PropKit.kaykit(self, "MgrFloorLamp", "lamp_standing", Vector3(-14.4, 0, -10.4), 0.0, {"fit": Vector3(0.45, 1.75, 0.45)}, Vector3(0.35, 1.75, 0.35), Vector3(0, 0.875, 0))
 	PropKit.hero(self, "Shredder", "prop_shredder", Vector3(-12.5, 0, -9.5), 0.0, {}, Vector3(0.6, 0.9, 0.5), Vector3(0, 0.45, 0))
 	plaque("SHREDDER", Vector3(-12.5, 1.2, -9.2), 0.0, 0.22, theme.graphite_color)
-	plaque("Branch limits\nover the counter: up to {limit} {symbol}\nabove that: the vault, cooling {timelock}", Vector3(-8.0, 2.4, -10.8), 0.0, 0.2, theme.graphite_color, "LimitsPoster")
+	plaque("Counter limit\nup to {limit} {symbol} at the counter\nabove that: vault, cooling {timelock}", Vector3(-8.0, 2.4, -10.8), 0.0, 0.2, theme.graphite_color, "LimitsPoster")
 	box_m("LimitsPosterBoard", Vector3(-8.0, 2.4, -10.83), Vector3(3.2, 1.3, 0.03), PropKit.palette("Paper"), false)
 	# vault antechamber x ∈ [1, 15]: partition with an opening x ∈ [6, 10]
 	wall("VaultPartA", Vector3(3.5, WALL_H / 2, z), Vector3(5.0, WALL_H, T), [-1, 1])
@@ -459,9 +459,9 @@ func _west_column() -> void:
 	quad.set_meta("no_batch", true)   # stays its own node so U5 can swap the material
 	add_child(quad)
 	plaque("NAME DESK", Vector3(-12.5, 2.2, -4.9), 0.0, 0.3, theme.graphite_color)
-	plaque("Approved payees\n• Florist\n• Landlord\n• Demo merchant", Vector3(-14.8, 2.4, 3.0), PI / 2, 0.24, theme.graphite_color, "PayeeList")
+	plaque("Payees on today's slips\n• Florist\n• Landlord\n• Demo merchant\n• Customer names", Vector3(-14.8, 2.4, 3.0), PI / 2, 0.24, theme.graphite_color, "PayeeList")
 	box_m("PayeeListBoard", Vector3(-14.83, 2.4, 3.0), Vector3(0.03, 1.2, 2.6), PropKit.palette("Paper"), false)
-	plaque("NAME DESK SERVICES\n• Claim a name under branchzero.eth\n• Update your passbook records\n• Pay by name at Counter", Vector3(-14.8, 2.4, -1.0), PI / 2, 0.24, theme.graphite_color, "ServiceMenu")
+	plaque("NAME DESK SERVICES\n• Choose a bank name\n• Update your passbook tier\n• Pay by name at Counter", Vector3(-14.8, 2.4, -1.0), PI / 2, 0.24, theme.graphite_color, "ServiceMenu")
 	box_m("ServiceMenuBoard", Vector3(-14.83, 2.4, -1.0), Vector3(0.03, 1.2, 3.2), PropKit.palette("Paper"), false)
 
 
@@ -505,9 +505,9 @@ func _fx_desk() -> void:
 	# These signs belong to the east wall, so re-seat them on the wall face instead of shifting them with the desk.
 	var wall_sign_x := 14.8
 	plaque("FX DESK", Vector3(wall_sign_x, 2.95, -2.0), -PI / 2, 0.34, theme.graphite_color)
-	plaque("Foreign exchange · Uniswap v4 on Sepolia\nYour account trades; the guard list says where.", Vector3(12.4, 1.30, -4.77), 0.0, 0.15, theme.graphite_color, "FxSponsor")
+	plaque("Foreign exchange · Uniswap v4 on Sepolia\nYour account trades; the approved list keeps the door narrow.", Vector3(12.4, 1.30, -4.77), 0.0, 0.15, theme.graphite_color, "FxSponsor")
 	# the east-wall frame the board used to sit in becomes the desk's service menu, in the Name Desk's wording class
-	plaque("FX Desk\n• Ask for a rate — the exchange quotes it\n• Trade from your own till\n• Three approved calls, nothing else", Vector3(wall_sign_x, 2.2, -2.0), -PI / 2, 0.15, theme.graphite_color, "FxServiceMenu")
+	plaque("FX Desk\n• Ask for a rate — the exchange quotes it\n• Trade from your own till\n• Three approved services, nothing else", Vector3(wall_sign_x, 2.2, -2.0), -PI / 2, 0.15, theme.graphite_color, "FxServiceMenu")
 
 
 ## Marble counter (hero mesh, 1.1 m, glass partition with a slot) under the greybox collider; printer + stamp (or

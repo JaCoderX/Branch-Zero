@@ -37,6 +37,55 @@ func _run() -> void:
 	chain._mock.preset_account()
 	await gs.refresh_all()
 	print("mock account: %s balance %s, priority=%s" % [gs.account(), gs.balance, str(gs.priority_enabled())])
+	var bank_name: String = gs.ens_name()
+	# ENS passbook polish: the passbook shows name + tier from the desk mirror (/session ensTier) only once a name exists,
+	# a Gold update reaches it through the ordinary session refresh, and an unnamed customer never meets a placeholder.
+	var v0: Dictionary = gs.vars()
+	if not gs.has_ens_name() or str(v0.get("bank_name", "")) != bank_name or str(v0.get("bank_tier", "")) != "Silver":
+		_fail("passbook vars after the preset claim: bank_name=%s bank_tier=%s" % [str(v0.get("bank_name")), str(v0.get("bank_tier"))])
+	else:
+		_ok("passbook mirrors %s · Silver from the mock session" % bank_name)
+	var gold: Dictionary = await gs.run_action("ens_set_text", {"key": "bz.tier", "value": "Gold"})
+	if not gold.get("ok", false) or str(gs.vars().get("bank_tier", "")) != "Gold" or str(gs.session.get("ensTier", "")) != "Gold":
+		_fail("Gold update did not reach the passbook through the session refresh: %s (bank_tier=%s)" % [str(gold), str(gs.vars().get("bank_tier"))])
+	else:
+		_ok("Petra's Gold update → passbook Tier · Gold via the existing session refresh, no new bridge verb")
+	var registrar: Dictionary = dlg.load_npc("registrar")
+	var greeter: Dictionary = dlg.load_npc("greeter")
+	var clerk: Dictionary = dlg.load_npc("clerk")
+	if not bool(gs.facts().get("has_ens_name", false)) or dlg.pick_start(registrar, gs.facts()) == "first_visit":
+		_fail("has_ens_name fact is false for a named customer (Petra would greet a first visit)")
+	var mo_named: String = dlg.resolve_text(greeter["nodes"]["has_account"], gs.facts())
+	if mo_named.find("{bank_name}") < 0:
+		_fail("Mo does not mention the bank name for a named customer: %s" % mo_named)
+	var saved_name: String = chain._mock.ens_name
+	var saved_rows: Array = chain._mock.ens_names
+	chain._mock.ens_name = ""
+	chain._mock.ens_names = []
+	await gs.refresh_all()
+	await gs.refresh_names()
+	var v1: Dictionary = gs.vars()
+	var mo_quiet: String = dlg.resolve_text(greeter["nodes"]["has_account"], gs.facts())
+	var ines_quiet: String = dlg.resolve_text(clerk["nodes"]["done"], gs.facts())
+	if gs.has_ens_name() or str(v1.get("bank_name", "")) != "" or str(v1.get("bank_tier", "")) != "" or dlg.pick_start(registrar, gs.facts()) != "first_visit":
+		_fail("unnamed customer still carries a name/tier: has=%s bank_name=%s bank_tier=%s" % [str(gs.has_ens_name()), str(v1.get("bank_name")), str(v1.get("bank_tier"))])
+	elif mo_quiet.to_lower().find("bank name") >= 0 or ines_quiet.to_lower().find("bank name") >= 0 or (mo_quiet + ines_quiet).find("not chosen") >= 0:
+		_fail("Mo/Ines name the bank name for an unnamed customer: %s | %s" % [mo_quiet, ines_quiet])
+	else:
+		_ok("unnamed customer: no name row, no tier, Mo and Ines say nothing about a bank name; Petra starts at first_visit")
+	chain._mock.ens_name = saved_name
+	chain._mock.ens_names = saved_rows
+	chain._mock.ens_tier = "Silver"
+	await gs.refresh_all()
+	await gs.refresh_names()
+	var named_pay: Dictionary = await gs.run_action("pay", {"name": bank_name, "amount": "1", "memo": "name walk"})
+	if not named_pay.get("ok", false) or str(named_pay.get("result", {}).get("to", "")).to_lower() != chain._mock.ACCOUNT.to_lower():
+		_fail("pay-by-name did not resolve the registered customer name: %s" % str(named_pay))
+	else:
+		_ok("pay-by-name resolves %s before the unchanged Counter payment lane" % bank_name)
+	var refill: Dictionary = await gs.run_action("faucet", {})
+	if not refill.get("ok", false):
+		_fail("mock faucet could not restore the walk's opening balance: %s" % str(refill))
 
 	# Lane B preflight: an overdrawn wire is refused before a pending record is created.
 	var wires_before: int = chain._mock.wires.size()
@@ -45,7 +94,7 @@ func _run() -> void:
 	var over_line: String = gs.error_line(over_error)
 	if over_balance.get("ok", false) or str(over_error.get("code", "")) != "InsufficientBalance" or chain._mock.wires.size() != wires_before:
 		_fail("over-balance wire was filed or returned the wrong error: %s" % str(over_balance))
-	elif not str(over_error.get("message", "")).contains("500") or not str(over_error.get("message", "")).contains("501") or not over_line.to_lower().contains("free balance") or not over_line.to_lower().contains("requested amount"):
+	elif not str(over_error.get("message", "")).contains("500") or not str(over_error.get("message", "")).contains("501") or not over_line.to_lower().contains("available balance") or not over_line.to_lower().contains("that amount"):
 		_fail("over-balance wire copy is not honest: line=%s error=%s" % [over_line, str(over_error)])
 	else:
 		_ok("over-balance wire → InsufficientBalance: \"%s\"; no pending record filed" % over_line)
@@ -156,7 +205,7 @@ func _run() -> void:
 		var failed_release: Dictionary = await gs.run_action("approve", {"txId": tx2})
 		var failed_error: Dictionary = failed_release.get("error", {})
 		var failed_line: String = gs.error_line(failed_error)
-		if failed_release.get("ok", false) or str(failed_error.get("code", "")) != "RECORD_FAILED" or not failed_line.contains("execution failed") or not failed_line.contains("free balance") or str(gs.last_stage.get("txId", "")) != tx2 or not str(gs.last_stage.get("hash", "")).begins_with("0xm0ck"):
+		if failed_release.get("ok", false) or str(failed_error.get("code", "")) != "RECORD_FAILED" or not failed_line.contains("execution failed") or not failed_line.contains("available balance") or str(gs.last_stage.get("txId", "")) != tx2 or not str(gs.last_stage.get("hash", "")).begins_with("0xm0ck"):
 			_fail("underfunded Bob release did not map to RECORD_FAILED: %s" % str(failed_release))
 		else:
 			_ok("underfunded Bob release → RECORD_FAILED: \"%s\"" % failed_line)
@@ -171,7 +220,7 @@ func _run() -> void:
 		var failed_priority: Dictionary = await gs.run_action("priority", {"txId": tx3})
 		var priority_error: Dictionary = failed_priority.get("error", {})
 		var priority_line: String = gs.error_line(priority_error)
-		if not last_spend.get("ok", false) or failed_priority.get("ok", false) or str(priority_error.get("code", "")) != "RECORD_FAILED" or not priority_line.contains("execution failed") or not priority_line.contains("free balance") or str(gs.last_stage.get("txId", "")) != tx3 or not str(gs.last_stage.get("hash", "")).begins_with("0xm0ck"):
+		if not last_spend.get("ok", false) or failed_priority.get("ok", false) or str(priority_error.get("code", "")) != "RECORD_FAILED" or not priority_line.contains("execution failed") or not priority_line.contains("available balance") or str(gs.last_stage.get("txId", "")) != tx3 or not str(gs.last_stage.get("hash", "")).begins_with("0xm0ck"):
 			_fail("underfunded Priority did not map to RECORD_FAILED: %s" % str(failed_priority))
 		else:
 			_ok("underfunded Priority → RECORD_FAILED: \"%s\"" % priority_line)

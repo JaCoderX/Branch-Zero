@@ -3,8 +3,8 @@ title: Sepolia Live — payment wing + Developer Mode
 created: 2026-09-08
 status: met 2026-09-08
 product: Branch-Zero
-handoff: docs/HANDOFF-sepolia-live.md
-kickoff: docs/KICKOFF-sepolia-live.md
+handoff: docs/missions/HANDOFF-sepolia-live.md
+kickoff: docs/missions/KICKOFF-sepolia-live.md
 ---
 
 # Sepolia Live — Main wing on public Sepolia, Remote EVM as Developer Mode
@@ -13,7 +13,7 @@ kickoff: docs/KICKOFF-sepolia-live.md
 > **Developer Mode** (desk debug). ENS stays Sepolia. FX stays Sepolia and requires a real Sepolia account.
 
 Related: [PLAN.md](./PLAN.md) · [REMOTE-EVM.md](./REMOTE-EVM.md) · [SECURITY-AND-KEYS.md](./SECURITY-AND-KEYS.md) ·
-[UNISWAP.md](./UNISWAP.md) · [ENS.md](./ENS.md) · [HANDOFF-sepolia-live.md](./HANDOFF-sepolia-live.md)
+[UNISWAP.md](./UNISWAP.md) · [ENS.md](./ENS.md) · [HANDOFF-sepolia-live.md](./missions/HANDOFF-sepolia-live.md)
 
 ---
 

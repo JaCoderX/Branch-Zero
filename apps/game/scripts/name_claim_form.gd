@@ -57,13 +57,13 @@ func _ready() -> void:
 	label.add_theme_color_override("font_color", Color(0.35, 0.3, 0.2))
 	v.add_child(label)
 	_label_edit = LineEdit.new()
-	_label_edit.text = GameState.strings.get("name_claim_placeholder", "alice")
-	_label_edit.placeholder_text = GameState.strings.get("name_claim_placeholder", "alice")
+	_label_edit.text = GameState.strings.get("name_claim_placeholder", "your-name")
+	_label_edit.placeholder_text = GameState.strings.get("name_claim_placeholder", "your-name")
 	_label_edit.add_theme_font_size_override("font_size", 19)
 	_label_edit.text_submitted.connect(func(_text: String) -> void: _submit())
 	v.add_child(_label_edit)
 	_hint = Label.new()
-	_hint.text = GameState.strings.get("name_claim_hint", "Your name will point to your AccountBlox on ENSv2 Sepolia.")
+	_hint.text = GameState.strings.get("name_claim_hint", "Your bank name is kept on Sepolia and points to your account. Counter can pay by it once Petra registers it.")
 	_hint.add_theme_font_size_override("font_size", 14)
 	_hint.add_theme_color_override("font_color", Color(0.35, 0.3, 0.2))
 	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -96,7 +96,7 @@ func _ready() -> void:
 func _open() -> void:
 	_checking = false
 	_error.visible = false
-	_hint.text = GameState.strings.get("name_claim_hint", "Your name will point to your AccountBlox on ENSv2 Sepolia.")
+	_hint.text = GameState.strings.get("name_claim_hint", "Your bank name is kept on Sepolia and points to your account. Counter can pay by it once Petra registers it.")
 	visible = true
 	_label_edit.grab_focus()
 	_label_edit.select_all()
@@ -118,7 +118,7 @@ func _submit() -> void:
 		_error.text = GameState.error_line(read.get("error", {}))
 		_error.visible = true
 		_checking = false
-		_hint.text = GameState.strings.get("name_claim_hint", "Your name will point to your AccountBlox on ENSv2 Sepolia.")
+		_hint.text = GameState.strings.get("name_claim_hint", "Your bank name is kept on Sepolia and points to your account. Counter can pay by it once Petra registers it.")
 		return
 	var result: Dictionary = read.get("result", {})
 	if not bool(result.get("available", false)):

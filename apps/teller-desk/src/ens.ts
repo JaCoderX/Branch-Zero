@@ -337,7 +337,7 @@ export async function mint(player: Player, labelInput: unknown, jobId: string): 
     }),
   );
   const node = namehash(name);
-  stage('broadcasting', `Pointing ${name} at your AccountBlox…`, { hash: registerHash });
+  stage('broadcasting', `Pointing ${name} at your account…`, { hash: registerHash });
   const addrHash = await sendEns('address record', () =>
     w.writeContract({ address: d.resolver, abi: RESOLVER_ABI, functionName: 'setAddr', args: [node, player.account!] , account: w.account!, chain: sepolia }),
   );
@@ -350,8 +350,8 @@ export async function mint(player: Player, labelInput: unknown, jobId: string): 
   if (resolved.address.toLowerCase() !== player.account.toLowerCase()) {
     throw Object.assign(new Error(`${name} did not resolve to the player's AccountBlox`), { statusCode: 503, code: 'ENS_RECORD_FAILED' });
   }
-  patchPlayer(player.privyUserId, { ensName: name });
-  stage('mined', `${name} is ready — it points to your AccountBlox.`, { hash: textHash });
+  patchPlayer(player.privyUserId, { ensName: name, ensTier: 'Silver' });
+  stage('mined', `${name} is ready — it points to your account.`, { hash: textHash });
   return { label, name, address: player.account, owner: player.ownerAddress, expiry: expiry.toString(), txHash: textHash, txHashes: [registerHash, addrHash, textHash], tier: 'Silver', account: player.account };
 }
 
@@ -371,6 +371,8 @@ export async function setText(player: Player, nameInput: unknown, keyInput: unkn
   const hash = await sendEns('text record', () =>
     w.writeContract({ address: d.resolver, abi: RESOLVER_ABI, functionName: 'setText', args: [namehash(name), 'bz.tier', String(valueInput)], account: w.account!, chain: sepolia }),
   );
+  // The passbook reads the tier from the desk mirror on /session, so every Name Desk write keeps the mirror current.
+  patchPlayer(player.privyUserId, { ensTier: String(valueInput), ...(player.ensName ? {} : { ensName: name }) });
   stage('mined', `${name} now carries a ${String(valueInput)} passbook record.`, { hash });
   return { name, key: 'bz.tier', value: String(valueInput), txHash: hash, chainId: d.chainId };
 }

@@ -21,21 +21,24 @@
       ]
     },
     "has_account": {
-      "text": "Morning, {name}. Counters are open, the vault's quiet. Try the florist — Counter, that's Dev.",
+      "text": [
+        "Morning, {name}. Counter is open and the vault's quiet; Dev can help with a florist payment.",
+        { "if": "has_ens_name", "text": "Your bank name {bank_name} is on file — Dev takes it on a payment slip." }
+      ],
       "choices": [
         { "text": "What's the vault for?", "next": "why_vault" },
         { "text": "Thanks.", "next": "end" }
       ]
     },
     "pending": {
-      "text": "You've got {pending} movement(s) cooling in the vault. Clock's on the wall. Bob releases when it runs down — or bother Mr. Okafor in the glass office: he shreds, or skips the cooling for a hand scan.",
+      "text": "You've got {pending} wire(s) cooling in the vault. The clock's on the wall; Bob releases them when it runs down, or Mr. Okafor can recall one or skip the cooling with a hand scan.",
       "choices": [
         { "text": "What's the vault for?", "next": "why_vault" },
         { "text": "Thanks.", "next": "end" }
       ]
     },
     "lore_bank": {
-      "text": "Branch Zero — the first branch of a bank that runs on public rails. Every desk here is a real operation on your own account; we just do the paperwork out loud.",
+      "text": "Branch Zero keeps its records in the open. Every desk handles a real errand on your account; we just do the paperwork out loud.",
       "choices": [
         { "text": "Ask why (technical)", "next": "lore_bank_tech" },
         { "text": "Got it.", "next": "end" }

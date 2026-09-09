@@ -4,8 +4,8 @@ created: 2026-09-08
 updated: 2026-09-08
 status: met
 product: Branch-Zero
-handoff: docs/HANDOFF-load-account.md
-kickoff: docs/KICKOFF-load-account.md
+handoff: docs/missions/HANDOFF-load-account.md
+kickoff: docs/missions/KICKOFF-load-account.md
 ---
 
 # Load Account (Ines)
@@ -15,7 +15,7 @@ kickoff: docs/KICKOFF-load-account.md
 > **discovery**; Ines is the clean **load** path.
 
 Related: [NPCS.md](./NPCS.md) §4.2 · [PRIVY.md](./PRIVY.md) · [TERMINAL-CONSOLE.md](./TERMINAL-CONSOLE.md) ·
-[HANDOFF-load-account.md](./HANDOFF-load-account.md)
+[HANDOFF-load-account.md](./missions/HANDOFF-load-account.md)
 
 ---
 

@@ -157,7 +157,7 @@ CHAIN_ID=5042002 PORT=8788 node --experimental-strip-types apps/teller-desk/src/
 - [ ] Godot 4.5 host: `godot --headless --path apps/game -s tests/run_checks.gd` (U5 follow-up; owed regardless)
 - [ ] Local progress note + HANDOFF §5g → G7 met; only then advance construction past U6
 
-Kickoff paste when reviving: local `docs/KICKOFF-U6.md`. Evidence template: local `docs/progress/2026-09-07-u6-arc-g7.md`.
+Kickoff paste when reviving: local `docs/missions/KICKOFF-U6.md`. Evidence template: local `docs/progress/2026-09-07-u6-arc-g7.md`.
 
 ---
 

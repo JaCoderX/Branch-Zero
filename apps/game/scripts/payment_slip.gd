@@ -79,12 +79,12 @@ func _ready() -> void:
 	_address.add_theme_font_size_override("font_size", 15)
 	v.add_child(_address)
 	_name_toggle = CheckButton.new()
-	_name_toggle.text = str(s.get("slip_name_toggle", "Pay by ENS name"))
+	_name_toggle.text = str(s.get("slip_name_toggle", "Pay by customer name"))
 	_name_toggle.add_theme_font_size_override("font_size", 16)
 	_name_toggle.toggled.connect(_toggle_name)
 	v.add_child(_name_toggle)
 	_name_edit = LineEdit.new()
-	_name_edit.placeholder_text = str(s.get("slip_name_placeholder", "alice.branchzero.eth"))
+	_name_edit.placeholder_text = str(s.get("slip_name_placeholder", "name.branchzero.eth"))
 	_name_edit.add_theme_font_size_override("font_size", 17)
 	_name_edit.visible = false
 	_name_edit.text_submitted.connect(func(_t: String) -> void:
@@ -93,7 +93,7 @@ func _ready() -> void:
 
 	v.add_child(_field_label(Dialogue.interpolate(str(s.get("slip_amount", "Amount ({symbol})")), GameState.vars())))
 	_amount = LineEdit.new()
-	_amount.text = "12.5"
+	_amount.text = str(s.get("slip_amount_default", "12.5"))
 	_amount.add_theme_font_size_override("font_size", 17)
 	_amount.text_submitted.connect(func(_t: String) -> void:
 		_submit())
@@ -154,7 +154,7 @@ func _open() -> void:
 	_name_edit.visible = false
 	_payee.visible = true
 	_address.visible = true
-	_hint.text = Dialogue.interpolate(str(GameState.strings.get("slip_hint", "Up to {limit} {symbol} goes over the counter. More than that goes through the vault ({timelock} cooling).")), GameState.vars())
+	_hint.text = Dialogue.interpolate(str(GameState.strings.get("slip_hint", "Up to {limit} {symbol} is handled at the counter. More goes through the vault ({timelock} cooling).")), GameState.vars())
 	visible = true
 	_amount.grab_focus()
 
@@ -166,7 +166,7 @@ func _submit() -> void:
 	var amount := _amount.text.strip_edges()
 	var s: Dictionary = GameState.strings
 	if use_name and (ens_name == "" or not ens_name.to_lower().ends_with(".branchzero.eth") or ens_name.count(".") != 2):
-		_error.text = str(s.get("slip_bad_name", "Write a full customer name, like alice.branchzero.eth."))
+		_error.text = str(s.get("slip_bad_name", "Write a full customer name, like florist.branchzero.eth."))
 		_error.visible = true
 		return
 	if not use_name and not (to.begins_with("0x") and to.length() == 42):

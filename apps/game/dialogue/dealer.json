@@ -32,7 +32,7 @@
     "no_till": {
       "text": "You've no till on the exchange floor yet. I can open one — {fx_till_note}.",
       "choices": [
-        { "text": "Open my FX till", "action": "fx_enable", "working": "Opening your till and registering the exchange door…", "on_ok": "opened", "on_error": "refused" },
+        { "text": "Open my FX till", "action": "fx_enable", "working": "Opening your till and setting up the exchange desk…", "on_ok": "opened", "on_error": "refused" },
         { "text": "Ask why", "next": "why_till" },
         { "text": "Not today.", "next": "end" }
       ]
@@ -44,13 +44,13 @@
     "closed_door": {
       "text": "Till's there, but the exchange door isn't on your approved list yet. Three doors, three keys — I can't trade until the manager's list says so.",
       "choices": [
-        { "text": "Register the exchange door", "action": "fx_enable", "working": "Registering three functions and three addresses…", "on_ok": "opened", "on_error": "refused" },
+        { "text": "Register the exchange door", "action": "fx_enable", "working": "Setting up the exchange desk…", "on_ok": "opened", "on_error": "refused" },
         { "text": "Ask why", "next": "why_guard" },
         { "text": "Not today.", "next": "end" }
       ]
     },
     "opened": {
-      "text": "Done. Your account may now call exactly three things: the dollar's approve, Permit2's approve, and the exchange router's execute. Nothing else — not the euro, not the shekel; those only ever come *in*. {fx_usdc} {fx_symbol_in} in the till.",
+      "text": "Done. Your account may now prepare the dollar payment, authorise the exchange, and place the trade — exactly three services. Nothing else; euros and shekels only ever come in. {fx_usdc} {fx_symbol_in} in the till.",
       "choices": [
         { "text": "Euros — what's the rate?", "action": "fx_quote", "args": { "amount": "25", "pair": "EUR" }, "working": "Asking the exchange for a euro price…", "on_ok": "quoted", "on_error": "refused" },
         { "text": "Shekels — what's the rate?", "action": "fx_quote", "args": { "amount": "25", "pair": "ILS" }, "working": "Asking the exchange for a shekel price…", "on_ok": "quoted", "on_error": "refused" },
@@ -59,7 +59,7 @@
       ]
     },
     "idle": {
-      "text": "Dollars for euros or shekels? Board's live: {fx_rate_eur} · {fx_rate_ils}. You've {fx_usdc} {fx_symbol_in}, {fx_eur} EUR and {fx_ils} ILS in the till; each pool takes {fx_pool_fee}.",
+      "text": "Dollars for euros or shekels? Board's live: {fx_rate_eur} · {fx_rate_ils}. You've {fx_usdc} {fx_symbol_in}, {fx_eur} EUR and {fx_ils} ILS in the till; the exchange fee is {fx_pool_fee}.",
       "choices": [
         { "text": "Euros", "next": "euros" },
         { "text": "Shekels", "next": "shekels" },
@@ -69,7 +69,7 @@
       ]
     },
     "euros": {
-      "text": "Euros. {fx_rate_eur} on the board, mid-market — the price I quote is all-in for the size, pool fee included. How many dollars?",
+      "text": "Euros. {fx_rate_eur} on the board — the price I quote includes the exchange fee. How many dollars?",
       "choices": [
         { "text": "Price 25 {fx_symbol_in}", "action": "fx_quote", "args": { "amount": "25", "pair": "EUR" }, "working": "Asking the exchange for a euro price…", "on_ok": "quoted", "on_error": "refused" },
         { "text": "Price 100 {fx_symbol_in}", "action": "fx_quote", "args": { "amount": "100", "pair": "EUR" }, "working": "Asking the exchange for a euro price…", "on_ok": "quoted", "on_error": "refused" },
@@ -79,7 +79,7 @@
       ]
     },
     "shekels": {
-      "text": "Shekels. {fx_rate_ils} on the board, mid-market — the price I quote is all-in for the size, pool fee included. How many dollars?",
+      "text": "Shekels. {fx_rate_ils} on the board — the price I quote includes the exchange fee. How many dollars?",
       "choices": [
         { "text": "Price 25 {fx_symbol_in}", "action": "fx_quote", "args": { "amount": "25", "pair": "ILS" }, "working": "Asking the exchange for a shekel price…", "on_ok": "quoted", "on_error": "refused" },
         { "text": "Price 100 {fx_symbol_in}", "action": "fx_quote", "args": { "amount": "100", "pair": "ILS" }, "working": "Asking the exchange for a shekel price…", "on_ok": "quoted", "on_error": "refused" },
@@ -89,9 +89,9 @@
       ]
     },
     "quoted": {
-      "text": "{fx_amount_in} {fx_symbol_in} buys {fx_amount_out} {fx_symbol_out} — {fx_rate}. I'll not accept less than {fx_min_out} — that's your {fx_slippage} slippage. Good for {fx_valid}.",
+      "text": "{fx_amount_in} {fx_symbol_in} buys {fx_amount_out} {fx_symbol_out} — {fx_rate}. I won't accept less than {fx_min_out}; that leaves a little room for the rate to move. Good for {fx_valid}.",
       "choices": [
-        { "text": "Take it", "action": "fx_swap", "working": "Through the exchange door — approve, allowance, swap…", "on_ok": "swapped", "on_error": "refused" },
+        { "text": "Take it", "action": "fx_swap", "working": "Handing the order to the exchange…", "on_ok": "swapped", "on_error": "refused" },
         { "text": "Price something else", "next": "idle" },
         { "text": "Ask why", "next": "why_quote" },
         { "text": "Leave it.", "next": "end" }
@@ -106,7 +106,7 @@
       ]
     },
     "whitelist": {
-      "text": "Three, and only three: approve on the dollar, approve on Permit2, execute on the exchange router. That list is on your account, not on my desk — I couldn't send your money anywhere else if you asked me to. And it's one-way: I sell euros and shekels for dollars; I don't buy them back, so your account never approves either of them.",
+      "text": "Three services, and only three: prepare the dollar payment, authorise the exchange, and place the trade. That list is on your account, not my desk — I couldn't send your money anywhere else if you asked me to. And it's one-way: I sell euros and shekels for dollars; I don't buy them back.",
       "choices": [
         { "text": "Ask why", "next": "why_guard" },
         { "text": "Back", "next": "idle" }

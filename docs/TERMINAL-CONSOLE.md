@@ -10,7 +10,7 @@ product: Branch-Zero
 
 > Stretch after U7. A diegetic terminal opens the hosted Console in an iframe. View access uses a **general** on-chain runtime role, not SaaS-specific Privy wiring.
 
-Related: [ARCHITECTURE.md](./ARCHITECTURE.md) · [BLOXCHAIN-INTEGRATION.md](./BLOXCHAIN-INTEGRATION.md) V10 · [PRIVY.md](./PRIVY.md) · [GODOT.md](./GODOT.md) §5b · kickoff [`KICKOFF-terminal-observer.md`](./KICKOFF-terminal-observer.md)
+Related: [ARCHITECTURE.md](./ARCHITECTURE.md) · [BLOXCHAIN-INTEGRATION.md](./BLOXCHAIN-INTEGRATION.md) V10 · [PRIVY.md](./PRIVY.md) · [GODOT.md](./GODOT.md) §5b · kickoff [`KICKOFF-terminal-observer.md`](./missions/KICKOFF-terminal-observer.md)
 
 ---
 

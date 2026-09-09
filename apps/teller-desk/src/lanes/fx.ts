@@ -683,7 +683,7 @@ export async function enableFx(player: Player, jobId: string, audit?: AuditSink)
   const rbac = new RuntimeRBAC(publicClient, broadcaster, till, chain);
   const actions: string[] = [];
 
-  stage(current, jobId, 'configuring', 'Registering the exchange door on your account…');
+  stage(current, jobId, 'configuring', 'Setting up the exchange desk…');
   const supported = new Set((await readFx(() => gc.getSupportedFunctions())).map((s) => s.toLowerCase()));
   const guardActions: Array<{ actionType: GuardConfigActionType; data: Hex }> = [];
   for (const fn of FX_FUNCTIONS) {
@@ -702,10 +702,10 @@ export async function enableFx(player: Player, jobId: string, audit?: AuditSink)
   if (guardActions.length) {
     const n = BigInt(guardActions.length);
     guardHash = await ownerSignedBatch(current, till, 'guard', guardConfigBatchExecutionParams(publicClient, d.guardDefinitions, guardActions), 240_000n * n + 200_000n, OUTER_GAS.guard(n), audit);
-    stage(current, jobId, 'configuring', 'Exchange door registered: three functions, three addresses.', { hash: guardHash });
+    stage(current, jobId, 'configuring', 'Exchange desk set up.', { hash: guardHash });
   }
 
-  stage(current, jobId, 'configuring', 'Authorising you to sign and the FX teller to submit…');
+  stage(current, jobId, 'configuring', 'Preparing the exchange desk…');
   const roleActions: Array<{ actionType: RoleConfigActionType; data: Hex }> = [];
   for (const [role, roleName, action, actionName] of [
     [OWNER_ROLE, 'OWNER', TxAction.SIGN_META_REQUEST_AND_APPROVE, 'SIGN_META_REQUEST_AND_APPROVE'],
@@ -727,7 +727,7 @@ export async function enableFx(player: Player, jobId: string, audit?: AuditSink)
   if (roleActions.length) {
     const n = BigInt(roleActions.length);
     roleHash = await ownerSignedBatch(current, till, 'role', roleConfigBatchExecutionParams(publicClient, d.rbacDefinitions, roleActions), 260_000n * n + 200_000n, OUTER_GAS.role(n), audit);
-    stage(current, jobId, 'configuring', 'FX desk authorised.', { hash: roleHash });
+    stage(current, jobId, 'configuring', 'Exchange desk ready.', { hash: roleHash });
   }
 
   current = patchPlayer(current.privyUserId, { fxAccount: till, fxConfigured: true });
@@ -1008,18 +1008,18 @@ export async function swap(player: Player, quoteId: string | undefined, amount: 
   // 1. token → Permit2 (once) — the practice dollar is the only token the account ever approves (one-way desk)
   const allowance = await readFx(() => publicClient.readContract({ address: d.usdc.address, abi: erc20, functionName: 'allowance', args: [till, d.uniswap.permit2] }));
   if (allowance < amountIn) {
-    stage(current, jobId, 'signing', 'Letting the exchange counter draw practice dollars from your till (approve → Permit2)…');
+    stage(current, jobId, 'signing', 'Preparing the dollar payment at the exchange…');
     const h = await guardedCall(current, till, FX_FUNCTIONS[0], d.usdc.address, encodeFunctionData({ abi: erc20, functionName: 'approve', args: [d.uniswap.permit2, maxUint256] }), audit);
     steps.push({ step: 'approve', hash: h, explorer: link(h) });
-    stage(current, jobId, 'broadcasting', 'Permit2 may now draw from the till.', { hash: h });
+    stage(current, jobId, 'broadcasting', 'The exchange has the dollar payment on file.', { hash: h });
   }
   // 2. Permit2 → router (once, with an expiry)
   const [p2Amount, p2Exp] = await readFx(() => publicClient.readContract({ address: d.uniswap.permit2, abi: permit2Abi, functionName: 'allowance', args: [till, d.usdc.address, d.uniswap.universalRouter] }));
   if (p2Amount < amountIn || BigInt(p2Exp) <= deadline) {
-    stage(current, jobId, 'signing', 'Allowing the Universal Router to spend them, with an expiry (Permit2.approve)…');
+    stage(current, jobId, 'signing', "Setting the trade's spending limit…");
     const h = await guardedCall(current, till, FX_FUNCTIONS[1], d.uniswap.permit2, encodeFunctionData({ abi: permit2Abi, functionName: 'approve', args: [d.usdc.address, d.uniswap.universalRouter, maxUint160, now + PERMIT2_EXPIRY_SEC] }), audit);
     steps.push({ step: 'permit2', hash: h, explorer: link(h) });
-    stage(current, jobId, 'broadcasting', 'Router allowance on file.', { hash: h });
+    stage(current, jobId, 'broadcasting', 'The exchange spending limit is on file.', { hash: h });
   }
   // 3. the swap: UniversalRouter.execute(V4_SWAP: SWAP_EXACT_IN_SINGLE → SETTLE_ALL → TAKE_ALL).
   //    `zeroForOne` and the settle/take currencies follow the pool's address sort — USD is currency1 in both fiat pools.
@@ -1042,7 +1042,7 @@ export async function swap(player: Player, quoteId: string | undefined, amount: 
     const code = /V4TooLittleReceived|TooLittleReceived/.test(text) ? 'FX_SLIPPAGE' : /DeadlinePassed|TransactionDeadlinePassed/.test(text) ? 'FX_QUOTE_EXPIRED' : 'FX_ROUTER';
     throw Object.assign(new Error(`router pre-flight refused: ${why.message}`), { statusCode: 400, code });
   }
-  stage(current, jobId, 'signing', `Swapping ${formatUnits(amountIn, d.usdc.decimals)} ${d.usdc.symbol} for ${p.token.symbol} through the Universal Router…`);
+  stage(current, jobId, 'signing', `Placing the ${formatUnits(amountIn, d.usdc.decimals)} USD → ${p.token.symbol} trade through the exchange…`);
   const hash = await guardedCall(current, till, FX_FUNCTIONS[2], d.uniswap.universalRouter, calldata, audit);
   steps.push({ step: 'execute', hash, explorer: link(hash) });
 

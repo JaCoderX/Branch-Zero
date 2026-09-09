@@ -112,6 +112,8 @@ export interface DeskSessionSource {
   manager?: string | null;
   priority?: boolean;
   ensName?: string | null;
+  /** Passbook tier (Silver | Gold) the desk mirrors from the name's `bz.tier` record. */
+  ensTier?: string | null;
   token?: { address: string; symbol: string; decimals: number };
 }
 
@@ -337,7 +339,7 @@ const handlers: Record<string, Handler> = {
   },
   async resolveName(args) {
     const name = typeof args.name === 'string' ? args.name.trim() : '';
-    if (!name) throw bridgeError('BAD_ARGS', 'ENS name is required', 'Write a customer name, like alice.branchzero.eth.');
+    if (!name) throw bridgeError('BAD_ARGS', 'ENS name is required', 'Write a customer name, like florist.branchzero.eth.');
     return requireAdapter().call(`/ens/resolve?name=${encodeURIComponent(name)}`);
   },
 
@@ -350,7 +352,7 @@ const handlers: Record<string, Handler> = {
    */
   async openConsole() {
     const host = terminal;
-    if (!host) throw bridgeError('CONSOLE_UNAVAILABLE', 'no terminal overlay is mounted', 'The screen is dark — this branch terminal only runs in the bank shell.');
+    if (!host) throw bridgeError('CONSOLE_UNAVAILABLE', 'no terminal overlay is mounted', 'The screen is dark — the Console only runs in the full bank window.');
     const account = adapter?.isAuthenticated() ? ((await adapter.openSession().catch(() => undefined))?.account ?? null) : null;
     const opened = await host.open({ url: CONSOLE_URL, account });
     return { opened: true, ...opened, account };
@@ -492,6 +494,7 @@ const handlers: Record<string, Handler> = {
       manager: s.manager ?? null,
       priority: Boolean(s.priority),
       ensName: s.ensName ?? null,
+      ensTier: s.ensTier ?? null,
       token: s.token,
     };
   },

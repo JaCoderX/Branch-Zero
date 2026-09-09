@@ -79,11 +79,22 @@ func has_account() -> bool:
 
 
 func has_ens_name() -> bool:
-	return str(session.get("ensName", "")) != "" or not ens_names_for_owner().is_empty()
+	return _session_str("ensName") != "" or not ens_names_for_owner().is_empty()
+
+
+## A session field as text; the desk sends `null` for "none", which str() would render as "<null>".
+func _session_str(key: String) -> String:
+	var v: Variant = session.get(key)
+	return "" if v == null else str(v)
+
+
+## The passbook tier (Silver / Gold) as the desk mirrors it from the name's `bz.tier` record; "" until a name exists.
+func ens_tier() -> String:
+	return _session_str("ensTier") if has_ens_name() else ""
 
 
 func ens_name() -> String:
-	var direct := str(session.get("ensName", ""))
+	var direct := _session_str("ensName")
 	if direct != "":
 		return direct
 	var mine := ens_names_for_owner()
@@ -260,6 +271,7 @@ func facts() -> Dictionary:
 		"fx_quoted": fx_quoted(),
 		"fx_desk": fx.has("pairs"),
 		"ens_name": ens_name(),
+		"has_ens_name": has_ens_name(),
 		"mock": Chain.use_mock,
 		"web": Chain.is_web,
 		"arc": active_wing() == "arc",
@@ -293,6 +305,9 @@ func vars(extra: Dictionary = {}) -> Dictionary:
 		"manager_name": "Mr. Okafor",
 		"priority_copy": str(strings.get("priority_copy", "Skip the cooling period — hand scan required.")),
 		"ens_name": ens_name() if has_ens_name() else "no name yet",
+		# Bank surfaces condition on has_ens_name and never print a placeholder: no name means no name row, no clause.
+		"bank_name": ens_name() if has_ens_name() else "",
+		"bank_tier": ens_tier(),
 		"observers": str(observers.size()),
 		# S1 — the quote board and Kenji's lines. Everything here came from the chain (V4Quoter, StateView) or is "—".
 		"fx_usdc": fmt_amount(fx.get("usdc", "0")),
