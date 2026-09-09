@@ -269,8 +269,9 @@ Exact method names follow the installed Node SDK version; the REST fallback is `
 
 Rules are **app-owned**, so the desk can rewrite them without a second consent — which is what makes
 "load a different account of mine" possible at all. `lanes/loadAccount.ts` `repinPolicies` rewrites the
-typed-data rule (`pinPolicyToAccount`) and the `eth_signTransaction` rules (`pinTxRulesToAccount`, or
-`createTxRules` already naming the account) to the address being loaded.
+typed-data rule (`pinPolicyToAccount`) and reconciles the `eth_signTransaction` rules by **name** (`reconcileTxRules`:
+re-pin in place, create if missing, drop duplicates) to the address being loaded. Stored rule ids are never used
+positionally: that pin-by-index path overwrote the release rule on Lane B #14 (2026-09-09) and was removed.
 
 Two properties, both deliberate:
 

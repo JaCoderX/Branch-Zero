@@ -40,7 +40,7 @@ import { SecureOwnable } from '@bloxchain/sdk';
 import { erc20Abi } from '@branch-zero/shared';
 import { chain, publicClient } from '../chain.ts';
 import { config, deployments } from '../config.ts';
-import { createTxRules, pinPolicyToAccount, pinTxRulesToAccount, TYPED_DATA_RULE_VERSION } from '../privy.ts';
+import { pinPolicyToAccount, reconcileTxRules, TYPED_DATA_RULE_VERSION } from '../privy.ts';
 import type { AuditSink } from '../signing/privySigner.ts';
 import { emitStage, patchPlayer, type Player } from '../store.ts';
 import { ROLE_SET_VERSION, fundAccount, fundOwnerGas, syncRolePermissions, whitelistToken } from './provision.ts';
@@ -156,22 +156,20 @@ async function repinPolicies(player: Player, account: Address): Promise<Partial<
 
   /**
    * V6 — the owner's own transactions (`executeWithTimeLock`, approve, cancel) travel under separate
-   * `eth_signTransaction` rules. A player who has them gets them re-pinned; one who somehow has none gets them
-   * created already naming the loaded account. A failure here is *not* fatal: the wire lanes fall back to the
-   * chain-scoped rules and the fallback is reported, which is the same posture provisioning takes.
+   * `eth_signTransaction` rules. They are **reconciled by name** against Privy and pointed at the loaded account
+   * (the same posture as provisioning's `ensureTxPolicy`): a rule that exists is re-pinned in place, a missing one is
+   * created, a duplicate is re-purposed or deleted. The stored ids are never used positionally — that is what pinned
+   * the release rule away on Lane B #14. A failure here is *not* fatal: the wire lanes fall back to whatever rules the
+   * policy holds and the index says `txPolicyPinned: false`.
    */
   try {
-    if (player.txRuleIds?.length && player.txPolicyMode) {
-      await pinTxRulesToAccount(player.policyId, { ruleIds: player.txRuleIds, mode: player.txPolicyMode }, account, chain.id, token.address);
-      patch.txPolicyPinned = true;
-    } else {
-      const created = await createTxRules(player.policyId, chain.id, token.address, account);
-      patch.txRuleIds = created.ruleIds;
-      patch.txPolicyMode = created.mode;
-      patch.txPolicyPinned = true;
-    }
-  } catch {
-    /* left false: the wire lanes fall back to the chain-scoped rules, and the index says so */
+    const r = await reconcileTxRules(player.policyId, chain.id, token.address, account);
+    if (r.actions.length) console.warn(`[load] tx rules reconciled for ${player.ownerAddress} → ${account}: ${r.actions.join('; ')}`);
+    patch.txRuleIds = r.ruleIds;
+    patch.txPolicyMode = r.mode;
+    patch.txPolicyPinned = true;
+  } catch (e) {
+    console.warn(`[load] tx rules not reconciled for ${account}: ${(e as Error).message.slice(0, 200)}`);
   }
   return patch;
 }

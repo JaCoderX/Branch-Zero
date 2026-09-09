@@ -24,7 +24,10 @@
     "killtests:s2": "tsx --env-file-if-exists=../../.env scripts/kill-tests-s2.ts",
     "killtests:load": "tsx --env-file-if-exists=../../.env scripts/kill-tests-load.ts --dev",
     "treasury:topup": "tsx --env-file-if-exists=../../.env scripts/treasury-topup.ts",
-    "killtests:treasury": "tsx --env-file-if-exists=../../.env scripts/kill-tests-treasury.ts"
+    "killtests:treasury": "tsx --env-file-if-exists=../../.env scripts/kill-tests-treasury.ts",
+    "diag:release": "tsx --env-file-if-exists=../../.env scripts/diag-release.ts",
+    "diag:sign": "tsx --env-file-if-exists=../../.env scripts/diag-sign.ts",
+    "release:wire": "tsx --env-file-if-exists=../../.env scripts/release-wire.ts"
   },
   "dependencies": {
     "@bloxchain/sdk": "1.0.0",

@@ -38,7 +38,7 @@ import { config, deployments } from '../config.ts';
 import { ownerWalletClient, type TxAuditSink } from '../signing/privySigner.ts';
 import { emitStage, hasSubscribers, type Player } from '../store.ts';
 import { receiptFee } from '../fees.ts';
-import { fundOwnerGas } from './provision.ts';
+import { ensureTxPolicy, fundOwnerGas } from './provision.ts';
 
 /**
  * Outer gas for approve/cancel. The pending record's inner `gasLimit` is 200_000 for the ERC-20 transfer;
@@ -159,6 +159,9 @@ function revertData(e: unknown): Hex | undefined {
     if (!/^0x[0-9a-fA-F]{8,}$/.test(hex)) return false;
     // Request calldata is often attached as `error.data` by getContractError — that is not a revert.
     if (WRITE_CALL_SELECTORS.has(hex.slice(0, 10).toLowerCase())) return false;
+    // A revert payload is a selector plus whole 32-byte words. The SDK's `extractErrorData` grabs the first hex run in
+    // the message — on a write failure that is the `from` address, which then "decodes" as ReadableText "yT'VUZt.k".
+    if ((hex.length - 10) % 64 !== 0) return false;
     return true;
   };
   while (queue.length) {
@@ -194,6 +197,9 @@ function viemErrorName(e: unknown): string | undefined {
   return undefined;
 }
 
+/** Logs must never carry the RPC endpoint (it embeds the provider key). */
+const redactRpc = (s: string) => s.replace(/https?:\/\/[^\s"')]+/g, '<rpc>');
+
 /** Flatten shortMessage/message/details across the viem cause chain (simulation often nests the real reason). */
 function errorTextChain(e: unknown): string {
   const parts: string[] = [];
@@ -206,11 +212,37 @@ function errorTextChain(e: unknown): string {
 }
 
 /**
+ * The session signer answered instead of the chain. viem wraps the Privy SDK's HTTP error (`BadRequestError`,
+ * `status`, `error: { error, code }`) as the `cause` of a ContractFunctionExecutionError, and the SDK then flattens it
+ * to "unknown error executing…" — so walk the chain for it *first*. `policy_violation` is Privy's default DENY: the
+ * request matched no ALLOW rule (Lane B #14: the release rule had been pinned away). Anything else from Privy
+ * (401 auth, 5xx) is `SignerError`. Never a contract revert; nothing was broadcast.
+ */
+export function privyDenial(e: unknown): { code: 'PolicyDenied' | 'SignerError'; detail: string } | undefined {
+  const seen = new Set<unknown>();
+  for (let cur = e as Record<string, unknown> | undefined; cur && typeof cur === 'object' && !seen.has(cur); cur = (cur.cause ?? cur.originalError) as never) {
+    seen.add(cur);
+    const body = cur.error as { error?: string; code?: string } | string | undefined;
+    const code = typeof body === 'object' && body ? body.code : undefined;
+    const status = Number(cur.status ?? cur.statusCode);
+    const text = [typeof body === 'string' ? body : body?.error, cur.details].filter((x) => typeof x === 'string').join(' ');
+    if (code === 'policy_violation' || /policy[_ ]violation/i.test(text)) {
+      return { code: 'PolicyDenied', detail: `Privy ${status || 400} policy_violation: ${typeof body === 'object' && body?.error ? body.error : text.slice(0, 200)}` };
+    }
+    if (body !== undefined && status >= 400 && (cur as { constructor?: { name?: string } }).constructor?.name?.endsWith('Error')) {
+      return { code: 'SignerError', detail: `Privy ${status}: ${(typeof body === 'string' ? body : JSON.stringify(body)).slice(0, 200)}` };
+    }
+  }
+  return undefined;
+}
+
+/**
  * When there is no custom-error selector, classify transport / wallet failures that otherwise become
  * "Unknown: An unknown error occurred while executing…".
  */
 function classifyOpaqueFailure(text: string): string | undefined {
   const t = text.toLowerCase();
+  if (/policy[_ ]violation/.test(t)) return 'PolicyDenied';
   if (/insufficient funds|exceeds the balance|intrinsic gas too low|gas required exceeds allowance/.test(t)) return 'OwnerGasDry';
   if (/http request failed|fetch failed|econnreset|etimedout|timeout|502|503|504|cloudflare|rate limit|too many requests/.test(t)) {
     return 'RpcError';
@@ -224,6 +256,17 @@ export function explainRevert(e: unknown): { code: string; message: string; bank
   const err = e as Error & { shortMessage?: string; cause?: { message?: string } };
   // The SDK often re-wraps viem's error as plain text, so the decoded name only survives in the full message.
   const text = errorTextChain(e) || `${err.shortMessage ?? ''} ${err.message ?? ''} ${err.cause?.message ?? ''}`;
+  const denial = privyDenial(e);
+  if (denial) {
+    return {
+      code: denial.code,
+      message: denial.detail,
+      bankLine:
+        denial.code === 'PolicyDenied'
+          ? "The signing desk refused that slip — your account's signing rules need a re-check. Ask Ines, then try again."
+          : 'The signing desk did not answer clearly — try again in a moment.',
+    };
+  }
   const data = revertData(e);
   const decoded = data ? decodeRevertReason(data) : null;
   // In order of trust: viem's own decode → a raw selector we know → the SDK's decoder → the selector viem printed
@@ -437,14 +480,26 @@ async function decide(player: Player, txId: bigint, actor: Actor, kind: 'approve
     gasPrice: parseGwei('3').toString(),
   };
 
+  const send = () => (kind === 'approve' ? gc.approveTimeLockExecution(txId, writeOpts) : gc.cancelTimeLockExecution(txId, writeOpts));
   let res;
   try {
-    res = kind === 'approve' ? await gc.approveTimeLockExecution(txId, writeOpts) : await gc.cancelTimeLockExecution(txId, writeOpts);
+    try {
+      res = await send();
+    } catch (e) {
+      // Privy said no before anything was broadcast. The one cause we have met is our own: the player's release/recall
+      // rule had been overwritten (Lane B #14). Reconcile the rules by name against Privy and sign once more; a second
+      // refusal is reported as what it is. Manager sends use a plain key, so there is nothing to heal there.
+      if (actor !== 'owner' || privyDenial(e)?.code !== 'PolicyDenied') throw e;
+      console.warn(`[laneB] ${kind} txId=${txId} PolicyDenied — reconciling tx rules and retrying once: ${privyDenial(e)?.detail}`);
+      await ensureTxPolicy(player, account);
+      res = await send();
+    }
   } catch (e) {
     const why = explainRevert(e);
-    // Desk operators: opaque Unknowns need the cause chain; the bridge only carries a short reason.
-    if (why.code === 'Unknown' || why.code === 'RpcError' || why.code === 'OwnerGasDry' || why.code === 'ReadableText') {
-      console.warn(`[laneB] ${kind} txId=${txId} ${why.code}:`, errorTextChain(e) || e);
+    // Desk operators: the bridge only carries a short reason, so the full cause chain goes to the log (no secrets —
+    // RPC URLs redacted). This is what proves *where* a Release died: Privy, prepare, or sendRawTransaction.
+    if (why.code !== 'BeforeReleaseTime' && !ERROR_SELECTORS[revertData(e)?.slice(0, 10).toLowerCase() ?? '']) {
+      console.warn(`[laneB] ${kind} txId=${txId} ${why.code}: ${why.message}\n  chain: ${redactRpc(errorTextChain(e)).slice(0, 1500)}\n  privy: ${JSON.stringify(privyDenial(e) ?? null)}`);
     }
     stage('failed', why.bankLine, { txId: String(txId), reason: `${why.code}: ${why.message}`, releaseTime: before.releaseTime, chainNow: await chainNow() });
     throw Object.assign(new Error(`${kind} refused: ${why.code}: ${why.message}`), { statusCode: why.code === 'BeforeReleaseTime' ? 425 : 400, code: why.code });

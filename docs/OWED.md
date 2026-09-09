@@ -27,7 +27,9 @@ Related: [HANDOFF-CC.md](./HANDOFF-CC.md) · [DEV-LOOP.md](./DEV-LOOP.md) · [RE
 
 - [ ] **Polish re-playtest** — cold pass of the ten U7 polish findings ([KICKOFF-U7-polish.md](./KICKOFF-U7-polish.md)) — **gates packaging**
 - [x] **Live OTP walk** — Privy sign-in → consent → open (or load) → pay on Sepolia — **met 2026-09-09** (desk debug: provision + ENS `jacob.branchzero.eth` + Lane A 12.5 + Lane B wire 250 released; account `0xD70B…09eD`)
-- [ ] **Lane B Release unblock** — wire #14 still PENDING after clock; agent task [HANDOFF-lane-b-release-opaque.md](./HANDOFF-lane-b-release-opaque.md) · [KICKOFF-lane-b-release-opaque.md](./KICKOFF-lane-b-release-opaque.md) (**blocks Ruth Live re-walk**)
+- [x] **Lane B Release unblock** — **met 2026-09-09**: wire #14 released (`0x16b519b5…d46b`) + fresh #15 clean; root cause Privy `policy_violation` (release rule pinned away) — [HANDOFF-lane-b-release-opaque.md](./HANDOFF-lane-b-release-opaque.md)
+- [ ] **Ruth Live re-walk** — principal clicks Release on a fresh Live wire after the clock; expect `broadcasting → mined`, or an honest `PolicyDenied` / `OwnerGasDry` / `RpcError` line
+- [ ] **Next game export carries `PolicyDenied` / `SignerError` lines** in `apps/game/dialogue/errors.json` (edited; ships with the next scheduled export — no re-export for this alone)
 - [ ] **Live Load Account walk** — Ines → “Load an existing account” → paste an owned `0x` on Live ([LOAD-ACCOUNT.md](./LOAD-ACCOUNT.md); Dev killtests already 12/12)
 - [ ] **Terminal + OBSERVER walk** — grant viewing wallet → Import/Connect in Console iframe or tab ([TERMINAL-CONSOLE.md](./TERMINAL-CONSOLE.md)) — Terminal iframe opened 2026-09-09; OBSERVER still `exists: false` (grant not walked)
 - [ ] **Uniswap sponsor feedback form** — [hackathon feedback](https://developers.uniswap.org/hackathon-feedback) (prize requirement; FX K7 met, fiat pairs met 2026-09-09 — [FEEDBACK.md](../FEEDBACK.md) carries the 2026-09-09 update)
@@ -80,6 +82,7 @@ Related: [HANDOFF-CC.md](./HANDOFF-CC.md) · [DEV-LOOP.md](./DEV-LOOP.md) · [RE
 
 | When | Item |
 |------|------|
+| 2026-09-09 | Lane B #14 — Live timed Release fixed: Privy owner-tx rules reconciled by name (`reconcileTxRules`), `PolicyDenied` heal-and-retry, honest error codes; #14 + #15 mined on Sepolia |
 | 2026-09-09 | Camera wheel zoom (2.8–9.0 m) + wider Terminal panel (1480×860) for iframe room |
 | 2026-09-09 | Dialogue box fit — grow-up panel + choices ScrollContainer |
 | 2026-09-09 | Kenji FX staff nudge +0.55 m east of shelf (capsule clearance after west pull) |

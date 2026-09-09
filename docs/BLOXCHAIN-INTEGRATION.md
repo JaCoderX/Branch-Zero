@@ -246,7 +246,7 @@ Nonce handling: `createMetaTxParams` on-chain returns the current `getSignerNonc
 > `chain_id`, and — where the policy engine accepts calldata conditions — to the three function selectors
 > individually (`ethereum_calldata` with an ABI; `field` is `function` or `function.param`). The
 > to-only shape is the recorded fallback; `player.txPolicyMode` says which one a given player got.
-> Implementation: `createTxRules` / `pinTxRulesToAccount` in `apps/teller-desk/src/privy.ts`, and the
+> Implementation: `createTxRules` (chain-scoped, before the account exists) / `reconcileTxRules` (by rule name, once it does) in `apps/teller-desk/src/privy.ts`, and the
 > `signTransaction` half of the viem custom account in `signing/privySigner.ts`. The owner's wallet is topped
 > up to `OWNER_GAS_ETH` at Account Opening.
 >

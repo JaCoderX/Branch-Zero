@@ -354,7 +354,7 @@ While U6 Arc is deferred (ARC.md §5b): "ARC floor — coming soon. The Arc wing
 
 ## 5. Revert → dialogue mapping (`errors.json`)
 
-Decoded via the SDK's `decodeRevertReason` / `getUserFriendlyErrorMessage`, then mapped to a bank line. Unknown errors fall back to the SDK's friendly message. Opaque simulation failures without a revert selector are classified as `OwnerGasDry` (owner ETH floor) or `RpcError` when the text matches; otherwise `Unknown` — desk logs print the viem cause chain.
+Decoded via the SDK's `decodeRevertReason` / `getUserFriendlyErrorMessage`, then mapped to a bank line. Unknown errors fall back to the SDK's friendly message. Opaque simulation failures without a revert selector are classified as `OwnerGasDry` (owner ETH floor) or `RpcError` when the text matches; otherwise `Unknown` — desk logs print the viem cause chain. The Privy answer is checked **before** any revert decoding: `eth_signTransaction` refused as `policy_violation` is `PolicyDenied` (the desk reconciles the owner-tx rules by name and retries once), any other Privy HTTP error is `SignerError`; neither is a contract revert and nothing was broadcast (Lane B #14, 2026-09-09).
 
 | Decoded error (SDK name, indicative) | NPC line |
 |--------------------------------------|----------|

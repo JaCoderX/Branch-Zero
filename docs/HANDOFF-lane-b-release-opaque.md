@@ -3,7 +3,7 @@ type: handoff
 title: Handoff — Lane B timed Release stuck (wire #14)
 created: 2026-09-09
 product: Branch-Zero
-status: open
+status: met
 account: "0xD70B3b804A5E1C40122e4617A8C39474A07509eD"
 owner: "0x79542756550E1E5a74FfE4c62EB0B2E2D193c26B"
 chain: Sepolia 11155111
@@ -12,6 +12,8 @@ kickoff: docs/KICKOFF-lane-b-release-opaque.md
 ---
 
 # Handoff — Lane B timed Release opaque failure (Live wire #14)
+
+> **MET 2026-09-09.** Root cause: Privy `eth_signTransaction` **`policy_violation`** — the player's policy had **no** "Owner: release a wire · 11155111" rule (duplicate stored rule ids made `pinTxRulesToAccount` overwrite it with the recall spec). Not gas, not RPC, not the contract. Wire #14 released `0x16b519b53bea872fc2d5e3f34e52a9079f59766574a5431b39fed4810fa5d46b` (COMPLETED, 225 → 75 USDC); fresh wire #15 released clean `0x1e7f7566c6a6acebed0d89d2258f549a6f200583f3afaf4bca2c5e222b6cde0a`. Fix: `privy.ts reconcileTxRules` (by-name reconcile on `/session` and on a `PolicyDenied` retry in `laneB.decide`), `explainRevert` reads the Privy answer first (`PolicyDenied` / `SignerError`), address-shaped "revert data" rejected. Diag rigs: `npm -w apps/teller-desk run diag:release|diag:sign|release:wire`. Detail: REFLECTION.md rows #14e/#14f. Review follow-up (#14g): Load Account brought onto the reconciler, `createTxRules` rejects missing/duplicate ids, `pinTxRulesToAccount` removed.
 
 ## Verdict (so far)
 

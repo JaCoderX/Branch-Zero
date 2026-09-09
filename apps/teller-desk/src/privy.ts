@@ -247,30 +247,108 @@ export interface TxRules {
   mode: TxPolicyMode;
 }
 
-/** Add the `eth_signTransaction` rules to a player's policy. Calldata-scoped if Privy accepts it. */
+/**
+ * Thrown when Privy hands back rule ids we cannot index by: missing, or the same id twice. This is exactly how the
+ * player index came to hold `[file, recall, recall]` (Lane B #14) and the positional pin then destroyed the release
+ * rule. It is **not** a reason to fall back to `to-only` rules: the policy is in an unknown state and the caller must
+ * see that, not paper over it with a looser rule set.
+ */
+export class TxRuleIdError extends Error {
+  constructor(policyId: string, ids: Array<string | undefined>) {
+    super(`Privy returned unusable rule ids for policy ${policyId}: ${JSON.stringify(ids)} — ids must be non-empty and distinct`);
+    this.name = 'TxRuleIdError';
+  }
+}
+
+/**
+ * Add the `eth_signTransaction` rules to a player's policy. Calldata-scoped if Privy accepts it. Used only **before**
+ * the account exists (chain-scoped rules); once it does, `reconcileTxRules` is the single write path.
+ *
+ * The ids Privy returns are re-read from the policy and checked to be present and distinct before anything is stored:
+ * a positional id list that lies is worse than none (see `TxRuleIdError`).
+ */
 export async function createTxRules(policyId: string, chainId: number, token: Address, account?: Address): Promise<TxRules & { fallbackReason?: string }> {
   const attempt = async (mode: TxPolicyMode) => {
-    const ids: string[] = [];
-    for (const rule of txRuleSpecs(mode, chainId, token, account)) {
-      const res = await privy.policies().createRule(policyId, { authorization_context: authorizationContext, ...rule } as never);
-      ids.push((res as { id: string }).id);
+    const specs = txRuleSpecs(mode, chainId, token, account);
+    const ids: Array<string | undefined> = [];
+    for (const rule of specs) {
+      const res = (await privy.policies().createRule(policyId, { authorization_context: authorizationContext, ...rule } as never)) as { id?: string };
+      ids.push(res.id);
     }
-    return ids;
+    // Trust the policy, not the create responses: the policy is what Privy will actually evaluate.
+    const policy = (await privy.policies().get(policyId)) as unknown as { rules?: Array<{ id: string; name: string }> };
+    const byName = specs.map((spec) => (policy.rules ?? []).filter((r) => r.name === spec.name).map((r) => r.id));
+    const resolved = byName.map((matches, i) => (matches.length === 1 ? matches[0] : matches.find((id) => id === ids[i])));
+    if (resolved.some((id) => !id) || new Set(resolved).size !== resolved.length) throw new TxRuleIdError(policyId, resolved);
+    return resolved as string[];
   };
   try {
     return { ruleIds: await attempt('calldata'), mode: 'calldata' };
   } catch (e) {
+    if (e instanceof TxRuleIdError) throw e;
     const reason = (e as Error).message.slice(0, 300);
     return { ruleIds: await attempt('to-only'), mode: 'to-only', fallbackReason: reason };
   }
 }
 
-/** Tighten the owner-transaction rules to the player's account once it exists. */
-export async function pinTxRulesToAccount(policyId: string, rules: TxRules, account: Address, chainId: number, token: Address): Promise<void> {
-  const specs = txRuleSpecs(rules.mode, chainId, token, account);
-  if (specs.length !== rules.ruleIds.length) throw new Error(`tx rule count mismatch: ${rules.ruleIds.length} ids for ${specs.length} specs`);
-  for (let i = 0; i < specs.length; i++) {
-    await privy.policies().updateRule(rules.ruleIds[i], { policy_id: policyId, authorization_context: authorizationContext, ...specs[i] } as never);
+/**
+ * Reconcile the owner-transaction rules against what Privy actually holds (Lane B #14, 2026-09-09).
+ *
+ * The player index once stored **duplicate** rule ids (`[file, recall, recall]`), so the positional pin (the retired
+ * `pinTxRulesToAccount`) wrote the release spec and then the recall spec onto the *same* rule: the policy ended up with two "recall" rules and no
+ * "release" rule, and every `approveTimeLockExecution` was refused by Privy's default DENY (`policy_violation`) before
+ * broadcast — surfaced by the SDK as a bogus `ReadableText`. Stored ids are therefore never trusted again: rules are
+ * resolved **by name** from the policy, brought to spec in place, created when missing, and same-name duplicates
+ * (which are over-broad allows when unpinned) are re-purposed for a missing spec or deleted. Idempotent; one GET when
+ * everything is already right. Calldata-scoped first, `to-only` if Privy refuses the calldata conditions.
+ */
+export async function reconcileTxRules(policyId: string, chainId: number, token: Address, account: Address): Promise<TxRules & { actions: string[] }> {
+  type Rule = { id: string; name: string; method?: string; conditions?: Array<Record<string, unknown>> };
+  const policy = (await privy.policies().get(policyId)) as unknown as { rules?: Rule[] };
+  const rules = policy.rules ?? [];
+  const ours = new Set([...TX_RULES_CALLDATA, TX_RULE_TO_ONLY].map((n) => chainRuleName(n, chainId)));
+  const pool = rules.filter((r) => r.method === 'eth_signTransaction' && ours.has(r.name));
+  const shape = (conds: Array<Record<string, unknown>> | undefined) =>
+    JSON.stringify((conds ?? []).map((c) => [c.field_source, c.field, c.operator, String(c.value).toLowerCase()]).sort());
+  const actions: string[] = [];
+
+  const attempt = async (mode: TxPolicyMode) => {
+    const claimed = new Set<string>();
+    const ids: string[] = [];
+    for (const spec of txRuleSpecs(mode, chainId, token, account)) {
+      const byName = pool.filter((r) => r.name === spec.name && !claimed.has(r.id));
+      let rule = byName[0];
+      if (!rule) {
+        // Re-use an orphan (a same-name duplicate of a rule already claimed) rather than leaving it as a loose allow.
+        rule = pool.find((r) => !claimed.has(r.id) && pool.some((o) => o !== r && o.name === r.name && claimed.has(o.id)))!;
+      }
+      if (rule) {
+        claimed.add(rule.id);
+        if (rule.name !== spec.name || shape(rule.conditions) !== shape(spec.conditions as never)) {
+          await privy.policies().updateRule(rule.id, { policy_id: policyId, authorization_context: authorizationContext, ...spec } as never);
+          actions.push(`${rule.name === spec.name ? 'repinned' : `re-purposed "${rule.name}" as`} "${spec.name}" (${rule.id})`);
+        }
+        ids.push(rule.id);
+      } else {
+        const created = (await privy.policies().createRule(policyId, { authorization_context: authorizationContext, ...spec } as never)) as { id: string };
+        claimed.add(created.id);
+        ids.push(created.id);
+        actions.push(`created "${spec.name}" (${created.id})`);
+      }
+    }
+    // Whatever is left of ours on this chain is a duplicate or a retired shape: a loose allow, so it goes.
+    for (const r of pool) {
+      if (claimed.has(r.id)) continue;
+      await privy.policies().deleteRule(r.id, { policy_id: policyId, authorization_context: authorizationContext } as never);
+      actions.push(`deleted duplicate "${r.name}" (${r.id})`);
+    }
+    return ids;
+  };
+  try {
+    return { ruleIds: await attempt('calldata'), mode: 'calldata', actions };
+  } catch (e) {
+    actions.push(`calldata rules refused: ${(e as Error).message.slice(0, 200)}`);
+    return { ruleIds: await attempt('to-only'), mode: 'to-only', actions };
   }
 }
 

@@ -36,7 +36,7 @@ import {
 import { copyBloxAbi, erc20Abi, mintableErc20Abi } from '@branch-zero/shared';
 import { broadcaster, broadcasterAddress, chain, deployer, deployerAddress, managerAddress, metaTxDuration, publicClient } from '../chain.ts';
 import { config, deployments } from '../config.ts';
-import { TYPED_DATA_RULE_VERSION, createTxRules, pinPolicyToAccount, pinTxRulesToAccount } from '../privy.ts';
+import { TYPED_DATA_RULE_VERSION, createTxRules, pinPolicyToAccount, reconcileTxRules } from '../privy.ts';
 import { signMetaTx, type AuditSink } from '../signing/privySigner.ts';
 import { maybeTopUp } from '../treasury.ts';
 import { emitStage, patchPlayer, type Player } from '../store.ts';
@@ -509,16 +509,21 @@ export async function ensureTxPolicy(player: Player, account?: Address): Promise
   if (!policyId) return player;
   const { token } = d();
   let p = player;
-  if (!p.txRuleIds?.length) {
-    const created = await createTxRules(policyId, chain.id, token.address, account);
-    p = patchPlayer(p.privyUserId, { txRuleIds: created.ruleIds, txPolicyMode: created.mode, txPolicyPinned: Boolean(account) });
-    if (created.fallbackReason) console.warn(`[V6] calldata-scoped tx rules refused, using to-only: ${created.fallbackReason}`);
+  if (!account) {
+    // Before the account exists there is nothing to pin: create the chain-scoped rules once.
+    if (!p.txRuleIds?.length) {
+      const created = await createTxRules(policyId, chain.id, token.address);
+      p = patchPlayer(p.privyUserId, { txRuleIds: created.ruleIds, txPolicyMode: created.mode, txPolicyPinned: false });
+      if (created.fallbackReason) console.warn(`[V6] calldata-scoped tx rules refused, using to-only: ${created.fallbackReason}`);
+    }
+    return p;
   }
-  if (account && !p.txPolicyPinned && p.txRuleIds && p.txPolicyMode) {
-    await pinTxRulesToAccount(policyId, { ruleIds: p.txRuleIds, mode: p.txPolicyMode }, account, chain.id, token.address);
-    p = patchPlayer(p.privyUserId, { txPolicyPinned: true });
-  }
-  return p;
+  // Account known: reconcile against Privy by rule *name* — stored ids once held duplicates and pinned the release rule
+  // away (Lane B #14). One GET when the policy is already right; otherwise it is repaired in place and reported.
+  const r = await reconcileTxRules(policyId, chain.id, token.address, account);
+  if (r.actions.length) console.warn(`[V6] tx rules reconciled for ${p.ownerAddress} → ${account}: ${r.actions.join('; ')}`);
+  const same = p.txPolicyPinned && p.txPolicyMode === r.mode && JSON.stringify(p.txRuleIds) === JSON.stringify(r.ruleIds);
+  return same ? p : patchPlayer(p.privyUserId, { txRuleIds: r.ruleIds, txPolicyMode: r.mode, txPolicyPinned: true });
 }
 
 /**
