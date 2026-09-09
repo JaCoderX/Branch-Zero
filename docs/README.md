@@ -38,6 +38,7 @@ Start with **[PLAN.md](./PLAN.md)**. Read order for a new contributor:
 | 19f | [HANDOFF-dialogue-box-fit.md](./HANDOFF-dialogue-box-fit.md) · [KICKOFF-dialogue-box-fit.md](./KICKOFF-dialogue-box-fit.md) | **Parallel UI:** dialogue / choice panel stays on screen — Codex Luna |
 | 19g | [HANDOFF-copy-ens-refinement.md](./HANDOFF-copy-ens-refinement.md) · [KICKOFF-copy-ens-refinement.md](./KICKOFF-copy-ens-refinement.md) | **Refinement:** dialogue review · ENS across the bank · plaque/UI bank text — Codex Luna |
 | 19h | [HANDOFF-player-menu.md](./HANDOFF-player-menu.md) · [KICKOFF-player-menu.md](./KICKOFF-player-menu.md) | **UI shell:** title / front door + Esc visitor's card (pause) — Codex Luna |
+| 19i | [HANDOFF-ens-passbook-polish.md](./HANDOFF-ens-passbook-polish.md) · [KICKOFF-ens-passbook-polish.md](./KICKOFF-ens-passbook-polish.md) | **Follow-up:** omit unclaimed name noise · passbook `bz.tier` — Claude Code |
 | 20 | [HANDOFF-partners-board.md](./HANDOFF-partners-board.md) · [KICKOFF-partners-board.md](./KICKOFF-partners-board.md) | **Explore:** SE partners / ETH Online board **+** standalone lobby terminal (no NPC) — Codex Luna |
 
 **Not published** (gitignored; stay on the laptop): `docs/progress/` (daily notes + captures). Kickoffs and `HANDOFF-CC.md` stay in git for cold agents.
