@@ -2,6 +2,8 @@
 
 A walkable 3D bank (Godot) where every desk is a real operation on a Bloxchain-governed smart account, built for [ETHOnline 2026](https://ethglobal.com/events/ethonline2026).
 
+**Public pitch + screenshots:** root [`README.md`](../README.md) · media in [`media/readme/`](./media/readme/).
+
 Start with **[PLAN.md](./PLAN.md)**. Read order for a new contributor:
 
 | # | Doc | Read when |
@@ -35,6 +37,7 @@ Start with **[PLAN.md](./PLAN.md)**. Read order for a new contributor:
 | 19e | [HANDOFF-fx-desk-spacing.md](./HANDOFF-fx-desk-spacing.md) · [KICKOFF-fx-desk-spacing.md](./KICKOFF-fx-desk-spacing.md) | **Parallel layout:** FX desk pull west (staff clearance) — Codex Luna — **met** 2026-09-09 |
 | 19f | [HANDOFF-dialogue-box-fit.md](./HANDOFF-dialogue-box-fit.md) · [KICKOFF-dialogue-box-fit.md](./KICKOFF-dialogue-box-fit.md) | **Parallel UI:** dialogue / choice panel stays on screen — Codex Luna |
 | 19g | [HANDOFF-copy-ens-refinement.md](./HANDOFF-copy-ens-refinement.md) · [KICKOFF-copy-ens-refinement.md](./KICKOFF-copy-ens-refinement.md) | **Refinement:** dialogue review · ENS across the bank · plaque/UI bank text — Codex Luna |
+| 19h | [HANDOFF-player-menu.md](./HANDOFF-player-menu.md) · [KICKOFF-player-menu.md](./KICKOFF-player-menu.md) | **UI shell:** title / front door + Esc visitor's card (pause) — Codex Luna |
 | 20 | [HANDOFF-partners-board.md](./HANDOFF-partners-board.md) · [KICKOFF-partners-board.md](./KICKOFF-partners-board.md) | **Explore:** SE partners / ETH Online board **+** standalone lobby terminal (no NPC) — Codex Luna |
 
 **Not published** (gitignored; stay on the laptop): `docs/progress/` (daily notes + captures). Kickoffs and `HANDOFF-CC.md` stay in git for cold agents.

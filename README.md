@@ -1,203 +1,181 @@
 # Branch Zero
 
-**A walkable 3D bank where every desk is a real smart-account operation.** Built in Godot 4.5 (web, GDScript) on the open-source [Bloxchain](https://github.com/PracticalParticle/Bloxchain-Protocol) account pattern, driven through the public npm package **`@bloxchain/sdk`** (+ `viem`). You do not click "Confirm" in a wallet pop-up; you talk to a teller. For [ETHOnline 2026](https://ethglobal.com/events/ethonline2026) (Start Fresh).
+**A walkable 3D bank where every desk is a real smart-account operation.**
 
-**The FX desk — Uniswap v4 (S1 · fiat pairs 2026-09-09)**
+Built in Godot 4.5 for the browser. You do not click “Confirm” in a wallet pop-up — you talk to a teller. Under the floorboards: [Bloxchain](https://github.com/PracticalParticle/Bloxchain-Protocol) governed accounts via the public **`@bloxchain/sdk`**, Privy session signers, ENSv2 names, and a Uniswap v4 FX desk — live on Sepolia.
 
-Kenji's desk is a **Uniswap v4 swap executed by a governed smart account**, not by a wallet. The player's
-`AccountBlox` on Sepolia is `msg.sender` to Permit2 and the Universal Router, and it may call exactly three
-functions on exactly three addresses, because its own `GuardController` whitelist says so. Since 2026-09-09 it is a
-**bank FX desk**: practice dollars → **Practice EUR** or **Practice ILS**, one-way, through two ≈ $100M v4 pools
-seeded at a pinned ECB mid — and the guard list did not grow by one entry to add the second pool.
-
-| What | Where |
-|------|-------|
-| The lane: guard batch, quote, swap, and why each step exists | [`apps/teller-desk/src/lanes/fx.ts`](./apps/teller-desk/src/lanes/fx.ts) — `enableFx` (the three schemas + whitelist + role grants), `quote` (V4Quoter), `swap` (V4_SWAP calldata) |
-| The three whitelisted calls | `FX_FUNCTIONS` in the same file: `approve(address,uint256)` → practice USD (the only token ever approved — one-way desk) · `approve(address,address,uint160,uint48)` → Permit2 · `execute(bytes,bytes[],uint256)` → UniversalRouter |
-| Desk routes | [`apps/teller-desk/src/server.ts`](./apps/teller-desk/src/server.ts) — `/fx/status` `/fx/quote?amount&pair=EUR|ILS` `/fx/enable` `/fx/swap` |
-| Practice fiat + pool seeding | [`infra/contracts/PracticeFiat.sol`](./infra/contracts/PracticeFiat.sol) · [`infra/scripts/fx-pools-fiat.ts`](./infra/scripts/fx-pools-fiat.ts) (`npm run fx:pools-fiat`; the S1 WETH pool script [`uniswap-pool.ts`](./infra/scripts/uniswap-pool.ts) is history) |
-| Addresses, pool ids, seed rates, encoding constants | [`docs/UNISWAP.md`](./docs/UNISWAP.md) § 2 / § 2b · [`infra/deployments/sepolia.json`](./infra/deployments/sepolia.json) `uniswap.pools` |
-| In-game: dealer, board, desk | [`apps/game/dialogue/dealer.json`](./apps/game/dialogue/dealer.json) · [`apps/game/scripts/fx_board.gd`](./apps/game/scripts/fx_board.gd) · `_fx_desk()` in [`bank_interior.gd`](./apps/game/scripts/bank_interior.gd) |
-| Kill test (K7) | `npm -w apps/teller-desk run killtests:s1` — [`scripts/kill-tests-s1.ts`](./apps/teller-desk/scripts/kill-tests-s1.ts) |
-| Developer feedback for the sponsor | [`FEEDBACK.md`](./FEEDBACK.md) |
-
-**Live on Sepolia now — the fiat desk (2026-09-09).** Two v4 pools we created and seeded ≈ $100M each: USD/EUR
-(`0x3b57bf6e…`, 50M USD + 43,051,500 EUR at 0.86103) and USD/ILS (`0x93adbf0b…`, 50M USD + 150,590,000 ILS at 3.0118),
-fiat tokens [`EUR`](https://sepolia.etherscan.io/address/0xB6a3e346C5aEddC14BD1006017Fd04697069BF98) /
-[`ILS`](https://sepolia.etherscan.io/address/0x5Bca93fc8C9e383280C220252651635B8B2f4336). The Main till swapped
-into both the same day, one guarded `execute` each — 5 USD → 4.292234 EUR
-[`0xf3cb83b4…`](https://sepolia.etherscan.io/tx/0xf3cb83b440a555accd9cb14a3378098af4f89b7e5cc801cb0be7142b4ce50e20) and 5 USD → 15.013821 ILS
-[`0xd6f63de9…`](https://sepolia.etherscan.io/tx/0xd6f63de93198f8fa48926fb68ae9bbd096fbd318dc3470819c1f49c040976fa7) — through the whitelist opened for the WETH desk
-on 2026-09-08, unchanged. `killtests:s1` is K7-a…g green, including K7-g: asked to price WETH, the desk refuses
-`FX_PAIR`.
-
-**History — the first swap (2026-09-08):** the v4 pool we created and seeded
-([`0xfd32332c…`](https://sepolia.etherscan.io/address/0xE03A1074c86CFeDd5C142C4F04F1a1536e203543), USDC/WETH, 0.30 %),
-the FX till [`0xB5e8ab92…`](https://sepolia.etherscan.io/address/0xB5e8ab92467663F50c6Ba237Cb062cE6Bf66B2Af)
-(deployed + initialised, `owner()` = the player's Privy wallet), and real `V4Quoter` prices against that pool.
-**And the swap itself — live, 2026-09-08.** The AccountBlox spent its own practice dollars through the Universal
-Router: [`0xd98efc64…`](https://sepolia.etherscan.io/tx/0xd98efc64e579758b04aa338b2ec777536839b7e48908000e6c6a0b93e8f686b3)
-— 0.5 USDC → 0.000206381989870823 WETH on the v4 pool, the third of three guarded meta-transactions
-([`approve`](https://sepolia.etherscan.io/tx/0x74ffbc6aebbdabe99b0941c8001bcd365f3df77b268724d53b29ff298846e9ff) →
-[`Permit2.approve`](https://sepolia.etherscan.io/tx/0x199bf0e360d3ed68386620478404656799502a692b08ae7d4938f434d0cfbc2f) →
-`execute`). The door it went through was opened the same day, by the account's owner and nobody else: the guard batch
-[`0x38f28f37…`](https://sepolia.etherscan.io/tx/0x38f28f3788dbe62f88ea2307f165e0362b0b073567a615a8a32f1614e8bd6128)
-registered the three schemas and whitelisted one address for each, and the role batch
-[`0xef7b253d…`](https://sepolia.etherscan.io/tx/0xef7b253df409a82c2d05c7b201861590761faa2cd089db7791b690efdf1002e5)
-gave OWNER the right to sign them and the FX teller the right to submit them. A second swap
-([`0x77f8076a…`](https://sepolia.etherscan.io/tx/0x77f8076ac375911c2ba427950111874b6495c836f49b45dd79d11c41ce71272f))
-took **one** transaction, because the two approvals are read back from the chain and skipped.
-
-That the list is a real fence and not decoration is the same kill test's next check: asked to call `execute` on the
-PoolManager instead, the account is refused `TargetNotWhitelisted` before anything moves (K7-e). `npm -w
-apps/teller-desk run killtests:s1` runs all six.
-
-**Start here**
-
-- Plan and gates: [`docs/PLAN.md`](./docs/PLAN.md) · construction units: [`docs/DEV-LOOP.md`](./docs/DEV-LOOP.md)
-- Doc index: [`docs/README.md`](./docs/README.md) · honest review + kill-test log: [`docs/REFLECTION.md`](./docs/REFLECTION.md)
-- Demo / submission: [`docs/DEMO-SCRIPT.md`](./docs/DEMO-SCRIPT.md)
-
-**Status:** U4 / G5 met 2026-09-07 — MVP frozen. The bank is walkable (Godot 4.5 web, single-threaded): Ines opens accounts,
-Dev takes payments and routes big ones to the vault, Bob releases once the clock runs down, Mr. Okafor skips the
-cooling for a hand scan (U4+ Priority release) or shreds — every desk a call through `window.BranchZero` (`u4.1`) to the same Teller Desk lanes that passed **K2, K5, K8, V6, Lane A, Lane B**
-in U1–U2 on Remote EVM 1337. The vault door's clock is the record's own `releaseTime`, counted against the desk
-clock; the lobby board lists what is cooling and the last receipts. Walk it without an inbox at
-`http://localhost:5173/?mock=account`. U4 made it survive a judge's laptop: the canvas takes the keyboard back after
-any overlay or Privy interaction, a dead or restarting Teller Desk shows as NPC lines and a reconnecting board, the
-first load is measured (36 MB `.wasm` → 7 MB brotli). **U5 (ENS) is next.**
+For [ETHOnline 2026](https://ethglobal.com/events/ethonline2026) · Start Fresh.
 
 ---
 
-## Layout
+## Screenshots
+
+<p align="center">
+  <img src="docs/media/readme/00_entrance.jpg" width="48%" alt="Branch Zero entrance — EST. BLOCK 0" />
+  <img src="docs/media/readme/01_lobby.jpg" width="48%" alt="Lobby with Mo the greeter and the vault" />
+</p>
+<p align="center">
+  <img src="docs/media/readme/02_account_opening.jpg" width="48%" alt="Account Opening desk with Ines" />
+  <img src="docs/media/readme/03_counter.jpg" width="48%" alt="Teller counter" />
+</p>
+<p align="center">
+  <img src="docs/media/readme/04_vault.jpg" width="48%" alt="Vault antechamber — the cooling clock" />
+  <img src="docs/media/readme/05_fx_desk.jpg" width="48%" alt="Kenji at the FX desk" />
+</p>
+<p align="center">
+  <img src="docs/media/readme/06_manager.jpg" width="48%" alt="Mr. Okafor — Priority release" />
+  <img src="docs/media/readme/07_name_desk.jpg" width="48%" alt="Name Desk — bank names on ENSv2" />
+</p>
+
+> Captures from the web build. Mock HUD appears in some shots; Live Main runs on Sepolia.
+
+---
+
+## The idea
+
+Most crypto apps hide security behind a wallet modal. **Branch Zero makes the security the building.**
+
+You are a new customer at the first branch of a bank that runs on public rails. Staff take the rules seriously and explain them cheerfully. Open an account, pay the florist, bounce a large wire into the vault, wait out the clock — or skip cooling with a hand scan at the manager’s desk — and leave with a receipt whose fine print is a block-explorer link.
+
+Tone: *Papers, Please* procedure + *Animal Crossing* warmth. On screen, everyday bank language. Protocol jargon only if you **Ask why**.
+
+Design pillars (see [`docs/GAME-DESIGN.md`](./docs/GAME-DESIGN.md)):
+
+| Pillar | Meaning |
+|--------|---------|
+| **Process is the puzzle** | Bank procedure *is* the on-chain workflow. No fake mini-games. |
+| **No pop-ups, ever** | One Privy consent at Account Opening. After that, tellers stamp slips. |
+| **Honest theatre** | Boards, clocks, and balances are read from chain — not local fiction. |
+| **Small, warm, legible** | One building, stylised low-poly cast, web single-thread budget. |
+
+---
+
+## How you play
+
+The loop is errand-driven. The greeter (Mo) routes you; each desk is a real lane:
+
+| Desk | Staff | What you do | What the chain does |
+|------|-------|-------------|---------------------|
+| **Account Opening** | Ines | Sign in once, consent once | Deploy your `AccountBlox`; Privy session signer + policy |
+| **Counter** | Dev | Pay an approved payee | Lane A — instant meta-tx (`requestAndApproveExecution`) |
+| **Vault** | Bob | Wait for the clock, then release | Lane B — time-locked wire; clock is `releaseTime` |
+| **Manager** | Mr. Okafor | Hand-scan Priority, or shred | Skip cooling (meta-approve) or cancel while PENDING |
+| **Name Desk** | Petra | Claim `you.branchzero.eth` | ENSv2 subname + passbook text records |
+| **FX Desk** | Kenji | Ask for a rate, swap | Guarded Uniswap v4 — practice USD → EUR \| ILS |
+
+Walk without an inbox: `http://localhost:5173/?mock=account`. Demo storyboard: [`docs/DEMO-SCRIPT.md`](./docs/DEMO-SCRIPT.md).
+
+---
+
+## Narrative
+
+**Branch Zero — Est. Block 0.** A branch that treats smart-account security as furniture: rope queues, a departure board of today’s movements, a vault door whose light turns green only when the timelock says so.
+
+| You meet | Role in the story | On-chain identity |
+|----------|-------------------|-------------------|
+| **Mo** | Greeter — routes your first errands | — |
+| **Ines** | Opens your account; explains the one consent | Bank provisioner |
+| **Dev** | Stamps routine slips at the counter | Broadcaster |
+| **Bob** | Watches the vault clock with you | Timed release path |
+| **Mr. Okafor** | Priority or shredder — never a second timed stamp | Branch manager role |
+| **Petra** | Engraves your bank name | ENSv2 registrar |
+| **Kenji** | Quotes and swaps at the FX desk | Guarded Universal Router calls |
+
+Cast and dialogue rules: [`docs/NPCS.md`](./docs/NPCS.md) · World layout: [`docs/WORLD-3D-ENVIRONMENT.md`](./docs/WORLD-3D-ENVIRONMENT.md).
+
+---
+
+## Under the hood
+
+Three runtimes, one contract per player, public packages only.
 
 ```text
-apps/game/          Godot 4.5.2 project (GDScript). autoload/chain.gd is the ONLY JavaScriptBridge user. Never holds keys.
-apps/web/           Vite + React shell. index.html hosts the canvas; src/bridge installs window.BranchZero (@bloxchain/sdk reads).
-apps/teller-desk/   Fastify service. Holds the Privy authorization key + broadcaster key. /session /provision /pay /wire /approve /cancel /status /events.
-                    src/signing/privySigner.ts is the signing lane; scripts/kill-tests.ts re-runs K2 / K5 / Lane A.
-packages/shared/    viem chain configs (remoteEvm 1337, sepolia), dev-role addresses, bridge protocol types, deployments schema,
-                    the two ABI fragments the SDK does not expose at runtime.
-infra/scripts/      probe / smoke / bootstrap-blox (one-time CopyBlox + demo ERC-20) / historical U0 compile+deploy
-infra/deployments/  remote-evm.json — AccountBlox fixture, CopyBlox, demo token. Never keys.
-scripts/            export-web.mjs — headless Godot import + Web export into apps/web/public/game/
-docs/               plan, architecture, integration notes, reflection (agent ops / daily progress are local-only)
+Browser                         Server                         Chain
+──────                          ──────                         ─────
+Godot 4.5 (GDScript, web)       Teller Desk (Fastify)          Sepolia (Live Main)
+  └─ never holds keys             ├─ Privy session-signer RPC    Remote EVM 1337 (Dev Mode)
+Vite + React shell                ├─ broadcaster hot wallet      Arc Testnet (wing — deferred)
+  └─ window.BranchZero            └─ SSE status / receipts
+       @bloxchain/sdk · viem · Privy
 ```
 
-## Run it (Windows, Node ≥ 20)
+| Layer | Choice | Why |
+|-------|--------|-----|
+| **Game** | Godot 4.5.x · GDScript · single-thread WebGL2 | Walkable bank in the browser; no C# on web export |
+| **Shell** | Vite · TypeScript · React overlay | One Privy modal; canvas focus after overlays |
+| **Bridge** | `window.BranchZero` | Godot never talks RPC; JS owns SDK reads + desk HTTP |
+| **Accounts** | Bloxchain `AccountBlox` via `@bloxchain/sdk` | Timelock, RBAC, guard whitelists — the bank’s rules |
+| **Identity** | Privy embedded wallet + session signer + policy | One consent; tellers stamp slips without pop-ups |
+| **Names** | ENSv2 subnames | Your bank name resolves to your account |
+| **FX** | Uniswap v4 (practice USD / EUR / ILS) | Swap is three whitelisted calls on *your* account |
+| **Desk** | Node 20 · Fastify · SSE | Provision, pay, wire, approve, cancel, status |
 
-### 1. Chains: Live (Sepolia) is the default; Remote EVM is Developer Mode
+Hard rules: Godot never holds keys. Product runtime is **public `@bloxchain/sdk` + `viem`** (plus Privy). No custom Solidity in this repo. Testnets + lab chain only.
 
-The Main payment wing runs on **Sepolia `11155111`** and that is what an unconfigured checkout uses
-(`CHAIN_ID` unset → Live). **Remote EVM `1337`** remains available as **Developer Mode** — a second Teller Desk
-started with `npm run dev:teller:dev`, reached from the desk-debug **Live | Dev** toggle or `?mode=dev`. It is
-private lab infra and is never exposed publicly. See [`docs/SEPOLIA-LIVE.md`](./docs/SEPOLIA-LIVE.md).
+Architecture diagrams and sequences: [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md).
 
-`npm -w infra run funding:sepolia` lists every Sepolia address the Live wing needs, what it pays for, what it
-holds and what is short.
+---
 
-#### Remote EVM (Developer Mode, id 1337)
+## Status
 
-The chain lives in particle-tool-box `Docker Apps/Remote EVM` (Nethermind). Start it there, then verify:
+MVP frozen (U4 / G5, 2026-09-07). Live Main payment wing on **Sepolia**; Remote EVM is **Developer Mode**. FX fiat desk live 2026-09-09. See [`docs/OWED.md`](./docs/OWED.md) for what’s open and parked.
 
-```bash
-curl -s -X POST http://127.0.0.1:8545 -H "Content-Type: application/json" -d "{\"jsonrpc\":\"2.0\",\"method\":\"eth_chainId\",\"params\":[],\"id\":1}"
-```
+---
 
-Expect `"result":"0x539"`. Details and the dev-role → address mapping: [`docs/REMOTE-EVM.md`](./docs/REMOTE-EVM.md). To point elsewhere (Tailscale Serve, a different RPC) set `REMOTE_EVM_RPC_URL` in `.env`; the scripts refuse to run Ganache-parity keys on any chain other than 1337.
+## Run locally
 
-### 2. Install and configure
+**Requirements:** Windows, Node ≥ 20, Godot **4.5.2** standard (not mono).
 
 ```bash
 npm install
-cp .env.example .env    # then set DEPLOYER_PK to Remote EVM account 0 (dev-only key, never on a public network)
-npm run chain:probe     # chain id, client, head block, dev-role balances
+cp .env.example .env          # see docs for Privy + chain vars
+
+npm run export:web            # Godot → apps/web/public/game/
+npm run dev:teller            # Live desk :8787 (Sepolia)
+npm run dev:web               # http://localhost:5173
 ```
 
-### 3. Chain bootstrap (one-time) and the account fixture
+| Mode | How |
+|------|-----|
+| Mock walk (no chain) | `http://localhost:5173/?mock=account` |
+| Live (Sepolia) | default — `npm run dev:teller` |
+| Developer Mode (Remote EVM 1337) | `npm run dev:teller:dev` + `?mode=dev` |
 
-`CopyBlox` (the wallet factory) and a demo ERC-20 are already on 1337 and recorded in
-`infra/deployments/remote-evm.json`. To place them on a fresh chain, point `BLOXCHAIN_PROTOCOL_DIR` at a built
-Bloxchain-Protocol checkout and run:
+Full setup (Godot templates, Remote EVM, bootstrap, kill tests): [`docs/README.md`](./docs/README.md) · [`docs/GODOT.md`](./docs/GODOT.md) · [`docs/SEPOLIA-LIVE.md`](./docs/SEPOLIA-LIVE.md).
 
 ```bash
-npm run chain:bootstrap  # deploys published artifacts unchanged, records addresses + sha256; skips what exists
-npm run chain:smoke      # SDK owner() / roles against the recorded fixture
+npm -w apps/teller-desk run killtests -- --fresh   # K2 / K5 / Lane A
 ```
 
-Player accounts are then opened by `CopyBlox.cloneBlox` — clone + `initialize` in one transaction — with the
-player's Privy wallet as owner. **Do not wipe Remote EVM.** Do not use `chain:compile` as the product path;
-see [`docs/BLOXCHAIN-INTEGRATION.md`](./docs/BLOXCHAIN-INTEGRATION.md).
+---
 
-### 4. Godot 4.5.2 (standard build, **not** mono) and the web export
+## Repo layout
 
-Install the official editor and export templates once (checksums in the release's `SHA512-SUMS.txt`):
-
-- `Godot_v4.5.2-stable_win64.exe.zip` → unzip to `%LOCALAPPDATA%\Programs\Godot-4.5.2\` (portable; no PATH change)
-- `Godot_v4.5.2-stable_export_templates.tpz` → unzip, copy `templates/*` to `%APPDATA%\Godot\export_templates\4.5.2.stable\`
-
-Downloads: https://github.com/godotengine/godot/releases/tag/4.5.2-stable. Any other location: set `GODOT_BIN` to the `*_console.exe`. The lab's 4.7.1-mono is refused on purpose.
-
-```bash
-npm run export:web      # → apps/web/public/game/ (git-ignored). Web preset: Compatibility renderer, thread support OFF.
+```text
+apps/game/          Godot 4.5 project (GDScript). chain.gd is the only JavaScriptBridge user.
+apps/web/           Vite shell + React overlay + window.BranchZero
+apps/teller-desk/   Fastify — Privy auth key, broadcaster, lanes, SSE
+packages/shared/    Chains, deployments schema, bridge types, ABI fragments
+infra/              Deployments, pool scripts, funding helpers
+docs/               Plan, design, architecture, sponsor notes
+docs/media/readme/  Screenshots used above
 ```
 
-### 5. Serve the shell
+---
 
-```bash
-npm run dev:web         # http://localhost:5173 — Godot canvas + bridge traffic overlay. Proxies /api → Live desk (Sepolia), /dev-api → Dev desk (1337), /rpc → Remote EVM
-npm run dev:teller      # Live  Teller Desk :8787 (Sepolia — the default)
-npm run dev:teller:dev  # Dev   Teller Desk :8788 (Remote EVM 1337; needs the lab chain up)
-npm run dev:teller      # http://127.0.0.1:8787/healthz
-```
+## Docs
 
-Open http://localhost:5173. The cube scene asks the bridge for `echo`, `chainInfo` and `accountInfo`; the
-overlay is the Account Opening desk: **Sign in** → **Allow the teller to stamp my slips** (the one consent) →
-**Open my account** → **Pay**. No COOP/COEP headers are sent; the build is single-threaded so none are needed,
-and the Privy modal and embedded-wallet iframe render over the canvas without them (K8).
+| Start here | |
+|------------|---|
+| [`docs/PLAN.md`](./docs/PLAN.md) | Scope, gates, submission |
+| [`docs/GAME-DESIGN.md`](./docs/GAME-DESIGN.md) | Player fantasy, loop, protocol ↔ desk map |
+| [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | Layers, bridge, trust boundaries |
+| [`docs/DEMO-SCRIPT.md`](./docs/DEMO-SCRIPT.md) | 3-minute video storyboard |
+| [`docs/PRIVY.md`](./docs/PRIVY.md) · [`ENS.md`](./docs/ENS.md) · [`UNISWAP.md`](./docs/UNISWAP.md) | Sponsor surfaces |
+| [`docs/REFLECTION.md`](./docs/REFLECTION.md) | Kill-test log and design review |
 
-### 6. Kill tests
+---
 
-```bash
-npm -w apps/teller-desk run killtests -- --fresh
-```
+## Licence
 
-Creates a Privy user with a delegated embedded wallet, opens an account for it, and asserts **K2**
-(`recover(digest) == owner()`), **K5** (policy denies typed data for an account the wallet does not own) and a
-real Lane A payment.
-
-## Privy — what is used, and why it matters
-
-Privy is the reason this game has one wallet modal instead of twenty. It is the Account Opening desk.
-
-| Privy feature | How Branch Zero uses it | Where |
-|---|---|---|
-| React SDK + embedded EVM wallet | The player's wallet is created at the desk and becomes `OWNER_ROLE` on their own `AccountBlox` | `apps/web/src/overlay/useBranchZeroWallet.ts` |
-| **Session signer** (key quorum) | Delegated **once**, with consent, so the Teller Desk can request `eth_signTypedData_v4` for bank slips without a pop-up | same file — `addSessionSigners` |
-| **Policy** (per player) | Bounds that signer to Bloxchain meta-transactions **for that player's own account** (`verifyingContract`) on our chain. Everything else is denied by default | `apps/teller-desk/src/privy.ts` |
-| Access tokens | Authenticate the player to the Teller Desk; the wallet they claim is checked at Privy against the token's user id | `identify()` in the same file |
-
-The delegation is a genuine control, not a courtesy dialog: a user-controlled embedded wallet is owned by the
-*user's* key quorum, so the server is refused (`401`) if it tries to attach a signer or policy itself. Only the
-browser consent can grant signing rights — and **Revoke** is always visible at the desk.
-
-Two honest limits, stated because they are load-bearing:
-
-- Privy cannot see inside a meta-transaction's `executionOptions`, so it cannot police *amounts*. Routing large
-  transfers to the time-locked lane is a Teller Desk rule, not an on-chain or policy guarantee. The real
-  controls on what a signed slip can do are the account's own guards: payee whitelist, selector schema, role
-  permissions, nonce, deadline, chain id.
-- `domain.name` is not a matchable policy field, so the policy pins `verifyingContract` + `chainId` instead —
-  which is the stronger half of the intent anyway.
-
-## Hard rules
-
-Public **`@bloxchain/sdk` + `viem`** only for product runtime (plus Privy for identity/signing). No custom Solidity. No path dependency on the protocol repo for runtime — `npm run chain:bootstrap` reads already-built artifacts out of band and only addresses are committed. Godot never holds keys / never talks RPC. No `JavaScriptBridge.eval`. Testnets + Remote EVM only; **do not wipe** the lab chain; live block gas limit is **16,777,216** (measured — `cloneBlox` already uses 99.2 % of it). Remote EVM dev keys never touch a public network.
-
-**K4 / packages:** U0 used a one-off compile to place a fixture account. Principal locked SDK-only + CopyBlox going forward. See `docs/REFLECTION.md`.
-
-## AI tools
-
-Planning and U0 construction: Claude Code (Fable 5.1). U1 construction: Claude Code (Opus 5). U2 construction: Claude Code (Fable 5.1 / Opus 5). Lessons scrubbed into GameDevOS `wiki/lessons/`. Kill-test decisions live in [`docs/REFLECTION.md`](./docs/REFLECTION.md).
-
-Licence: MIT. Bloxchain SDK is MPL-2.0.
+MIT. Bloxchain SDK is MPL-2.0. KayKit Adventurers and related kit assets retain their upstream licences — see attributions in `apps/game/assets/`.
