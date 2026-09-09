@@ -30,7 +30,7 @@ You are a **cold agent**. Prefer this file + kickoff over chat memory.
 
 ---
 
-## Stage 0 outcome (2026-09-09) — verdict **A: wiring**, hotfixed in product, awaiting principal feel check
+## Stage 0 outcome (2026-09-09) — verdict **A: wiring**, landed (Stage 0A, commit 639ffd2)
 
 **Evidence (headless probe, Godot 4.5.2, jacket bodies Ranger / Bob / Mage / Kenji):**
 
@@ -50,9 +50,9 @@ a different idle:** `Idle_A` 41 / 34 (settled, fists by hips) · `Idle_B` 48–5
 `Interact` 63 / 42 · `Waving` 48 / 22 · `Walking_A` 78–80 / 58–67 · `Walking_C` 63–68 / 44–47 (calmer walk) ·
 `Sit_Chair_Idle` 61 / 37 (desk seated candidate). No Tools library vendored; none needed for 0A.
 
-**Product change (Branch-Zero, working tree, not committed — land pending principal feel check):**
+**Product change (Branch-Zero main, principal accepted the feel check 2026-09-09):**
 
-- `apps/game/scripts/props.gd` `_kaykit_ensure_anim_player`: `root_node = NodePath("..")` + comment (one line of code).
+- `apps/game/scripts/props.gd` `_kaykit_ensure_anim_player`: product-created player gets `root_node = NodePath("..")`; an embedded glb player is re-pointed at the glb root too (`get_path_to(root)`).
 - `apps/game/tests/smoke_kaykit_cast.gd`: in-tree `idle` play for 12 frames on greeter / vault_keeper / dealer; asserts
   every idle track resolves, `current_animation == "idle"`, and the upper arm has left the bind pose (≤ 70°, ≥ 10° moved).
 - Gates: `smoke_kaykit_cast` PASS (idle 41.2° / 40.8° / 40.8°) · `run_checks` PASS · `run_viz_budget` PASS (39 mats) ·
@@ -72,7 +72,7 @@ principal's feel check says Idle_A still reads wrong; the census above is the St
 |-------|---------|
 | `AnimationPlayer.current_animation == "idle"` in lobby | Clip actually playing |
 | Track paths `Rig_Medium/Skeleton3D:…` resolve on jacket roots | Not silent miss |
-| Embedded glb `AnimationPlayer` vs product-created one; force `root_node = NodePath(".")` | Lab used `".."` — do not copy blindly |
+| Embedded glb `AnimationPlayer` vs product-created one; `root_node` must be `NodePath("..")` (it is relative to the player, which sits under the glb root) | `"."` points at the player itself and every track misses silently — the Stage 0A bug |
 | Stock Ranger idle vs jacket idle side-by-side | Same pose family = authoring; diverge = wiring |
 
 **A:** Wiring broken → tiny PropKit hotfix + smoke + `export:web` (may skip full ENG).  
