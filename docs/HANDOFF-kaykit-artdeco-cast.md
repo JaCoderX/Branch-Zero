@@ -20,7 +20,7 @@ You are a **cold agent**. Prefer this file + the kickoff + the lab ENG over chat
 
 **Status (2026-09-09):** Lab ENG-2026-0015 answered **Yes**. Preferred land (part-hide + navy sheet) is **in product**:
 `PropKit.KAYKIT_HIDE_PARTS` for `vault_keeper`, knight bank cells `(3,0)`/`(4,0)` navy. Softshoulder glb **not** vendored.
-Ranger quiver / Mage hat remain optional follow-ups. Soft jacket remesh is a separate spike if still wanted.
+Ranger quiver / Mage hat / Rogue / Barbarian: open quest — see [`HANDOFF-kaykit-bank-wardrobe.md`](./HANDOFF-kaykit-bank-wardrobe.md) and GameLab `ENG-2026-0016`.
 
 **Authorized construction:** explore **mesh / silhouette adaptation** of KayKit Adventurers toward
 bank / art-deco readable body language, **keeping Rig_Medium** so idle / walk / greet (and the other bank
