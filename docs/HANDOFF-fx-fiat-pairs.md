@@ -9,6 +9,7 @@ mission: Replace USDC→WETH FX demo with bank-true fiat pairs USD↔EUR and USD
 plan: this file §Direction
 kickoff: docs/KICKOFF-fx-fiat-pairs.md
 baseline: S1/S1b/S2 FX met (governed swap on Sepolia); Live OTP + FX walk 2026-09-09 on Main till; practice USDC open-mint; WETH pool exists but is metaphor-wrong for a bank FX desk
+status: met 2026-09-09 — Practice EUR/ILS pools ~$100M; Kenji USD→fiat on Live; WETH off product path (c138952)
 parallel_to: U7 packaging / polish re-playtest — do not steal those gates
 ---
 
@@ -17,7 +18,9 @@ parallel_to: U7 packaging / polish re-playtest — do not steal those gates
 You are a **cold agent**. Prefer this file + the kickoff + [`UNISWAP.md`](./UNISWAP.md) over chat memory.
 Freedom on **how**. No freedom on constraints, scope, or protocol semantics.
 
-**Authorized construction:** Kenji's FX desk trades **practice fiat** against practice USD through **two** Uniswap v4 pools on Sepolia — not WETH.
+**Status (2026-09-09):** **Met** (`c138952`). Practice EUR `0xB6a3…` + ILS `0x5Bca…`; two v4 pools ≈ $100M TVL at Frankfurter 2026-09-08 mids; Kenji quotes/swaps USD→EUR and USD→ILS on Live; WETH refused `FX_PAIR`. Desk spacing is the separate Luna unit (met). Owed: principal Live eye-check + Uniswap feedback form.
+
+**Authorized construction (historical):** Kenji's FX desk trades **practice fiat** against practice USD through **two** Uniswap v4 pools on Sepolia — not WETH.
 
 **Desk spacing:** owned by a separate Codex Luna unit — [`HANDOFF-fx-desk-spacing.md`](./HANDOFF-fx-desk-spacing.md). **Do not** pull the desk in this Fable session (avoid double-moves).
 
