@@ -68,10 +68,10 @@ Reference boards: art-deco bank lobbies (symmetry, terrazzo floors), *Katamari*-
 
 East-column placement pins (north → south): vault partition z = −5.0; expanded FX counter/shelf z ∈ [−4.4, 0.4],
 centre −2.0; SECURITY door z ∈ [1.0, 2.0], centre 1.5; elevator centre z = 5.5, shaft z ∈ [4.0, 7.0].
-The FX assembly is pulled west by 1.2 m for staff clearance (counter x ≈ 12.3, shelf/tools x ≈ 12.95);
-Kenji/stool sit a further +0.55 m east (x ≈ 13.65 / 13.7) so the dealer capsule clears the shelf and stool.
-The east-wall FX signs remain seated at x ≈ 14.8. The elevator door face remains at x ≈ 11.46, and the
-south-wall entrance gap x ∈ [3, 7] is unchanged.
+The FX assembly is pulled west by 1.2 m, then the counter/shelf/tools another 0.35 m (`FX_DESK_FORWARD`) so the
+desk face clears Kenji; Kenji/stool stay at x ≈ 13.65 / 13.7. The PC screen sits on the **north** half of the staff
+shelf (z ≈ −3.15), not on Kenji's standing centre. East-wall FX signs remain at x ≈ 14.8. The elevator door face
+remains at x ≈ 11.46, and the south-wall entrance gap x ∈ [3, 7] is unchanged.
 
 ### 2.2 Navigation
 

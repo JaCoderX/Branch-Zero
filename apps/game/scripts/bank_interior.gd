@@ -39,6 +39,8 @@ const PILASTER_W := 0.36
 const BEAM_DROP := 0.28   # coffer beams hang this far under the ceiling slabs (pendant canopies sit at the slab)
 const FX_WEST_DELTA := -1.2  # S1 spacing pass: pull the desk assembly into the lobby, away from the east wall
 const FX_KENJI_STAFF_NUDGE := 0.55  # Kenji/stool east of the staff shelf so the capsule does not sit in the props
+## Extra west on the counter/shelf/tools only — Kenji stays pinned; clears the dealer capsule from the desk face.
+const FX_DESK_FORWARD := -0.35
 
 var theme: WingTheme
 var lamps: Array[OmniLight3D] = []
@@ -400,15 +402,16 @@ func _west_column() -> void:
 func _fx_desk() -> void:
 	# Target z centres: counter/shelf [-4.4, 0.4] around -2.0; SECURITY [1, 2]; elevator shaft [4, 7].
 	var west := Vector3(FX_WEST_DELTA, 0, 0)
-	# Keep every desk-side prop on the same delta so the counter, staff shelf, stool and planter remain one assembly.
-	PropKit.hero(self, "FxCounter", "prop_counter", Vector3(13.5, 0, -2.0) + west, -PI / 2, {}, Vector3(0.9, 1.1, 4.8), Vector3(0, 0.55, 0))
-	box_m("FxCounterShelf", Vector3(14.15, 1.02, -2.0) + west, Vector3(0.3, 0.05, 4.8), PropKit.palette("Wood"), false)
-	PropKit.hero(self, "FxPrinter", "prop_printer", Vector3(14.15, 1.045, -3.55) + west, -PI / 2)
-	PropKit.hero(self, "FxTool", "prop_engraver", Vector3(14.15, 1.045, -0.45) + west, -PI / 2)
-	PropKit.kit(self, "FxScreen", "computerScreen", Vector3(14.15, 1.045, -2.0) + west, -PI / 2)
-	# Stool rides with Kenji's staff nudge (not the shelf) so the dealer is not planted inside the seat/shelf.
+	var desk := west + Vector3(FX_DESK_FORWARD, 0, 0)  # desk/shelf forward; Kenji/stool keep `west` only
+	PropKit.hero(self, "FxCounter", "prop_counter", Vector3(13.5, 0, -2.0) + desk, -PI / 2, {}, Vector3(0.9, 1.1, 4.8), Vector3(0, 0.55, 0))
+	box_m("FxCounterShelf", Vector3(14.15, 1.02, -2.0) + desk, Vector3(0.3, 0.05, 4.8), PropKit.palette("Wood"), false)
+	PropKit.hero(self, "FxPrinter", "prop_printer", Vector3(14.15, 1.045, -3.55) + desk, -PI / 2)
+	PropKit.hero(self, "FxTool", "prop_engraver", Vector3(14.15, 1.045, -0.45) + desk, -PI / 2)
+	# Screen on the north half of the shelf — centre (z=-2) sat inside Kenji's standing spot.
+	PropKit.kit(self, "FxScreen", "computerScreen", Vector3(14.15, 1.045, -3.15) + desk, -PI / 2)
+	# Stool rides with Kenji (unchanged absolute pin); do not apply FX_DESK_FORWARD.
 	PropKit.kaykit(self, "FxStool", "chair_stool", Vector3(14.35 + FX_KENJI_STAFF_NUDGE, 0, -2.0) + west, 0.0, {"fit": Vector3(0.45, 0.6, 0.45)})
-	_planter("FxDeskPlant", Vector3(13.6, 1.1, -4.05) + west, 0.4, ["pot_small", Vector3(0.24, 0.2, 0.24)], [["plant_flatTall", Vector3(0.26, 0.34, 0.26)]], "Cream")
+	_planter("FxDeskPlant", Vector3(13.6, 1.1, -4.05) + desk, 0.4, ["pot_small", Vector3(0.24, 0.2, 0.24)], [["plant_flatTall", Vector3(0.26, 0.34, 0.26)]], "Cream")
 
 	# The board goes on the vault partition's south face, not on the wall behind Kenji: a customer stands at the
 	# counter looking east, so a panel behind the dealer is read through the counter's glass and over his shoulder.
