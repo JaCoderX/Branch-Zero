@@ -457,11 +457,11 @@ func _account_opening() -> void:
 	solid_box("AODesk", Vector3(-9.0, 0.4, 8.0), Vector3(2.6, 0.8, 1.1))
 	# Client approach is north (-z): chairs → keyboard → screen → Ines. Desk top z ∈ [7.45, 8.55]; keep a small
 	# margin from the north edge so both props sit on the table (not hanging off). Screen faces the client (yaw PI).
-	# Terminal sits on the east half of the paired desks (AODeskE), clear of Ines at x ≈ -9.
-	PropKit.kit(self, "AOScreen", "computerScreen", Vector3(-7.9, 0.78, 7.95), PI)
-	PropKit.kit(self, "AOKeyboard", "computerKeyboard", Vector3(-7.9, 0.78, 7.65), PI)
+	# Terminal on the west half (AODeskW), clear of the desk plant at x ≈ -9.9.
+	PropKit.kit(self, "AOScreen", "computerScreen", Vector3(-9.5, 0.78, 7.95), PI)
+	PropKit.kit(self, "AOKeyboard", "computerKeyboard", Vector3(-9.5, 0.78, 7.65), PI)
 	_planter("AODeskPlant", Vector3(-9.9, 0.78, 8.3), 0.0, ["pot_small", Vector3(0.26, 0.2, 0.26)], [["plant_flatShort", Vector3(0.34, 0.3, 0.34)]], "Cream")
-	box_m("AOLeaflet", Vector3(-8.55, 0.79, 7.75), Vector3(0.2, 0.006, 0.28), PropKit.palette("Paper"), false)
+	box_m("AOLeaflet", Vector3(-8.2, 0.79, 7.75), Vector3(0.2, 0.006, 0.28), PropKit.palette("Paper"), false)
 	PropKit.kit(self, "AOChairA", "chairCushion", Vector3(-10.0, 0, 6.7), 0.0, {}, Vector3(0.5, 0.5, 0.5), Vector3(0, 0.25, 0))
 	PropKit.kit(self, "AOChairB", "chairCushion", Vector3(-8.0, 0, 6.7), 0.0, {}, Vector3(0.5, 0.5, 0.5), Vector3(0, 0.25, 0))
 	# the landmark plant ("the desk with the plant"): Stage 6d makes it a parlour palm in a deep-green marble bowl with
