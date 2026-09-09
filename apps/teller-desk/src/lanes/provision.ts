@@ -486,12 +486,14 @@ export async function faucetAccount(account: Address): Promise<{ balance: string
 
 /**
  * Lane B option 1 needs the owner's embedded wallet to pay gas for its own direct calls. Top it up from
- * the deployer to `OWNER_GAS_ETH` whenever it holds less than half of that. Dev ETH on 1337 only.
+ * the deployer to `OWNER_GAS_ETH` whenever it holds less than `minWei` (default: half of target — enough
+ * for routine Re-check). Vault Release can pass `minWei: target` so gas×maxFee cannot stall a half-full wallet.
  */
-export async function fundOwnerGas(owner: Address): Promise<{ hash?: Hex; balanceEth: string }> {
+export async function fundOwnerGas(owner: Address, opts?: { minWei?: bigint }): Promise<{ hash?: Hex; balanceEth: string }> {
   const target = parseEther(config.ownerGasEth);
+  const min = opts?.minWei ?? target / 2n;
   const balance = await publicClient.getBalance({ address: owner });
-  if (balance >= target / 2n) return { balanceEth: formatEther(balance) };
+  if (balance >= min) return { balanceEth: formatEther(balance) };
   const hash = await deployer.sendTransaction({ to: owner, value: target - balance, chain, account: deployer.account! });
   await publicClient.waitForTransactionReceipt({ hash });
   return { hash, balanceEth: formatEther(await publicClient.getBalance({ address: owner })) };

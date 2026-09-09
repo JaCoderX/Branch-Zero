@@ -23,6 +23,7 @@ import {
   formatUnits,
   keccak256,
   parseEther,
+  parseGwei,
   parseAbiParameters,
   parseUnits,
   toBytes,
@@ -37,12 +38,22 @@ import { config, deployments } from '../config.ts';
 import { ownerWalletClient, type TxAuditSink } from '../signing/privySigner.ts';
 import { emitStage, hasSubscribers, type Player } from '../store.ts';
 import { receiptFee } from '../fees.ts';
+import { fundOwnerGas } from './provision.ts';
 
 /**
- * Floor for one owner-paid vault call on Live. Below this, `simulateContract` often dies as an opaque
- * "unknown error" with no revert selector — Re-check / provision tops the wallet to `OWNER_GAS_ETH`.
+ * Outer gas for approve/cancel. The pending record's inner `gasLimit` is 200_000 for the ERC-20 transfer;
+ * the handler needs headroom above that. Keep this modest: viem reserves `gas × maxFeePerGas` from the
+ * owner balance before send — 500k × a spiky Sepolia maxFee can exceed a half-topped owner (~0.0015 ETH)
+ * and surfaces as ContractFunctionExecutionError ("unknown error executing…"), not insufficient-funds.
  */
-const OWNER_GAS_FLOOR = parseEther('0.00005');
+const VAULT_DECISION_GAS = 350_000n;
+
+/** Calldata selectors — never treat these as revert payloads (viem puts request `data` on the error). */
+const WRITE_CALL_SELECTORS = new Set([
+  toFunctionSelector('approveTimeLockExecution(uint256)').toLowerCase(),
+  toFunctionSelector('cancelTimeLockExecution(uint256)').toLowerCase(),
+  toFunctionSelector('executeWithTimeLock(address,uint256,bytes4,bytes,uint256,bytes32)').toLowerCase(),
+]);
 
 /** Operation type registered by the default guard schema for ERC-20 transfers. */
 const ERC20_TRANSFER_OPERATION = keccak256(toBytes('ERC20_TRANSFER'));
@@ -142,13 +153,37 @@ const SDK_ERROR_NAMES: Record<string, string> = Object.fromEntries(
 
 /** Pull the revert payload out of viem's error chain — structured fields first, never the message text. */
 function revertData(e: unknown): Hex | undefined {
-  for (let cur = e as { data?: unknown; raw?: unknown; cause?: unknown } | undefined; cur; cur = cur.cause as never) {
-    for (const candidate of [cur.raw, cur.data]) {
-      if (typeof candidate === 'string' && /^0x[0-9a-fA-F]{8,}$/.test(candidate)) return candidate as Hex;
+  const seen = new Set<unknown>();
+  const queue: unknown[] = [e];
+  const looksLikeRevert = (hex: string): hex is Hex => {
+    if (!/^0x[0-9a-fA-F]{8,}$/.test(hex)) return false;
+    // Request calldata is often attached as `error.data` by getContractError — that is not a revert.
+    if (WRITE_CALL_SELECTORS.has(hex.slice(0, 10).toLowerCase())) return false;
+    return true;
+  };
+  while (queue.length) {
+    const cur = queue.shift() as
+      | {
+          data?: unknown;
+          raw?: unknown;
+          errorData?: unknown;
+          originalError?: unknown;
+          cause?: unknown;
+        }
+      | undefined;
+    if (!cur || typeof cur !== 'object' || seen.has(cur)) continue;
+    seen.add(cur);
+    for (const candidate of [cur.errorData, cur.raw, cur.data]) {
+      if (typeof candidate === 'string' && looksLikeRevert(candidate)) return candidate;
+      if (candidate && typeof candidate === 'object') {
+        const nested = (candidate as { data?: unknown }).data;
+        if (typeof nested === 'string' && looksLikeRevert(nested)) return nested;
+      }
     }
-    // viem decoded it against the ABI: { abiItem, errorName, args }
-    const named = (cur.data as { errorName?: string } | undefined)?.errorName;
-    if (named) return undefined;
+    // viem decoded it against the ABI: { abiItem, errorName, args } — no raw hex to return
+    if ((cur.data as { errorName?: string } | undefined)?.errorName) continue;
+    if (cur.cause) queue.push(cur.cause);
+    if (cur.originalError) queue.push(cur.originalError);
   }
   return undefined;
 }
@@ -199,13 +234,16 @@ export function explainRevert(e: unknown): { code: string; message: string; bank
   const NAME_IN_TEXT = /Error: ([A-Z][A-Za-z0-9]+)\(/;
   let name: string | undefined = viemErrorName(e);
   if (!name && data) name = ERROR_SELECTORS[data.slice(0, 10).toLowerCase()];
-  if (!name && decoded?.name) name = decoded.name;
+  // Prefer curated / SDK selectors over ReadableText — that label is often binary custom-error bytes
+  // misread as a string (e.g. "yT'VUZt.k" for NoPermission data).
+  if (!name && decoded?.name && decoded.name !== 'ReadableText' && decoded.name !== 'CustomError') name = decoded.name;
   const sigInText = SIG_IN_TEXT.exec(text)?.[1]?.toLowerCase();
   if (!name && sigInText) name = ERROR_SELECTORS[sigInText];
   if (!name) name = NAME_IN_TEXT.exec(text)?.[1];
   // Only now fall back to the SDK's full table, so a curated name always wins over the generic one.
   if (!name && data) name = SDK_ERROR_NAMES[data.slice(0, 10).toLowerCase()];
   if (!name && sigInText) name = SDK_ERROR_NAMES[sigInText];
+  if (!name && decoded?.name) name = decoded.name;
   if (!name || name === 'Unknown') {
     const opaque = classifyOpaqueFailure(text);
     if (opaque) name = opaque;
@@ -223,9 +261,10 @@ export function explainRevert(e: unknown): { code: string; message: string; bank
             : name === 'RpcError'
               ? 'The chain did not answer clearly — try Release again in a moment.'
               : 'The vault would not accept that.';
-  const message = decoded
-    ? getUserFriendlyErrorMessage(decoded)
-    : text.replace(/\s+/g, ' ').trim().slice(0, 400) || (err.message ?? String(e)).slice(0, 400);
+  const message =
+    decoded && decoded.name !== 'ReadableText'
+      ? getUserFriendlyErrorMessage(decoded)
+      : text.replace(/\s+/g, ' ').trim().slice(0, 400) || (err.message ?? String(e)).slice(0, 400);
   return { code: name, message, bankLine };
 }
 
@@ -361,12 +400,19 @@ async function decide(player: Player, txId: bigint, actor: Actor, kind: 'approve
 
   const { gc, from } = actor === 'manager' ? asManager(account) : { gc: asOwner(player, account, txAudit), from: player.ownerAddress };
 
-  // Owner-paid path: dry wallet → opaque viem "unknown error" on simulate. Fail closed with a bank line.
+  // Owner-paid path: viem reserves gas×maxFeePerGas up front. Half of SEPOLIA_OWNER_GAS_ETH (~0.0015) is
+  // not enough when maxFee spikes — top to the full target before Release/Recall, and pin a quiet Sepolia fee.
   if (actor === 'owner') {
+    const targetWei = parseEther(config.ownerGasEth);
+    try {
+      await fundOwnerGas(player.ownerAddress, { minWei: targetWei });
+    } catch (e) {
+      console.warn('[laneB] fundOwnerGas before decide:', (e as Error).message?.slice(0, 200));
+    }
     const ownerWei = await publicClient.getBalance({ address: player.ownerAddress });
-    if (ownerWei < OWNER_GAS_FLOOR) {
+    if (ownerWei < targetWei / 2n) {
       const bal = formatEther(ownerWei);
-      const message = `Owner wallet holds ${bal} ETH; need at least ${formatEther(OWNER_GAS_FLOOR)} for a vault call (target top-up ${config.ownerGasEth}). Ask Ines to re-check.`;
+      const message = `Owner wallet holds ${bal} ETH; need ~${formatEther(targetWei / 2n)} for a vault call (target ${config.ownerGasEth}). Ask Ines to re-check.`;
       stage('failed', 'Your wallet needs a little more ETH for gas — ask Ines to re-check your account.', {
         txId: String(txId),
         reason: `OwnerGasDry: ${message}`,
@@ -380,13 +426,24 @@ async function decide(player: Player, txId: bigint, actor: Actor, kind: 'approve
   const who = actor === 'manager' ? 'The manager is' : 'You are';
   stage('signing', kind === 'approve' ? `${who} opening the vault…` : `${who} recalling the wire…`, { txId: String(txId), releaseTime: before.releaseTime });
 
+  // Skip the SDK's strict pre-flight simulate. With the Privy-backed wallet client that eth_call is unreliable
+  // (and viem's getContractError then labels unrelated send failures as "executing approveTimeLockExecution").
+  // PENDING + releaseTime are still enforced by readWire and by the contract on the mined call.
+  // gasPrice → SDK sets maxFeePerGas (and a 1 gwei tip cap) so the balance reserve stays predictable on Sepolia.
+  const writeOpts = {
+    from,
+    simulationMode: 'skip' as const,
+    gas: VAULT_DECISION_GAS,
+    gasPrice: parseGwei('3').toString(),
+  };
+
   let res;
   try {
-    res = kind === 'approve' ? await gc.approveTimeLockExecution(txId, { from }) : await gc.cancelTimeLockExecution(txId, { from });
+    res = kind === 'approve' ? await gc.approveTimeLockExecution(txId, writeOpts) : await gc.cancelTimeLockExecution(txId, writeOpts);
   } catch (e) {
     const why = explainRevert(e);
     // Desk operators: opaque Unknowns need the cause chain; the bridge only carries a short reason.
-    if (why.code === 'Unknown' || why.code === 'RpcError' || why.code === 'OwnerGasDry') {
+    if (why.code === 'Unknown' || why.code === 'RpcError' || why.code === 'OwnerGasDry' || why.code === 'ReadableText') {
       console.warn(`[laneB] ${kind} txId=${txId} ${why.code}:`, errorTextChain(e) || e);
     }
     stage('failed', why.bankLine, { txId: String(txId), reason: `${why.code}: ${why.message}`, releaseTime: before.releaseTime, chainNow: await chainNow() });
