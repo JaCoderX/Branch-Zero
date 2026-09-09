@@ -31,6 +31,16 @@ short livery scarf or drop. KayKit-cute faces stay. Creative freedom OK.
 
 ---
 
+## Outcome (landed 2026-09-09)
+
+Principal accepted Mage/Ranger lobby boards + approved CC review (prefer `_nocape`, keep Bob cape). Product land on Branch-Zero:
+
+- Vendored six CC0 jacket glbs into `kaykit_adventurers/Characters/`
+- `PropKit.KAYKIT_MESHES` → jacket stems; `KAYKIT_HIDE_PARTS` empty; wardrobe sheet diffs in `kaykit_bank_variants.py`
+- Gates: `smoke_kaykit_cast` / `run_checks` / `run_viz_budget` PASS
+
+---
+
 ## Baseline
 
 | Item | State |

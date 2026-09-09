@@ -64,31 +64,36 @@ WARDROBE = {
         ("tint", (7, 1), CHARCOAL), ("tint", (2, 2), BRASS), ("tint", (3, 0), BRASS), ("tint", (4, 0), BRASS),
         ("spare", (0, 3), DEEP_GREEN, (0, 1)), ("spare", (1, 3), CORAL, (2, 1)), ("spare", (2, 3), COPPER, (1, 0)),
     ],
-    # Mo (base) — camel tunic, brass fittings, cream shirt, emerald cape / sash, auburn hair.
-    # player — graphite tunic, navy cape / sash, dark hair, via the spares (PropKit "player" remap).
+    # Mo (base) — camel concierge coat, paper shirt, brass, emerald sash, dark-brown boots / wrist straps
+    # (ENG-0016 wardrobe + ENG-0017 jacket glb). player — graphite coat, navy sash, dark hair via spares.
     "ranger": [
         ("tint", (7, 0), CAMEL), ("tint", (7, 2), CAMEL), ("tint", (3, 0), BRASS), ("tint", (0, 1), EMERALD),
         ("tint", (5, 0), PAPER), ("tint", (6, 0), PAPER), ("tint", (7, 1), CHARCOAL),
+        ("tint", (3, 2), DARK_BROWN), ("tint", (1, 1), DARK_BROWN),
         ("spare", (0, 3), GRAPHITE, (7, 0)), ("spare", (1, 3), NAVY, (0, 1)), ("spare", (2, 3), HAIR_DARK, (1, 0)),
     ],
-    # Dev (base, Rogue) — oxblood hood-cloth / cape, tan leather, brass buckles, charcoal hose.
-    # Kenji (Rogue_Hooded) — teal hood / cape / mask on the same sheet via the spares (PropKit "dealer" remap).
+    # Dev (base) — graphite teller tunic, oxblood cape cloth, dark-brown leather, brass, charcoal hose
+    # (ENG-0016 wardrobe + ENG-0017 jacket). Kenji — graphite tunic + teal cape / mantle via spares.
     "rogue": [
-        ("tint", (0, 1), OXBLOOD_DARK), ("tint", (1, 1), OXBLOOD), ("tint", (3, 0), BRASS), ("tint", (5, 0), TAN),
-        ("tint", (7, 1), CHARCOAL),
-        ("spare", (0, 3), TEAL_DARK, (0, 1)), ("spare", (1, 3), TEAL, (1, 1)),
+        ("tint", (0, 1), GRAPHITE), ("tint", (1, 1), OXBLOOD), ("tint", (3, 0), BRASS),
+        ("tint", (5, 0), DARK_BROWN), ("tint", (6, 0), DARK_BROWN), ("tint", (7, 1), CHARCOAL),
+        ("tint", (3, 2), DARK_BROWN),
+        ("spare", (0, 3), GRAPHITE, (0, 1)), ("spare", (1, 3), TEAL, (1, 1)),
     ],
-    # Bob — navy guard tunic (was steel plate cells; helm/visor hidden at load in PropKit), brass trim,
-    # cream piping, coral cape, charcoal under-layer. Cells (3,0)/(4,0) from GameLab ENG-2026-0015.
+    # Bob — navy guard tunic (plate cells), brass trim, cream piping, coral cape, charcoal hose
+    # (ENG-2026-0015; jacket land keeps the same sheet on Bob_jacket_cape).
     "knight": [
         ("tint", (3, 0), NAVY_GUARD), ("tint", (4, 0), NAVY_GUARD_DARK),
         ("tint", (7, 0), BRASS), ("tint", (2, 1), BRASS), ("tint", (0, 1), CORAL),
         ("tint", (1, 1), CREAM), ("tint", (7, 1), CHARCOAL),
     ],
-    # Mr. Okafor — oxblood sash / wrap, brass straps and buckles, cream teeth / trim, dark bear fur, charcoal hose.
+    # Mr. Okafor — oxblood waistcoat + paper sleeves in spare cells (baked UV remap on Okafor_jacket),
+    # graphite collar, brass buttons / rings, dark-brown belts / boots, charcoal trousers (ENG-0016 + 0017).
     "barbarian": [
-        ("tint", (1, 3), OXBLOOD), ("tint", (6, 0), BRASS), ("tint", (3, 0), BRASS), ("tint", (3, 1), BRASS),
-        ("tint", (2, 1), CREAM), ("tint", (7, 1), CHARCOAL), ("tint", (7, 0), DARK_BROWN),
+        ("spare", (0, 3), OXBLOOD, (0, 0)), ("spare", (2, 3), PAPER, (0, 0)),
+        ("tint", (7, 0), GRAPHITE), ("tint", (1, 3), BRASS), ("tint", (6, 1), OXBLOOD_DARK),
+        ("tint", (6, 0), DARK_BROWN), ("tint", (3, 0), BRASS), ("tint", (2, 1), BRASS), ("tint", (3, 1), BRASS),
+        ("tint", (7, 1), CHARCOAL), ("tint", (3, 2), DARK_BROWN),
     ],
 }
 

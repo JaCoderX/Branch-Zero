@@ -1,10 +1,35 @@
 extends SceneTree
-## Headless smoke: import KayKit cast path and print clip / skeleton / track diagnostics.
+## Headless smoke: import KayKit jacket cast and print clip / skeleton / accessory diagnostics.
 ## Usage: Godot --headless --path apps/game -s res://tests/smoke_kaykit_cast.gd
 
 
 func _init() -> void:
 	call_deferred("_run")
+
+
+func _absent(root: Node, names: Array) -> bool:
+	for n in names:
+		if root.find_child(str(n), true, false) != null:
+			print(" unexpected part still present: ", n)
+			return false
+	return true
+
+
+func _role_ok(role: String, height: float, expect_bones: int, forbid: Array) -> bool:
+	var ch: Dictionary = PropKit.character(role, height)
+	var root: Node3D = ch["root"]
+	var anim: AnimationPlayer = ch["anim"]
+	var skeleton: Skeleton3D = ch["skeleton"]
+	var ok := true
+	print("role=", role, " mesh=", PropKit.KAYKIT_MESHES.get(role, "?"), " bones=", skeleton.get_bone_count() if skeleton else -1)
+	if skeleton == null or skeleton.get_bone_count() != expect_bones:
+		ok = false
+	if anim == null or not anim.has_animation("idle") or not anim.has_animation("walk") or not anim.has_animation("greet"):
+		ok = false
+	if not _absent(root, forbid):
+		ok = false
+	root.free()
+	return ok
 
 
 func _run() -> void:
@@ -51,24 +76,21 @@ func _run() -> void:
 			for i in mini(sa.get_track_count(), 6):
 				print("  ", sa.track_get_path(i), " type=", sa.track_get_type(i))
 		tmp.free()
+	if not _absent(root, ["Ranger_Quiver"]):
+		ok = false
 	root.free()
 
-	# Bob art-deco land (ENG-2026-0015): helm + visor gone, Rig_Medium still 23 bones, bank clips present.
-	var bob: Dictionary = PropKit.character("vault_keeper", 1.82)
-	var bob_root: Node3D = bob["root"]
-	var bob_skel: Skeleton3D = bob["skeleton"]
-	var bob_anim: AnimationPlayer = bob["anim"]
-	var helm := bob_root.find_child("Knight_Helmet", true, false)
-	var visor := bob_root.find_child("Knight_HelmetVisor", true, false)
-	print("bob bones=", bob_skel.get_bone_count() if bob_skel else -1)
-	print("bob helm=", helm != null, " visor=", visor != null)
-	if helm != null or visor != null:
+	# ENG-2026-0017 jacket cast: accessories already gone in the glbs; Rig_Medium still 23 bones.
+	if not _role_ok("vault_keeper", 1.82, 23, ["Knight_Helmet", "Knight_HelmetVisor"]):
 		ok = false
-	if bob_skel == null or bob_skel.get_bone_count() != 23:
+	if not _role_ok("clerk", 1.70, 23, ["Mage_Hat"]):
 		ok = false
-	if bob_anim == null or not bob_anim.has_animation("idle") or not bob_anim.has_animation("walk") or not bob_anim.has_animation("greet"):
+	if not _role_ok("dealer", 1.75, 23, ["RogueHooded_Mask"]):
 		ok = false
-	bob_root.free()
+	if not _role_ok("manager", 1.85, 23, ["Barbarian_BearHat"]):
+		ok = false
+	if not _role_ok("teller", 1.76, 23, []):
+		ok = false
 
 	print("SMOKE_KAYKIT=", "PASS" if ok else "FAIL")
 	quit(0 if ok else 1)

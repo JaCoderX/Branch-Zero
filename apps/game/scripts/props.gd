@@ -67,20 +67,21 @@ const STAFF_CLIPS := ["idle", "walk", "sprint", "work", "refuse", "greet"]
 const STAFF_WALK_MPS := 1.5
 const STAFF_SPRINT_MPS := 3.8
 
-## KayKit Adventurers mesh per bank role (five free bodies; Mage / Ranger reused; Rogue_Hooded shares rogue texture).
+## KayKit Adventurers mesh per bank role (ENG-2026-0017 jacket cast; stock glbs kept beside for revert).
+## Mage / Ranger reuse one jacket body; Kenji / Okafor / Bob are CC0 derivative glbs (Rig_Medium unchanged).
 const KAYKIT_MESHES := {
-	"greeter": "Ranger",
-	"clerk": "Mage",
-	"teller": "Rogue",
-	"vault_keeper": "Knight",
-	"manager": "Barbarian",
-	"registrar": "Mage",
-	"dealer": "Rogue_Hooded",
-	"player": "Ranger",
+	"greeter": "Ranger_jacket_nocape",
+	"clerk": "Mage_jacket_nocape",
+	"teller": "Rogue_jacket_nocape",
+	"vault_keeper": "Bob_jacket_cape",
+	"manager": "Okafor_jacket",
+	"registrar": "Mage_jacket_nocape",
+	"dealer": "Kenji_jacket",
+	"player": "Ranger_jacket_nocape",
 }
 ## Mesh file stem → albedo PNG beside the .glb. The `*_bank_texture.png` sheets are the bank-variant derivatives that
 ## tools/kaykit_bank_variants.py paints from KayKit's CC0 `*_texture.png` (room neutrals + one accent per role;
-## Rogue_Hooded shares the rogue sheet as in the pack). Five sheets → five body materials.
+## Kenji shares the rogue sheet). Five sheets → five body materials.
 const KAYKIT_TEXTURE_FILES := {
 	"Barbarian": "barbarian_bank_texture.png",
 	"Knight": "knight_bank_texture.png",
@@ -88,6 +89,12 @@ const KAYKIT_TEXTURE_FILES := {
 	"Ranger": "ranger_bank_texture.png",
 	"Rogue": "rogue_bank_texture.png",
 	"Rogue_Hooded": "rogue_bank_texture.png",
+	"Ranger_jacket_nocape": "ranger_bank_texture.png",
+	"Mage_jacket_nocape": "mage_bank_texture.png",
+	"Rogue_jacket_nocape": "rogue_bank_texture.png",
+	"Kenji_jacket": "rogue_bank_texture.png",
+	"Okafor_jacket": "barbarian_bank_texture.png",
+	"Bob_jacket_cape": "knight_bank_texture.png",
 }
 ## KayKit sheets are an 8 × 4 grid of 128 × 256 px palette cells and every triangle's UVs sit inside one cell. Where two
 ## roles wear the same body (Ines / Petra on Mage, Mo / player on Ranger, Dev / Kenji on the rogue sheet) the second
@@ -109,16 +116,14 @@ const KAYKIT_ROLE_CELLS := {
 		Vector2i(0, 1): Vector2i(1, 3),
 		Vector2i(1, 0): Vector2i(2, 3),
 	},
-	# Kenji: teal hood / cape / mask where Dev wears oxblood.
+	# Kenji: graphite tunic spare + teal cape / mantle where Dev wears oxblood cape cloth.
 	"dealer": {
 		Vector2i(0, 1): Vector2i(0, 3), Vector2i(1, 1): Vector2i(1, 3),
 	},
 }
-## Fantasy accessory MeshInstance3D names to free before aabb/scale (ENG-2026-0015). Separate skinned nodes under
-## Rig_Medium/Skeleton3D — deleting them leaves a complete head / torso; Rig_Medium bones stay untouched.
-const KAYKIT_HIDE_PARTS := {
-	"vault_keeper": ["Knight_Helmet", "Knight_HelmetVisor"],
-}
+## Fantasy accessory MeshInstance3D names to free before aabb/scale. Jacket cast glbs already omit accessories
+## (ENG-2026-0016/0017); keep entries only if a role still loads a stock Adventurers body.
+const KAYKIT_HIDE_PARTS := {}
 ## Bank clip name → KayKit Rig_Medium clip (General / MovementBasic / Simulation).
 const KAYKIT_CLIP_SRC := {
 	"idle": "Idle_A",
@@ -681,7 +686,8 @@ static func character_kaykit(role: String, height: float = 1.8) -> Dictionary:
 			mi.mesh = _kaykit_role_mesh(mi.mesh as ArrayMesh, role, remap)
 		for i in mi.mesh.get_surface_count():
 			mi.set_surface_override_material(i, mat)
-	# Drop fantasy accessory shells before aabb so height scale uses the bare silhouette (Bob: helm + visor).
+	# Drop fantasy accessory shells before aabb so height scale uses the bare silhouette.
+	# Jacket cast glbs already omit accessories; HIDE_PARTS is empty unless a stock body is remounted.
 	_kaykit_hide_parts(root, KAYKIT_HIDE_PARTS.get(role, []))
 	var bb := aabb(root)
 	var s := height / maxf(bb.size.y, 0.01)
