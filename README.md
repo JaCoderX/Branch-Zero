@@ -2,24 +2,36 @@
 
 **A walkable 3D bank where every desk is a real smart-account operation.** Built in Godot 4.5 (web, GDScript) on the open-source [Bloxchain](https://github.com/PracticalParticle/Bloxchain-Protocol) account pattern, driven through the public npm package **`@bloxchain/sdk`** (+ `viem`). You do not click "Confirm" in a wallet pop-up; you talk to a teller. For [ETHOnline 2026](https://ethglobal.com/events/ethonline2026) (Start Fresh).
 
-**The FX desk — Uniswap v4 (S1)**
+**The FX desk — Uniswap v4 (S1 · fiat pairs 2026-09-09)**
 
 Kenji's desk is a **Uniswap v4 swap executed by a governed smart account**, not by a wallet. The player's
 `AccountBlox` on Sepolia is `msg.sender` to Permit2 and the Universal Router, and it may call exactly three
-functions on exactly three addresses, because its own `GuardController` whitelist says so.
+functions on exactly three addresses, because its own `GuardController` whitelist says so. Since 2026-09-09 it is a
+**bank FX desk**: practice dollars → **Practice EUR** or **Practice ILS**, one-way, through two ≈ $100M v4 pools
+seeded at a pinned ECB mid — and the guard list did not grow by one entry to add the second pool.
 
 | What | Where |
 |------|-------|
 | The lane: guard batch, quote, swap, and why each step exists | [`apps/teller-desk/src/lanes/fx.ts`](./apps/teller-desk/src/lanes/fx.ts) — `enableFx` (the three schemas + whitelist + role grants), `quote` (V4Quoter), `swap` (V4_SWAP calldata) |
-| The three whitelisted calls | `FX_FUNCTIONS` in the same file: `approve(address,uint256)` → demo USDC · `approve(address,address,uint160,uint48)` → Permit2 · `execute(bytes,bytes[],uint256)` → UniversalRouter |
-| Desk routes | [`apps/teller-desk/src/server.ts`](./apps/teller-desk/src/server.ts) — `/fx/status` `/fx/quote` `/fx/enable` `/fx/swap` |
-| Pool creation + seeding | [`infra/scripts/uniswap-pool.ts`](./infra/scripts/uniswap-pool.ts) (`npm -w infra run fx:pool`) |
-| Addresses, pool id, encoding constants | [`docs/UNISWAP.md`](./docs/UNISWAP.md) § 2 · [`infra/deployments/sepolia.json`](./infra/deployments/sepolia.json) `uniswap` |
+| The three whitelisted calls | `FX_FUNCTIONS` in the same file: `approve(address,uint256)` → practice USD (the only token ever approved — one-way desk) · `approve(address,address,uint160,uint48)` → Permit2 · `execute(bytes,bytes[],uint256)` → UniversalRouter |
+| Desk routes | [`apps/teller-desk/src/server.ts`](./apps/teller-desk/src/server.ts) — `/fx/status` `/fx/quote?amount&pair=EUR|ILS` `/fx/enable` `/fx/swap` |
+| Practice fiat + pool seeding | [`infra/contracts/PracticeFiat.sol`](./infra/contracts/PracticeFiat.sol) · [`infra/scripts/fx-pools-fiat.ts`](./infra/scripts/fx-pools-fiat.ts) (`npm run fx:pools-fiat`; the S1 WETH pool script [`uniswap-pool.ts`](./infra/scripts/uniswap-pool.ts) is history) |
+| Addresses, pool ids, seed rates, encoding constants | [`docs/UNISWAP.md`](./docs/UNISWAP.md) § 2 / § 2b · [`infra/deployments/sepolia.json`](./infra/deployments/sepolia.json) `uniswap.pools` |
 | In-game: dealer, board, desk | [`apps/game/dialogue/dealer.json`](./apps/game/dialogue/dealer.json) · [`apps/game/scripts/fx_board.gd`](./apps/game/scripts/fx_board.gd) · `_fx_desk()` in [`bank_interior.gd`](./apps/game/scripts/bank_interior.gd) |
 | Kill test (K7) | `npm -w apps/teller-desk run killtests:s1` — [`scripts/kill-tests-s1.ts`](./apps/teller-desk/scripts/kill-tests-s1.ts) |
 | Developer feedback for the sponsor | [`FEEDBACK.md`](./FEEDBACK.md) |
 
-**Live on Sepolia now:** the v4 pool we created and seeded
+**Live on Sepolia now — the fiat desk (2026-09-09).** Two v4 pools we created and seeded ≈ $100M each: USD/EUR
+(`0x3b57bf6e…`, 50M USD + 43,051,500 EUR at 0.86103) and USD/ILS (`0x93adbf0b…`, 50M USD + 150,590,000 ILS at 3.0118),
+fiat tokens [`EUR`](https://sepolia.etherscan.io/address/0xB6a3e346C5aEddC14BD1006017Fd04697069BF98) /
+[`ILS`](https://sepolia.etherscan.io/address/0x5Bca93fc8C9e383280C220252651635B8B2f4336). The Main till swapped
+into both the same day, one guarded `execute` each — 5 USD → 4.292234 EUR
+[`0xf3cb83b4…`](https://sepolia.etherscan.io/tx/0xf3cb83b440a555accd9cb14a3378098af4f89b7e5cc801cb0be7142b4ce50e20) and 5 USD → 15.013821 ILS
+[`0xd6f63de9…`](https://sepolia.etherscan.io/tx/0xd6f63de93198f8fa48926fb68ae9bbd096fbd318dc3470819c1f49c040976fa7) — through the whitelist opened for the WETH desk
+on 2026-09-08, unchanged. `killtests:s1` is K7-a…g green, including K7-g: asked to price WETH, the desk refuses
+`FX_PAIR`.
+
+**History — the first swap (2026-09-08):** the v4 pool we created and seeded
 ([`0xfd32332c…`](https://sepolia.etherscan.io/address/0xE03A1074c86CFeDd5C142C4F04F1a1536e203543), USDC/WETH, 0.30 %),
 the FX till [`0xB5e8ab92…`](https://sepolia.etherscan.io/address/0xB5e8ab92467663F50c6Ba237Cb062cE6Bf66B2Af)
 (deployed + initialised, `owner()` = the player's Privy wallet), and real `V4Quoter` prices against that pool.

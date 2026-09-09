@@ -188,7 +188,7 @@ async function main() {
   // A read-only look at the FX board, for the record rather than as a verdict.
   if (player) {
     const status = await fxStatus(getPlayer(player.privyUserId)!).catch((e) => ({ error: (e as Error & { code?: string }).code ?? (e as Error).message }));
-    console.log(`FX board: ${JSON.stringify(status && 'account' in status ? { account: status.account, enabled: status.enabled, usdc: status.usdc, weth: status.weth, chainId: status.chainId } : status)}`);
+    console.log(`FX board: ${JSON.stringify(status && 'account' in status ? { account: status.account, enabled: status.enabled, usd: status.usdc, eur: status.eur, ils: status.ils, chainId: status.chainId } : status)}`);
   }
 
   console.log('\n─── S2 kill tests (Sepolia Live + Developer Mode) ───');

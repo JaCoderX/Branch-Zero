@@ -29,7 +29,8 @@ Related: [HANDOFF-CC.md](./HANDOFF-CC.md) · [DEV-LOOP.md](./DEV-LOOP.md) · [RE
 - [x] **Live OTP walk** — Privy sign-in → consent → open (or load) → pay on Sepolia — **met 2026-09-09** (desk debug: provision + ENS `jacob.branchzero.eth` + Lane A 12.5 + Lane B wire 250 released; account `0xD70B…09eD`)
 - [ ] **Live Load Account walk** — Ines → “Load an existing account” → paste an owned `0x` on Live ([LOAD-ACCOUNT.md](./LOAD-ACCOUNT.md); Dev killtests already 12/12)
 - [ ] **Terminal + OBSERVER walk** — grant viewing wallet → Import/Connect in Console iframe or tab ([TERMINAL-CONSOLE.md](./TERMINAL-CONSOLE.md)) — Terminal iframe opened 2026-09-09; OBSERVER still `exists: false` (grant not walked)
-- [ ] **Uniswap sponsor feedback form** — [hackathon feedback](https://developers.uniswap.org/hackathon-feedback) (prize requirement; FX K7 already met)
+- [ ] **Uniswap sponsor feedback form** — [hackathon feedback](https://developers.uniswap.org/hackathon-feedback) (prize requirement; FX K7 met, fiat pairs met 2026-09-09 — [FEEDBACK.md](../FEEDBACK.md) carries the 2026-09-09 update)
+- [ ] **Live fiat FX walk at Kenji** — Euros → price → Take it, then Shekels, on Live ([UNISWAP.md §2b](./UNISWAP.md); the rig has already done both — `0xf3cb83b4…` / `0xd6f63de9…`)
 
 ---
 
@@ -46,7 +47,7 @@ Related: [HANDOFF-CC.md](./HANDOFF-CC.md) · [DEV-LOOP.md](./DEV-LOOP.md) · [RE
 - [x] Optional parallel (separate CC session): **character-style climb** — [HANDOFF-character-style.md](./HANDOFF-character-style.md) · [KICKOFF-character-style.md](./KICKOFF-character-style.md) (met 2026-09-08)
 - [x] Optional parallel (separate session): **character charm** — faces + expressions, proportion, mid-50s wardrobe — [HANDOFF-character-charm.md](./HANDOFF-character-charm.md) · [KICKOFF-character-charm.md](./KICKOFF-character-charm.md) (met 2026-09-08)
 - [x] Optional parallel: **KayKit bank cast ladder** — wardrobe ENG-0015–0017 → jacket land `fec5aa1`; Stage 0A idle wiring `639ffd2`; Idle_A feel accepted; ENG-0018 parked ([HANDOFF-kaykit-bank-performance.md](./HANDOFF-kaykit-bank-performance.md))
-- [ ] Optional parallel: **FX fiat pairs** — Practice EUR + ILS, USD pools ≈ $100M TVL each — [HANDOFF-fx-fiat-pairs.md](./HANDOFF-fx-fiat-pairs.md) · [KICKOFF-fx-fiat-pairs.md](./KICKOFF-fx-fiat-pairs.md) (**Claude Code · Fable**)
+- [x] Optional parallel: **FX fiat pairs** — Practice EUR + ILS, USD pools ≈ $100M TVL each — [HANDOFF-fx-fiat-pairs.md](./HANDOFF-fx-fiat-pairs.md) · [KICKOFF-fx-fiat-pairs.md](./KICKOFF-fx-fiat-pairs.md) (**met 2026-09-09** — both pairs swapped live on the Main till; desk pull-west is the separate Codex Luna unit)
 - [x] Optional parallel: **FX desk spacing** — pull Kenji west for staff clearance — [HANDOFF-fx-desk-spacing.md](./HANDOFF-fx-desk-spacing.md) · [KICKOFF-fx-desk-spacing.md](./KICKOFF-fx-desk-spacing.md) (**Codex Luna**) — **met 2026-09-09** (1.2 m west; quote board left on vault partition)
 
 ---
@@ -77,6 +78,7 @@ Related: [HANDOFF-CC.md](./HANDOFF-CC.md) · [DEV-LOOP.md](./DEV-LOOP.md) · [RE
 | When | Item |
 |------|------|
 | 2026-09-09 | FX desk spacing — Codex Luna pull west 1.2 m (`FX_WEST_DELTA`); staff clearance; quote board readable |
+| 2026-09-09 | FX fiat pairs — Practice EUR + ILS deployed, two ≈ $100M v4 pools seeded at the 2026-09-08 ECB mids, Kenji quotes/swaps USD → EUR \| ILS on Live (`0xf3cb83b4…`, `0xd6f63de9…`); WETH off the product path; K7-a…g green |
 | 2026-09-09 | KayKit jacket cast land + Stage 0A AnimationPlayer `root_node` fix; Idle_A accepted; ENG-0018 parked |
 | 2026-09-09 | Live OTP walk — provision / ENS / Lane A / Lane B wire release on Sepolia (`0xD70B…09eD`) |
 | 2026-09-08 | S2 — Live Main = Sepolia; Dev = 1337 desk toggle |

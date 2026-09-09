@@ -1,7 +1,7 @@
 {
   "chainId": 11155111,
   "chainName": "Sepolia",
-  "updatedAt": "2026-09-08T10:28:25.754Z",
+  "updatedAt": "2026-09-09T13:11:25.743Z",
   "parentName": "branchzero.eth",
   "parentLabel": "branchzero",
   "registrar": "0xc4d7cCabc561c7D9360481404DA8A80886a49277",
@@ -83,13 +83,13 @@
       "address": "0xD3322B29a7BdEe707D1684676f149bf41Aa3422f",
       "symbol": "USDC",
       "decimals": 6,
-      "note": "U5 Sepolia mock USDC (open mint) — Kenji quotes this against WETH"
+      "note": "U5 Sepolia mock USDC (open mint) — the practice dollar. Kenji sells it for Practice EUR / ILS through uniswap.pools"
     },
     "weth": {
       "address": "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14",
       "symbol": "WETH",
       "decimals": 18,
-      "note": "Sepolia WETH9 used by the Uniswap deployments"
+      "note": "Sepolia WETH9 used by the Uniswap deployments — deprecated for the product on 2026-09-09 (fiat pairs replaced the WETH demo); left pinned for the on-chain history"
     },
     "circleUsdc": {
       "address": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
@@ -97,6 +97,28 @@
       "decimals": 6,
       "note": "Circle test USDC (faucet.circle.com, Ethereum Sepolia) — ops-treasury float ONLY. NOT the in-game practice dollar, which is tokens.demoUsdc; never swap the two (docs/SEPOLIA-TREASURY.md §3).",
       "source": "https://developers.circle.com/stablecoins/usdc-contract-addresses"
+    },
+    "practiceEur": {
+      "address": "0xB6a3e346C5aEddC14BD1006017Fd04697069BF98",
+      "name": "Practice Euro",
+      "symbol": "EUR",
+      "decimals": 6,
+      "deployTx": "0x0e14b15a6b4ddefc54e8efb5e935587cc3f55b7f02eaa7ca15523bd83381d0db",
+      "deployedAtBlock": 11668140,
+      "deployer": "0xDD46DA5d8d27817b78989FdA1C686724CFEBFB63",
+      "source": "infra/contracts/PracticeFiat.sol (OpenZeppelin ERC20 + open mint, 6 decimals)",
+      "note": "Practice EUR: open-mint, same family as tokens.demoUsdc. Kenji sells these for practice USD through uniswap.pools.usdEur. Never real money."
+    },
+    "practiceIls": {
+      "address": "0x5Bca93fc8C9e383280C220252651635B8B2f4336",
+      "name": "Practice Israeli Shekel",
+      "symbol": "ILS",
+      "decimals": 6,
+      "deployTx": "0xbcdfd5c41fa5b16ff73fd145acc3aeb0821beb81c40c0689e1bd493508164fa8",
+      "deployedAtBlock": 11668141,
+      "deployer": "0xDD46DA5d8d27817b78989FdA1C686724CFEBFB63",
+      "source": "infra/contracts/PracticeFiat.sol (OpenZeppelin ERC20 + open mint, 6 decimals)",
+      "note": "Practice ILS: open-mint, same family as tokens.demoUsdc. Kenji sells these for practice USD through uniswap.pools.usdIls. Never real money."
     }
   },
   "uniswap": {
@@ -117,12 +139,72 @@
       "hooks": "0x0000000000000000000000000000000000000000",
       "zeroForOne": "USDC → WETH",
       "practiceRate": "1 ETH = 2000 USDC at seeding",
-      "sqrtPriceX96": "1771595571142957102961017161607260",
+      "sqrtPriceX96": "147527978382827260274938651535105",
       "liquidity": "53665631459",
       "lp": "0xDD46DA5d8d27817b78989FdA1C686724CFEBFB63",
       "initTx": "0x8f87fcbb976b65707b500d1c05db256b73037d0ea580cc54fd928201355892a8",
-      "seedTx": "0x1fe38f2267eb32228a8c39752fa67e2fdcb3f18f667e99ef321380643ad1d712"
-    }
+      "seedTx": "0x1fe38f2267eb32228a8c39752fa67e2fdcb3f18f667e99ef321380643ad1d712",
+      "deprecated": "product stopped quoting WETH on 2026-09-09 — fiat pairs live in uniswap.pools"
+    },
+    "pools": {
+      "usdEur": {
+        "pair": "EUR",
+        "product": "USD → EUR (one-way in v1)",
+        "id": "0x3b57bf6e9a835de1b54562b23156abeed18e44a420d2ecd6e8773d9a9ac333de",
+        "currency0": "0xB6a3e346C5aEddC14BD1006017Fd04697069BF98",
+        "currency1": "0xD3322B29a7BdEe707D1684676f149bf41Aa3422f",
+        "fee": 3000,
+        "tickSpacing": 60,
+        "hooks": "0x0000000000000000000000000000000000000000",
+        "usdIsCurrency0": false,
+        "zeroForOne": "USD → EUR is zeroForOne = false",
+        "usd": "0xD3322B29a7BdEe707D1684676f149bf41Aa3422f",
+        "fiat": "0xB6a3e346C5aEddC14BD1006017Fd04697069BF98",
+        "seedRate": "0.86103",
+        "seedRateDate": "2026-09-08",
+        "seedRateSource": "https://api.frankfurter.app/latest?from=USD&to=EUR,ILS",
+        "seedInventory": {
+          "usd": "50000000",
+          "eur": "43051500"
+        },
+        "seedTvlUsd": 100000000,
+        "seededAt": "2026-09-09",
+        "sqrtPriceX96": "85382809694011807906542409840",
+        "liquidity": "46395851107615",
+        "lp": "0xDD46DA5d8d27817b78989FdA1C686724CFEBFB63",
+        "initTx": "0x4dc361ae8309f640b82f50234db6cb95ec1fa210bb49b922d928effe931a0bb5",
+        "seedTx": "0xe161c59c7df2d5014185fab556aa5d43fe5843560b196424a7a6f24fe9c025b5"
+      },
+      "usdIls": {
+        "pair": "ILS",
+        "product": "USD → ILS (one-way in v1)",
+        "id": "0x93adbf0b5794f0ebcf20c4dffdd9ff4036dd6808031af0db33392b65b88e0733",
+        "currency0": "0x5Bca93fc8C9e383280C220252651635B8B2f4336",
+        "currency1": "0xD3322B29a7BdEe707D1684676f149bf41Aa3422f",
+        "fee": 3000,
+        "tickSpacing": 60,
+        "hooks": "0x0000000000000000000000000000000000000000",
+        "usdIsCurrency0": false,
+        "zeroForOne": "USD → ILS is zeroForOne = false",
+        "usd": "0xD3322B29a7BdEe707D1684676f149bf41Aa3422f",
+        "fiat": "0x5Bca93fc8C9e383280C220252651635B8B2f4336",
+        "seedRate": "3.0118",
+        "seedRateDate": "2026-09-08",
+        "seedRateSource": "https://api.frankfurter.app/latest?from=USD&to=EUR,ILS",
+        "seedInventory": {
+          "usd": "50000000",
+          "ils": "150590000"
+        },
+        "seedTvlUsd": 100000000,
+        "seededAt": "2026-09-09",
+        "sqrtPriceX96": "45652705415080752077227115235",
+        "liquidity": "86772691556733",
+        "lp": "0xDD46DA5d8d27817b78989FdA1C686724CFEBFB63",
+        "initTx": "0x10315c7ced964efec2871c2ae4ea384866d5706835340f1b36afb6223f74e722",
+        "seedTx": "0xdf0917d09b9531b1420d04afe17eb19d57b61ee62894bcff1e0bbb01aade7a94"
+      }
+    },
+    "productPath": "USD → EUR | USD → ILS, one-way (uniswap.pools.usdEur / usdIls). The demo USDC/WETH pool below is deprecated for the product: left on chain, no longer quoted (2026-09-09, docs/HANDOFF-fx-fiat-pairs.md)."
   },
   "applications": {
     "CopyBlox": {

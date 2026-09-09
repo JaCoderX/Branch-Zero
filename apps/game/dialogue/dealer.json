@@ -8,7 +8,7 @@
       "choices": [ { "text": "Sure.", "next": "end" } ]
     },
     "no_account": {
-      "text": "Dollars for ether? I'd love to, but I trade out of your account, not out of my pocket. Ines opens one at Account Opening.",
+      "text": "Dollars for euros or shekels? I'd love to, but I trade out of your account, not out of my pocket. Ines opens one at Account Opening.",
       "choices": [
         { "text": "Ask why", "next": "why_account" },
         { "text": "OK.", "next": "end" }
@@ -38,7 +38,7 @@
       ]
     },
     "why_till": {
-      "text": "Your FX till is {fx_till_note}. Same owner, same tellers, same rules — and either way the exchange itself is on Sepolia, because that is where the pool is.",
+      "text": "Your FX till is {fx_till_note}. Same owner, same tellers, same rules — and either way the exchange itself is on Sepolia, because that is where the pools are.",
       "choices": [ { "text": "OK.", "next": "end" } ]
     },
     "closed_door": {
@@ -50,35 +50,55 @@
       ]
     },
     "opened": {
-      "text": "Done. Your account may now call exactly three things: the token's approve, Permit2's approve, and the exchange router's execute. Nothing else. {fx_usdc} {fx_symbol_in} in the till.",
+      "text": "Done. Your account may now call exactly three things: the dollar's approve, Permit2's approve, and the exchange router's execute. Nothing else — not the euro, not the shekel; those only ever come *in*. {fx_usdc} {fx_symbol_in} in the till.",
       "choices": [
-        { "text": "What's the rate?", "action": "fx_quote", "args": { "amount": "1" }, "working": "Asking the exchange for a price…", "on_ok": "quoted", "on_error": "refused" },
+        { "text": "Euros — what's the rate?", "action": "fx_quote", "args": { "amount": "25", "pair": "EUR" }, "working": "Asking the exchange for a euro price…", "on_ok": "quoted", "on_error": "refused" },
+        { "text": "Shekels — what's the rate?", "action": "fx_quote", "args": { "amount": "25", "pair": "ILS" }, "working": "Asking the exchange for a shekel price…", "on_ok": "quoted", "on_error": "refused" },
         { "text": "Ask why", "next": "why_guard" },
         { "text": "Thanks.", "next": "end" }
       ]
     },
     "idle": {
-      "text": "Dollars for ether? Quote's on the board. You've {fx_usdc} {fx_symbol_in} and {fx_weth} {fx_symbol_out} in the till; the pool takes {fx_pool_fee}.",
+      "text": "Dollars for euros or shekels? Board's live: {fx_rate_eur} · {fx_rate_ils}. You've {fx_usdc} {fx_symbol_in}, {fx_eur} EUR and {fx_ils} ILS in the till; each pool takes {fx_pool_fee}.",
       "choices": [
-        { "text": "Price 1 {fx_symbol_in}", "action": "fx_quote", "args": { "amount": "1" }, "working": "Asking the exchange for a price…", "on_ok": "quoted", "on_error": "refused" },
-        { "text": "Price 5 {fx_symbol_in}", "action": "fx_quote", "args": { "amount": "5" }, "working": "Asking the exchange for a price…", "on_ok": "quoted", "on_error": "refused" },
-        { "text": "Price 25 {fx_symbol_in}", "action": "fx_quote", "args": { "amount": "25" }, "working": "Asking the exchange for a price…", "on_ok": "quoted", "on_error": "refused" },
+        { "text": "Euros", "next": "euros" },
+        { "text": "Shekels", "next": "shekels" },
         { "text": "What can my account do here?", "next": "whitelist" },
         { "text": "Ask why", "next": "why_swap" },
         { "text": "Just looking.", "next": "end" }
       ]
     },
-    "quoted": {
-      "text": "{fx_amount_in} {fx_symbol_in} buys {fx_amount_out} {fx_symbol_out}. I'll not accept less than {fx_min_out} — that's your {fx_slippage} slippage. Good for {fx_valid}.",
+    "euros": {
+      "text": "Euros. {fx_rate_eur} on the board, mid-market — the price I quote is all-in for the size, pool fee included. How many dollars?",
       "choices": [
-        { "text": "Take it", "action": "fx_swap", "working": "Three doors, one at a time — approve, allowance, swap…", "on_ok": "swapped", "on_error": "refused" },
+        { "text": "Price 25 {fx_symbol_in}", "action": "fx_quote", "args": { "amount": "25", "pair": "EUR" }, "working": "Asking the exchange for a euro price…", "on_ok": "quoted", "on_error": "refused" },
+        { "text": "Price 100 {fx_symbol_in}", "action": "fx_quote", "args": { "amount": "100", "pair": "EUR" }, "working": "Asking the exchange for a euro price…", "on_ok": "quoted", "on_error": "refused" },
+        { "text": "Price 250 {fx_symbol_in}", "action": "fx_quote", "args": { "amount": "250", "pair": "EUR" }, "working": "Asking the exchange for a euro price…", "on_ok": "quoted", "on_error": "refused" },
+        { "text": "Shekels instead", "next": "shekels" },
+        { "text": "Back", "next": "idle" }
+      ]
+    },
+    "shekels": {
+      "text": "Shekels. {fx_rate_ils} on the board, mid-market — the price I quote is all-in for the size, pool fee included. How many dollars?",
+      "choices": [
+        { "text": "Price 25 {fx_symbol_in}", "action": "fx_quote", "args": { "amount": "25", "pair": "ILS" }, "working": "Asking the exchange for a shekel price…", "on_ok": "quoted", "on_error": "refused" },
+        { "text": "Price 100 {fx_symbol_in}", "action": "fx_quote", "args": { "amount": "100", "pair": "ILS" }, "working": "Asking the exchange for a shekel price…", "on_ok": "quoted", "on_error": "refused" },
+        { "text": "Price 250 {fx_symbol_in}", "action": "fx_quote", "args": { "amount": "250", "pair": "ILS" }, "working": "Asking the exchange for a shekel price…", "on_ok": "quoted", "on_error": "refused" },
+        { "text": "Euros instead", "next": "euros" },
+        { "text": "Back", "next": "idle" }
+      ]
+    },
+    "quoted": {
+      "text": "{fx_amount_in} {fx_symbol_in} buys {fx_amount_out} {fx_symbol_out} — {fx_rate}. I'll not accept less than {fx_min_out} — that's your {fx_slippage} slippage. Good for {fx_valid}.",
+      "choices": [
+        { "text": "Take it", "action": "fx_swap", "working": "Through the exchange door — approve, allowance, swap…", "on_ok": "swapped", "on_error": "refused" },
         { "text": "Price something else", "next": "idle" },
         { "text": "Ask why", "next": "why_quote" },
         { "text": "Leave it.", "next": "end" }
       ]
     },
     "swapped": {
-      "text": "Filled. {fx_amount_in} {fx_symbol_in} went out, {fx_symbol_out} came back — the till holds {fx_usdc} {fx_symbol_in} and {fx_weth} {fx_symbol_out} now. Receipt's on the board.",
+      "text": "Filled. {fx_amount_in} {fx_symbol_in} went out, {fx_symbol_out} came back — the till holds {fx_usdc} {fx_symbol_in}, {fx_eur} EUR and {fx_ils} ILS now. Receipt's on the board.",
       "choices": [
         { "text": "Ask why", "next": "why_swap" },
         { "text": "Another quote", "next": "idle" },
@@ -86,14 +106,14 @@
       ]
     },
     "whitelist": {
-      "text": "Three, and only three: approve on the token, approve on Permit2, execute on the exchange router. That list is on your account, not on my desk — I couldn't send your money anywhere else if you asked me to.",
+      "text": "Three, and only three: approve on the dollar, approve on Permit2, execute on the exchange router. That list is on your account, not on my desk — I couldn't send your money anywhere else if you asked me to. And it's one-way: I sell euros and shekels for dollars; I don't buy them back, so your account never approves either of them.",
       "choices": [
         { "text": "Ask why", "next": "why_guard" },
         { "text": "Back", "next": "idle" }
       ]
     },
     "why_swap": {
-      "text": "Your account calls the exchange router directly, but only because that router is on your approved list for that exact function. Same guard as payments.",
+      "text": "Your account calls the exchange router directly, but only because that router is on your approved list for that exact function. Same guard as payments. Euros and shekels are two pools behind one door.",
       "choices": [
         { "text": "Tell me the technical bit", "next": "why_guard" },
         { "text": "Back", "next": "idle" }
@@ -107,7 +127,7 @@
       ]
     },
     "why_quote": {
-      "text": "The board is the exchange's own quoter, asked off-chain — it costs nothing and signs nothing. I take one percent off it as your floor, stamp a five-minute deadline, and the router refuses the trade if the pool has moved past that floor by the time it lands.",
+      "text": "The board is the exchange's own quoter, asked off-chain — it costs nothing and signs nothing. Each currency has its own pool, a hundred million deep, so a desk-sized order barely moves the rate. I take one percent off the quote as your floor, stamp a five-minute deadline, and the router refuses the trade if the pool has moved past that floor by the time it lands.",
       "choices": [
         { "text": "Back", "next": "idle" }
       ]

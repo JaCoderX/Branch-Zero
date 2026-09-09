@@ -106,6 +106,37 @@ that for contract-account integrators the approval surface, not the swap, is the
   reference states that the currency arguments are the *pool key's* currencies in pool order, not "input" and
   "output". With `zeroForOne` false those are swapped, and the failure mode is a confusing revert deep in the lock.
 
+## Update 2026-09-09 — from "buy ether" to a fiat desk (two more pools, zero more guard config)
+
+We replaced the USDC/WETH demo with two **fiat** pools — practice USD against Practice EUR and Practice ILS, each
+seeded ≈ $100M TVL at a pinned ECB mid — because a bank FX desk sells euros, not ether. Three things worth passing on:
+
+**1. The singleton win is real, and now measured.** Adding two pools to a *governed* account cost **no** new guard
+configuration: the account still approves one token (the dollar), still talks to Permit2 and the Universal Router, and
+the till we opened for the WETH desk traded euros and shekels the same afternoon with its 2026-09-08 whitelist
+untouched ([`0xf3cb83b4…`](https://sepolia.etherscan.io/tx/0xf3cb83b440a555accd9cb14a3378098af4f89b7e5cc801cb0be7142b4ce50e20),
+[`0xd6f63de9…`](https://sepolia.etherscan.io/tx/0xd6f63de93198f8fa48926fb68ae9bbd096fbd318dc3470819c1f49c040976fa7)). On v3 that would have been two more addresses to
+whitelist per direction. For permissioned-treasury integrations this is the headline: **pools are data, the router is
+the trust boundary.**
+
+**2. Currency order bit us exactly as we predicted it would bite someone.** Both new tokens happened to sort below
+our dollar, so USD became `currency1` in both pools — and the S1 desk had a hard assertion that the dollar was
+`currency0`. Everything downstream (`zeroForOne`, which currency `SETTLE_ALL` names, which `TAKE_ALL` names) had to
+be re-derived from the addresses at load time. It is all correct in the contracts; it is just nowhere in the docs in
+one place. **Ask:** one paragraph on the swap page — *"`currency0 < currency1` by address; your input may be either;
+here is how `zeroForOne`, `SETTLE_ALL` and `TAKE_ALL` follow from that"* — with the two-way example. It would have
+saved us the assertion, and it will save others a silent revert.
+
+**3. Seeding a deep test pool is easy once you know `L ≈ √(x·y)`, and nobody says so.** Two full-range positions of
+50M + 43M and 50M + 150M six-decimal units gave `L` ≈ 4.6e13 and 8.7e13 — comfortably inside `uint128` — for ~380k gas
+each through `PositionManager.modifyLiquidities`. A $100M practice book on a testnet costs about 0.002 ETH. The
+"create and seed a test pool" page we asked for above should carry that formula and that number; it turns the
+scariest step of a v4 hackathon into a paragraph.
+
+Pinned rates rather than a live oracle were a deliberate choice — the pool *is* the price after seeding — and the
+0.30 % fee on a deep book is what a desk-sized quote shows (`1 USD ≈ 0.8584 EUR` against a 0.86103 mid). The old thin
+pool taught price impact; the deep ones teach why a bank quotes what it quotes.
+
 ## What we would build next with more time
 
 A **hook that reads the account's own guard list** — so the pool itself, not just our account, enforces that a swap
@@ -121,10 +152,11 @@ The swap is live on Sepolia as of 2026-09-08 —
 the account spending its own practice dollars through the Universal Router — so what follows is what the demo still
 does *not* prove, rather than an apology for what it could not reach.
 
-**One pool, one direction, one hop.** We trade USDC → WETH against a pool we created and seeded ourselves, and we
-seeded it thinly on purpose so the board shows visible price impact. Nothing here exercises routing, multi-hop, or
-liquidity we did not put there; our `ExactInputSingleParams` is hand-encoded for exactly this shape. If the desk ever
-needed a second hop we would reach for `@uniswap/v4-sdk` rather than extend the hand-encoding.
+**Two pools, one direction, one hop.** Since 2026-09-09 we trade USD → EUR and USD → ILS against two pools we
+created and seeded ourselves (the original thin USDC/WETH pool is still on chain but no longer quoted). The fiat books
+are deep on purpose, so the board shows the fee rather than impact. Nothing here exercises routing, multi-hop, the
+reverse direction, or liquidity we did not put there; our `ExactInputSingleParams` is hand-encoded for exactly this
+shape. If the desk ever needed a second hop we would reach for `@uniswap/v4-sdk` rather than extend the hand-encoding.
 
 **The account, not the wallet, is the integration.** Everything above is written from a contract account with a
 permission system, which is a narrow vantage point. We never touched the front-end SDKs a dapp would use, so we

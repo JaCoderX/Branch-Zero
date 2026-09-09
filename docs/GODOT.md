@@ -192,6 +192,11 @@ lobby. Godot routes these through `GameState.run_action("fx_quote" / "fx_enable"
 refuses to take a quote whose deadline has passed rather than let the desk silently re-price it. `MockChain` answers
 all four from a constant-product curve labelled "MockChain: no Uniswap here".
 
+**Fiat pairs (2026-09-09, no version bump):** `fxQuote` and `fxSwap` carry `pair` = `EUR` | `ILS` (default `EUR`;
+anything else is the desk's `FX_PAIR`). `fxStatus` returns `usdc` / `eur` / `ils` balances and `pairs[]` (per pool:
+`midRate`, `seedRate`, `pool`), and no longer carries `weth` / `pool`; `GameState.fx_pair("EUR")` reads one entry and
+the `fx_desk` fact is `fx.has("pairs")`. A swap result names its `pair`. MockChain mirrors both $100M books.
+
 ### 4a. Bridge version `u5.1` (as built)
 
 `apps/web/src/bridge/branchZero.ts`. `u5.1` (Terminal Console stretch) adds **`openConsole`** and the three

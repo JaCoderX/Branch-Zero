@@ -566,7 +566,7 @@ app.get('/events', async (req, reply) => {
   return reply;
 });
 
-// ============ S1 — Kenji's FX desk (Uniswap v4 on Sepolia; the Main wing's lanes stay on 1337) ============
+// ============ S1 — Kenji's FX desk (Uniswap v4 on Sepolia; fiat pairs USD → EUR | ILS since 2026-09-09) ============
 
 /**
  * The quote board. A read: `V4Quoter.quoteExactInputSingle` by `eth_call`, minus 1 % slippage, good for five
@@ -575,10 +575,11 @@ app.get('/events', async (req, reply) => {
  */
 app.get('/fx/quote', async (req, reply) => {
   try {
-    const { amount } = (req.query ?? {}) as { amount?: string };
+    const { amount, pair } = (req.query ?? {}) as { amount?: string; pair?: string };
     if (!amount) throw Object.assign(new Error('`amount` is required'), { statusCode: 400, code: 'BAD_ARGS' });
     const player = await requirePlayer(req as never).catch(() => undefined);
-    return await fxQuote(player ? getPlayer(player.privyUserId) : undefined, amount);
+    // `pair` is EUR | ILS (fiat pairs, 2026-09-09); anything else is `FX_PAIR`. Default EUR keeps an old caller quoting.
+    return await fxQuote(player ? getPlayer(player.privyUserId) : undefined, amount, pair ?? 'EUR');
   } catch (e) {
     return fail(reply, e);
   }
@@ -617,13 +618,14 @@ app.post('/fx/enable', async (req, reply) => {
 app.post('/fx/swap', async (req, reply) => {
   try {
     const player = await requirePlayer(req as never);
-    const body = (req.body ?? {}) as { quoteId?: string; amount?: string };
+    const body = (req.body ?? {}) as { quoteId?: string; amount?: string; pair?: string };
     if (body.amount !== undefined && !/^\d+(\.\d+)?$/.test(String(body.amount))) throw Object.assign(new Error('`amount` must be a decimal string'), { statusCode: 400, code: 'BAD_ARGS' });
     const jobId = newJobId();
     const current = getPlayer(player.privyUserId)!;
     requireConfigured(current);
-    const result = await serialize(player.privyUserId, () => fxSwap(current, body.quoteId, body.amount, jobId, auditFor(player)));
-    app.log.info({ owner: current.ownerAddress, till: result.account, amountIn: result.amountIn, amountOut: result.amountOut, hash: result.hash, steps: result.steps.length }, 'FX desk: guarded Uniswap v4 swap completed on Sepolia');
+    // The pair rides on the quote when there is one; a bare amount needs `pair` (EUR | ILS) beside it.
+    const result = await serialize(player.privyUserId, () => fxSwap(current, body.quoteId, body.amount, jobId, auditFor(player), body.pair));
+    app.log.info({ owner: current.ownerAddress, till: result.account, pair: result.pair, amountIn: result.amountIn, amountOut: result.amountOut, hash: result.hash, steps: result.steps.length }, 'FX desk: guarded Uniswap v4 swap completed on Sepolia');
     return { jobId, ...result };
   } catch (e) {
     return fail(reply, e);

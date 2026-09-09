@@ -1,37 +1,42 @@
 /**
  * S1 kill test — K7: can a governed `AccountBlox` complete a Uniswap **v4** swap on Sepolia, and only through
- * the door the manager approved?
+ * the door the manager approved? Since 2026-09-09 the desk is a **fiat** desk: USD → EUR and USD → ILS against the
+ * two deep practice pools `infra/scripts/fx-pools-fiat.ts` seeded (docs/HANDOFF-fx-fiat-pairs.md).
  *
  *   npm -w apps/teller-desk run killtests:s1
  *   npm -w apps/teller-desk run killtests:s1 -- --amount 5
+ *   npm -w apps/teller-desk run killtests:s1 -- --pairs EUR        # one pair only
  *
  * This deliberately stays outside MockChain (HANDOFF §5i: "MockChain alone is not enough"). It drives the product
- * module `src/lanes/fx.ts` against the live pool seeded by `infra/scripts/uniswap-pool.ts`:
+ * module `src/lanes/fx.ts` against the live pools:
  *
  *   K7-a  the FX till is the player's own AccountBlox on Sepolia and `owner()` is their Privy wallet
- *   K7-b  opening the till registers the three schemas and whitelists exactly three targets
- *   K7-c  the V4Quoter prices the swap off-chain (`eth_call`) and the board carries min-out + a deadline
- *   K7-d  **the swap completes**: the account's practice dollars become WETH through the Universal Router
+ *   K7-b  opening the till registers the three schemas and whitelists exactly three targets (unchanged by the fiat
+ *         pairs: one-way USD → fiat approves only the practice dollar)
+ *   K7-c  per pair: the V4Quoter prices the swap off-chain (`eth_call`), the board carries min-out + a deadline, and
+ *         the all-in rate sits within 1 % of the pinned seed rate — a $100M book barely moves for a desk-sized order
+ *   K7-d  per pair: **the swap completes** — practice dollars become EUR / ILS through the Universal Router, honouring
+ *         each pool's own `currency0`/`currency1` sort (USD is currency1 in both)
  *   K7-e  the same call through a router that is *not* whitelisted is refused by the guard (the security story)
  *   K7-f  a stale quote is refused rather than silently re-priced
+ *   K7-g  a currency the desk does not deal in is refused `FX_PAIR` before anything is signed
  *
- * Sepolia gas is real. A full first pass — guard batch (≈3.3 M gas) + role batch (≈2.4 M) + three guarded swap calls
- * (≈2.8 M) — needs **≈0.007–0.01 ETH** in `SEPOLIA_BROADCASTER_PK` at a ~1 gwei base fee, not the ~0.002 an earlier
- * header claimed. A second pass is cheaper: both batches are idempotent and the two approvals are read back and
- * skipped, so only `execute` is sent. Check before you spend — `npm -w apps/teller-desk run fx:preflight` prints the
- * teller's balance against every step's ceiling. The till also needs practice USDC (the U5 mock's `mint` is open).
+ * Sepolia gas is real. A first pass — guard batch (≈3.3 M gas) + role batch (≈2.4 M) + approve + Permit2 + two
+ * `execute` calls — needs **≈0.01 ETH** in `SEPOLIA_BROADCASTER_PK` at a ~1 gwei base fee. On a till that is already
+ * open with allowances on file, a pass is two `execute` calls (≈0.002 ETH). Check before you spend —
+ * `npm -w apps/teller-desk run fx:preflight`. The till needs practice USD (the U5 mock's `mint` is open).
  */
-import { formatEther, formatUnits, getAddress, parseAbi, parseUnits, type Address, type Hex } from 'viem';
+import { formatEther, formatUnits, getAddress, parseAbi, parseUnits, type Address } from 'viem';
 import { SecureOwnable } from '@bloxchain/sdk';
 import { config } from '../src/config.ts';
-import { enableFx, fxDeployment, fxEnabled, fxStatus, quote, swap, swapThroughWrongRouter, tillFor, _fxClients } from '../src/lanes/fx.ts';
+import { enableFx, fxDeployment, fxEnabled, fxStatus, quote, swap, swapThroughWrongRouter, tillFor, FX_PAIRS, type FxPair, _fxClients } from '../src/lanes/fx.ts';
 import { embeddedWalletOf, privy, recoverPolicy } from '../src/privy.ts';
 import { getPlayer, upsertPlayer, type Player } from '../src/store.ts';
 
 const RIG_EMAIL = process.env.KILLTEST_EMAIL ?? 'k2-rig@branch-zero.local';
 const argv = process.argv.slice(2);
 const AMOUNT = argv.indexOf('--amount') >= 0 ? argv[argv.indexOf('--amount') + 1] : '5';
-/** A live contract that is emphatically not the whitelisted router: the v4 PoolManager itself. */
+const PAIRS: FxPair[] = argv.indexOf('--pairs') >= 0 ? (argv[argv.indexOf('--pairs') + 1].split(',').map((p) => p.trim().toUpperCase()) as FxPair[]) : [...FX_PAIRS];
 const results: Array<{ id: string; verdict: 'PASS' | 'FAIL' | 'PARTIAL'; note: string }> = [];
 
 function record(id: string, verdict: 'PASS' | 'FAIL' | 'PARTIAL', note: string): void {
@@ -67,7 +72,8 @@ async function main(): Promise<void> {
   }
   const d = fxDeployment();
   const { publicClient, chain, broadcasterAddress } = _fxClients();
-  console.log(`chain     ${chain.id} · pool ${d.pool.id}`);
+  console.log(`chain     ${chain.id}`);
+  for (const pair of FX_PAIRS) console.log(`pool      USD/${pair} ${d.pairs[pair].pool.id} · ${d.pairs[pair].token.symbol} ${d.pairs[pair].token.address} · USD is currency${d.pairs[pair].usdIsCurrency0 ? 0 : 1} · seed ${d.pairs[pair].seedRate} (${d.pairs[pair].seedRateDate})`);
   console.log(`router    ${d.uniswap.universalRouter} · quoter ${d.uniswap.quoter} · permit2 ${d.uniswap.permit2}`);
   console.log(`teller    ${broadcasterAddress} ${formatEther(await publicClient.getBalance({ address: broadcasterAddress }))} ETH`);
 
@@ -89,9 +95,9 @@ async function main(): Promise<void> {
   }
 
   const erc20 = parseAbi(['function balanceOf(address) view returns (uint256)']);
-  const usdcOf = async () => (await publicClient.readContract({ address: d.usdc.address, abi: erc20, functionName: 'balanceOf', args: [till] })) as bigint;
-  const wethOf = async () => (await publicClient.readContract({ address: d.weth.address, abi: erc20, functionName: 'balanceOf', args: [till] })) as bigint;
-  console.log(`till      ${formatUnits(await usdcOf(), d.usdc.decimals)} ${d.usdc.symbol} · ${formatUnits(await wethOf(), d.weth.decimals)} ${d.weth.symbol}`);
+  const balanceOf = async (token: Address) => (await publicClient.readContract({ address: token, abi: erc20, functionName: 'balanceOf', args: [till] })) as bigint;
+  const usdOf = () => balanceOf(d.usdc.address);
+  console.log(`till      ${formatUnits(await usdOf(), d.usdc.decimals)} ${d.usdc.symbol} · ${formatUnits(await balanceOf(d.pairs.EUR.token.address), 6)} EUR · ${formatUnits(await balanceOf(d.pairs.ILS.token.address), 6)} ILS`);
 
   // ---- K7-b: the exchange door — three schemas, three targets, nothing else ----
   try {
@@ -100,43 +106,50 @@ async function main(): Promise<void> {
     player = getPlayer(player.privyUserId)!;
     const after = await fxEnabled(till);
     const targets = enabled.whitelist.map((w) => `${w.function} → ${w.target}`);
-    record('K7-b-guards', after ? 'PASS' : 'FAIL', `${before ? 'already open' : `opened (${enabled.actions.length} config actions${enabled.guardHash ? `, guard ${enabled.guardHash}` : ''}${enabled.roleHash ? `, roles ${enabled.roleHash}` : ''})`}; whitelist: ${targets.join(' | ')}`);
+    const three = enabled.whitelist.length === 3 && enabled.whitelist.some((w) => w.target.toLowerCase() === d.usdc.address.toLowerCase());
+    record('K7-b-guards', after && three ? 'PASS' : 'FAIL', `${before ? 'already open' : `opened (${enabled.actions.length} config actions${enabled.guardHash ? `, guard ${enabled.guardHash}` : ''}${enabled.roleHash ? `, roles ${enabled.roleHash}` : ''})`}; whitelist: ${targets.join(' | ')} — no fiat token is approved (one-way desk)`);
     if (!after) return finish();
   } catch (e) {
     record('K7-b-guards', 'FAIL', `${codeOf(e)}: ${msgOf(e)}`);
     return finish();
   }
 
-  // ---- K7-c: the quote board ----
-  let quoteId: string | undefined;
-  try {
-    const q = await quote(player, AMOUNT);
-    quoteId = q.quoteId;
-    const sane = Number(q.amountOut) > 0 && Number(q.minOut) > 0 && Number(q.minOut) < Number(q.amountOut) && Number(q.deadline) > Number(q.serverNow);
-    record('K7-c-quote', sane ? 'PASS' : 'FAIL', `${q.amountIn} ${q.symbolIn} → ${q.amountOut} ${q.symbolOut} (min ${q.minOut} at ${q.slippage}, fee ${q.fee}); ${q.rate}; valid ${q.validSec}s, deadline ${q.deadline}`);
-  } catch (e) {
-    record('K7-c-quote', 'FAIL', `${codeOf(e)}: ${msgOf(e)}`);
-  }
+  // ---- K7-c / K7-d per pair: the quote board and the swap itself ----
+  for (const pair of PAIRS) {
+    const p = d.pairs[pair];
+    let quoteId: string | undefined;
+    try {
+      const q = await quote(player, AMOUNT, pair);
+      quoteId = q.quoteId;
+      const perOne = Number(q.amountOut) / Number(q.amountIn);
+      const seed = Number(p.seedRate);
+      const drift = seed > 0 ? Math.abs(perOne - seed) / seed : 1;
+      const sane = Number(q.amountOut) > 0 && Number(q.minOut) > 0 && Number(q.minOut) < Number(q.amountOut) && Number(q.deadline) > Number(q.serverNow) && q.pair === pair;
+      const deep = drift < 0.01; // 0.30 % fee + a $100M book: the all-in rate should sit well inside 1 % of the seed mid
+      record(`K7-c-quote-${pair}`, sane && deep ? 'PASS' : sane ? 'PARTIAL' : 'FAIL', `${q.amountIn} ${q.symbolIn} → ${q.amountOut} ${q.symbolOut} (min ${q.minOut} at ${q.slippage}, fee ${q.fee}); ${q.rate} vs seed ${p.seedRate} (${(drift * 100).toFixed(3)} % off); valid ${q.validSec}s, deadline ${q.deadline}`);
+    } catch (e) {
+      record(`K7-c-quote-${pair}`, 'FAIL', `${codeOf(e)}: ${msgOf(e)}`);
+    }
 
-  // ---- K7-d: the swap itself — the whole point ----
-  const usdcBefore = await usdcOf();
-  const wethBefore = await wethOf();
-  try {
-    if (usdcBefore < parseUnits(AMOUNT, d.usdc.decimals)) throw Object.assign(new Error(`till holds ${formatUnits(usdcBefore, d.usdc.decimals)} ${d.usdc.symbol}, needs ${AMOUNT} — mint practice dollars to ${till}`), { code: 'InsufficientBalance' });
-    const s = await swap(player, quoteId, AMOUNT, 'kt-s1-swap');
-    player = getPlayer(player.privyUserId)!;
-    const usdcAfter = await usdcOf();
-    const wethAfter = await wethOf();
-    const spent = usdcBefore - usdcAfter;
-    const got = wethAfter - wethBefore;
-    const ok = got > 0n && spent === parseUnits(AMOUNT, d.usdc.decimals) && got >= parseUnits(s.minOut, d.weth.decimals) / 2n;
-    record(
-      'K7-d-swap',
-      ok ? 'PASS' : 'FAIL',
-      `AccountBlox ${till} swapped ${formatUnits(spent, d.usdc.decimals)} ${d.usdc.symbol} → ${formatUnits(got, d.weth.decimals)} ${d.weth.symbol} on Uniswap v4; ${s.steps.map((x) => `${x.step} ${x.hash}`).join(' · ')}; explorer ${s.explorer}${s.fee ? `; fee ${s.fee}` : ''}`,
-    );
-  } catch (e) {
-    record('K7-d-swap', 'FAIL', `${codeOf(e)}: ${msgOf(e)}`);
+    const usdBefore = await usdOf();
+    const outBefore = await balanceOf(p.token.address);
+    try {
+      if (usdBefore < parseUnits(AMOUNT, d.usdc.decimals)) throw Object.assign(new Error(`till holds ${formatUnits(usdBefore, d.usdc.decimals)} ${d.usdc.symbol}, needs ${AMOUNT} — mint practice dollars to ${till}`), { code: 'InsufficientBalance' });
+      const s = await swap(player, quoteId, AMOUNT, `kt-s1-swap-${pair}`, undefined, pair);
+      player = getPlayer(player.privyUserId)!;
+      const usdAfter = await usdOf();
+      const outAfter = await balanceOf(p.token.address);
+      const spent = usdBefore - usdAfter;
+      const got = outAfter - outBefore;
+      const ok = got > 0n && spent === parseUnits(AMOUNT, d.usdc.decimals) && got >= parseUnits(s.minOut, p.token.decimals) && s.pair === pair;
+      record(
+        `K7-d-swap-${pair}`,
+        ok ? 'PASS' : 'FAIL',
+        `AccountBlox ${till} swapped ${formatUnits(spent, d.usdc.decimals)} ${d.usdc.symbol} → ${formatUnits(got, p.token.decimals)} ${p.token.symbol} on Uniswap v4 (zeroForOne ${p.usdIsCurrency0}); ${s.steps.map((x) => `${x.step} ${x.hash}`).join(' · ')}; explorer ${s.explorer}${s.fee ? `; fee ${s.fee}` : ''}`,
+      );
+    } catch (e) {
+      record(`K7-d-swap-${pair}`, 'FAIL', `${codeOf(e)}: ${msgOf(e)}`);
+    }
   }
 
   // ---- K7-e: the guard is the security story — a router that is not on the list is refused ----
@@ -157,10 +170,19 @@ async function main(): Promise<void> {
     record('K7-f-stale-quote', codeOf(e) === 'FX_QUOTE_EXPIRED' ? 'PASS' : 'FAIL', `unknown/expired quote refused with ${codeOf(e)}: ${msgOf(e)}`);
   }
 
+  // ---- K7-g: a currency the desk does not deal in is refused before anything is signed ----
+  try {
+    await quote(player, AMOUNT, 'WETH');
+    record('K7-g-pair', 'FAIL', 'the desk priced WETH — the fiat desk must not quote ether');
+  } catch (e) {
+    record('K7-g-pair', codeOf(e) === 'FX_PAIR' ? 'PASS' : 'FAIL', `pair WETH refused with ${codeOf(e)}: ${msgOf(e)}`);
+  }
+
   // ---- desk view the game will render ----
   try {
     const st = await fxStatus(getPlayer(player.privyUserId)!);
-    console.log(`\nstatus    till ${st.account} · ${st.usdc} ${st.symbolIn} · ${st.weth} ${st.symbolOut} · door ${st.enabled ? 'open' : 'closed'} · pool fee ${st.pool.fee} tick ${st.pool.tick} liquidity ${st.pool.liquidity}`);
+    console.log(`\nstatus    till ${st.account} · ${st.usdc} ${st.symbolIn} · ${st.eur} EUR · ${st.ils} ILS · door ${st.enabled ? 'open' : 'closed'}`);
+    for (const p of st.pairs) console.log(`          USD/${p.pair} ${p.midRate} (seed ${p.seedRate} ${p.seedRateDate}) · fee ${p.pool.fee} tick ${p.pool.tick} liquidity ${p.pool.liquidity}`);
     console.log(`explorer  ${st.explorer.account}`);
   } catch (e) {
     console.log(`status read failed: ${msgOf(e)}`);
@@ -170,7 +192,7 @@ async function main(): Promise<void> {
 }
 
 function finish(): void {
-  console.log('\nS1 kill-test summary (K7)');
+  console.log('\nS1 kill-test summary (K7 — fiat pairs)');
   for (const r of results) console.log(`${r.id.padEnd(18)} ${r.verdict.padEnd(8)} ${r.note}`);
   process.exitCode = results.some((r) => r.verdict === 'FAIL') ? 1 : 0;
 }

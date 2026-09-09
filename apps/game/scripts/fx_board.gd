@@ -7,7 +7,7 @@ extends Node3D
 ## countdown taken from the quote's own deadline against the **desk** clock (`GameState.now()`), never a local
 ## timer, for the same reason the vault door counts that way (docs/GODOT.md §5).
 ##
-## When there is no quote the board shows the pool and the till instead of inventing a rate, and when the FX desk
+## When there is no quote the board shows both pools' mid rates and the till instead of inventing a rate, and when the FX desk
 ## is unreachable it says so. Nothing here is a number the game made up.
 
 const VP_W := 768
@@ -80,28 +80,30 @@ func _redraw() -> void:
 	_title.text = Dialogue.interpolate(str(s.get("fx_board_title", "FX BOARD · UNISWAP v4 · SEPOLIA")), v)
 
 	var lines: PackedStringArray = []
-	if not GameState.fx.has("pool"):
+	if not GameState.fx.has("pairs"):
 		lines.append(str(s.get("fx_board_dark", "Board dark — the branch can't reach the exchange floor.")))
 	else:
-		var pool: Dictionary = GameState.fx.get("pool", {})
 		if GameState.fx_quoted():
 			lines.append(Dialogue.interpolate(str(s.get("fx_board_quote", "{fx_amount_in} {fx_symbol_in}  →  {fx_amount_out} {fx_symbol_out}")), v))
 			lines.append(Dialogue.interpolate(str(s.get("fx_board_rate", "{fx_rate}")), v))
 			lines.append(Dialogue.interpolate(str(s.get("fx_board_min", "floor {fx_min_out} {fx_symbol_out} · slippage {fx_slippage}")), v))
 			lines.append(Dialogue.interpolate(str(s.get("fx_board_valid", "quote valid {fx_valid}")), v))
 		else:
-			lines.append(Dialogue.interpolate(str(s.get("fx_board_idle", "{fx_symbol_in} / {fx_symbol_out} · pool fee {fx_pool_fee}")), v))
-			lines.append(str(s.get("fx_board_ask", "Ask Kenji for a price.")))
+			# Both pairs' mid rates, read from each pool's own slot0 by the desk — a reading, not a quote.
+			lines.append(Dialogue.interpolate(str(s.get("fx_board_idle", "{fx_rate_eur} · {fx_rate_ils} · pool fee {fx_pool_fee}")), v))
+			lines.append(str(s.get("fx_board_ask", "Ask Kenji for a euro or shekel price.")))
 		lines.append("")
 		if GameState.has_fx_till():
-			lines.append(Dialogue.interpolate(str(s.get("fx_board_till", "till  {fx_usdc} {fx_symbol_in} · {fx_weth} {fx_symbol_out}")), v))
+			lines.append(Dialogue.interpolate(str(s.get("fx_board_till", "till  {fx_usdc} {fx_symbol_in} · {fx_eur} EUR · {fx_ils} ILS")), v))
 		else:
 			lines.append(str(s.get("fx_board_no_till", "no till on the exchange floor yet")))
 		if not GameState.fx_open():
 			lines.append(str(s.get("fx_board_closed", "exchange door not on your approved list")))
 		else:
-			lines.append(Dialogue.interpolate(str(s.get("fx_board_whitelist", "approved: token approve · Permit2 approve · router execute")), v))
-		if str(pool.get("tick", "")) != "":
-			lines.append(Dialogue.interpolate(str(s.get("fx_board_pool", "pool tick {tick} · liquidity {liq}")), {"tick": str(pool.get("tick", "?")), "liq": str(pool.get("liquidity", "?"))}))
+			lines.append(Dialogue.interpolate(str(s.get("fx_board_whitelist", "approved: dollar approve · Permit2 approve · router execute")), v))
+		for pair in ["EUR", "ILS"]:
+			var pool: Dictionary = GameState.fx_pair(pair).get("pool", {})
+			if str(pool.get("tick", "")) != "":
+				lines.append(Dialogue.interpolate(str(s.get("fx_board_pool", "{pair} pool tick {tick} · liquidity {liq}")), {"pair": pair, "tick": str(pool.get("tick", "?")), "liq": str(pool.get("liquidity", "?"))}))
 	_rows.text = "\n".join(lines)
 	_vp.render_target_update_mode = SubViewport.UPDATE_ONCE

@@ -34,9 +34,11 @@ You are a **cold agent** unless the human says you are continuing a prior sessio
 > T-pose (`AnimationPlayer.root_node` → `..`, `639ffd2`); Idle_A feel accepted; ENG-0018 parked. See
 > [`docs/HANDOFF-kaykit-bank-performance.md`](./HANDOFF-kaykit-bank-performance.md) and [`docs/OWED.md`](./OWED.md).
 >
-> **Parallel FX (optional):** Fiat pairs Practice EUR + ILS vs USD on Uniswap v4 (~$100M TVL pools) —
-> [`docs/HANDOFF-fx-fiat-pairs.md`](./HANDOFF-fx-fiat-pairs.md) ·
-> [`docs/KICKOFF-fx-fiat-pairs.md`](./KICKOFF-fx-fiat-pairs.md). Prefer **Claude Code · Fable**.
+> **Parallel FX — met 2026-09-09.** Fiat pairs Practice EUR + ILS vs USD on Uniswap v4 (≈ $100M TVL pools at the
+> 2026-09-08 ECB mids); both pairs swapped live on the Main till (`0xf3cb83b4…` EUR, `0xd6f63de9…` ILS) through the
+> unchanged S1 whitelist; WETH is off the product path; `killtests:s1` K7-a…g, `run_checks`, `run_fx_walk` green.
+> Spec: [`docs/UNISWAP.md`](./UNISWAP.md) §2b. Brief: [`docs/HANDOFF-fx-fiat-pairs.md`](./HANDOFF-fx-fiat-pairs.md) ·
+> [`docs/KICKOFF-fx-fiat-pairs.md`](./KICKOFF-fx-fiat-pairs.md).
 > Desk spacing (pull west) is a **separate** Codex Luna unit:
 > [`docs/HANDOFF-fx-desk-spacing.md`](./HANDOFF-fx-desk-spacing.md) ·
 > [`docs/KICKOFF-fx-desk-spacing.md`](./KICKOFF-fx-desk-spacing.md). Neither replaces packaging or the

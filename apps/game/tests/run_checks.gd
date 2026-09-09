@@ -430,6 +430,20 @@ func _check_fx_desk() -> void:
 	# the guard story is the submission's whole angle: it must be on the main path, not only in a why_ node
 	if text.find("approved list") < 0:
 		bad.append("dealer.json never tells the player the router is on an approved list")
+	# fiat pairs (2026-09-09): Kenji sells euros and shekels, both reachable by choice, and never ether
+	var pairs_quoted := {}
+	for nid in dealer.get("nodes", {}).keys():
+		for c in dealer["nodes"][nid].get("choices", []):
+			if str(c.get("action", "")) == "fx_quote":
+				pairs_quoted[str(c.get("args", {}).get("pair", ""))] = true
+	for pair in ["EUR", "ILS"]:
+		if not pairs_quoted.has(pair):
+			bad.append("dealer.json never quotes %s — both fiat pairs must be a dialogue choice" % pair)
+	if text.to_lower().find("ether") >= 0:
+		bad.append("dealer.json still talks about ether — the FX desk is fiat (USD → EUR | ILS)")
+	for word in ["euro", "shekel"]:
+		if text.to_lower().find(word) < 0:
+			bad.append("dealer.json never says '%s'" % word)
 	for phrase in ["approve(address,uint256)", "execute(bytes,bytes[],uint256)"]:
 		if text.find(phrase) < 0:
 			bad.append("dealer.json 'Ask why' does not name %s" % phrase)
@@ -440,17 +454,24 @@ func _check_fx_desk() -> void:
 		if quoted_text.find(token) < 0:
 			bad.append("dealer.json quoted node does not show %s" % token)
 	var strings := _load("res://dialogue/strings.json")
-	for key in ["fx_board_title", "fx_board_quote", "fx_board_valid", "fx_board_whitelist", "fx_board_dark"]:
+	for key in ["fx_board_title", "fx_board_quote", "fx_board_valid", "fx_board_whitelist", "fx_board_dark", "fx_board_idle", "fx_board_till"]:
 		if str(strings.get(key, "")) == "":
 			bad.append("strings.json is missing %s" % key)
 	if str(strings.get("fx_board_title", "")).find("UNISWAP") < 0:
 		bad.append("the quote board does not name the exchange it quotes")
+	for token in ["{fx_rate_eur}", "{fx_rate_ils}"]:
+		if str(strings.get("fx_board_idle", "")).find(token) < 0:
+			bad.append("the idle quote board does not show %s" % token)
+	# errors.json carries the fiat desk's refusal for a currency it does not deal in
+	var errs := _load("res://dialogue/errors.json")
+	if str(errs.get("FX_PAIR", {}).get("line", "")) == "":
+		bad.append("errors.json has no FX_PAIR line")
 	# MockChain must never be mistaken for the sponsor evidence
 	var mock := FileAccess.get_file_as_string("res://autoload/mock_chain.gd")
 	if mock.find("MockChain: no Uniswap here") < 0:
 		bad.append("mock_chain.gd does not label its fake swap")
 	if bad.is_empty():
-		_ok("Kenji: quote + open till + swap only · guard story on the main path · board names the exchange and its countdown")
+		_ok("Kenji: quote + open till + swap only · EUR and ILS both quotable, no ether · guard story on the main path · board names the exchange, both pairs and its countdown")
 	else:
 		for b in bad:
 			_fail(b)

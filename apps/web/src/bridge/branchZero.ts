@@ -42,7 +42,8 @@ import { focusCanvas } from '../shell/focus';
  * `s2.0` before it: Sepolia Live — `setMode` picks the payment wing (`live` = Sepolia, the default; `dev` =
  * Remote EVM 1337, Developer Mode) and `getSession` carries `mode` / `chainName` / `fxTillIsMain` so the board
  * and the passbook name the chain they are actually on. Everything before that is unchanged and must stay that
- * way: `s1.0` (Kenji's FX desk — `fxStatus` / `fxEnable` / `fxQuote` / `fxSwap`), `u5.1` (Terminal Console
+ * way: `s1.0` (Kenji's FX desk — `fxStatus` / `fxEnable` / `fxQuote` / `fxSwap`; since the fiat pairs of 2026-09-09
+ * `fxQuote` / `fxSwap` carry `pair` EUR | ILS, default EUR), `u5.1` (Terminal Console
  * `openConsole` + `observer*`), `u5.0` (ENS Name Desk) and `u4.1` (`priority`, Okafor's hand scan).
  */
 export const BRIDGE_VERSION = 's2.1';
@@ -394,7 +395,9 @@ const handlers: Record<string, Handler> = {
   async fxQuote(args) {
     const amount = typeof args.amount === 'string' ? args.amount.trim() : String(args.amount ?? '');
     if (!/^\d+(\.\d+)?$/.test(amount) || Number(amount) <= 0) throw bridgeError('FX_AMOUNT', `not an amount: ${amount}`, 'That is not an amount the dealer can price.');
-    return requireAdapter().call(`/fx/quote?amount=${encodeURIComponent(amount)}`);
+    // Fiat pairs (2026-09-09): `pair` is EUR | ILS. The desk validates it (`FX_PAIR`); the bridge only carries it.
+    const pair = String(args.pair ?? 'EUR').trim().toUpperCase();
+    return requireAdapter().call(`/fx/quote?amount=${encodeURIComponent(amount)}&pair=${encodeURIComponent(pair)}`);
   },
   /** Open the till: register the three schemas, whitelist their targets, grant the two roles. Silent (Lane A shape). */
   async fxEnable() {
@@ -408,6 +411,7 @@ const handlers: Record<string, Handler> = {
     const body: Record<string, unknown> = {};
     if (typeof args.quoteId === 'string' && args.quoteId) body.quoteId = args.quoteId;
     if (args.amount !== undefined && String(args.amount) !== '') body.amount = String(args.amount);
+    if (args.pair !== undefined && String(args.pair) !== '') body.pair = String(args.pair).trim().toUpperCase();
     if (!body.quoteId && !body.amount) throw bridgeError('FX_AMOUNT', 'a quote or an amount is required', 'Ask the dealer for a quote first.');
     return requireAdapter().call('/fx/swap', body);
   },

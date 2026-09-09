@@ -33,6 +33,7 @@
     "killtests:s2": "npm -w apps/teller-desk run killtests:s2 --",
     "killtests:load": "npm -w apps/teller-desk run killtests:load --",
     "treasury:topup": "npm -w apps/teller-desk run treasury:topup --",
-    "killtests:treasury": "npm -w apps/teller-desk run killtests:treasury --"
+    "killtests:treasury": "npm -w apps/teller-desk run killtests:treasury --",
+    "fx:pools-fiat": "npm -w infra run fx:pools-fiat --"
   }
 }

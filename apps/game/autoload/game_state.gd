@@ -28,7 +28,7 @@ var ui_locked: bool = false            # dialogue / form open → player does no
 var current_zone: String = ""
 var desk_linked: bool = true        # Teller Desk SSE stream up (bridge `desk.link`); false while reconnecting
 var observers: Array = []           # viewing wallets on the OBSERVER role (addresses, strings only)
-var fx: Dictionary = {}             # S1: Kenji's till on Sepolia — balances, pool, whitelist (bridge `fxStatus`)
+var fx: Dictionary = {}             # S1: Kenji's till on Sepolia — USD/EUR/ILS balances, the two fiat pools (`pairs`), whitelist (bridge `fxStatus`)
 var fx_quote: Dictionary = {}       # the rate currently on the quote board (bridge `fxQuote`); empty = board dark
 var terminal_open: bool = false     # the bank computer's Console overlay is up in the shell (bridge `terminal.closed` clears it)
 var errors: Dictionary = {}
@@ -255,7 +255,7 @@ func facts() -> Dictionary:
 		"fx_till": has_fx_till(),
 		"fx_open": fx_open(),
 		"fx_quoted": fx_quoted(),
-		"fx_desk": fx.has("pool"),
+		"fx_desk": fx.has("pairs"),
 		"ens_name": ens_name(),
 		"mock": Chain.use_mock,
 		"web": Chain.is_web,
@@ -293,10 +293,15 @@ func vars(extra: Dictionary = {}) -> Dictionary:
 		"observers": str(observers.size()),
 		# S1 — the quote board and Kenji's lines. Everything here came from the chain (V4Quoter, StateView) or is "—".
 		"fx_usdc": fmt_amount(fx.get("usdc", "0")),
-		"fx_weth": fmt_amount(fx.get("weth", "0")),
-		"fx_symbol_in": str(fx.get("symbolIn", "USDC")),
-		"fx_symbol_out": str(fx.get("symbolOut", "WETH")),
-		"fx_pool_fee": str(fx.get("pool", {}).get("fee", "0.30%")),
+		"fx_eur": fmt_amount(fx.get("eur", "0")),
+		"fx_ils": fmt_amount(fx.get("ils", "0")),
+		"fx_symbol_in": str(fx.get("symbolIn", "USD")),
+		# The bought currency belongs to the quote on the board (EUR | ILS); with no quote the board names both pairs.
+		"fx_symbol_out": str(fx_quote.get("symbolOut", "EUR")),
+		"fx_pair": str(fx_quote.get("pair", "")),
+		"fx_rate_eur": str(fx_pair("EUR").get("midRate", "—")),
+		"fx_rate_ils": str(fx_pair("ILS").get("midRate", "—")),
+		"fx_pool_fee": str(fx_pair("EUR").get("pool", {}).get("fee", "0.30%")),
 		"fx_amount_in": fmt_amount(fx_quote.get("amountIn", "0")),
 		"fx_amount_out": fmt_amount(fx_quote.get("amountOut", "0")),
 		"fx_min_out": fmt_amount(fx_quote.get("minOut", "0")),
@@ -349,6 +354,14 @@ func refresh_observers() -> void:
 	if res.get("wallets") is Array:
 		observers = res["wallets"]
 	changed.emit()
+
+
+## Fiat pairs (2026-09-09): the desk's view of one pool — `fxStatus.pairs[]` entry for EUR or ILS (balance, midRate, pool).
+func fx_pair(pair: String) -> Dictionary:
+	for p in fx.get("pairs", []):
+		if p is Dictionary and str(p.get("pair", "")) == pair:
+			return p
+	return {}
 
 
 ## S1 — has the player an AccountBlox on Sepolia at all? (`fxStatus.account`; null until the FX till is opened.)
@@ -493,7 +506,8 @@ func run_action(action: String, args: Dictionary = {}) -> Dictionary:
 			r = await Chain.call_async("fxStatus", {}, 30.0)
 		"fx_quote":
 			# A read: the V4Quoter prices it with an eth_call. Kenji shows the board before anyone signs anything.
-			r = await Chain.call_async("fxQuote", {"amount": str(args.get("amount", "1"))}, 30.0)
+			# `pair` is EUR | ILS (fiat pairs, 2026-09-09); the desk refuses anything else with FX_PAIR.
+			r = await Chain.call_async("fxQuote", {"amount": str(args.get("amount", "1")), "pair": str(args.get("pair", "EUR"))}, 30.0)
 			if r.get("ok", false) and r.get("result") is Dictionary:
 				fx_quote = r["result"]
 				_sync_clock(fx_quote.get("serverNow"))
@@ -520,6 +534,8 @@ func run_action(action: String, args: Dictionary = {}) -> Dictionary:
 					swap_args["amount"] = str(args["amount"])
 				elif not swap_args.has("quoteId"):
 					r = {"ok": false, "error": {"code": "FX_AMOUNT", "message": "ask Kenji for a price before taking one"}}
+				if str(args.get("pair", "")) != "":
+					swap_args["pair"] = str(args["pair"])   # a bare amount needs its currency; a quote already carries it
 				if not r.has("error"):
 					r = await Chain.call_async("fxSwap", swap_args, 300.0)
 					if r.get("ok", false):

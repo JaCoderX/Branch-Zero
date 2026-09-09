@@ -1,11 +1,19 @@
 /**
  * S1 — the FX desk: a Uniswap v4 swap executed **by the player's AccountBlox** on Sepolia, through GuardController.
  *
+ * **Fiat pairs (2026-09-09, docs/HANDOFF-fx-fiat-pairs.md):** Kenji sells practice dollars for **Practice EUR** or
+ * **Practice ILS** — two deep v4 pools (≈ $100M TVL each, seeded at a pinned Frankfurter mid by
+ * `infra/scripts/fx-pools-fiat.ts`), one-way USD → fiat. The old USDC/WETH pool stays on chain and is no longer
+ * quoted. The guard list did **not** grow: one-way means the only token the account approves is still the practice
+ * dollar, and Permit2 + the Universal Router are the same two addresses — so a till opened for the WETH desk trades
+ * euros and shekels without a new config batch. `currency0`/`currency1` follow the address sort per pool
+ * (`usdIsCurrency0`, re-derived from the addresses), never an assumption that USD is token0.
+ *
  * What makes this a bank operation rather than a swap UI (docs/UNISWAP.md §3): the account, not the player's wallet,
  * is `msg.sender` to Permit2 and to the Universal Router, and it may only call the three functions the FX guard batch
  * registered and whitelisted —
  *
- *     demoUSDC.approve(address,uint256)                    → Permit2 may pull the account's practice dollars
+ *     practiceUSD.approve(address,uint256)                 → Permit2 may pull the account's practice dollars
  *     Permit2.approve(address,address,uint160,uint48)      → the Universal Router may spend them, once, with an expiry
  *     UniversalRouter.execute(bytes,bytes[],uint256)       → the V4_SWAP itself
  *
@@ -18,7 +26,7 @@
  * Like `ens.ts`, this is a lazy Sepolia module inside the Main-wing Teller Desk: payments and the vault stay on Remote
  * EVM 1337; only the FX till lives on Sepolia. Everything Uniswap is hand-encoded with viem from the published
  * v4-periphery / universal-router encodings — no Uniswap npm package (REFLECTION §8). Pool + addresses come from
- * infra/deployments/sepolia.json (`infra/scripts/uniswap-pool.ts`).
+ * infra/deployments/sepolia.json (`infra/scripts/fx-pools-fiat.ts`).
  *
  * Bank words: the Sepolia account is the player's "FX till"; opening it = the guard batch; the quote board = V4Quoter.
  */
@@ -240,14 +248,31 @@ interface PoolKey {
   hooks: Address;
 }
 
+/** The two currencies Kenji sells. One-way: the desk buys neither back in v1. */
+export type FxPair = 'EUR' | 'ILS';
+export const FX_PAIRS: readonly FxPair[] = ['EUR', 'ILS'];
+
+export interface FxPairDeployment {
+  pair: FxPair;
+  /** The practice fiat token (open mint, 6 decimals). */
+  token: { address: Address; symbol: string; name: string; decimals: number };
+  pool: PoolKey & { id: Hex };
+  /** Address sort: `zeroForOne` for USD → fiat is exactly this flag. */
+  usdIsCurrency0: boolean;
+  /** Frozen at seed; the pool prices every quote, this is the board's reference line. */
+  seedRate: string;
+  seedRateDate: string;
+  seedTvlUsd?: number;
+}
+
 export interface FxDeployment {
   chainId: number;
   guardDefinitions: Address;
   rbacDefinitions: Address;
   uniswap: { poolManager: Address; universalRouter: Address; quoter: Address; stateView: Address; permit2: Address };
-  pool: PoolKey & { id: Hex };
+  /** The practice dollar (the U5 open-mint mock, symbol USDC on chain; "USD" at the desk). */
   usdc: { address: Address; symbol: string; decimals: number };
-  weth: { address: Address; symbol: string; decimals: number };
+  pairs: Record<FxPair, FxPairDeployment>;
   /** Accounts the infra script initialised directly (the rig's till). Owner → account. */
   fixtures: Array<{ label: string; address: Address; owner: Address }>;
   /** Present once an operator has bootstrapped CopyBlox on Sepolia; until then only fixtures can open a till. */
@@ -276,10 +301,27 @@ export function fxDeployment(): FxDeployment {
   }
   if (Number(raw.chainId) !== SEPOLIA_CHAIN_ID) throw fxError('FX_NOT_CONFIGURED', 'sepolia.json is not for chain 11155111', 503);
   const u = raw.uniswap;
-  if (!u?.pool?.id || !raw.libraries?.GuardControllerDefinitions || !raw.tokens?.demoUsdc) {
-    throw fxError('FX_NOT_CONFIGURED', 'sepolia.json has no uniswap pool / Bloxchain libraries yet — run chain:deploy --chain sepolia and infra fx:pool', 503);
+  if (!u?.pools?.usdEur?.id || !u?.pools?.usdIls?.id || !raw.libraries?.GuardControllerDefinitions || !raw.tokens?.demoUsdc || !raw.tokens?.practiceEur || !raw.tokens?.practiceIls) {
+    throw fxError('FX_NOT_CONFIGURED', 'sepolia.json has no fiat pools / practice fiat tokens / Bloxchain libraries yet — run chain:deploy --chain sepolia and npm run fx:pools-fiat', 503);
   }
   const cb = raw.applications?.CopyBlox;
+  const usdcAddress = addr(raw.tokens.demoUsdc.address, 'demoUsdc');
+  if (raw.tokens.circleUsdc?.address && usdcAddress.toLowerCase() === String(raw.tokens.circleUsdc.address).toLowerCase()) {
+    throw fxError('FX_NOT_CONFIGURED', 'tokens.demoUsdc is Circle USDC — Circle USDC never enters a practice pool', 503);
+  }
+  const pairFrom = (pair: FxPair, poolKey: 'usdEur' | 'usdIls', tokenKey: 'practiceEur' | 'practiceIls'): FxPairDeployment => {
+    const p = u.pools[poolKey];
+    const t = raw.tokens[tokenKey];
+    const token = { address: addr(t.address, tokenKey), symbol: String(t.symbol ?? pair), name: String(t.name ?? `Practice ${pair}`), decimals: Number(t.decimals ?? 6) };
+    const pool = { id: p.id as Hex, currency0: addr(p.currency0, `${poolKey}.currency0`), currency1: addr(p.currency1, `${poolKey}.currency1`), fee: Number(p.fee), tickSpacing: Number(p.tickSpacing), hooks: addr(p.hooks, `${poolKey}.hooks`) };
+    // Trust the addresses, not the flag: the sort is a fact about two addresses and is re-derived here.
+    const usdIsCurrency0 = pool.currency0 === usdcAddress;
+    const other = usdIsCurrency0 ? pool.currency1 : pool.currency0;
+    if (!(usdIsCurrency0 || pool.currency1 === usdcAddress)) throw fxError('FX_NOT_CONFIGURED', `${poolKey}: neither currency is the practice dollar`, 503);
+    if (other !== token.address) throw fxError('FX_NOT_CONFIGURED', `${poolKey}: the non-USD currency ${other} is not tokens.${tokenKey}`, 503);
+    if (p.usdIsCurrency0 !== undefined && Boolean(p.usdIsCurrency0) !== usdIsCurrency0) throw fxError('FX_NOT_CONFIGURED', `${poolKey}: usdIsCurrency0 disagrees with the addresses`, 503);
+    return { pair, token, pool, usdIsCurrency0, seedRate: String(p.seedRate ?? ''), seedRateDate: String(p.seedRateDate ?? ''), seedTvlUsd: p.seedTvlUsd ? Number(p.seedTvlUsd) : undefined };
+  };
   deployment = {
     chainId: SEPOLIA_CHAIN_ID,
     guardDefinitions: addr(raw.libraries.GuardControllerDefinitions.address, 'GuardControllerDefinitions'),
@@ -291,15 +333,28 @@ export function fxDeployment(): FxDeployment {
       stateView: addr(u.stateView, 'stateView'),
       permit2: addr(u.permit2, 'permit2'),
     },
-    pool: { id: u.pool.id as Hex, currency0: addr(u.pool.currency0, 'currency0'), currency1: addr(u.pool.currency1, 'currency1'), fee: Number(u.pool.fee), tickSpacing: Number(u.pool.tickSpacing), hooks: addr(u.pool.hooks, 'hooks') },
-    usdc: { address: addr(raw.tokens.demoUsdc.address, 'demoUsdc'), symbol: String(raw.tokens.demoUsdc.symbol ?? 'USDC'), decimals: Number(raw.tokens.demoUsdc.decimals ?? 6) },
-    weth: { address: addr(raw.tokens.weth?.address, 'weth'), symbol: String(raw.tokens.weth?.symbol ?? 'WETH'), decimals: Number(raw.tokens.weth?.decimals ?? 18) },
+    // Bank words: the token's on-chain symbol is USDC (the U5 mock), but at an FX desk it is simply the dollar.
+    usdc: { address: usdcAddress, symbol: 'USD', decimals: Number(raw.tokens.demoUsdc.decimals ?? 6) },
+    pairs: { EUR: pairFrom('EUR', 'usdEur', 'practiceEur'), ILS: pairFrom('ILS', 'usdIls', 'practiceIls') },
     fixtures: ((raw.accounts ?? []) as Array<{ label: string; address: string; owner: string }>).map((a) => ({ label: a.label, address: getAddress(a.address), owner: getAddress(a.owner) })),
     copyBlox: cb?.address ? { address: addr(cb.address, 'CopyBlox'), deployedAtBlock: BigInt(cb.deployedAtBlock ?? 0), implementation: addr(cb.cloneImplementation ?? raw.accounts?.[0]?.address, 'cloneImplementation') } : undefined,
     explorer: 'https://sepolia.etherscan.io',
   };
-  if (deployment.pool.currency0 !== deployment.usdc.address) throw fxError('FX_NOT_CONFIGURED', 'pool currency0 is not the demo USDC — the desk swaps zeroForOne', 503);
   return deployment;
+}
+
+/** `EUR` | `ILS`, case-insensitively; anything else is `FX_PAIR` — the desk deals in two currencies and says so. */
+export function pairOf(v: unknown): FxPair {
+  const p = String(v ?? '').trim().toUpperCase();
+  if (p === 'EUR' || p === 'ILS') return p;
+  throw fxError('FX_PAIR', `the FX desk sells EUR or ILS for practice dollars; "${String(v ?? '')}" is not a pair it deals in`, 400);
+}
+
+/** Mid price of a pool from `slot0`, as fiat per USD (both sides are 6 dp, so the raw ratio is the display ratio). */
+function midRateOf(sqrtPriceX96: bigint, usdIsCurrency0: boolean): number {
+  const sqrtP = Number(sqrtPriceX96) / 2 ** 96;
+  const price1per0 = sqrtP * sqrtP;
+  return usdIsCurrency0 ? price1per0 : 1 / price1per0;
 }
 
 function fxClients() {
@@ -722,73 +777,107 @@ export async function fxEnabled(till: Address): Promise<boolean> {
 
 // ---------------------------------------------------------------- status, quote, swap
 
+export interface FxPairStatus {
+  pair: FxPair;
+  symbolOut: string;
+  name: string;
+  /** The till's balance of this fiat, display units. */
+  balance: string;
+  /** "1 USD ≈ 0.8610 EUR" from the pool's own slot0 — a reading, not a quote (no fee, no size). */
+  midRate: string;
+  seedRate: string;
+  seedRateDate: string;
+  pool: { id: Hex; fee: string; feeBps: number; tick?: number; liquidity?: string; usdIsCurrency0: boolean };
+}
+
 export interface FxStatus {
   chainId: number;
   configured: boolean;
   account: Address | null;
   enabled: boolean;
+  /** The till's practice dollars (kept under the historical key the bridge and board already read). */
   usdc: string;
-  weth: string;
+  eur: string;
+  ils: string;
   symbolIn: string;
-  symbolOut: string;
-  pool: { id: Hex; fee: string; feeBps: number; tick?: number; liquidity?: string; router: Address; quoter: Address };
+  pairs: FxPairStatus[];
+  router: Address;
+  quoter: Address;
   whitelist: Array<{ function: string; selector: Hex; target: Address }>;
-  explorer: { account?: string; pool: string };
+  explorer: { account?: string; pools: Record<FxPair, string> };
   serverNow: string;
+}
+
+function whitelistOf(d: FxDeployment) {
+  const targets = { approve: d.usdc.address, permit2: d.uniswap.permit2, execute: d.uniswap.universalRouter } as const;
+  return FX_FUNCTIONS.map((fn) => ({ function: fn.signature, selector: FX_SELECTORS[fn.key], target: targets[fn.key] }));
+}
+
+async function pairStatuses(d: FxDeployment, till?: Address): Promise<FxPairStatus[]> {
+  const { publicClient } = fxClients();
+  return readFx(() =>
+    Promise.all(
+      FX_PAIRS.map(async (pair) => {
+        const p = d.pairs[pair];
+        const [slot0, liquidity, balance] = await Promise.all([
+          publicClient.readContract({ address: d.uniswap.stateView, abi: stateViewAbi, functionName: 'getSlot0', args: [p.pool.id] }),
+          publicClient.readContract({ address: d.uniswap.stateView, abi: stateViewAbi, functionName: 'getLiquidity', args: [p.pool.id] }),
+          till ? publicClient.readContract({ address: p.token.address, abi: erc20, functionName: 'balanceOf', args: [till] }) : Promise.resolve(0n),
+        ]);
+        return {
+          pair,
+          symbolOut: p.token.symbol,
+          name: p.token.name,
+          balance: formatUnits(balance, p.token.decimals),
+          midRate: `1 ${d.usdc.symbol} ≈ ${midRateOf(slot0[0], p.usdIsCurrency0).toFixed(4)} ${p.token.symbol}`,
+          seedRate: p.seedRate,
+          seedRateDate: p.seedRateDate,
+          pool: { id: p.pool.id, fee: `${(p.pool.fee / 10_000).toFixed(2)}%`, feeBps: p.pool.fee / 100, tick: Number(slot0[1]), liquidity: liquidity.toString(), usdIsCurrency0: p.usdIsCurrency0 },
+        };
+      }),
+    ),
+  );
 }
 
 export async function fxStatus(player: Player): Promise<FxStatus> {
   const d = fxDeployment();
   const { publicClient } = fxClients();
   const serverNow = String(Math.floor(Date.now() / 1000));
-  const whitelist = FX_FUNCTIONS.map((fn) => ({ function: fn.signature, selector: FX_SELECTORS[fn.key], target: { approve: d.usdc.address, permit2: d.uniswap.permit2, execute: d.uniswap.universalRouter }[fn.key] }));
-  const [slot0, liquidity] = await readFx(() =>
-    Promise.all([
-      publicClient.readContract({ address: d.uniswap.stateView, abi: stateViewAbi, functionName: 'getSlot0', args: [d.pool.id] }),
-      publicClient.readContract({ address: d.uniswap.stateView, abi: stateViewAbi, functionName: 'getLiquidity', args: [d.pool.id] }),
-    ]),
-  );
-  const pool = { id: d.pool.id, fee: `${(d.pool.fee / 10_000).toFixed(2)}%`, feeBps: d.pool.fee / 100, tick: Number(slot0[1]), liquidity: liquidity.toString(), router: d.uniswap.universalRouter, quoter: d.uniswap.quoter };
+  const whitelist = whitelistOf(d);
+  const explorerPools = Object.fromEntries(FX_PAIRS.map((p) => [p, `${d.explorer}/address/${d.uniswap.poolManager}`])) as Record<FxPair, string>;
   let till: Address | undefined;
   try {
     till = await tillFor(player);
   } catch (e) {
     if ((e as { code?: string }).code !== 'FX_TILL_CLOSED') throw e;
   }
+  const base = { chainId: d.chainId, configured: true, symbolIn: d.usdc.symbol, router: d.uniswap.universalRouter, quoter: d.uniswap.quoter, whitelist, serverNow };
   if (!till) {
-    return { chainId: d.chainId, configured: true, account: null, enabled: false, usdc: '0', weth: '0', symbolIn: d.usdc.symbol, symbolOut: d.weth.symbol, pool, whitelist, explorer: { pool: `${d.explorer}/address/${d.uniswap.poolManager}` }, serverNow };
+    const pairs = await pairStatuses(d);
+    return { ...base, account: null, enabled: false, usdc: '0', eur: '0', ils: '0', pairs, explorer: { pools: explorerPools } };
   }
-  const [usdc, weth, enabled] = await readFx(() =>
-    Promise.all([
-      publicClient.readContract({ address: d.usdc.address, abi: erc20, functionName: 'balanceOf', args: [till!] }),
-      publicClient.readContract({ address: d.weth.address, abi: erc20, functionName: 'balanceOf', args: [till!] }),
-      fxEnabled(till!),
-    ]),
-  );
+  const [usdc, enabled, pairs] = await Promise.all([readFx(() => publicClient.readContract({ address: d.usdc.address, abi: erc20, functionName: 'balanceOf', args: [till!] })), fxEnabled(till), pairStatuses(d, till)]);
   if (enabled !== Boolean(player.fxConfigured)) patchPlayer(player.privyUserId, { fxConfigured: enabled });
   return {
-    chainId: d.chainId,
-    configured: true,
+    ...base,
     account: till,
     enabled,
     usdc: formatUnits(usdc, d.usdc.decimals),
-    weth: formatUnits(weth, d.weth.decimals),
-    symbolIn: d.usdc.symbol,
-    symbolOut: d.weth.symbol,
-    pool,
-    whitelist,
-    explorer: { account: `${d.explorer}/address/${till}`, pool: `${d.explorer}/address/${d.uniswap.poolManager}` },
-    serverNow,
+    eur: pairs.find((p) => p.pair === 'EUR')!.balance,
+    ils: pairs.find((p) => p.pair === 'ILS')!.balance,
+    pairs,
+    explorer: { account: `${d.explorer}/address/${till}`, pools: explorerPools },
   };
 }
 
 export interface FxQuote {
   quoteId: string;
   chainId: number;
+  pair: FxPair;
   amountIn: string;
   amountOut: string;
   minOut: string;
-  /** "1 USDC ≈ 0.000487 WETH" */
+  /** "1 USD ≈ 0.8584 EUR" — the all-in rate of this size, fee included. */
   rate: string;
   rateOut: string;
   symbolIn: string;
@@ -803,51 +892,53 @@ export interface FxQuote {
   poolId: Hex;
 }
 
-const quotes = new Map<string, { player: string; amountIn: bigint; minOut: bigint; deadline: number }>();
+const quotes = new Map<string, { player: string; pair: FxPair; amountIn: bigint; minOut: bigint; deadline: number }>();
 
-/** Kenji's board: V4Quoter.quoteExactInputSingle by `eth_call`, minus 1 % slippage, good for five minutes. */
-export async function quote(player: Player | undefined, amount: string): Promise<FxQuote> {
+/** Kenji's board: V4Quoter.quoteExactInputSingle by `eth_call` on the pair's pool, minus 1 % slippage, good for five minutes. */
+export async function quote(player: Player | undefined, amount: string, pair: unknown = 'EUR'): Promise<FxQuote> {
   const d = fxDeployment();
   const { publicClient } = fxClients();
+  const p = d.pairs[pairOf(pair)];
   if (!/^\d+(\.\d+)?$/.test(amount) || Number(amount) <= 0) throw fxError('FX_AMOUNT', `amount must be a positive decimal string, got ${amount}`);
   const amountIn = parseUnits(amount, d.usdc.decimals);
   if (amountIn > maxUint160) throw fxError('FX_AMOUNT', 'amount too large');
-  const key = { currency0: d.pool.currency0, currency1: d.pool.currency1, fee: d.pool.fee, tickSpacing: d.pool.tickSpacing, hooks: d.pool.hooks };
+  const key = { currency0: p.pool.currency0, currency1: p.pool.currency1, fee: p.pool.fee, tickSpacing: p.pool.tickSpacing, hooks: p.pool.hooks };
   let amountOut: bigint;
   let gasEstimate: bigint;
   try {
-    const sim = await publicClient.simulateContract({ address: d.uniswap.quoter, abi: quoterAbi, functionName: 'quoteExactInputSingle', args: [{ poolKey: key, zeroForOne: true, exactAmount: amountIn, hookData: '0x' }] });
+    const sim = await publicClient.simulateContract({ address: d.uniswap.quoter, abi: quoterAbi, functionName: 'quoteExactInputSingle', args: [{ poolKey: key, zeroForOne: p.usdIsCurrency0, exactAmount: amountIn, hookData: '0x' }] });
     [amountOut, gasEstimate] = sim.result;
   } catch (e) {
     const msg = (e as Error).message.split('\n')[0];
-    throw fxError('FX_QUOTE_FAILED', `V4Quoter refused ${amount} ${d.usdc.symbol}: ${msg}`, 400);
+    throw fxError('FX_QUOTE_FAILED', `V4Quoter refused ${amount} ${d.usdc.symbol} → ${p.token.symbol}: ${msg}`, 400);
   }
   if (amountOut === 0n) throw fxError('FX_QUOTE_FAILED', 'the pool returned nothing for that amount');
   const minOut = (amountOut * (10_000n - SLIPPAGE_BPS)) / 10_000n;
   const now = Math.floor(Date.now() / 1000);
   const deadline = now + QUOTE_TTL_SEC;
   const quoteId = randomUUID().slice(0, 8);
-  quotes.set(quoteId, { player: player?.privyUserId ?? 'anon', amountIn, minOut, deadline });
+  quotes.set(quoteId, { player: player?.privyUserId ?? 'anon', pair: p.pair, amountIn, minOut, deadline });
   for (const [id, q] of quotes) if (q.deadline + 60 < now) quotes.delete(id);
-  const out = formatUnits(amountOut, d.weth.decimals);
+  const out = formatUnits(amountOut, p.token.decimals);
   const perOne = Number(out) / Number(amount);
   return {
     quoteId,
     chainId: d.chainId,
+    pair: p.pair,
     amountIn: amount,
     amountOut: trim(out),
-    minOut: trim(formatUnits(minOut, d.weth.decimals)),
-    rate: `1 ${d.usdc.symbol} ≈ ${perOne.toPrecision(4)} ${d.weth.symbol}`,
-    rateOut: perOne > 0 ? `1 ${d.weth.symbol} ≈ ${(1 / perOne).toFixed(2)} ${d.usdc.symbol}` : '—',
+    minOut: trim(formatUnits(minOut, p.token.decimals)),
+    rate: `1 ${d.usdc.symbol} ≈ ${perOne.toFixed(4)} ${p.token.symbol}`,
+    rateOut: perOne > 0 ? `1 ${p.token.symbol} ≈ ${(1 / perOne).toFixed(4)} ${d.usdc.symbol}` : '—',
     symbolIn: d.usdc.symbol,
-    symbolOut: d.weth.symbol,
-    fee: `${(d.pool.fee / 10_000).toFixed(2)}%`,
+    symbolOut: p.token.symbol,
+    fee: `${(p.pool.fee / 10_000).toFixed(2)}%`,
     slippage: `${Number(SLIPPAGE_BPS) / 100}%`,
     deadline: String(deadline),
     serverNow: String(now),
     validSec: QUOTE_TTL_SEC,
     gasEstimate: gasEstimate.toString(),
-    poolId: d.pool.id,
+    poolId: p.pool.id,
   };
 }
 
@@ -858,6 +949,7 @@ function trim(s: string): string {
 export interface FxSwapResult {
   account: Address;
   chainId: number;
+  pair: FxPair;
   amountIn: string;
   amountOut: string;
   minOut: string;
@@ -868,7 +960,10 @@ export interface FxSwapResult {
   hash: Hex;
   explorer: string;
   usdcAfter: string;
-  wethAfter: string;
+  /** The bought currency's balance after the fill. */
+  outAfter: string;
+  eurAfter: string;
+  ilsAfter: string;
   poolId: Hex;
   deadline: string;
   fee?: string;
@@ -876,9 +971,10 @@ export interface FxSwapResult {
 
 /**
  * The swap. Three guarded calls the first time, one afterwards. Refuses a stale quote (`FX_QUOTE_EXPIRED`) rather than
- * re-pricing silently; refuses without spending when the till is short (`InsufficientBalance`) or not open (`FX_NOT_ENABLED`).
+ * re-pricing silently; refuses without spending when the till is short (`FX_TILL_SHORT`) or not open (`FX_NOT_ENABLED`).
+ * The pair comes from the quote when there is one; a bare amount needs `pair` too.
  */
-export async function swap(player: Player, quoteId: string | undefined, amount: string | undefined, jobId: string, audit?: AuditSink): Promise<FxSwapResult> {
+export async function swap(player: Player, quoteId: string | undefined, amount: string | undefined, jobId: string, audit?: AuditSink, pair?: unknown): Promise<FxSwapResult> {
   const d = fxDeployment();
   const { publicClient } = fxClients();
   const till = await tillFor(player);
@@ -889,26 +985,27 @@ export async function swap(player: Player, quoteId: string | undefined, amount: 
   let q = quoteId ? quotes.get(quoteId) : undefined;
   if (quoteId && !q) throw fxError('FX_QUOTE_EXPIRED', `quote ${quoteId} is not on the board any more`, 409);
   if (q && q.deadline <= now) throw fxError('FX_QUOTE_EXPIRED', `quote ${quoteId} expired at ${q.deadline}`, 409);
+  if (q && pair !== undefined && pair !== '' && pairOf(pair) !== q.pair) throw fxError('FX_PAIR', `quote ${quoteId} is for ${q.pair}, not ${String(pair)}`, 409);
   if (!q) {
     if (!amount) throw fxError('FX_AMOUNT', 'a quoteId or an amount is required');
-    const fresh = await quote(current, amount);
+    const fresh = await quote(current, amount, pairOf(pair));
     q = quotes.get(fresh.quoteId)!;
     quoteId = fresh.quoteId;
   }
+  const p = d.pairs[q.pair];
   const { amountIn, minOut } = q;
   const deadline = BigInt(q.deadline);
-
   const balance = await readFx(() => publicClient.readContract({ address: d.usdc.address, abi: erc20, functionName: 'balanceOf', args: [till] }));
   if (balance < amountIn) {
     // Deliberately not the protocol's `InsufficientBalance`: that code's bank line sends the player to Ines, and
     // Ines's faucet tops up the Main-wing account on 1337, not this till on Sepolia. Same refusal, honest signpost.
     throw Object.assign(new Error(`the FX till holds ${formatUnits(balance, d.usdc.decimals)} ${d.usdc.symbol}; the order needs ${formatUnits(amountIn, d.usdc.decimals)}`), { statusCode: 400, code: 'FX_TILL_SHORT' });
   }
-  const wethBefore = await readFx(() => publicClient.readContract({ address: d.weth.address, abi: erc20, functionName: 'balanceOf', args: [till] }));
+  const outBefore = await readFx(() => publicClient.readContract({ address: p.token.address, abi: erc20, functionName: 'balanceOf', args: [till] }));
   const steps: FxSwapResult['steps'] = [];
   const link = (h: Hex) => `${d.explorer}/tx/${h}`;
 
-  // 1. token → Permit2 (once)
+  // 1. token → Permit2 (once) — the practice dollar is the only token the account ever approves (one-way desk)
   const allowance = await readFx(() => publicClient.readContract({ address: d.usdc.address, abi: erc20, functionName: 'allowance', args: [till, d.uniswap.permit2] }));
   if (allowance < amountIn) {
     stage(current, jobId, 'signing', 'Letting the exchange counter draw practice dollars from your till (approve → Permit2)…');
@@ -924,15 +1021,16 @@ export async function swap(player: Player, quoteId: string | undefined, amount: 
     steps.push({ step: 'permit2', hash: h, explorer: link(h) });
     stage(current, jobId, 'broadcasting', 'Router allowance on file.', { hash: h });
   }
-  // 3. the swap: UniversalRouter.execute(V4_SWAP: SWAP_EXACT_IN_SINGLE → SETTLE_ALL → TAKE_ALL)
-  const key = { currency0: d.pool.currency0, currency1: d.pool.currency1, fee: d.pool.fee, tickSpacing: d.pool.tickSpacing, hooks: d.pool.hooks };
+  // 3. the swap: UniversalRouter.execute(V4_SWAP: SWAP_EXACT_IN_SINGLE → SETTLE_ALL → TAKE_ALL).
+  //    `zeroForOne` and the settle/take currencies follow the pool's address sort — USD is currency1 in both fiat pools.
+  const key = { currency0: p.pool.currency0, currency1: p.pool.currency1, fee: p.pool.fee, tickSpacing: p.pool.tickSpacing, hooks: p.pool.hooks };
   const commands = encodePacked(['uint8'], [CMD_V4_SWAP]);
   const actions = encodePacked(['uint8', 'uint8', 'uint8'], [ACT_SWAP_EXACT_IN_SINGLE, ACT_SETTLE_ALL, ACT_TAKE_ALL]);
   const swapParams = encodeAbiParameters(parseAbiParameters(`(${POOL_KEY_TUPLE} poolKey, bool zeroForOne, uint128 amountIn, uint128 amountOutMinimum, bytes hookData)`), [
-    { poolKey: key, zeroForOne: true, amountIn, amountOutMinimum: minOut, hookData: '0x' },
+    { poolKey: key, zeroForOne: p.usdIsCurrency0, amountIn, amountOutMinimum: minOut, hookData: '0x' },
   ]);
-  const settleParams = encodeAbiParameters(parseAbiParameters('address, uint256'), [d.pool.currency0, amountIn]);
-  const takeParams = encodeAbiParameters(parseAbiParameters('address, uint256'), [d.pool.currency1, minOut]);
+  const settleParams = encodeAbiParameters(parseAbiParameters('address, uint256'), [d.usdc.address, amountIn]);
+  const takeParams = encodeAbiParameters(parseAbiParameters('address, uint256'), [p.token.address, minOut]);
   const inputs = [encodeAbiParameters(parseAbiParameters('bytes, bytes[]'), [actions, [swapParams, settleParams, takeParams]])];
   const calldata = encodeFunctionData({ abi: routerAbi, functionName: 'execute', args: [commands, inputs, deadline] });
   // Pre-flight the router call *as the till* so a bad quote or thin pool is refused before a meta-transaction is spent.
@@ -944,17 +1042,19 @@ export async function swap(player: Player, quoteId: string | undefined, amount: 
     const code = /V4TooLittleReceived|TooLittleReceived/.test(text) ? 'FX_SLIPPAGE' : /DeadlinePassed|TransactionDeadlinePassed/.test(text) ? 'FX_QUOTE_EXPIRED' : 'FX_ROUTER';
     throw Object.assign(new Error(`router pre-flight refused: ${why.message}`), { statusCode: 400, code });
   }
-  stage(current, jobId, 'signing', `Swapping ${formatUnits(amountIn, d.usdc.decimals)} ${d.usdc.symbol} through the Universal Router…`);
+  stage(current, jobId, 'signing', `Swapping ${formatUnits(amountIn, d.usdc.decimals)} ${d.usdc.symbol} for ${p.token.symbol} through the Universal Router…`);
   const hash = await guardedCall(current, till, FX_FUNCTIONS[2], d.uniswap.universalRouter, calldata, audit);
   steps.push({ step: 'execute', hash, explorer: link(hash) });
 
-  const [usdcAfter, wethAfter] = await readFx(() =>
+  const [usdcAfter, eurAfter, ilsAfter] = await readFx(() =>
     Promise.all([
       publicClient.readContract({ address: d.usdc.address, abi: erc20, functionName: 'balanceOf', args: [till] }),
-      publicClient.readContract({ address: d.weth.address, abi: erc20, functionName: 'balanceOf', args: [till] }),
+      publicClient.readContract({ address: d.pairs.EUR.token.address, abi: erc20, functionName: 'balanceOf', args: [till] }),
+      publicClient.readContract({ address: d.pairs.ILS.token.address, abi: erc20, functionName: 'balanceOf', args: [till] }),
     ]),
   );
-  const received = wethAfter - wethBefore;
+  const outAfter = p.pair === 'EUR' ? eurAfter : ilsAfter;
+  const received = outAfter - outBefore;
   let fee: string | undefined;
   try {
     const r = await publicClient.getTransactionReceipt({ hash });
@@ -963,23 +1063,26 @@ export async function swap(player: Player, quoteId: string | undefined, amount: 
     /* receipt fee is decoration */
   }
   current = patchPlayer(current.privyUserId, { fxConfigured: true });
-  const amountOutText = trim(formatUnits(received, d.weth.decimals));
-  stage(current, jobId, 'mined', `Swapped ${formatUnits(amountIn, d.usdc.decimals)} ${d.usdc.symbol} for ${amountOutText} ${d.weth.symbol}.`, { hash, account: till, fee });
+  const amountOutText = trim(formatUnits(received, p.token.decimals));
+  stage(current, jobId, 'mined', `Swapped ${formatUnits(amountIn, d.usdc.decimals)} ${d.usdc.symbol} for ${amountOutText} ${p.token.symbol}.`, { hash, account: till, fee });
   if (quoteId) quotes.delete(quoteId);
   return {
     account: till,
     chainId: d.chainId,
+    pair: p.pair,
     amountIn: formatUnits(amountIn, d.usdc.decimals),
     amountOut: amountOutText,
-    minOut: trim(formatUnits(minOut, d.weth.decimals)),
+    minOut: trim(formatUnits(minOut, p.token.decimals)),
     symbolIn: d.usdc.symbol,
-    symbolOut: d.weth.symbol,
+    symbolOut: p.token.symbol,
     steps,
     hash,
     explorer: link(hash),
     usdcAfter: formatUnits(usdcAfter, d.usdc.decimals),
-    wethAfter: formatUnits(wethAfter, d.weth.decimals),
-    poolId: d.pool.id,
+    outAfter: formatUnits(outAfter, p.token.decimals),
+    eurAfter: formatUnits(eurAfter, d.pairs.EUR.token.decimals),
+    ilsAfter: formatUnits(ilsAfter, d.pairs.ILS.token.decimals),
+    poolId: p.pool.id,
     deadline: String(deadline),
     fee,
   };

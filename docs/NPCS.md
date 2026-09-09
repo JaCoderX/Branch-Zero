@@ -16,7 +16,7 @@ Related: [GAME-DESIGN.md](./GAME-DESIGN.md) § 4 mapping · [BLOXCHAIN-INTEGRATI
 | **Vault Keeper** (Bob — was Ruth until U7 polish) | Vault antechamber | none (owner acts) | `getPendingTransactions`, `getTransaction` | **Wait path:** owner timed `approveTimeLockExecution` **after** `releaseTime`, silent session signer | MVP; U4+ wait-only |
 | **Branch Manager** (Mr. Okafor) | Manager's office | runtime role `BRANCH_MANAGER` | pending list (cooling vs ready), role membership | **Priority:** submits the owner's Passkey-signed `SIGN_META_APPROVE` via `approveTimeLockExecutionWithMetaTx` **before** the clock (`EXECUTE_META_APPROVE`); **recall** `cancelTimeLockExecution`. **No** post-clock timed stamp (removed in ROLE_SET 3) | U4+ **built 2026-09-07** |
 | **Registrar** (Petra) | Name Desk — serves from the south teller bay; names board on the west wall | bank's ENSv2 registrar key | availability, records | mint subname, `setText`, EAC delegation | T1 |
-| **Dealer** (Kenji) | FX Desk | none | Uniswap quote | guarded swap | S1 |
+| **Dealer** (Kenji) | FX Desk | none | Uniswap quote (USD → EUR \| ILS) | guarded swap | S1 · fiat pairs 2026-09-09 |
 | **Security Officer** (Sgt. Bale) | Side door | `RECOVERY_ROLE` | `getRecovery()` | `transferOwnershipRequest` | S2 (MVP: lore) |
 | **Elevator voice** | Elevator | none | chain id | — | T2 |
 | Ambient customers ×4 | Lobby | none | — | — | Day 8 |
@@ -270,10 +270,14 @@ Petra: Names! Pick one and people can pay you by it.
 Petra: You're getting a subname under branchzero.eth on ENSv2. Your name points at your account; your passbook fields are text records; the staff only get the rights the registry grants them.
 ```
 
-### 4.7 Dealer — Kenji (FX Desk) — S1 **built 2026-09-08**
+### 4.7 Dealer — Kenji (FX Desk) — S1 **built 2026-09-08** · **fiat pairs 2026-09-09**
 
 Purpose: price a Uniswap v4 swap off-chain, and execute it **from the player's own account on Sepolia** through three
-whitelisted calls. Kenji is not a teller: he cannot pay, wire, release or recall, and `tests/run_checks.gd` fails the
+whitelisted calls. Since 2026-09-09 Kenji is a **bank FX dealer**: he sells practice dollars for **Practice EUR** or
+**Practice ILS** (two ≈ $100M pools, docs/UNISWAP.md §2b), one-way, and never quotes ether again — a currency he does
+not deal in is refused `FX_PAIR` before anything is priced. The pair is a dialogue choice (Euros / Shekels) and then a
+size (25 / 100 / 250 dollars). Dialogue keeps euros and shekels in words; `run_checks` fails the build if `dealer.json`
+stops quoting either pair or starts talking about ether again. Kenji is not a teller: he cannot pay, wire, release or recall, and `tests/run_checks.gd` fails the
 build if `dealer.json` ever grows a verb other than `fx_quote` / `fx_enable` / `fx_swap`. The FX till is a **second**
 `AccountBlox`, on the chain the exchange lives on; the Main wing's counter and vault stay on Remote EVM 1337.
 
@@ -292,16 +296,22 @@ Kenji: Till's there, but the exchange door isn't on your approved list yet. Thre
   > Register the exchange door → action: fx_enable   → opened
 
 [idle]
-Kenji: Dollars for ether? Quote's on the board. You've {fx_usdc} {fx_symbol_in} and {fx_weth} {fx_symbol_out} in the
-       till; the pool takes {fx_pool_fee}.
-  > Price 1 / 5 / 25 {fx_symbol_in} → action: fx_quote   (V4Quoter, an eth_call — signs nothing)
-  > What can my account do here?    → whitelist  ("Three, and only three…")
+Kenji: Dollars for euros or shekels? Board's live: {fx_rate_eur} · {fx_rate_ils}. You've {fx_usdc} USD, {fx_eur} EUR
+       and {fx_ils} ILS in the till; each pool takes {fx_pool_fee}.
+  > Euros                           → euros     (node: pick a size)
+  > Shekels                         → shekels
+  > What can my account do here?    → whitelist  ("Three, and only three… and one-way")
   > Ask why                         → why_swap
 
+[euros | shekels]
+Kenji: Euros. {fx_rate_eur} on the board, mid-market — the price I quote is all-in for the size, pool fee included.
+  > Price 25 / 100 / 250 USD  → action: fx_quote {amount, pair: EUR|ILS}   (V4Quoter, an eth_call — signs nothing)
+
 [quoted]
-Kenji: {fx_amount_in} {fx_symbol_in} buys {fx_amount_out} {fx_symbol_out}. I'll not accept less than {fx_min_out} —
+Kenji: {fx_amount_in} USD buys {fx_amount_out} {fx_symbol_out} — {fx_rate}. I'll not accept less than {fx_min_out} —
        that's your {fx_slippage} slippage. Good for {fx_valid}.
-  > Take it                    → action: fx_swap  → swapped   (refused FX_QUOTE_EXPIRED once the deadline passes)
+  > Take it                    → action: fx_swap  → swapped   (refused FX_QUOTE_EXPIRED once the deadline passes;
+                                                                the pair rides on the quote)
 
 [why_swap]
 Kenji: Your account calls the exchange router directly, but only because that router is on your approved list for
@@ -314,10 +324,10 @@ Kenji: GuardController holds a whitelist per function selector. Your till regist
 ```
 
 **The quote board** (`scripts/fx_board.gd`, a SubViewport on the vault partition's south face, like the ledger and
-names boards) shows the rate, the floor, the pool's fee tier and a `quote valid m:ss` countdown taken from the
-quote's own deadline against the **desk** clock — never a local timer, for the same reason the vault door counts that
-way. With no quote it shows the pool and the till instead of inventing a rate; with no FX deployment it says the
-board is dark. **No new Privy surface:** the swap is signed by the same silent session signer that stamps counter
+names boards) shows the quoted pair, the rate, the floor, the pool's fee tier and a `quote valid m:ss` countdown taken
+from the quote's own deadline against the **desk** clock — never a local timer, for the same reason the vault door
+counts that way. With no quote it shows **both pools' mid rates** (read from each pool's `slot0` by the desk) and the
+till in USD / EUR / ILS instead of inventing a rate; with no FX deployment it says the board is dark. **No new Privy surface:** the swap is signed by the same silent session signer that stamps counter
 slips (the hand scan stays unique to Okafor's Priority release).
 
 ### 4.8 Security Officer — Sgt. Bale (Side door) — S2 / lore

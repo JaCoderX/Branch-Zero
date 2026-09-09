@@ -26,8 +26,13 @@ const OBSERVER_MAX_WALLETS := 3
 ## made-up reserves, so the board moves when you ask for more — it is not a chain and says so.
 const FX_ACCOUNT := "0xM0CK00000000000000000000000000000000F0FF"
 const FX_OPENING_USDC := 100.0
-const FX_POOL_USDC := 240.0
-const FX_POOL_WETH := 0.12
+# Fiat pairs (2026-09-09): two deep books, seeded like the Sepolia pools — 50M USD against 50M×rate fiat at the
+# Frankfurter 2026-09-08 mids. Constant product with the fee, so a desk-sized order moves the rate by ~1e-7: flat,
+# as a bank FX board should be. This is the *shape* of the live pools, not their state (MockChain: no Uniswap here).
+const FX_POOLS := {
+	"EUR": {"usd": 50000000.0, "fiat": 43051500.0, "seedRate": "0.86103", "id": "0xm0ckpool-usd-eur", "tick": 1496, "liquidity": "46395851107615", "name": "Practice Euro"},
+	"ILS": {"usd": 50000000.0, "fiat": 150590000.0, "seedRate": "3.0118", "id": "0xm0ckpool-usd-ils", "tick": -11026, "liquidity": "86772691556733", "name": "Practice Israeli Shekel"},
+}
 const FX_FEE_BPS := 30.0
 const FX_SLIPPAGE_BPS := 100.0
 const FX_QUOTE_TTL := 300
@@ -49,7 +54,8 @@ var observers: Array = []    # viewing wallets on the mock OBSERVER role (addres
 var fx_till := ""            # S1: the mock Sepolia AccountBlox; "" until Kenji opens it
 var fx_open := false         # the three whitelisted calls are registered on it
 var fx_usdc := 0.0
-var fx_weth := 0.0
+var fx_eur := 0.0            # fiat pairs (2026-09-09): the till's Practice EUR / ILS
+var fx_ils := 0.0
 var _fx_quotes: Dictionary = {}
 var _next_tx_id := 1
 var _job := 0
@@ -236,51 +242,75 @@ func _observer_revoke(args: Dictionary) -> Dictionary:
 ## ---------------------------------------------------------------- S1: Kenji's FX desk, mocked
 ##
 ## Enough shape for the greybox to walk the desk: a till, an exchange door that has to be registered before a swap,
-## a board whose rate moves with size, and a swap that spends practice dollars for practice ether. Nothing here is a
-## chain (docs/UNISWAP.md): the real path is /fx/enable + /fx/quote (V4Quoter) + /fx/swap (Universal Router), and the
-## prize evidence is the live Sepolia kill test, never this.
+## a board with two fiat pairs (USD → EUR, USD → ILS) whose rate comes from a deep constant-product book, and a swap
+## that spends practice dollars for practice euros or shekels. Nothing here is a chain (docs/UNISWAP.md): the real
+## path is /fx/enable + /fx/quote (V4Quoter) + /fx/swap (Universal Router), and the prize evidence is the live Sepolia
+## kill test, never this.
+
+func _fx_pair_status(pair: String) -> Dictionary:
+	var pool: Dictionary = FX_POOLS[pair]
+	var mid: float = float(pool["fiat"]) / float(pool["usd"])
+	return {
+		"pair": pair, "symbolOut": pair, "name": str(pool["name"]),
+		"balance": "%.6f" % (fx_eur if pair == "EUR" else fx_ils),
+		"midRate": "1 USD ≈ %.4f %s" % [mid, pair],
+		"seedRate": str(pool["seedRate"]), "seedRateDate": "2026-09-08",
+		"pool": {"id": str(pool["id"]), "fee": "0.30%", "feeBps": 30, "tick": int(pool["tick"]), "liquidity": str(pool["liquidity"]), "usdIsCurrency0": false},
+	}
+
 
 func _fx_status() -> Dictionary:
 	return {
 		"chainId": 11155111, "configured": true,
 		"account": fx_till if fx_till != "" else null,
 		"enabled": fx_open,
-		"usdc": _fmt(fx_usdc), "weth": "%.6f" % fx_weth,
-		"symbolIn": "USDC", "symbolOut": "WETH",
-		"pool": {"id": "0xm0ckpool", "fee": "0.30%", "feeBps": 30, "tick": 200311, "liquidity": "53665631459", "router": "0xM0CK000000000000000000000000000000R0UTR", "quoter": "0xM0CK00000000000000000000000000000QU0TER"},
+		"usdc": _fmt(fx_usdc), "eur": "%.6f" % fx_eur, "ils": "%.6f" % fx_ils,
+		"symbolIn": "USD",
+		"pairs": [_fx_pair_status("EUR"), _fx_pair_status("ILS")],
+		"router": "0xM0CK000000000000000000000000000000R0UTR", "quoter": "0xM0CK00000000000000000000000000000QU0TER",
 		"whitelist": [
 			{"function": "approve(address,uint256)", "selector": "0x095ea7b3", "target": "0xM0CK00000000000000000000000000000000dUSD"},
 			{"function": "approve(address,address,uint160,uint48)", "selector": "0x87517c45", "target": "0x000000000022D473030F116dDEE9F6B43aC78BA3"},
 			{"function": "execute(bytes,bytes[],uint256)", "selector": "0x3593564c", "target": "0xM0CK000000000000000000000000000000R0UTR"},
 		],
-		"explorer": {"account": "", "pool": ""},
+		"explorer": {"account": "", "pools": {"EUR": "", "ILS": ""}},
 		"serverNow": _now_str(),
 	}
 
 
-## Constant product with a 0.30 % fee, so a bigger order really does get a worse rate on the board.
-func _fx_out(amount: float) -> float:
+## Constant product with a 0.30 % fee on a $100M book: a bigger order gets a fractionally worse rate, invisibly so.
+func _fx_out(pair: String, amount: float) -> float:
+	var pool: Dictionary = FX_POOLS[pair]
 	var in_after_fee := amount * (1.0 - FX_FEE_BPS / 10000.0)
-	return (FX_POOL_WETH * in_after_fee) / (FX_POOL_USDC + in_after_fee)
+	return (float(pool["fiat"]) * in_after_fee) / (float(pool["usd"]) + in_after_fee)
+
+
+## EUR | ILS, or an FX_PAIR refusal — the same words the desk uses.
+func _fx_pair_of(v) -> String:
+	var pair := str(v).strip_edges().to_upper()
+	return pair if FX_POOLS.has(pair) else ""
 
 
 func _fx_quote(args: Dictionary) -> Dictionary:
+	var pair := _fx_pair_of(args.get("pair", "EUR"))
+	if pair == "":
+		return _err("FX_PAIR", "the FX desk sells EUR or ILS for practice dollars; \"%s\" is not a pair it deals in" % str(args.get("pair", "")))
 	var amount := float(str(args.get("amount", "1")))
 	if amount <= 0.0:
 		return _err("FX_AMOUNT", "amount must be a positive number")
-	var out := _fx_out(amount)
+	var out := _fx_out(pair, amount)
 	if out <= 0.0:
 		return _err("FX_QUOTE_FAILED", "the pool returned nothing for that amount")
 	var min_out := out * (1.0 - FX_SLIPPAGE_BPS / 10000.0)
 	var quote_id := "mockq%03d" % (_fx_quotes.size() + 1)
-	_fx_quotes[quote_id] = {"amount": amount, "minOut": min_out, "deadline": _now() + FX_QUOTE_TTL}
+	_fx_quotes[quote_id] = {"pair": pair, "amount": amount, "minOut": min_out, "deadline": _now() + FX_QUOTE_TTL}
 	return _ok({
-		"quoteId": quote_id, "chainId": 11155111,
+		"quoteId": quote_id, "chainId": 11155111, "pair": pair,
 		"amountIn": _fmt(amount), "amountOut": "%.6f" % out, "minOut": "%.6f" % min_out,
-		"rate": "1 USDC ≈ %.6f WETH" % (out / amount), "rateOut": "1 WETH ≈ %.2f USDC" % (amount / out),
-		"symbolIn": "USDC", "symbolOut": "WETH", "fee": "0.30%", "slippage": "1%",
+		"rate": "1 USD ≈ %.4f %s" % [out / amount, pair], "rateOut": "1 %s ≈ %.4f USD" % [pair, amount / out],
+		"symbolIn": "USD", "symbolOut": pair, "fee": "0.30%", "slippage": "1%",
 		"deadline": str(_now() + FX_QUOTE_TTL), "serverNow": _now_str(), "validSec": FX_QUOTE_TTL,
-		"gasEstimate": "120000", "poolId": "0xm0ckpool",
+		"gasEstimate": "120000", "poolId": str(FX_POOLS[pair]["id"]),
 	})
 
 
@@ -313,14 +343,20 @@ func _fx_swap(args: Dictionary) -> Dictionary:
 		return _err("FX_NOT_ENABLED", "the exchange door is not registered on this till")
 	var quote_id := str(args.get("quoteId", ""))
 	var amount := float(str(args.get("amount", "0")))
+	var pair := ""
 	if quote_id != "":
 		if not _fx_quotes.has(quote_id) or int(_fx_quotes[quote_id]["deadline"]) <= _now():
 			return _err("FX_QUOTE_EXPIRED", "that quote has gone stale")
 		amount = float(_fx_quotes[quote_id]["amount"])
+		pair = str(_fx_quotes[quote_id]["pair"])
+	else:
+		pair = _fx_pair_of(args.get("pair", ""))
+		if pair == "":
+			return _err("FX_PAIR", "the FX desk sells EUR or ILS for practice dollars; \"%s\" is not a pair it deals in" % str(args.get("pair", "")))
 	if amount <= 0.0:
 		return _err("FX_AMOUNT", "a quote or an amount is required")
 	if amount > fx_usdc:
-		return _err("FX_TILL_SHORT", "the FX till holds %s USDC; the order needs %s" % [_fmt(fx_usdc), _fmt(amount)])
+		return _err("FX_TILL_SHORT", "the FX till holds %s USD; the order needs %s" % [_fmt(fx_usdc), _fmt(amount)])
 	var job := _new_job()
 	var steps: Array = []
 	_stage(job, "FX", "signing", "Letting the exchange counter draw practice dollars from your till…")
@@ -329,21 +365,26 @@ func _fx_swap(args: Dictionary) -> Dictionary:
 	_stage(job, "FX", "signing", "Allowing the Universal Router to spend them, with an expiry…")
 	await get_tree().create_timer(0.5).timeout
 	steps.append({"step": "permit2", "hash": _hash(), "explorer": ""})
-	_stage(job, "FX", "signing", "Swapping %s USDC through the Universal Router… (MockChain: no Uniswap here)" % _fmt(amount))
+	_stage(job, "FX", "signing", "Swapping %s USD for %s through the Universal Router… (MockChain: no Uniswap here)" % [_fmt(amount), pair])
 	await get_tree().create_timer(0.8).timeout
-	var out := _fx_out(amount)
+	var out := _fx_out(pair, amount)
 	fx_usdc -= amount
-	fx_weth += out
+	if pair == "EUR":
+		fx_eur += out
+	else:
+		fx_ils += out
 	var h := _hash()
 	steps.append({"step": "execute", "hash": h, "explorer": ""})
-	_stage(job, "FX", "mined", "Swapped %s USDC for %.6f WETH." % [_fmt(amount), out], {"hash": h, "account": fx_till})
+	_stage(job, "FX", "mined", "Swapped %s USD for %.6f %s." % [_fmt(amount), out, pair], {"hash": h, "account": fx_till})
 	if quote_id != "":
 		_fx_quotes.erase(quote_id)
 	return _ok({
-		"jobId": job, "account": fx_till, "chainId": 11155111,
+		"jobId": job, "account": fx_till, "chainId": 11155111, "pair": pair,
 		"amountIn": _fmt(amount), "amountOut": "%.6f" % out, "minOut": "%.6f" % (out * 0.99),
-		"symbolIn": "USDC", "symbolOut": "WETH", "steps": steps, "hash": h, "explorer": "",
-		"usdcAfter": _fmt(fx_usdc), "wethAfter": "%.6f" % fx_weth, "poolId": "0xm0ckpool", "deadline": str(_now() + FX_QUOTE_TTL),
+		"symbolIn": "USD", "symbolOut": pair, "steps": steps, "hash": h, "explorer": "",
+		"usdcAfter": _fmt(fx_usdc), "outAfter": "%.6f" % (fx_eur if pair == "EUR" else fx_ils),
+		"eurAfter": "%.6f" % fx_eur, "ilsAfter": "%.6f" % fx_ils,
+		"poolId": str(FX_POOLS[pair]["id"]), "deadline": str(_now() + FX_QUOTE_TTL),
 	})
 
 

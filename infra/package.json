@@ -13,7 +13,8 @@
     "typecheck": "tsc -p tsconfig.json",
     "bootstrap": "tsx scripts/bootstrap-blox.ts",
     "fx:pool": "tsx scripts/uniswap-pool.ts",
-    "funding:sepolia": "tsx scripts/sepolia-funding.ts"
+    "funding:sepolia": "tsx scripts/sepolia-funding.ts",
+    "fx:pools-fiat": "tsx scripts/fx-pools-fiat.ts"
   },
   "dependencies": {
     "@bloxchain/sdk": "1.0.0",
