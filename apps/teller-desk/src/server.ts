@@ -554,7 +554,7 @@ app.get('/events', async (req, reply) => {
     .then((pending) => {
       const now = String(Math.floor(Date.now() / 1000));
       for (const w of pending) {
-        send({ type: 'stage', jobId: `wire-${w.txId}`, lane: 'B', stage: w.released ? 'released' : 'pending', bankLine: w.released ? 'The vault clock has run down.' : 'The vault clock is running.', txId: w.txId, releaseTime: w.releaseTime, serverNow: now, status: w.status });
+        send({ type: 'stage', jobId: `wire-${w.txId}`, lane: 'B', stage: w.released ? 'released' : 'pending', bankLine: w.released ? 'The vault clock has run down — ready to release (still PENDING until you open it).' : 'The vault clock is running.', txId: w.txId, releaseTime: w.releaseTime, serverNow: now, status: w.status });
       }
     })
     .catch((e) => app.log.warn({ err: (e as Error).message }, 'could not resume vault watchers'));

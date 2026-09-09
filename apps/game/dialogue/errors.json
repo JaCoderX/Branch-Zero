@@ -79,7 +79,9 @@
   "InvalidOperation": { "line": "That's not an operation this counter can do.", "why": "Registry refused the operation." },
   "CustomError": { "line": "The account said no, and it said why in its own words.", "why": "A custom error the SDK could not name. Raw data is in the message." },
   "ReadableText": { "line": "The account said no.", "why": "A string revert. On Remote EVM an empty revert after idle time usually means an expired meta-transaction — see REMOTE-EVM.md §1a." },
-  "Unknown": { "line": "The vault would not accept that.", "why": "The revert data could not be decoded." },
+  "Unknown": { "line": "The vault would not accept that.", "why": "The revert data could not be decoded — often a Sepolia RPC flake during pre-flight simulation, or a nested error with no custom-error selector. Retry Release; if it persists, check owner ETH and desk logs for the cause chain." },
+  "OwnerGasDry": { "line": "Your wallet needs a little more ETH for gas — ask Ines to re-check your account.", "why": "Lane B wire/release is paid by the owner's embedded wallet. Below a tiny floor, viem simulation often fails as an opaque Unknown instead of a clear insufficient-funds revert. Re-check tops up to SEPOLIA_OWNER_GAS_ETH / OWNER_GAS_ETH." },
+  "RpcError": { "line": "The chain did not answer clearly — try Release again in a moment.", "why": "HTTP/RPC/timeout or nonce-class failure while preparing or simulating the vault call. The record is unchanged; retrying is safe." },
 
   "NO_ACCOUNT": { "line": "You don't have an account here yet — Ines at Account Opening will sort you out.", "why": "The Teller Desk has no AccountBlox on file for your wallet. Open one first." },
   "NOT_CONFIGURED": { "line": "Your account is on file, but the desks aren't authorised for it yet — ask Ines to re-check your account.", "why": "The Teller Desk knows your account address but never recorded the end of provisioning (`configured` / `roleSet`), so the role grants the counter and the vault need may be missing. Ines's \"Re-check my account\" runs the provisioner again: it reads the chain first and only sends what is missing." },

@@ -471,27 +471,43 @@ export function App({ engineState }: { engineState: string }) {
 
           {passbook && passbook.wires.length > 0 && (
             <div style={{ border: '1px solid #2a3140', borderRadius: 6, padding: '6px 8px', marginBottom: 8 }}>
-              <div style={{ color: '#9aa4b2', marginBottom: 4 }}>vault board — releaseTime from chain (getTransaction), clock vs Teller Desk time</div>
+              <div style={{ color: '#9aa4b2', marginBottom: 4 }}>
+                vault board — ● ready = clock done (still PENDING); Release mines approveTimeLockExecution → COMPLETED (leaves this list)
+              </div>
               {passbook.wires.map((x) => {
                 const left = Number(x.releaseTime) - now;
-                const released = left <= 0;
+                const clockReady = left <= 0 || Boolean(x.released);
+                const pending = !x.status || x.status === 'PENDING';
                 return (
                   <div key={x.txId} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 4 }}>
                     <code style={{ color: '#8ab4f8' }}>#{x.txId}</code>
                     <span>
                       {x.amount ?? '?'} {passbook.symbol} → {x.to ? `${x.to.slice(0, 8)}…` : '?'}
                     </span>
-                    <span style={{ color: released ? '#7ee787' : '#e3b341', minWidth: 120 }}>
-                      {released ? '● released' : `○ ${fmt(left)} to release`}
+                    <span style={{ color: clockReady ? '#7ee787' : '#e3b341', minWidth: 120 }}>
+                      {clockReady ? '● ready' : `○ ${fmt(left)} cooling`}
                     </span>
-                    <span style={{ color: '#556' }}>t={x.releaseTime}</span>
-                    <button style={{ ...btn, opacity: released ? 1 : 0.6 }} title="Bob — owner timed release after the clock, silent" onClick={() => run('Opening the vault…', () => w.call('/approve', { txId: x.txId }))}>
+                    <span style={{ color: '#556' }}>
+                      {x.status ?? 'PENDING'} · t={x.releaseTime}
+                    </span>
+                    <button
+                      style={{ ...btn, opacity: clockReady && pending ? 1 : 0.55 }}
+                      disabled={!pending}
+                      title={
+                        !pending
+                          ? `Record is ${x.status} — nothing to release`
+                          : clockReady
+                            ? 'Bob — owner timed release after the clock, silent session signer'
+                            : 'Still cooling — contract will refuse BeforeReleaseTime until releaseTime'
+                      }
+                      onClick={() => run('Opening the vault…', () => w.call('/approve', { txId: x.txId }))}
+                    >
                       Release
                     </button>
-                    <button style={btn} onClick={() => run('Recalling the wire…', () => w.call('/cancel', { txId: x.txId }))}>
+                    <button style={btn} disabled={!pending} onClick={() => run('Recalling the wire…', () => w.call('/cancel', { txId: x.txId }))}>
                       Recall
                     </button>
-                    {s?.priority && !released && (
+                    {s?.priority && !clockReady && pending && (
                       <button
                         style={{ ...btn, borderColor: '#e3b341' }}
                         title="Okafor — skip the cooling period, hand scan required (Passkey + your own signature; the manager submits)"

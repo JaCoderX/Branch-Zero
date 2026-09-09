@@ -103,8 +103,8 @@ export type SigningMode = 'session' | 'client';
 
 /**
  * Stage names pushed while a job runs; the Teller Desk emits them over SSE.
- * U2 adds the vault states: `pending` (time-locked record exists, clock running), `released`
- * (chain time has passed `releaseTime`), `cancelled`.
+ * U2 vault stages: `pending` (clock running), `released` (clock past `releaseTime` — ready to approve,
+ * record still PENDING; not “funds sent”), then terminal `mined` / `cancelled` / `failed`.
  */
 export type JobStage =
   | 'queued'
@@ -154,7 +154,10 @@ export interface PendingWire {
   txId: string;
   status: RecordStatus;
   releaseTime: string;
-  /** `releaseTime <= serverNow` — the door may be opened. */
+  /**
+   * `releaseTime <= serverNow` — the vault **clock** has run down so timed Release may be sent.
+   * This is not “funds sent”: the record stays `PENDING` until `approveTimeLockExecution` mines `COMPLETED`.
+   */
   released: boolean;
   to?: string;
   amount?: string;

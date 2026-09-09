@@ -628,7 +628,7 @@ func _watch(tx_id: int, job: String) -> void:
 		if released and not announced:
 			announced = true
 			rec["released"] = true
-			_stage(job, "B", "released", "The vault clock has run down. The wire may be released.", {"txId": str(tx_id), "releaseTime": rec["releaseTime"], "status": "PENDING"})
+			_stage(job, "B", "released", "The vault clock has run down — ready to release (still PENDING until you open it).", {"txId": str(tx_id), "releaseTime": rec["releaseTime"], "status": "PENDING"})
 		elif not released:
 			_stage(job, "B", "pending", "The vault clock is running.", {"txId": str(tx_id), "releaseTime": rec["releaseTime"], "status": "PENDING"})
 

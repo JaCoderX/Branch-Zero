@@ -23,6 +23,7 @@ const REQUIRED_CODES := [
 	"InvalidNonce",
 	"TransactionNotPending", "CanOnlyApprovePending", "CanOnlyCancelPending", "TransactionNotFound",
 	"NO_ACCOUNT", "NO_WALLET", "NO_MANAGER", "NOT_PENDING", "RECORD_*", "RECORD_FAILED", "policy_violation", "Unknown",
+	"OwnerGasDry", "RpcError",
 	"TIMEOUT", "UNKNOWN_METHOD", "BAD_ARGS", "RPC", "NOT_IMPLEMENTED", "INTERNAL", "AUTH", "POLICY", "CHAIN", "LOGIN_CANCELLED",
 	"NOT_CONFIGURED",
 	"FAUCET_OFF", "FAUCET_EMPTY", "FAUCET_TX_FAILED",

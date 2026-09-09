@@ -19,8 +19,10 @@
 import {
   decodeAbiParameters,
   encodeAbiParameters,
+  formatEther,
   formatUnits,
   keccak256,
+  parseEther,
   parseAbiParameters,
   parseUnits,
   toBytes,
@@ -31,10 +33,16 @@ import {
 import { ERROR_SIGNATURES, EngineBlox, GuardController, TxStatus, decodeRevertReason, getUserFriendlyErrorMessage } from '@bloxchain/sdk';
 import { erc20Abi, type PendingWire, type RecordStatus, type StageEvent } from '@branch-zero/shared';
 import { broadcaster, chain, manager, managerAddress, publicClient, tickChain } from '../chain.ts';
-import { deployments } from '../config.ts';
+import { config, deployments } from '../config.ts';
 import { ownerWalletClient, type TxAuditSink } from '../signing/privySigner.ts';
 import { emitStage, hasSubscribers, type Player } from '../store.ts';
 import { receiptFee } from '../fees.ts';
+
+/**
+ * Floor for one owner-paid vault call on Live. Below this, `simulateContract` often dies as an opaque
+ * "unknown error" with no revert selector — Re-check / provision tops the wallet to `OWNER_GAS_ETH`.
+ */
+const OWNER_GAS_FLOOR = parseEther('0.00005');
 
 /** Operation type registered by the default guard schema for ERC-20 transfers. */
 const ERC20_TRANSFER_OPERATION = keccak256(toBytes('ERC20_TRANSFER'));
@@ -151,11 +159,36 @@ function viemErrorName(e: unknown): string | undefined {
   return undefined;
 }
 
+/** Flatten shortMessage/message/details across the viem cause chain (simulation often nests the real reason). */
+function errorTextChain(e: unknown): string {
+  const parts: string[] = [];
+  for (let cur = e as { shortMessage?: string; message?: string; details?: string; cause?: unknown } | undefined; cur; cur = cur.cause as never) {
+    for (const p of [cur.shortMessage, cur.message, cur.details]) {
+      if (typeof p === 'string' && p.trim()) parts.push(p);
+    }
+  }
+  return parts.join('\n');
+}
+
+/**
+ * When there is no custom-error selector, classify transport / wallet failures that otherwise become
+ * "Unknown: An unknown error occurred while executing…".
+ */
+function classifyOpaqueFailure(text: string): string | undefined {
+  const t = text.toLowerCase();
+  if (/insufficient funds|exceeds the balance|intrinsic gas too low|gas required exceeds allowance/.test(t)) return 'OwnerGasDry';
+  if (/http request failed|fetch failed|econnreset|etimedout|timeout|502|503|504|cloudflare|rate limit|too many requests/.test(t)) {
+    return 'RpcError';
+  }
+  if (/nonce too low|replacement transaction underpriced|already known/.test(t)) return 'RpcError';
+  return undefined;
+}
+
 /** Turn a revert into a bank line + the decoded protocol error name, when we can name it. */
 export function explainRevert(e: unknown): { code: string; message: string; bankLine: string } {
   const err = e as Error & { shortMessage?: string; cause?: { message?: string } };
   // The SDK often re-wraps viem's error as plain text, so the decoded name only survives in the full message.
-  const text = `${err.shortMessage ?? ''} ${err.message ?? ''} ${err.cause?.message ?? ''}`;
+  const text = errorTextChain(e) || `${err.shortMessage ?? ''} ${err.message ?? ''} ${err.cause?.message ?? ''}`;
   const data = revertData(e);
   const decoded = data ? decodeRevertReason(data) : null;
   // In order of trust: viem's own decode → a raw selector we know → the SDK's decoder → the selector viem printed
@@ -173,6 +206,10 @@ export function explainRevert(e: unknown): { code: string; message: string; bank
   // Only now fall back to the SDK's full table, so a curated name always wins over the generic one.
   if (!name && data) name = SDK_ERROR_NAMES[data.slice(0, 10).toLowerCase()];
   if (!name && sigInText) name = SDK_ERROR_NAMES[sigInText];
+  if (!name || name === 'Unknown') {
+    const opaque = classifyOpaqueFailure(text);
+    if (opaque) name = opaque;
+  }
   if (!name) name = 'Unknown';
   const bankLine =
     name === 'BeforeReleaseTime'
@@ -181,8 +218,15 @@ export function explainRevert(e: unknown): { code: string; message: string; bank
         ? 'That desk is not authorised to touch this wire.'
         : name === 'TransactionNotPending' || name === 'CanOnlyApprovePending' || name === 'CanOnlyCancelPending'
           ? 'That wire is no longer waiting in the vault.'
-          : 'The vault would not accept that.';
-  return { code: name, message: decoded ? getUserFriendlyErrorMessage(decoded) : (err.message ?? String(e)).slice(0, 300), bankLine };
+          : name === 'OwnerGasDry'
+            ? 'Your wallet needs a little more ETH for gas — ask Ines to re-check your account.'
+            : name === 'RpcError'
+              ? 'The chain did not answer clearly — try Release again in a moment.'
+              : 'The vault would not accept that.';
+  const message = decoded
+    ? getUserFriendlyErrorMessage(decoded)
+    : text.replace(/\s+/g, ' ').trim().slice(0, 400) || (err.message ?? String(e)).slice(0, 400);
+  return { code: name, message, bankLine };
 }
 
 /** Decode `(to, amount)` out of a transfer record's execution params. */
@@ -316,6 +360,23 @@ async function decide(player: Player, txId: bigint, actor: Actor, kind: 'approve
   }
 
   const { gc, from } = actor === 'manager' ? asManager(account) : { gc: asOwner(player, account, txAudit), from: player.ownerAddress };
+
+  // Owner-paid path: dry wallet → opaque viem "unknown error" on simulate. Fail closed with a bank line.
+  if (actor === 'owner') {
+    const ownerWei = await publicClient.getBalance({ address: player.ownerAddress });
+    if (ownerWei < OWNER_GAS_FLOOR) {
+      const bal = formatEther(ownerWei);
+      const message = `Owner wallet holds ${bal} ETH; need at least ${formatEther(OWNER_GAS_FLOOR)} for a vault call (target top-up ${config.ownerGasEth}). Ask Ines to re-check.`;
+      stage('failed', 'Your wallet needs a little more ETH for gas — ask Ines to re-check your account.', {
+        txId: String(txId),
+        reason: `OwnerGasDry: ${message}`,
+        releaseTime: before.releaseTime,
+        chainNow: await chainNow(),
+      });
+      throw Object.assign(new Error(message), { statusCode: 400, code: 'OwnerGasDry' });
+    }
+  }
+
   const who = actor === 'manager' ? 'The manager is' : 'You are';
   stage('signing', kind === 'approve' ? `${who} opening the vault…` : `${who} recalling the wire…`, { txId: String(txId), releaseTime: before.releaseTime });
 
@@ -324,6 +385,10 @@ async function decide(player: Player, txId: bigint, actor: Actor, kind: 'approve
     res = kind === 'approve' ? await gc.approveTimeLockExecution(txId, { from }) : await gc.cancelTimeLockExecution(txId, { from });
   } catch (e) {
     const why = explainRevert(e);
+    // Desk operators: opaque Unknowns need the cause chain; the bridge only carries a short reason.
+    if (why.code === 'Unknown' || why.code === 'RpcError' || why.code === 'OwnerGasDry') {
+      console.warn(`[laneB] ${kind} txId=${txId} ${why.code}:`, errorTextChain(e) || e);
+    }
     stage('failed', why.bankLine, { txId: String(txId), reason: `${why.code}: ${why.message}`, releaseTime: before.releaseTime, chainNow: await chainNow() });
     throw Object.assign(new Error(`${kind} refused: ${why.code}: ${why.message}`), { statusCode: why.code === 'BeforeReleaseTime' ? 425 : 400, code: why.code });
   }
@@ -395,7 +460,7 @@ export function watch(player: Player, account: Address, txId: bigint, jobId: str
       }
       if (rec.released && !announcedRelease) {
         announcedRelease = true;
-        stage('released', 'The vault clock has run down. The wire may be released.', { txId: rec.txId, releaseTime: rec.releaseTime, chainNow: await chainNow(), status: rec.status });
+        stage('released', 'The vault clock has run down — ready to release (still PENDING until you open it).', { txId: rec.txId, releaseTime: rec.releaseTime, chainNow: await chainNow(), status: rec.status });
       } else if (!rec.released && hasSubscribers(player.privyUserId)) {
         stage('pending', 'The vault clock is running.', { txId: rec.txId, releaseTime: rec.releaseTime, chainNow: await chainNow(), status: rec.status });
       }
