@@ -68,7 +68,9 @@ Reference boards: art-deco bank lobbies (symmetry, terrazzo floors), *Katamari*-
 
 East-column placement pins (north → south): vault partition z = −5.0; expanded FX counter/shelf z ∈ [−4.4, 0.4],
 centre −2.0; SECURITY door z ∈ [1.0, 2.0], centre 1.5; elevator centre z = 5.5, shaft z ∈ [4.0, 7.0].
-The elevator door face remains at x ≈ 11.46, and the south-wall entrance gap x ∈ [3, 7] is unchanged.
+The FX assembly is pulled west by 1.2 m for staff clearance (counter x ≈ 12.3, shelf/tools x ≈ 12.95,
+Kenji/stool x ≈ 13.1); the east-wall FX signs remain seated at x ≈ 14.8. The elevator door face remains at
+x ≈ 11.46, and the south-wall entrance gap x ∈ [3, 7] is unchanged.
 
 ### 2.2 Navigation
 

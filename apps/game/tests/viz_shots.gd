@@ -48,9 +48,10 @@ const VIEWS := [
 	# sponsor plaque under it. `_close` hides the player body, which the spring arm otherwise centres over the desk;
 	# the talk frame is the two-shot the dialogue camera actually gives the player. The board carries a live mock
 	# quote by then (see `_run`), because a board photographed dark proves nothing about the board.
-	["33_fx_desk_close", Vector3(11.4, 0.1, -2.0), -PI / 2],
-	["34_fx_talk", Vector3(12.0, 0.1, -2.0), -PI / 2, {"talk": Vector3(14.3, 0.0, -2.0)}],
-	["35_fx_board_close", Vector3(10.4, 0.1, -2.1), -PI / 4, {"pitch": -2.0}],
+	["33_fx_desk_close", Vector3(10.2, 0.1, -2.0), -PI / 2],
+	["34_fx_talk", Vector3(10.8, 0.1, -2.0), -PI / 2, {"talk": Vector3(13.1, 0.0, -2.0)}],
+	["35_fx_board_close", Vector3(9.2, 0.1, -2.1), -PI / 4, {"pitch": -2.0}],
+	["42_fx_staff_clearance_close", Vector3(13.7, 0.1, -2.0), PI / 2, {"pitch": -12.0}],
 	# Character style climb: the bank verbs on film. `pose` drives an NPC's state machine for the frame (so the
 	# clip comes from the same mapping the game uses), `clip` plays one clip directly.
 	["36_dev_work_close", Vector3(-9.4, 0.1, 3.0), PI / 2, {"pose": ["teller", Npc.State.WORKING]}],

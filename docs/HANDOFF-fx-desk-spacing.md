@@ -8,6 +8,7 @@ objective: OBJ-2026-0004
 mission: Pull Kenji's FX counter forward into the alcove so staff have real space behind the desk — layout only
 kickoff: docs/KICKOFF-fx-desk-spacing.md
 baseline: FX desk hard against the east wall (counter ~x=13.5, Kenji ~14.3, stool ~14.35); principal — too compact
+status: met 2026-09-09 — FX_WEST_DELTA −1.2 m; wall plaques stay; quote board unmoved; checks green
 parallel_to: docs/HANDOFF-fx-fiat-pairs.md (Fable owns tokens/pools; this unit owns geometry only)
 ---
 
@@ -15,7 +16,9 @@ parallel_to: docs/HANDOFF-fx-fiat-pairs.md (Fable owns tokens/pools; this unit o
 
 You are a **cold agent**. Prefer this file + the kickoff over chat memory. Freedom on **how**. No freedom on scope.
 
-**Authorized construction:** move the **FX desk assembly** (counter, shelf, tools, stool, Kenji, east-wall plaques that belong to the desk) **west / into the lobby** so there is comfortable staff clearance between Kenji's back and the east wall. Keep the customer approach readable (still looking east at Kenji). Keep the quote board usable.
+**Status (2026-09-09):** **Met.** Desk props + Kenji pulled west by **1.2 m** (`FX_WEST_DELTA`). East-wall FX plaques stay at x ≈ 14.8. Quote board / sponsor left on the vault partition (still customer-readable). F9 + viz shots (`33`–`35`, new `42_fx_staff_clearance_close`) updated. WORLD-3D §2 note landed. Gates: `run_checks` / `run_fx_walk` / `run_mock_walk` / `run_viz_budget` green on Godot 4.5.2.
+
+**Authorized construction (historical):** move the **FX desk assembly** west for staff clearance. Layout only — no FX logic.
 
 **Prefer:** **Codex Luna**. Do **not** touch Uniswap, tokens, `lanes/fx.ts`, or fiat-pair work ([HANDOFF-fx-fiat-pairs.md](./HANDOFF-fx-fiat-pairs.md) is a separate Fable unit).
 

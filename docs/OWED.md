@@ -47,7 +47,7 @@ Related: [HANDOFF-CC.md](./HANDOFF-CC.md) · [DEV-LOOP.md](./DEV-LOOP.md) · [RE
 - [x] Optional parallel (separate session): **character charm** — faces + expressions, proportion, mid-50s wardrobe — [HANDOFF-character-charm.md](./HANDOFF-character-charm.md) · [KICKOFF-character-charm.md](./KICKOFF-character-charm.md) (met 2026-09-08)
 - [x] Optional parallel: **KayKit bank cast ladder** — wardrobe ENG-0015–0017 → jacket land `fec5aa1`; Stage 0A idle wiring `639ffd2`; Idle_A feel accepted; ENG-0018 parked ([HANDOFF-kaykit-bank-performance.md](./HANDOFF-kaykit-bank-performance.md))
 - [ ] Optional parallel: **FX fiat pairs** — Practice EUR + ILS, USD pools ≈ $100M TVL each — [HANDOFF-fx-fiat-pairs.md](./HANDOFF-fx-fiat-pairs.md) · [KICKOFF-fx-fiat-pairs.md](./KICKOFF-fx-fiat-pairs.md) (**Claude Code · Fable**)
-- [ ] Optional parallel: **FX desk spacing** — pull Kenji west for staff clearance — [HANDOFF-fx-desk-spacing.md](./HANDOFF-fx-desk-spacing.md) · [KICKOFF-fx-desk-spacing.md](./KICKOFF-fx-desk-spacing.md) (**Codex Luna**)
+- [x] Optional parallel: **FX desk spacing** — pull Kenji west for staff clearance — [HANDOFF-fx-desk-spacing.md](./HANDOFF-fx-desk-spacing.md) · [KICKOFF-fx-desk-spacing.md](./KICKOFF-fx-desk-spacing.md) (**Codex Luna**) — **met 2026-09-09** (1.2 m west; quote board left on vault partition)
 
 ---
 
@@ -76,6 +76,7 @@ Related: [HANDOFF-CC.md](./HANDOFF-CC.md) · [DEV-LOOP.md](./DEV-LOOP.md) · [RE
 
 | When | Item |
 |------|------|
+| 2026-09-09 | FX desk spacing — Codex Luna pull west 1.2 m (`FX_WEST_DELTA`); staff clearance; quote board readable |
 | 2026-09-09 | KayKit jacket cast land + Stage 0A AnimationPlayer `root_node` fix; Idle_A accepted; ENG-0018 parked |
 | 2026-09-09 | Live OTP walk — provision / ENS / Lane A / Lane B wire release on Sepolia (`0xD70B…09eD`) |
 | 2026-09-08 | S2 — Live Main = Sepolia; Dev = 1337 desk toggle |

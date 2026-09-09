@@ -37,6 +37,7 @@ const PANEL_Y0 := 1.25
 const PANEL_Y1 := 2.95
 const PILASTER_W := 0.36
 const BEAM_DROP := 0.28   # coffer beams hang this far under the ceiling slabs (pendant canopies sit at the slab)
+const FX_WEST_DELTA := -1.2  # S1 spacing pass: pull the desk assembly into the lobby, away from the east wall
 
 var theme: WingTheme
 var lamps: Array[OmniLight3D] = []
@@ -397,13 +398,15 @@ func _west_column() -> void:
 ## The sponsor plaque sits under it, in the same wording class as the Name Desk's service menu — a bank sign, not a logo.
 func _fx_desk() -> void:
 	# Target z centres: counter/shelf [-4.4, 0.4] around -2.0; SECURITY [1, 2]; elevator shaft [4, 7].
-	PropKit.hero(self, "FxCounter", "prop_counter", Vector3(13.5, 0, -2.0), -PI / 2, {}, Vector3(0.9, 1.1, 4.8), Vector3(0, 0.55, 0))
-	box_m("FxCounterShelf", Vector3(14.15, 1.02, -2.0), Vector3(0.3, 0.05, 4.8), PropKit.palette("Wood"), false)
-	PropKit.hero(self, "FxPrinter", "prop_printer", Vector3(14.15, 1.045, -3.55), -PI / 2)
-	PropKit.hero(self, "FxTool", "prop_engraver", Vector3(14.15, 1.045, -0.45), -PI / 2)
-	PropKit.kit(self, "FxScreen", "computerScreen", Vector3(14.15, 1.045, -2.0), -PI / 2)
-	PropKit.kaykit(self, "FxStool", "chair_stool", Vector3(14.35, 0, -2.0), 0.0, {"fit": Vector3(0.45, 0.6, 0.45)})
-	_planter("FxDeskPlant", Vector3(13.6, 1.1, -4.05), 0.4, ["pot_small", Vector3(0.24, 0.2, 0.24)], [["plant_flatTall", Vector3(0.26, 0.34, 0.26)]], "Cream")
+	var west := Vector3(FX_WEST_DELTA, 0, 0)
+	# Keep every desk-side prop on the same delta so the counter, staff shelf, stool and planter remain one assembly.
+	PropKit.hero(self, "FxCounter", "prop_counter", Vector3(13.5, 0, -2.0) + west, -PI / 2, {}, Vector3(0.9, 1.1, 4.8), Vector3(0, 0.55, 0))
+	box_m("FxCounterShelf", Vector3(14.15, 1.02, -2.0) + west, Vector3(0.3, 0.05, 4.8), PropKit.palette("Wood"), false)
+	PropKit.hero(self, "FxPrinter", "prop_printer", Vector3(14.15, 1.045, -3.55) + west, -PI / 2)
+	PropKit.hero(self, "FxTool", "prop_engraver", Vector3(14.15, 1.045, -0.45) + west, -PI / 2)
+	PropKit.kit(self, "FxScreen", "computerScreen", Vector3(14.15, 1.045, -2.0) + west, -PI / 2)
+	PropKit.kaykit(self, "FxStool", "chair_stool", Vector3(14.35, 0, -2.0) + west, 0.0, {"fit": Vector3(0.45, 0.6, 0.45)})
+	_planter("FxDeskPlant", Vector3(13.6, 1.1, -4.05) + west, 0.4, ["pot_small", Vector3(0.24, 0.2, 0.24)], [["plant_flatTall", Vector3(0.26, 0.34, 0.26)]], "Cream")
 
 	# The board goes on the vault partition's south face, not on the wall behind Kenji: a customer stands at the
 	# counter looking east, so a panel behind the dealer is read through the counter's glass and over his shoulder.
@@ -419,10 +422,12 @@ func _fx_desk() -> void:
 	quad.set_meta("no_batch", true)
 	add_child(quad)
 
-	plaque("FX DESK", Vector3(14.8, 2.95, -2.0), -PI / 2, 0.34, theme.graphite_color)
+	# These signs belong to the east wall, so re-seat them on the wall face instead of shifting them with the desk.
+	var wall_sign_x := 14.8
+	plaque("FX DESK", Vector3(wall_sign_x, 2.95, -2.0), -PI / 2, 0.34, theme.graphite_color)
 	plaque("Foreign exchange · Uniswap v4 on Sepolia\nYour account trades; the guard list says where.", Vector3(12.4, 1.30, -4.77), 0.0, 0.15, theme.graphite_color, "FxSponsor")
 	# the east-wall frame the board used to sit in becomes the desk's service menu, in the Name Desk's wording class
-	plaque("FX Desk\n• Ask for a rate — the exchange quotes it\n• Trade from your own till\n• Three approved calls, nothing else", Vector3(14.8, 2.2, -2.0), -PI / 2, 0.15, theme.graphite_color, "FxServiceMenu")
+	plaque("FX Desk\n• Ask for a rate — the exchange quotes it\n• Trade from your own till\n• Three approved calls, nothing else", Vector3(wall_sign_x, 2.2, -2.0), -PI / 2, 0.15, theme.graphite_color, "FxServiceMenu")
 
 
 ## Marble counter (hero mesh, 1.1 m, glass partition with a slot) under the greybox collider; printer + stamp (or
