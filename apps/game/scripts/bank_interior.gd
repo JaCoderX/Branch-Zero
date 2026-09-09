@@ -38,6 +38,7 @@ const PANEL_Y1 := 2.95
 const PILASTER_W := 0.36
 const BEAM_DROP := 0.28   # coffer beams hang this far under the ceiling slabs (pendant canopies sit at the slab)
 const FX_WEST_DELTA := -1.2  # S1 spacing pass: pull the desk assembly into the lobby, away from the east wall
+const FX_KENJI_STAFF_NUDGE := 0.55  # Kenji/stool east of the staff shelf so the capsule does not sit in the props
 
 var theme: WingTheme
 var lamps: Array[OmniLight3D] = []
@@ -405,7 +406,8 @@ func _fx_desk() -> void:
 	PropKit.hero(self, "FxPrinter", "prop_printer", Vector3(14.15, 1.045, -3.55) + west, -PI / 2)
 	PropKit.hero(self, "FxTool", "prop_engraver", Vector3(14.15, 1.045, -0.45) + west, -PI / 2)
 	PropKit.kit(self, "FxScreen", "computerScreen", Vector3(14.15, 1.045, -2.0) + west, -PI / 2)
-	PropKit.kaykit(self, "FxStool", "chair_stool", Vector3(14.35, 0, -2.0) + west, 0.0, {"fit": Vector3(0.45, 0.6, 0.45)})
+	# Stool rides with Kenji's staff nudge (not the shelf) so the dealer is not planted inside the seat/shelf.
+	PropKit.kaykit(self, "FxStool", "chair_stool", Vector3(14.35 + FX_KENJI_STAFF_NUDGE, 0, -2.0) + west, 0.0, {"fit": Vector3(0.45, 0.6, 0.45)})
 	_planter("FxDeskPlant", Vector3(13.6, 1.1, -4.05) + west, 0.4, ["pot_small", Vector3(0.24, 0.2, 0.24)], [["plant_flatTall", Vector3(0.26, 0.34, 0.26)]], "Cream")
 
 	# The board goes on the vault partition's south face, not on the wall behind Kenji: a customer stands at the

@@ -4,6 +4,7 @@ extends CharacterBody3D
 ## ground aim; WASD or a UI lock cancels. It reuses `steer_target`, the same rail the demo autopilot and walk_to() use.
 ## Camera (U7 viz Stage 5): the spring arm hangs 0.6 m off the right shoulder at -17 deg; while a dialogue is open it
 ## shortens and swings 38 deg into a two-shot so the NPC is beside the player, not behind the Blocky body.
+## Mouse wheel zooms the boom in/out inside a hard min/max (does not fight talk framing or cam_dist_override).
 ## No jump (docs/WORLD-3D-ENVIRONMENT.md §2.2). Movement is locked while a dialogue or form is open.
 
 const WALK := 4.0
@@ -11,6 +12,9 @@ const JOG := 6.5
 const TURN := 10.0
 const CAM_SPEED := 2.2
 const CAM_DIST := 5.0
+const CAM_DIST_MIN := 2.8      # wheel zoom-in floor — still readable third-person, not a face crop
+const CAM_DIST_MAX := 9.0      # wheel zoom-out ceiling — lobby still framed, not a map view
+const CAM_ZOOM_STEP := 0.45
 const CAM_PITCH := -17.0       # Stage 5: shallower than the old -22 deg so the coffers read in wide lobby shots
 const CAM_HEIGHT := 1.6
 const CAM_SHOULDER := 0.6      # over-the-shoulder: the arm hangs off the player's right shoulder (Stage 3 lesson)
@@ -25,6 +29,8 @@ const CLICK_RAY := 80.0        # metres of camera ray to look for the floor
 var cam_yaw: float = 0.0
 var view_yaw: float = 0.0       # the yaw the pivot actually shows: eases to cam_yaw, or to the talk two-shot
 var cam_pitch: float = CAM_PITCH
+## Player-chosen boom length for free walk; wheel clamps this between CAM_DIST_MIN and CAM_DIST_MAX.
+var cam_dist: float = CAM_DIST
 var talk_framing: bool = false
 var _talk_point: Vector3 = Vector3.ZERO
 var _has_talk_point := false
@@ -119,6 +125,14 @@ func _unhandled_input(event: InputEvent) -> void:
 		_rmb_held = event.pressed
 		if event.pressed:
 			_aim_at_mouse(event.position)
+	elif event is InputEventMouseButton and event.pressed:
+		# Wheel up = closer (shorter boom); wheel down = farther. Hard bounds keep the bank readable.
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			cam_dist = clampf(cam_dist - CAM_ZOOM_STEP, CAM_DIST_MIN, CAM_DIST_MAX)
+			get_viewport().set_input_as_handled()
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			cam_dist = clampf(cam_dist + CAM_ZOOM_STEP, CAM_DIST_MIN, CAM_DIST_MAX)
+			get_viewport().set_input_as_handled()
 	elif event is InputEventMouseMotion and _dragging:
 		cam_yaw -= event.relative.x * 0.006
 
@@ -298,7 +312,7 @@ func _talk_yaw() -> float:
 func _boom_target() -> float:
 	if cam_dist_override > 0.0:
 		return cam_dist_override
-	return TALK_DIST if talk_framing else CAM_DIST
+	return TALK_DIST if talk_framing else cam_dist
 
 
 func _ease_camera(delta: float) -> void:

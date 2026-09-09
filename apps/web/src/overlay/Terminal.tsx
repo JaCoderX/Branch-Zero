@@ -275,8 +275,9 @@ const backdrop: React.CSSProperties = {
 };
 
 const panel: React.CSSProperties = {
-  width: 'min(1180px, 100%)',
-  height: 'min(760px, 100%)',
+  // Wider than the original 1180 so the bloxchain.app iframe has a real working strip beside the grant column.
+  width: 'min(1480px, 100%)',
+  height: 'min(860px, 100%)',
   display: 'flex',
   flexDirection: 'column',
   gap: 10,
@@ -288,7 +289,7 @@ const panel: React.CSSProperties = {
 };
 
 const bar: React.CSSProperties = { display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' };
-const side: React.CSSProperties = { width: 360, flexShrink: 0, display: 'flex', flexDirection: 'column', overflow: 'auto', paddingRight: 4 };
+const side: React.CSSProperties = { width: 320, flexShrink: 0, display: 'flex', flexDirection: 'column', overflow: 'auto', paddingRight: 4 };
 const frame: React.CSSProperties = { flex: 1, width: '100%', border: '1px solid #2a3140', borderRadius: 6, background: '#fff' };
 const hint: React.CSSProperties = { color: '#667', margin: '6px 0' };
 const row: React.CSSProperties = { display: 'flex', gap: 8, alignItems: 'baseline', marginBottom: 4 };

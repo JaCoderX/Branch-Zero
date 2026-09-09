@@ -8,6 +8,7 @@ objective: OBJ-2026-0004
 mission: Keep the conversation / choice panel fully inside the viewport when many choice rows are shown
 kickoff: docs/KICKOFF-dialogue-box-fit.md
 baseline: dialogue_box.gd uses a fixed ~330 px bottom slot; long choice lists (e.g. Kenji pair amounts, multi-verb NPCs) clip or exit the bottom framing
+status: met 2026-09-09 — grow-up bottom panel + choices ScrollContainer; keys 1–9 / Esc preserved
 parallel_to: packaging / FX fiat (done) — layout polish only
 ---
 
@@ -15,7 +16,9 @@ parallel_to: packaging / FX fiat (done) — layout polish only
 
 You are a **cold agent**. Prefer this file + the kickoff over chat memory. Freedom on **how**. No freedom on scope.
 
-**Authorized construction:** make the **dialogue / conversation panel** always fully visible inside the game viewport — especially when the context box has **many choice rows**. No clip through the bottom chrome; no choices off-screen.
+**Status (2026-09-09):** **Met.** `dialogue_box.gd` grows upward from the bottom with viewport-derived max height; choices live in a `ScrollContainer` when they exceed the remaining slot. Keyboard 1–9 / Esc / working state unchanged.
+
+**Authorized construction (historical):** make the **dialogue / conversation panel** always fully visible inside the game viewport — especially when the context box has **many choice rows**. No clip through the bottom chrome; no choices off-screen.
 
 **Prefer:** **Codex Luna**.
 

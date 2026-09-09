@@ -8,6 +8,8 @@ extends Node3D
 ## behind the Account Opening desk between it and the south wall, facing the room; Petra serves from the Name Desk
 ## teller bay (never north of the manager glass); Okafor faces his door; the vault keeper is Bob.
 const FX_WEST_DELTA := -1.2  # Keep Kenji and the FX F9 aid on the same west pull as the desk assembly.
+## Extra east nudge so Kenji clears the staff shelf/screen (capsule was overlapping them after the west pull).
+const FX_KENJI_STAFF_NUDGE := 0.55
 
 const NPCS := [
 	# id, name, role, colour, position, yaw (radians), escort path
@@ -17,8 +19,8 @@ const NPCS := [
 	["registrar", "Petra", "Registrar · Name Desk", Color(0.25, 0.60, 0.45), Vector3(-11.6, 0, -1.0), -PI / 2, []],
 	["vault_keeper", "Bob", "Vault Keeper", Color(0.75, 0.30, 0.30), Vector3(10.0, 0, -7.5), PI * 0.6, []],
 	["manager", "Mr. Okafor", "Branch Manager", Color(0.25, 0.30, 0.55), Vector3(-8.0, 0, -9.8), PI, []],
-	# S1: Kenji works behind the west-pulled FX counter, still facing west into the lobby like the tellers.
-	["dealer", "Kenji", "Dealer · FX Desk", Color(0.90, 0.35, 0.62), Vector3(14.3 + FX_WEST_DELTA, 0, -2.0), PI / 2, []],
+	# S1: Kenji behind the west-pulled FX counter, clear of the staff shelf, facing west into the lobby.
+	["dealer", "Kenji", "Dealer · FX Desk", Color(0.90, 0.35, 0.62), Vector3(14.3 + FX_WEST_DELTA + FX_KENJI_STAFF_NUDGE, 0, -2.0), PI / 2, []],
 ]
 
 ## The bank computers that are worth walking up to (docs/TERMINAL-CONSOLE.md §3). Both sit on `computerScreen`
