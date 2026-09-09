@@ -49,3 +49,10 @@ The character style climb (2026-09-08, `docs/progress/2026-09-08-character-style
 Characters row above and added the inverted-hull outline pass; **Animated Characters Retro** was rejected on the art
 bible, not the licence — its human skins are soft-shaded painted art (wrinkles, photoreal folds), which WORLD-3D §1
 rules out (zip sha256 `1d03f1fb001f3cf629425b69c898df58261a316616220ea25b58bd35298e6882`, fetched 2026-09-08).
+
+## Exterior street-art easter egg (2026-09-10)
+
+| Asset | Files in repo | Author · licence | Source · integrity |
+|-------|---------------|------------------|--------------------|
+| Official source marks used as remapped mural ink references | `apps/game/assets/exterior/bloxchain-source.svg`, `apps/game/assets/exterior/particlecs-source.svg` | Bloxchain / Particle CS · site-provided marks; no standalone redistribution licence asserted | https://bloxchain.app/favicon.svg — sha256 `54c60ad1ec15b36f466d4bded34835bf0cbec048fb4af213ce4f6b77a3e52764`; https://particlecs.com/favicons/icon.svg — sha256 `4d2bf0b8ddb87c02030849b8ad1beda4a3e71c8ce36e90204622773655d0397`; fetched 2026-09-10 |
+| South façade paste-up atlas + masonry shader — D9 Studio composition, colour remap and procedural brick treatment | `apps/game/assets/exterior/south_pasteups.png`, `apps/game/assets/exterior/south_mural.gdshader` | D9 Studio · MIT (generated derivative; source marks remain credited above) | `apps/game/tools/exterior_atlas.py`; atlas sha256 `200e752156221dd8370435dc3b4dd86b52b9ba257fac8e337ff019ca74368388`; shader sha256 `7fc3aedabd7e3ebf97f178a281030ffbb8d64ae3ec9c83e5055d33cd182c649e`, generated 2026-09-10 |

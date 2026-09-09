@@ -150,6 +150,12 @@ func _outer_walls() -> void:
 	wall("WallS_b", Vector3((7.0 + half_w) / 2.0, WALL_H / 2, half_d), Vector3(half_w - 7.0, WALL_H, T), [-1])
 	box("EntranceLintel", Vector3(5.0, WALL_H - 0.5, half_d), Vector3(4.2, 1.0, T + 0.1), theme.trim_color)
 	plaque("BRANCH ZERO — est. block 0", Vector3(5.0, 3.5, half_d - 0.25), 0.0, 0.3, theme.trim_color)
+	# South-facing enamel lettering on the existing brass header; inner plaque stays intact.
+	var exterior_title := plaque("BRANCH ZERO", Vector3(5.0, 4.0, half_d + 0.215), 0.0, 0.42, theme.graphite_color, "ExteriorBankTitle")
+	exterior_title.font = BankFonts.plaque()
+	exterior_title.double_sided = true
+	exterior_title.outline_size = 0
+	_south_pasteups()
 	# cornice along the outer walls
 	var cm := PropKit.palette("Brass")
 	box_m("CorniceN", Vector3(0, WALL_H - 0.08, -half_d + T / 2 + 0.04), Vector3(W, 0.16, 0.08), cm, false)
@@ -163,6 +169,75 @@ func _outer_walls() -> void:
 	cylinder_m("DoorAxis", Vector3(5.0, 1.1, half_d), 0.04, 2.2, cm, false)
 	ring("DoorRingFloor", Vector3(5.0, 0.02, half_d), 0.95, 0.03, cm)
 	ring("DoorRingTop", Vector3(5.0, 2.22, half_d), 0.95, 0.04, cm)
+
+
+## Exterior-only credits: west maker / east brand. One atlas + material, four quads
+## (two brick underlays + two credit layers), merged by bake_static. +Z normals face the street;
+## no collision, emission or lights.
+func _south_pasteups() -> void:
+	var ink := ShaderMaterial.new()
+	ink.shader = preload("res://assets/exterior/south_mural.gdshader")
+	ink.set_shader_parameter("atlas_tex", preload("res://assets/exterior/south_pasteups.png"))
+	# One shader handles the textured paste-ups and the procedural brick underlay.
+	# The underlay is deliberately matte and low-contrast so it stays street masonry, not a cyber skin.
+	var brick_sizes := [Vector2(18.0, WALL_H), Vector2(8.0, WALL_H)]
+	var brick_x := [-6.0, 11.0]
+	for i in 2:
+		var brick_quad := QuadMesh.new()
+		brick_quad.size = brick_sizes[i]
+		var brick_arrays := brick_quad.get_mesh_arrays()
+		var brick_uv: PackedVector2Array = brick_arrays[Mesh.ARRAY_TEX_UV]
+		for j in brick_uv.size():
+			# Keep the brick course roughly 1.4 m wide on either flank.
+			brick_uv[j].x *= brick_sizes[i].x / 1.4
+		brick_arrays[Mesh.ARRAY_TEX_UV] = brick_uv
+		var brick_colors := PackedColorArray()
+		for _vertex in brick_arrays[Mesh.ARRAY_VERTEX]:
+			brick_colors.append(Color(1.0, 1.0, 1.0, 1.0))
+		brick_arrays[Mesh.ARRAY_COLOR] = brick_colors
+		var brick_mesh := ArrayMesh.new()
+		brick_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, brick_arrays)
+		var brick_mi := MeshInstance3D.new()
+		brick_mi.name = "ExteriorBrickWest" if i == 0 else "ExteriorBrickEast"
+		brick_mi.mesh = brick_mesh
+		brick_mi.material_override = ink
+		brick_mi.position = Vector3(brick_x[i], WALL_H / 2.0, D / 2.0 + T / 2.0 + 0.005)
+		brick_mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(brick_mi)
+	for i in 2:
+		var quad := QuadMesh.new()
+		# Enlarge both paste-ups so the paired credits read from the entrance rug,
+		# while keeping a small clear margin at the door gap.
+		quad.size = Vector2(5.5, 2.75)
+		quad.subdivide_width = 2
+		var arrays := quad.get_mesh_arrays()
+		var uv: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV]
+		for j in uv.size():
+			uv[j].y = uv[j].y * 0.5 + float(i) * 0.5
+		arrays[Mesh.ARRAY_TEX_UV] = uv
+		var colors := PackedColorArray()
+		for vertex in arrays[Mesh.ARRAY_VERTEX]:
+			var v: Vector3 = vertex
+			var edge_t: float = (v.x / (quad.size.x * 0.5) + 1.0) * 0.5
+			var inner_t: float
+			if i == 0:
+				inner_t = edge_t
+			else:
+				inner_t = 1.0 - edge_t
+			# Keep the credit field opaque, with only the inner 40% easing into the masonry.
+			var fade_t: float = clampf(inner_t * 2.5 - 1.5, 0.0, 1.0)
+			colors.append(Color(1.0, 0.0, 1.0, lerp(1.0, 0.72, fade_t)))
+		arrays[Mesh.ARRAY_COLOR] = colors
+		var mesh := ArrayMesh.new()
+		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+		var mi := MeshInstance3D.new()
+		mi.name = "ExteriorMaker" if i == 0 else "ExteriorBrands"
+		mi.mesh = mesh
+		mi.material_override = ink
+		# 2 cm off the wall's outer face. Near-gap centers keep ~35 cm clear before the fade begins.
+		mi.position = Vector3(-0.1 if i == 0 else 10.1, 2.05, D / 2.0 + T / 2.0 + 0.02)
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(mi)
 
 
 # ---------------------------------------------------------------- vault strongroom (U7 polish finding 9)

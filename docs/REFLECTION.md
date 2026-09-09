@@ -60,6 +60,7 @@ What it is **not**: a web admin dashboard with a 3D skin; a DeFi yield product; 
 - On screen: everyday bank words ("approved payee", "wire", "manager approval", "network fee"). Protocol jargon only in "Ask why" and receipts' fine print. Implementation detail only in README/docs.
 - Sponsor names appear as in-world signage (Privy plaque at Account Opening, ENS at the Name Desk, Arc on the elevator panel) — visible in video without narration doing all the work.
 - Do not overclaim on Bloxchain: describe it as "an open-source smart-account protocol with built-in timelocks, roles and guards", link the public GitHub / npm packages, and do not present Branch Zero as an official Bloxchain product.
+- Exterior easter egg is deliberately a maker / studio credit (`@JaCoderX` on the west flank; `Bloxchain` + `by ParticleCS` on the east) in street-art paste-up language. It is separate from the interior SE partners board, which remains bank-voiced Event → Partners → Bloxchain | Particle; the façade does not claim Branch Zero is an official Particle CS or Bloxchain product.
 
 ---
 

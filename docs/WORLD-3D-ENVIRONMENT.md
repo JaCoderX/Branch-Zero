@@ -66,6 +66,14 @@ Reference boards: art-deco bank lobbies (symmetry, terrazzo floors), *Katamari*-
 | FX Desk (stretch) | 4.8×3 | Ticker board, longer dealer window | Dealer NPC | Quote text from Uniswap |
 | Side door | 2×3 | "SECURITY" sign, keypad | Security Officer NPC | Compact lore door in the former elevator band; S2 stretch otherwise |
 
+South entrance easter egg (2026-09-10): the existing brass lintel keeps the bank-voiced `BRANCH ZERO` title. The west
+run (`WallS_a`, x < 3) carries an enlarged 5.5 × 2.75 m cream-paper / graphite / muted-coral paste-up for `@JaCoderX`
+with GitHub, Telegram and X marks, centered at x≈−0.1 beside the gap. The east run (`WallS_b`, x > 7) carries a matching
+5.5 × 2.75 m paste-up for `Bloxchain` and `by ParticleCS`, centered at x≈10.1. Both ease into the wall with a soft inner
+edge fade and a matte, low-contrast procedural brick underlay; thin, non-colliding quads sit outside the south face and
+leave ~35 cm of clear masonry before the entrance gap. The entrance gap, revolving door, lighting and interior partners
+board remain unchanged. These are visual credits only, with no click-out.
+
 East-column placement pins (north → south): vault partition z = −5.0; expanded FX counter/shelf z ∈ [−4.4, 0.4],
 centre −2.0; SECURITY door z ∈ [1.0, 2.0], centre 1.5; elevator centre z = 5.5, shaft z ∈ [4.0, 7.0].
 The FX assembly is pulled west by 1.2 m, then the counter/shelf/tools another 0.35 m (`FX_DESK_FORWARD`) so the

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Favicon / app icon: the Particle mark on the brand dark canvas.
+
+  Colours are literal hex on purpose. An icon file is loaded outside any CSS
+  context, so `currentColor` and design-token custom properties do not resolve
+  here. Keep these in step with the tokens they mirror:
+    #14161A = --color-bg-canvas (dark)
+    #FAFAFA = --color-text-primary (dark)
+  A solid background (rather than transparency) is deliberate — Safari draws a
+  border around transparent favicons. Note the brand forbids pure #000.
+
+  Geometry is centred with ~17% inset on the tight side. The previous version used
+  translate(106,106) scale(4.8), which put the artwork's right edge at x=547 in a
+  512 viewBox — the mark was clipped by 35px and sat 73px off-centre vertically.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" fill="#14161A" />
+  <g transform="translate(87.04, 127.00) scale(3.6811)" fill="#FAFAFA">
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M58.0121 4.88998L61.1256 0.695557L64.2391 4.88999L79.9978 26.12H73.7709L61.1256 9.08441L40.3915 37.0172H81.8597L77.4823 31.12H83.7093L88.0867 37.0172L91.7981 42.0172H85.5712H36.6801H30.4531L34.1646 37.0172L58.0121 4.88998Z" />
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M33.7859 65.1965L30.6725 69.3909L27.559 65.1965L11.8001 43.9663H18.0271L30.6725 61.0021L51.4066 33.0693H9.93837L14.3156 38.9663H8.08869L3.71143 33.0693L0 28.0693H6.22694H55.118H61.345L57.6335 33.0693L33.7859 65.1965Z" />
+  </g>
+</svg>
