@@ -32,9 +32,9 @@ proven pattern: `GameLab/.../godot_proof/proof.gd`
 
 ## Principal intent
 
-The lobby service assistant still uses a procedural cylinder stack (`InpcProp._dress`). Lab **ENG-2026-0021** proved a CC0 **3D Gum Bot** remapped to Graphite / Steel / **Brass bezel**, with dormant↔awake screen emissive, in Godot 4.5.2 Compatibility. Land that mesh at the existing spot so the iNPC reads as bank furniture, not a debug prop.
+~~The lobby service assistant still uses a procedural cylinder stack.~~ **Met 2026-09-10:** lab ENG-2026-0021 Gum Bot bank mesh stands at the service-assistant spot (Graphite / Steel / Brass bezel, dormant↔awake screen). Behaviour (Wake / Talk / Sleep / OpenRouter / phone HUD if already landed) **unchanged**.
 
-Behaviour (Wake / Talk / Sleep / OpenRouter / phone HUD if already landed) **unchanged**.
+See **Outcome** below for as-built.
 
 ---
 
