@@ -97,6 +97,8 @@ FX requires a real Sepolia account. Do **not** share Remote EVM. Arc stays **DEF
 Uniswap remains activated **sponsor #3**. Official pitch: Privy + ENS + Uniswap.
 **Also open (parallel, Codex Luna):** Help keep the branch open — Live HUD ops-float CTA [HANDOFF-help-keep-branch-open.md](./HANDOFF-help-keep-branch-open.md).
 
+**Also open (parallel, Codex Luna):** Mo greeter knowledge graph — lobby hub-and-spoke teaching [HANDOFF-mo-greeter-knowledge.md](./HANDOFF-mo-greeter-knowledge.md) · [KICKOFF-mo-greeter-knowledge.md](./KICKOFF-mo-greeter-knowledge.md).
+
 **Also open:** U7 ship packaging (below), still gated on the principal's polish re-playtest.
 
 > **K7 is PASS.** The FX till `0xB5e8ab92…` completed a Uniswap v4 swap on Sepolia —
