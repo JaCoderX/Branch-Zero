@@ -1,4 +1,4 @@
----
+﻿---
 title: Sepolia Ops Treasury — SEPOLIA_TREASURY_PK
 created: 2026-09-08
 status: met 2026-09-08
@@ -10,7 +10,8 @@ kickoff: docs/missions/KICKOFF-sepolia-treasury.md
 # Sepolia Ops Treasury
 
 > One Live-wing wallet collects **Sepolia ETH** and **USDC**, then tops up bank staff role wallets in the
-> background. Role keys stay separate (identity ≠ gas float). Not a walkable desk; not a player mechanic.
+> background. Role keys stay separate (identity ≠ gas float). Not a walkable desk. Operator logistics by default;
+> thin player HUD CTA (**Help keep the branch open**) is authorized separately — see [HANDOFF-help-keep-branch-open.md](./missions/HANDOFF-help-keep-branch-open.md).
 
 Related: [SEPOLIA-LIVE.md](./SEPOLIA-LIVE.md) · [SECURITY-AND-KEYS.md](./SECURITY-AND-KEYS.md) ·
 [HANDOFF-sepolia-treasury.md](./missions/HANDOFF-sepolia-treasury.md)
@@ -130,7 +131,8 @@ hook and the interval watcher.
 
 ## 7. Out of scope
 
-- Player-facing “Treasury Desk” quest  
+- Walkable player-facing **Treasury Desk** quest (full lobby desk) — still parked
+- Thin HUD **Help keep the branch open** CTA — **not** out of scope; open unit [HANDOFF-help-keep-branch-open.md](./missions/HANDOFF-help-keep-branch-open.md)  
 - Collapsing manager/broadcaster into treasury  
 - Migrating practice token to Circle USDC  
 - Arc revive / sharing Remote EVM  

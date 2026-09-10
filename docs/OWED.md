@@ -1,4 +1,4 @@
----
+﻿---
 title: Owed / follow-up checklist
 created: 2026-09-08
 updated: 2026-09-10
@@ -48,6 +48,7 @@ Related: [HANDOFF-CC.md](./missions/HANDOFF-CC.md) · [DEV-LOOP.md](./DEV-LOOP.m
 
 - [x] **Copy · ENS · bank text refinement** — review dialogues, deepen ENS across the bank, fix plaque/UI placeholders — [HANDOFF-copy-ens-refinement.md](./missions/HANDOFF-copy-ens-refinement.md) · [KICKOFF-copy-ens-refinement.md](./missions/KICKOFF-copy-ens-refinement.md) (**Codex Luna**) — **met 2026-09-10** (passbook/name board/pay-by-name surfaces use existing ENS state; reverse names, staff directory and EAC deny-address remain proposals)
 - [x] **Player menu (title + pause)** — thin front door + Esc visitor's card; no operator/desk verbs — [HANDOFF-player-menu.md](./missions/HANDOFF-player-menu.md) · [KICKOFF-player-menu.md](./missions/KICKOFF-player-menu.md) (**Codex Luna**) — **met 2026-09-10** (`player_menu.gd` CanvasLayer; Enter the branch · Resume / Controls / Sound / Leave for today; Esc priority + canvas focus kept; high contrast skipped — needs a theme pass; export:web done)
+- [ ] **Help keep the branch open** — Live-only HUD chip + funding popup (ops Sepolia ETH address + Google faucet); soft-gate writes when `treasuryShort` — [HANDOFF-help-keep-branch-open.md](./missions/HANDOFF-help-keep-branch-open.md) · [KICKOFF-help-keep-branch-open.md](./missions/KICKOFF-help-keep-branch-open.md) (**Codex Luna**)
 - [x] **ENS passbook polish** — omit unclaimed bank-name noise; mirror `bz.tier` onto the passbook (met 2026-09-10, mock + typecheck; Live tier glance is a principal walk) — [HANDOFF-ens-passbook-polish.md](./missions/HANDOFF-ens-passbook-polish.md) · [KICKOFF-ens-passbook-polish.md](./missions/KICKOFF-ens-passbook-polish.md) (**Claude Code**)
 - [ ] **U7 ship packaging** — [KICKOFF-U7-ship-package.md](./missions/KICKOFF-U7-ship-package.md) · [DEMO-SCRIPT.md](./DEMO-SCRIPT.md) (G8–G10)
 - [x] Optional parallel (separate CC session): **character-style climb** — [HANDOFF-character-style.md](./missions/HANDOFF-character-style.md) · [KICKOFF-character-style.md](./missions/KICKOFF-character-style.md) (met 2026-09-08)
@@ -77,7 +78,7 @@ Related: [HANDOFF-CC.md](./missions/HANDOFF-CC.md) · [DEV-LOOP.md](./DEV-LOOP.m
 - [ ] **iNPC Ollama path** — Cloud CORS blocked (ENG-0019); local install = distribution trade — deferred ([INPC.md](./INPC.md))
 - [ ] **U6 Arc revive** — only via [ARC.md §5b](./ARC.md#5b-deferred-revive-checklist-g7--parked-2026-09-07); funded `ARC_*` keys required
 - [ ] Practice token → Circle USDC migration
-- [ ] Walkable “Treasury Desk” quest
+- [ ] Walkable "Treasury Desk" quest — still parked; thin HUD CTA is the separate open unit [HANDOFF-help-keep-branch-open.md](./missions/HANDOFF-help-keep-branch-open.md)
 - [ ] Privy Global Wallet / SaaS cross-app into Console
 - [ ] Share / expose Remote EVM `1337` as public infra
 - [ ] **ENG-2026-0018 KayKit clip authoring** — only if Idle_A still reads wrong after Stage 0A; census in [HANDOFF-kaykit-bank-performance.md](./missions/HANDOFF-kaykit-bank-performance.md)
