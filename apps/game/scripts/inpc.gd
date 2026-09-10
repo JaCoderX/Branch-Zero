@@ -20,12 +20,12 @@ extends BankTerminal
 ## `GameState.inpc_following`; this prop then trails the player with the escort-lite seek the teller uses (npc.gd
 ## `_escort`: seek, slide, ignore the player, give up when stuck) — no NavigationRegion; the skinned walk clip poses
 ## the legs while the mover still slides. The root stays a Node3D so main.gd's terminal ranking is untouched; a CharacterBody3D
-## child does the sliding and the root absorbs its displacement every tick, so the zone, mesh and plaque travel along.
+## child does the sliding and the root absorbs its displacement every tick, so the zone and mesh travel along.
 ## Follow is spatial chrome only: it never locks the floor (`inpc_open` / `overlay_open()` untouched) and adds no verb.
 ## Unfollow = stay put. Sleep = snap back to the lobby home spot, dormant.
 ##
-## Signage is a fixed enamel name badge on the lobby face of the CRT body, under the screen (not a billboard stack).
-## World copy stays bank words; OpenRouter is named only in dialogue / the Wake panel (docs/INPC.md Visual).
+## No world nameplate — the silhouette is just the Gum Bot; Space prompt / dialogue name it Blox-47. OpenRouter is named
+## only in dialogue / the Wake panel (docs/INPC.md Visual).
 
 enum Follow { HOME, FOLLOWING, STAYING }
 
@@ -40,9 +40,6 @@ const BODY_D := 1.18
 ## Mover footprint: a cylinder the size of the biped's shell (the box it replaces was 1.14 × 1.18) — round so it slides
 ## off desk corners instead of hooking on them.
 const BODY_R := 0.58
-## Lobby face of the CRT body (local −z, just clear of the shell at −0.59); the badge sits in the band under the screen.
-const FACE_Z := -0.61
-const BADGE_Y := 0.41
 
 ## Escort-lite seek numbers. Speed sits under the teller escort (3.2) and the player's walk (4.0) so the player is
 ## never overtaken. Rest ~1.8 m off the player; walk again once they pull past 2.8 m (hysteresis, so the bot does not
@@ -60,7 +57,6 @@ const TURN := 8.0
 
 var _screen_mat: StandardMaterial3D
 var _screen_dormant_tex: Texture2D
-var _state_plate: Label3D
 var _mover: CharacterBody3D
 var _anim: AnimationPlayer
 var _player: PhysicsBody3D
@@ -116,12 +112,10 @@ func is_following() -> bool:
 
 # ---------------------------------------------------------------- look
 
-## The Gum Bot bank body plus a name badge under its screen. The blocking body is a CharacterBody3D on layer 1 (mask 1
+## The Gum Bot bank body only — no enamel nameplate. The blocking body is a CharacterBody3D on layer 1 (mask 1
 ## so it slides along desks and walls) sized to the biped like every other blocking prop (bank_interior.gd rules); it
 ## is the only thing under this node that moves in its own frame — `_absorb_motion` folds it back into the root.
 func _dress() -> void:
-	var brass := PropKit.palette("Brass")
-	var paper := PropKit.palette("Paper")
 	var bot: Node3D = GUM_BOT.instantiate()
 	bot.name = "GumBot"
 	bot.rotation.y = PI   # glb screen faces +z; the lobby face of this prop is −z
@@ -170,50 +164,7 @@ func _dress() -> void:
 	shape.position.y = BODY_H / 2.0
 	_mover.add_child(shape)
 	add_child(_mover)
-	# Paper face + brass frame under the screen (screen width, y 0.32–0.50) — same class as BRANCH CONSOLE / Arc notice,
-	# not a floating HUD.
-	var board := MeshInstance3D.new()
-	board.name = "PlateBoard"
-	var box := BoxMesh.new()
-	box.size = Vector3(0.84, 0.18, 0.02)   # as wide as the screen above it: a nameplate strip under the CRT
-	board.mesh = box
-	board.position = Vector3(0, BADGE_Y, FACE_Z)
-	board.material_override = paper
-	add_child(board)
-	var frame := MeshInstance3D.new()
-	frame.name = "PlateFrame"
-	var frame_box := BoxMesh.new()
-	frame_box.size = Vector3(0.88, 0.22, 0.015)
-	frame.mesh = frame_box
-	frame.position = Vector3(0, BADGE_Y, FACE_Z + 0.012)
-	frame.material_override = brass
-	add_child(frame)
-	var theme: WingTheme = PropKit.ensure_theme()
-	_plaque("BLOX-47", Vector3(0, BADGE_Y + 0.045, FACE_Z - 0.018), 0.10, theme.graphite_color, "InpcTitle")
-	_state_plate = _plaque("", Vector3(0, BADGE_Y - 0.04, FACE_Z - 0.018), 0.08, theme.graphite_color, "InpcState")
 	_sync_animation()
-
-
-## Fixed enamel (bank_interior.plaque style): faces local −z into the lobby; never billboarded.
-func _plaque(text: String, pos: Vector3, size: float, color: Color, n: String = "") -> Label3D:
-	var l := Label3D.new()
-	if n != "":
-		l.name = n
-	l.text = text
-	l.font = BankFonts.plaque()
-	l.position = pos
-	l.rotation.y = PI   # Label3D reads from +z by default; spin so the ink faces the lobby (−z)
-	l.pixel_size = 0.005 * size / 0.3
-	l.font_size = 48
-	l.outline_size = 6
-	l.double_sided = false
-	l.billboard = BaseMaterial3D.BILLBOARD_DISABLED
-	l.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	l.modulate = color
-	l.outline_modulate = Color(0, 0, 0, 0.6)
-	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	add_child(l)
-	return l
 
 
 func _desired_animation() -> String:
@@ -237,19 +188,15 @@ func _sync_animation() -> void:
 	_anim.play(desired, 0.12)
 
 
-## The screen and the state line follow the one bit the shell mirrors back: a key in this tab's session or not.
+## The screen follows the one bit the shell mirrors back: a key in this tab's session or not.
 ## Only the emission sheet and its energy change; `emission` stays black (additive) so the awake eyes never flood white.
 ## The legs follow the second bit (`inpc_following`), gated on the first: dormant never follows, Sleep sends it home.
 func _refresh_look() -> void:
-	if _state_plate == null:
-		return
 	var awake := GameState.inpc_awake
 	if _screen_mat != null:
 		_screen_mat.emission_texture = SCREEN_AWAKE if awake else _screen_dormant_tex
 		_screen_mat.emission = Color(0, 0, 0)
 		_screen_mat.emission_energy_multiplier = 2.0 if awake else 1.0
-	var s: Dictionary = GameState.strings
-	_state_plate.text = str(s.get("inpc_plate_awake", "awake · reads your board")) if awake else str(s.get("inpc_plate_dormant", "asleep · needs your link"))
 	_sync_follow()
 
 
@@ -431,7 +378,7 @@ func _reposition_near(p: PhysicsBody3D) -> void:
 	_walking = true
 
 
-## The mover slid in world space; fold that displacement into the root so the interact zone, mesh and plaque follow,
+## The mover slid in world space; fold that displacement into the root so the interact zone and mesh follow,
 ## and put the mover back at the root's origin for the next tick.
 func _absorb_motion() -> void:
 	if _mover.position.length_squared() > 0.0:
