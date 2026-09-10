@@ -97,6 +97,7 @@ FX requires a real Sepolia account. Do **not** share Remote EVM. Arc stays **DEF
 
 **S1 / S1b Uniswap v4 FX Desk — MET 2026-09-08.** Spec: [`docs/UNISWAP.md`](../UNISWAP.md). Mission record: **§5i**.
 Uniswap remains activated **sponsor #3**. Official pitch: Privy + ENS + Uniswap.
+Fiat pairs (USD→EUR|ILS) **met 2026-09-09**. **Also open (parallel, Claude Code · Fable):** bidirectional USD↔EUR|ILS + EUR/ILS Lane A transfer on first FX grant — [HANDOFF-fx-bidirectional.md](./HANDOFF-fx-bidirectional.md) · [KICKOFF-fx-bidirectional.md](./KICKOFF-fx-bidirectional.md).
 **Met 2026-09-10 (parallel, Codex Luna):** Help keep the branch open — Live HUD ops-float CTA [HANDOFF-help-keep-branch-open.md](./HANDOFF-help-keep-branch-open.md).
 
 **Also open (parallel, Codex Luna):** Ops float credit meter — compact passbook-band HUD polish [HANDOFF-ops-float-credit-hud.md](./HANDOFF-ops-float-credit-hud.md) · [KICKOFF-ops-float-credit-hud.md](./KICKOFF-ops-float-credit-hud.md).
