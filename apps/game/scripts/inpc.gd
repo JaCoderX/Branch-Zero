@@ -6,15 +6,26 @@ extends BankTerminal
 ## pay, wire, release, approve, recall or provision. It is a *prop* the player can wake: Space opens `dialogue/inpc.json`,
 ## whose only verbs are `open_inpc` (the shell's Wake / chat overlay) and `sleep_inpc` (forget the key). The overlay,
 ## the OpenRouter call and the player's session-only key all live in apps/web; Godot hands over a player-safe snapshot
-## (`GameState.inpc_snapshot()`) and mirrors one bit back — awake or dormant — for the eye and the prompt.
+## (`GameState.inpc_snapshot()`) and mirrors two bits back — awake or dormant, following or not — for the eye, the
+## prompt and the legs.
 ##
 ## It extends BankTerminal for the interact zone and `can_talk()` shape only, so main.gd ranks it with the terminals
 ## for the [Space] prompt without a third pick rule. The body is the lab-proven CC0 **Gum Bot bank** glb (GameLab
 ## ENG-2026-0021: Graphite shell, Steel plates, Brass CRT bezel — one UV set, two surfaces) and no new lights (the lobby is
 ## at its eight-omni budget); the screen swaps its emission sheet dormant (dark) ↔ awake (eyes) — no new material either.
 ##
+## Companion follow (HANDOFF-inpc-companion-follow): while awake the phone's Follow / Unfollow flips
+## `GameState.inpc_following`; this prop then trails the player with the escort-lite seek the teller uses (npc.gd
+## `_escort`: seek, slide, ignore the player, give up when stuck) — no NavigationRegion, no walk clip (the glb is
+## rig-stripped, so it slides). The root stays a Node3D so main.gd's terminal ranking is untouched; a CharacterBody3D
+## child does the sliding and the root absorbs its displacement every tick, so the zone, mesh and plaque travel along.
+## Follow is spatial chrome only: it never locks the floor (`inpc_open` / `overlay_open()` untouched) and adds no verb.
+## Unfollow = stay put. Sleep = snap back to the lobby home spot, dormant.
+##
 ## Signage is a fixed enamel name badge on the lobby face of the CRT body, under the screen (not a billboard stack).
 ## World copy stays bank words; OpenRouter is named only in dialogue / the Wake panel (docs/INPC.md Visual).
+
+enum Follow { HOME, FOLLOWING, STAYING }
 
 const GUM_BOT := preload("res://assets/models/inpc/gum_bot_bank.glb")
 const SCREEN_AWAKE := preload("res://assets/models/inpc/screen_awake.png")
@@ -24,13 +35,40 @@ const SCREEN_AWAKE := preload("res://assets/models/inpc/screen_awake.png")
 const BODY_W := 1.14
 const BODY_H := 1.40
 const BODY_D := 1.18
+## Mover footprint: a cylinder the size of the biped's shell (the box it replaces was 1.14 × 1.18) — round so it slides
+## off desk corners instead of hooking on them.
+const BODY_R := 0.58
 ## Lobby face of the CRT body (local −z, just clear of the shell at −0.59); the badge sits in the band under the screen.
 const FACE_Z := -0.61
 const BADGE_Y := 0.41
 
+## Escort-lite seek numbers. Speed sits under the teller escort (3.2) and the player's walk (4.0) so the player is
+## never overtaken. Rest ~1.8 m off the player; walk again once they pull past 2.8 m (hysteresis, so the bot does not
+## twitch at the boundary). If it makes no ground for STUCK_SEC it pauses instead of grinding into a desk; if the
+## player is far away when the pause ends it soft-repositions to the rest point rather than thrashing.
+const FOLLOW_SPEED := 2.8
+const FOLLOW_DIST := 1.8
+const FOLLOW_STOP := 2.0
+const FOLLOW_RESUME := 2.8
+const STUCK_SPEED := 0.3
+const STUCK_SEC := 1.5
+const STUCK_PAUSE_SEC := 2.0
+const FAR_DIST := 7.0
+const TURN := 8.0
+
 var _screen_mat: StandardMaterial3D
 var _screen_dormant_tex: Texture2D
 var _state_plate: Label3D
+var _mover: CharacterBody3D
+var _player: PhysicsBody3D
+var _follow: Follow = Follow.HOME
+var _walking := false
+var _stuck_t := 0.0
+var _pause_t := 0.0
+var _home: Vector3
+var _home_yaw: float
+## Pairs [a, b] where `a.add_collision_exception_with(b)` is live; cleared when the walk ends.
+var _ignored: Array = []
 
 
 func _ready() -> void:
@@ -40,6 +78,8 @@ func _ready() -> void:
 	name = "Inpc"
 	remove_from_group("terminal")   # a bank computer it is not; the group keeps meaning "Console screen"
 	add_to_group("inpc")
+	_home = position
+	_home_yaw = rotation.y
 	_dress()
 	GameState.changed.connect(_refresh_look)
 	_refresh_look()
@@ -62,10 +102,20 @@ func prompt_text() -> String:
 	return str(s.get("prompt_inpc_dormant", "[Space] Wake Blox-47"))
 
 
+## Where the legs are: HOME (lobby spot), FOLLOWING (trailing the player) or STAYING (Unfollow — parked wherever it was).
+func follow_state() -> Follow:
+	return _follow
+
+
+func is_following() -> bool:
+	return _follow == Follow.FOLLOWING
+
+
 # ---------------------------------------------------------------- look
 
-## The Gum Bot bank body plus a name badge under its screen. One box collider on layer 1 / mask 0 sized to the biped
-## like every other blocking prop (bank_interior.gd rules); the old column geometry is gone with the cylinders.
+## The Gum Bot bank body plus a name badge under its screen. The blocking body is a CharacterBody3D on layer 1 (mask 1
+## so it slides along desks and walls) sized to the biped like every other blocking prop (bank_interior.gd rules); it
+## is the only thing under this node that moves in its own frame — `_absorb_motion` folds it back into the root.
 func _dress() -> void:
 	var brass := PropKit.palette("Brass")
 	var paper := PropKit.palette("Paper")
@@ -91,17 +141,19 @@ func _dress() -> void:
 		mesh.set_surface_override_material(1, _screen_mat)
 	else:
 		push_warning("InpcProp: gum_bot_bank.glb has no two-surface mesh — screen swap disabled")
-	var body := StaticBody3D.new()
-	body.name = "InpcCollider"
-	body.collision_layer = 1
-	body.collision_mask = 0
+	_mover = CharacterBody3D.new()
+	_mover.name = "InpcBody"
+	_mover.collision_layer = 1
+	_mover.collision_mask = 1
+	_mover.floor_stop_on_slope = true
 	var shape := CollisionShape3D.new()
-	var box_shape := BoxShape3D.new()
-	box_shape.size = Vector3(BODY_W, BODY_H, BODY_D)
-	shape.shape = box_shape
+	var cyl := CylinderShape3D.new()
+	cyl.radius = BODY_R
+	cyl.height = BODY_H
+	shape.shape = cyl
 	shape.position.y = BODY_H / 2.0
-	body.add_child(shape)
-	add_child(body)
+	_mover.add_child(shape)
+	add_child(_mover)
 	# Paper face + brass frame under the screen (screen width, y 0.32–0.50) — same class as BRANCH CONSOLE / Arc notice,
 	# not a floating HUD.
 	var board := MeshInstance3D.new()
@@ -149,6 +201,7 @@ func _plaque(text: String, pos: Vector3, size: float, color: Color, n: String = 
 
 ## The screen and the state line follow the one bit the shell mirrors back: a key in this tab's session or not.
 ## Only the emission sheet and its energy change; `emission` stays black (additive) so the awake eyes never flood white.
+## The legs follow the second bit (`inpc_following`), gated on the first: dormant never follows, Sleep sends it home.
 func _refresh_look() -> void:
 	if _state_plate == null:
 		return
@@ -159,3 +212,186 @@ func _refresh_look() -> void:
 		_screen_mat.emission_energy_multiplier = 2.0 if awake else 1.0
 	var s: Dictionary = GameState.strings
 	_state_plate.text = str(s.get("inpc_plate_awake", "awake · reads your board")) if awake else str(s.get("inpc_plate_dormant", "asleep · needs your link"))
+	_sync_follow()
+
+
+# ---------------------------------------------------------------- legs (escort-lite seek, no navmesh)
+
+func _sync_follow() -> void:
+	if not GameState.inpc_awake:
+		if _follow != Follow.HOME:
+			_go_home()
+		return
+	var want: bool = GameState.inpc_following
+	if want and _follow != Follow.FOLLOWING:
+		_begin_follow()
+	elif not want and _follow == Follow.FOLLOWING:
+		_stay()
+
+
+func _player_body() -> PhysicsBody3D:
+	if _player != null and is_instance_valid(_player):
+		return _player
+	var p := get_tree().get_first_node_in_group("player")
+	_player = p as PhysicsBody3D
+	return _player
+
+
+func _begin_follow() -> void:
+	_follow = Follow.FOLLOWING
+	_walking = true
+	_stuck_t = 0.0
+	_pause_t = 0.0
+	_clear_ignored()
+	var p := _player_body()
+	if p != null:
+		# Both ways: the bot must not shove the player and the player must not be pinned by a body that is trying to
+		# stand where they are (the teller escort only ignores one way and shoves props — HANDOFF lock).
+		_ignore(_mover, p)
+		_ignore(p, _mover)
+		# A companion two metres behind the player sits right where the spring arm looks for walls; without this the
+		# camera would pop forward every time the bot trails into the boom (player.gd: arm collides with layer 1).
+		var arm := p.get_node_or_null("CamPivot/Arm") as SpringArm3D
+		if arm != null:
+			arm.add_excluded_object(_mover.get_rid())
+	for n in get_tree().get_nodes_in_group("npc"):
+		if n is PhysicsBody3D:
+			_ignore(_mover, n as PhysicsBody3D)
+
+
+## Unfollow: freeze where it stands. It is a solid prop again (exceptions off) so the player can lean on it for Space.
+func _stay() -> void:
+	_follow = Follow.STAYING
+	_walking = false
+	_clear_ignored()
+	if _mover != null:
+		_mover.velocity = Vector3.ZERO
+
+
+## Sleep (or the key vanishing): snap to the lobby home spot with the home yaw. A snap, not a walk — the eye is out.
+func _go_home() -> void:
+	_follow = Follow.HOME
+	_walking = false
+	_clear_ignored()
+	if _mover != null:
+		_mover.velocity = Vector3.ZERO
+		_mover.position = Vector3.ZERO
+	position = _home
+	rotation = Vector3(0.0, _home_yaw, 0.0)
+
+
+func _ignore(a: PhysicsBody3D, b: PhysicsBody3D) -> void:
+	a.add_collision_exception_with(b)
+	_ignored.append([a, b])
+
+
+func _clear_ignored() -> void:
+	for pair in _ignored:
+		var a: PhysicsBody3D = pair[0]
+		var b: PhysicsBody3D = pair[1]
+		if is_instance_valid(a) and is_instance_valid(b):
+			a.remove_collision_exception_with(b)
+	_ignored.clear()
+
+
+func _physics_process(delta: float) -> void:
+	if _mover == null:
+		return
+	rotation.x = 0.0
+	rotation.z = 0.0
+	match _follow:
+		Follow.FOLLOWING:
+			_seek(delta)
+		Follow.STAYING:
+			_settle()
+			_face_player(delta)
+		_:
+			_settle()
+	_absorb_motion()
+
+
+## Stand still on the floor (gravity only), like the staff capsules.
+func _settle() -> void:
+	_mover.velocity.x = 0.0
+	_mover.velocity.z = 0.0
+	_mover.velocity.y = 0.0 if _mover.is_on_floor() else -9.8
+	_mover.move_and_slide()
+
+
+func _face_player(delta: float) -> void:
+	var p := _player_body()
+	if p == null:
+		return
+	var d := p.global_position - global_position
+	d.y = 0.0
+	if d.length() > 0.05:
+		rotation.y = lerp_angle(rotation.y, atan2(-d.x, -d.z), TURN * delta)
+
+
+func _seek(delta: float) -> void:
+	var p := _player_body()
+	if p == null:
+		_stay()
+		return
+	var to_player := p.global_position - global_position
+	to_player.y = 0.0
+	var dist := to_player.length()
+	if _pause_t > 0.0:
+		# Stuck a moment ago: wait it out; if the player has gone far, soft-reposition to the rest point instead of
+		# grinding into whatever stopped us.
+		_pause_t -= delta
+		_settle()
+		if _pause_t <= 0.0 and dist > FAR_DIST:
+			_reposition_near(p)
+		return
+	if dist > FOLLOW_RESUME:
+		_walking = true
+	elif dist <= FOLLOW_STOP:
+		_walking = false
+	if not _walking:
+		_settle()
+		_face_player(delta)
+		return
+	# Rest point: FOLLOW_DIST short of the player, on our side of them.
+	var target := p.global_position - to_player.normalized() * FOLLOW_DIST
+	var d := target - global_position
+	d.y = 0.0
+	if d.length() < 0.05:
+		_settle()
+		return
+	var dir := d.normalized()
+	_mover.velocity.x = dir.x * FOLLOW_SPEED
+	_mover.velocity.z = dir.z * FOLLOW_SPEED
+	_mover.velocity.y = 0.0 if _mover.is_on_floor() else -9.8
+	_mover.move_and_slide()
+	rotation.y = lerp_angle(rotation.y, atan2(-dir.x, -dir.z), TURN * delta)
+	var real := _mover.get_real_velocity()
+	var ground := Vector2(real.x, real.z).length()
+	_stuck_t = _stuck_t + delta if ground < STUCK_SPEED else 0.0
+	if _stuck_t > STUCK_SEC:
+		_stuck_t = 0.0
+		_pause_t = STUCK_PAUSE_SEC
+
+
+## Soft reposition: the rest point on the line from the player back toward us (the floor they just walked), feet on
+## the home plane. Never inside the player — exceptions are on, but 1.8 m clears both bodies anyway.
+func _reposition_near(p: PhysicsBody3D) -> void:
+	var away := global_position - p.global_position
+	away.y = 0.0
+	if away.length() < 0.05:
+		away = Vector3(0.0, 0.0, 1.0)
+	var spot := p.global_position + away.normalized() * FOLLOW_DIST
+	spot.y = _home.y
+	_mover.velocity = Vector3.ZERO
+	_mover.position = Vector3.ZERO
+	global_position = spot
+	_stuck_t = 0.0
+	_walking = true
+
+
+## The mover slid in world space; fold that displacement into the root so the interact zone, mesh and plaque follow,
+## and put the mover back at the root's origin for the next tick.
+func _absorb_motion() -> void:
+	if _mover.position.length_squared() > 0.0:
+		global_position = _mover.global_position
+		_mover.position = Vector3.ZERO

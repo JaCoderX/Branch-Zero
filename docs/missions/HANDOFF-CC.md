@@ -110,6 +110,8 @@ Fiat pairs (USD→EUR|ILS) **met 2026-09-09**. **Also open (parallel, Claude Cod
 
 **Met 2026-09-10 (parallel, Codex Luna):** iNPC Gum Bot mesh land — lab ENG-2026-0021 bank Gum Bot replaces procedural kiosk — [HANDOFF-inpc-gum-bot-mesh.md](./HANDOFF-inpc-gum-bot-mesh.md) · [KICKOFF-inpc-gum-bot-mesh.md](./KICKOFF-inpc-gum-bot-mesh.md).
 
+**Met 2026-09-10 (parallel, Claude Code Fable):** iNPC companion follow Phase 1 — phone Follow / Unfollow, escort-lite seek on a `CharacterBody3D` mover (no navmesh, slide), Sleep snaps home, never a lock — [HANDOFF-inpc-companion-follow.md](./HANDOFF-inpc-companion-follow.md) · [KICKOFF-inpc-companion-follow.md](./KICKOFF-inpc-companion-follow.md).
+
 **Also open:** U7 ship packaging (below), still gated on the principal's polish re-playtest.
 
 > **K7 is PASS.** The FX till `0xB5e8ab92…` completed a Uniswap v4 swap on Sepolia —

@@ -1,7 +1,7 @@
 import { useEffect, useState, type CSSProperties } from 'react';
-import { requestInpcOpen } from '../bridge/branchZero';
+import { requestInpcFollow, requestInpcOpen } from '../bridge/branchZero';
 import { focusCanvas } from '../shell/focus';
-import { getTranscript, hasKey, subscribe } from '../inpc/session';
+import { getTranscript, hasKey, isFollowing, setFollowing, subscribe } from '../inpc/session';
 import type { ChatMessage } from '../inpc/types';
 
 /**
@@ -10,9 +10,14 @@ import type { ChatMessage } from '../inpc/types';
  *
  * Talk must go through Godot (`inpc.open` → `open_inpc`) so the panel mounts with a fresh `GameState.inpc_snapshot()`
  * and `inpc_open` is set — never `openInpc` with a cached shell board.
+ *
+ * Follow / Unfollow (docs/missions/HANDOFF-inpc-companion-follow.md) is the phone's third verb: one toggle that tells
+ * Godot (`inpc.follow`) to walk the Gum Bot body with the player or park it where it stands. It is spatial chrome —
+ * no `inpc_open`, no floor lock, no new agency — and Sleep clears it together with the key.
  */
 export function InpcPhone() {
   const [awake, setAwake] = useState(() => hasKey());
+  const [following, setFollowingState] = useState(() => isFollowing());
   const [messages, setMessages] = useState<ChatMessage[]>(() => getTranscript());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | undefined>();
@@ -21,6 +26,7 @@ export function InpcPhone() {
     () =>
       subscribe(() => {
         setAwake(hasKey());
+        setFollowingState(isFollowing());
         setMessages(getTranscript());
       }),
     [],
@@ -40,6 +46,22 @@ export function InpcPhone() {
     } catch (e) {
       setError((e as Error).message || 'The full conversation did not open.');
       setBusy(false);
+    }
+  };
+
+  // Ordinary click, no preventDefault (the Talk lesson): the toggle fires the event and hands the canvas back so the
+  // player can walk off with WASD straight away. Godot answers nothing — the shell owns the bit, Godot mirrors it.
+  const toggleFollow = () => {
+    if (busy) return;
+    setError(undefined);
+    const next = !following;
+    try {
+      requestInpcFollow(next);
+      setFollowing(next);
+    } catch (e) {
+      setError((e as Error).message || 'Blox-47 could not hear the follow request.');
+    } finally {
+      focusCanvas();
     }
   };
 
@@ -68,7 +90,7 @@ export function InpcPhone() {
       <div style={header}>
         <span style={signal} aria-hidden="true">●</span>
         <strong style={title}>BLOX-47</strong>
-        <span style={state}>awake · radio</span>
+        <span style={state}>{following ? 'awake · following' : 'awake · radio'}</span>
       </div>
 
       <div style={log} role="log" aria-live="polite" aria-label="Blox-47 messages">
@@ -91,6 +113,15 @@ export function InpcPhone() {
       <div style={actions}>
         <button style={button} disabled={busy} onClick={() => void talk()}>
           Talk
+        </button>
+        <button
+          style={{ ...button, borderColor: following ? '#7ee787' : '#2a3140' }}
+          disabled={busy}
+          onClick={toggleFollow}
+          aria-pressed={following}
+          title={following ? 'Blox-47 stays where it is' : 'Blox-47 walks with you'}
+        >
+          {following ? 'Unfollow' : 'Follow'}
         </button>
         <button style={{ ...button, borderColor: '#e3b341' }} disabled={busy} onClick={() => void sleep()}>
           Sleep

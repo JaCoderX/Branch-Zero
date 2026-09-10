@@ -24,6 +24,8 @@
  * iNPC (s2.3): openInpc / inpcSnapshot / inpcStatus / sleepInpc — the optional service assistant's Wake / chat / Sleep
  *             panel (docs/INPC.md). Shell surfaces only: they read no chain, sign nothing and hold no bank secret. The
  *             player's OpenRouter key lives in `sessionStorage` for the session and is never seen by Godot or the desk.
+ *             Shell → Godot events: `inpc.open` (phone Talk), `inpc.freshen` (Ask), `inpc.follow {following}` (phone
+ *             Follow / Unfollow — spatial chrome, no lock), `inpc.closed` (panel gone).
  * Player ops float (s2.4): treasuryStatus / openBranchFloat — the whitelisted `/healthz` treasury slice and its
  *             read-only Copy + faucet panel. The panel never calls a top-up route.
  *
@@ -38,7 +40,7 @@ import deployments from '../../../../infra/deployments/remote-evm.json';
 import type { DeskLink } from '../shell/deskEvents';
 import { focusCanvas } from '../shell/focus';
 import { starGithubRepo } from '../shell/githubStar';
-import { hasKey as hasInpcKey, wipe as wipeInpcSession } from '../inpc/session';
+import { hasKey as hasInpcKey, isFollowing as isInpcFollowing, wipe as wipeInpcSession } from '../inpc/session';
 
 /**
  * `s2.4`: the player ops float — `treasuryStatus` / `openBranchFloat` (docs/missions/HANDOFF-help-keep-branch-open.md).
@@ -281,6 +283,22 @@ export function requestInpcBoardFreshen(): Promise<unknown | null> {
     emit(msg as BridgeMessage);
     godotCallback(JSON.stringify(msg));
   });
+}
+
+/**
+ * Phone Follow / Unfollow → Godot `inpc.follow {following}` → `GameState.inpc_following`; the Gum Bot body trails the
+ * player (docs/missions/HANDOFF-inpc-companion-follow.md). Fire-and-forget like `inpc.closed`: Godot mirrors the bit
+ * and moves the prop, sets no `inpc_open` and takes no lock. Throws when no Godot is listening so the phone can say so
+ * instead of showing a following state nobody is walking.
+ */
+export function requestInpcFollow(following: boolean): void {
+  const callback = godotCallback;
+  if (!callback) {
+    throw bridgeError('INPC_UNAVAILABLE', 'no Godot callback is registered', 'Blox-47 can only walk with you in the full bank window.');
+  }
+  const msg = { type: 'event' as const, kind: 'inpc.follow', payload: { following } };
+  emit(msg as BridgeMessage);
+  callback(JSON.stringify(msg));
 }
 
 /** Registered once by the overlay, like `setWalletAdapter`: it must be a stable object across renders. */
@@ -569,9 +587,12 @@ const handlers: Record<string, Handler> = {
     }
     return { delivered: Boolean(inpc?.isOpen()) };
   },
-  /** Is a key in this tab's session? Yes/no only — the key itself never crosses the bridge. */
+  /**
+   * Is a key in this tab's session? Yes/no only — the key itself never crosses the bridge. `following` rides along
+   * so a Godot boot after the shell (or a re-sync) lands on the same companion bit the phone shows.
+   */
   async inpcStatus() {
-    return { awake: hasInpcKey() };
+    return { awake: hasInpcKey(), following: isInpcFollowing() };
   },
   /** Sleep from the prop's dialogue: wipe key + transcript; close the panel if it happens to be up. */
   async sleepInpc() {

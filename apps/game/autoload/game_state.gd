@@ -33,6 +33,7 @@ var fx_quote: Dictionary = {}       # the rate currently on the quote board (bri
 var terminal_open: bool = false     # the bank computer's Console overlay is up in the shell (bridge `terminal.closed` clears it)
 var inpc_open: bool = false         # the iNPC's Wake / chat overlay is up in the shell (bridge `inpc.closed` clears it) — docs/INPC.md
 var inpc_awake: bool = false        # the shell holds the player's session-only OpenRouter key; mirrored yes/no, the key itself never comes here
+var inpc_following: bool = false    # phone Follow: Blox-47 trails the player (bridge `inpc.follow`); spatial chrome only — never a lock, cleared by Sleep
 var branch_float_open: bool = false # the read-only Live ops float panel is up in the shell (bridge `branch-float.closed` clears it)
 var _branch_float_opening: bool = false
 var treasury_status: Dictionary = {} # player-safe `/healthz` slice only: configured/address/eth/treasuryShort/requiredEth
@@ -309,6 +310,7 @@ func facts() -> Dictionary:
 		"terminal_open": terminal_open,
 		"inpc_open": inpc_open,
 		"inpc_awake": inpc_awake,
+		"inpc_following": inpc_following,
 		"branch_float_open": branch_float_open,
 		"treasury_configured": treasury_configured(),
 		"treasury_short": treasury_short(),
@@ -586,8 +588,10 @@ func refresh_inpc() -> void:
 	var r := await Chain.call_async("inpcStatus", {}, 10.0)
 	if r.get("ok", false) and r.get("result") is Dictionary:
 		var awake := bool(r["result"].get("awake", false))
-		if awake != inpc_awake:
+		var following := awake and bool(r["result"].get("following", false))
+		if awake != inpc_awake or following != inpc_following:
 			inpc_awake = awake
+			inpc_following = following
 			changed.emit()
 
 
@@ -859,6 +863,7 @@ func run_action(action: String, args: Dictionary = {}) -> Dictionary:
 			r = await Chain.call_async("sleepInpc", {}, 30.0)
 			if r.get("ok", false):
 				inpc_awake = false
+				inpc_following = false   # Sleep = Unfollow + home; the prop snaps back on `changed`
 		"observer_list":
 			r = await Chain.call_async("observerList", {}, 20.0)
 		"observer_grant":
@@ -973,6 +978,9 @@ func _on_chain_event(kind: String, payload: Dictionary) -> void:
 		"inpc.freshen":
 			# Full panel Ask: re-pull session/passbook, then push one complete board (shell awaits the push).
 			_on_inpc_freshen_request()
+		"inpc.follow":
+			# Phone Follow / Unfollow: flip the companion bit only. Not an overlay — no lock, no snapshot, no verb.
+			_on_inpc_follow(payload)
 		"bridge.ready":
 			pass
 
@@ -999,9 +1007,22 @@ func _on_inpc_freshen_request() -> void:
 func _on_inpc_closed(p: Dictionary) -> void:
 	if p.has("awake"):
 		inpc_awake = bool(p["awake"])
+	if not inpc_awake:
+		inpc_following = false   # Sleep (or a vanished key): a dormant assistant never follows
 	if inpc_open:
 		inpc_open = false
 		ui_locked = Dialogue.active or overlay_open()
+	changed.emit()
+
+
+## Phone Follow / Unfollow (HANDOFF-inpc-companion-follow). Awake only: a dormant assistant refuses silently and the
+## bit stays false. Deliberately touches neither `inpc_open` nor `ui_locked` — Follow is spatial chrome, not an
+## overlay, and the phone must leave WASD and the desks free (same contract as phone Talk ≠ lock).
+func _on_inpc_follow(p: Dictionary) -> void:
+	var want := inpc_awake and bool(p.get("following", false))
+	if want == inpc_following:
+		return
+	inpc_following = want
 	changed.emit()
 
 

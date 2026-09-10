@@ -13,6 +13,12 @@ export const INPC_KEY_SLOT = 'inpc.openrouter.key';
 export const HISTORY_MAX = 12;
 
 let transcript: ChatMessage[] = [];
+/**
+ * Companion follow (docs/missions/HANDOFF-inpc-companion-follow.md): the phone asked Blox-47 to walk with the player.
+ * Memory only, awake-gated, and wiped with the key — a reload drops it, and Godot reloads with the tab, so both sides
+ * start honest at "not following". This is spatial chrome, never a lock bit.
+ */
+let following = false;
 const listeners = new Set<() => void>();
 
 function store(): Storage | undefined {
@@ -50,6 +56,19 @@ export function wipe(): void {
     /* nothing to wipe */
   }
   transcript = [];
+  following = false;
+  notify();
+}
+
+/** Is Blox-47 walking with the player? Only ever true while a key is in the session. */
+export function isFollowing(): boolean {
+  return following && hasKey();
+}
+
+export function setFollowing(v: boolean): void {
+  const next = v && hasKey();
+  if (following === next) return;
+  following = next;
   notify();
 }
 

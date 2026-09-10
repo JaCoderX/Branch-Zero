@@ -176,7 +176,109 @@ func _run() -> void:
 	var slept: Dictionary = await gs.run_action("sleep_inpc", {})
 	if slept.get("ok", false):
 		_fail("sleep_inpc without a shell should be refused (nothing to wipe here)")
+
+	print("iNPC — companion follow (phone inpc.follow → escort-lite seek)")
+	await _walk_follow(gs, chain)
 	_finish()
+
+
+func _ticks(n: int) -> void:
+	for _i in n:
+		await physics_frame
+
+
+## HANDOFF-inpc-companion-follow: a bare room (floor plane, stand-in player capsule in group `player`, the prop at its
+## lobby spot). Asserts: dormant never follows; Follow flips only `inpc_following` (no `inpc_open`, no lock); the body
+## trails the player to the rest point and across the room; Unfollow parks it; Sleep clears the bit and snaps it home.
+func _walk_follow(gs: Node, chain: Node) -> void:
+	var home := Vector3(3.5, 0.0, 4.5)
+	var floor_body := StaticBody3D.new()
+	floor_body.collision_layer = 1
+	var fs := CollisionShape3D.new()
+	fs.shape = WorldBoundaryShape3D.new()
+	floor_body.add_child(fs)
+	root.add_child(floor_body)
+	var player := CharacterBody3D.new()
+	player.add_to_group("player")
+	var ps := CollisionShape3D.new()
+	var cap := CapsuleShape3D.new()
+	cap.radius = 0.35
+	cap.height = 1.8
+	ps.shape = cap
+	ps.position.y = 0.9
+	player.add_child(ps)
+	player.position = Vector3(3.5, 0.0, 9.0)
+	root.add_child(player)
+	# Load by path, not by class name: a `-s` script is compiled before the autoload globals exist, and a class_name
+	# reference would drag inpc.gd (which names GameState) into that early compile.
+	var inpc_script: GDScript = load("res://scripts/inpc.gd")
+	var follow_states: Dictionary = inpc_script.get_script_constant_map()["Follow"]
+	var prop: Node3D = inpc_script.new()
+	prop.position = home
+	prop.rotation.y = PI
+	root.add_child(prop)
+	await _ticks(5)
+
+	gs.inpc_awake = false
+	gs.inpc_following = false
+	gs.changed.emit()
+	chain.emit_event("inpc.follow", {"following": true})
+	await _ticks(30)
+	if gs.inpc_following or prop.is_following() or prop.position.distance_to(home) > 0.05:
+		_fail("dormant assistant followed: bit=%s state=%s pos=%s" % [str(gs.inpc_following), str(prop.follow_state()), str(prop.position)])
+	else:
+		_ok("dormant: inpc.follow refused silently — bit false, prop still at home")
+
+	gs.inpc_awake = true
+	gs.changed.emit()
+	var d0 := prop.global_position.distance_to(player.global_position)
+	chain.emit_event("inpc.follow", {"following": true})
+	if not gs.inpc_following or gs.inpc_open or gs.ui_locked or gs.overlay_open() or not prop.is_following():
+		_fail("Follow did not set only the companion bit: following=%s open=%s locked=%s overlay=%s state=%s" % [str(gs.inpc_following), str(gs.inpc_open), str(gs.ui_locked), str(gs.overlay_open()), str(prop.follow_state())])
+	else:
+		_ok("Follow: inpc_following true; inpc_open false, ui_locked false, overlay_open false")
+	await _ticks(150)
+	var d1 := prop.global_position.distance_to(player.global_position)
+	if d1 > d0 - 1.0 or d1 > 2.6 or d1 < 1.0 or absf(prop.global_position.y) > 0.1:
+		_fail("did not trail to the rest point: %.2f m → %.2f m (y %.2f)" % [d0, d1, prop.global_position.y])
+	else:
+		_ok("trails the player: %.2f m → %.2f m, rests short of them on the floor" % [d0, d1])
+	player.position = Vector3(9.0, 0.0, 9.0)
+	await _ticks(200)
+	var d2 := prop.global_position.distance_to(player.global_position)
+	if d2 > 2.6 or d2 < 1.0:
+		_fail("did not follow the player across the room: %.2f m from them, at %s" % [d2, str(prop.global_position)])
+	else:
+		_ok("follows across the room: %.2f m behind the player at %s" % [d2, str(prop.global_position.snapped(Vector3(0.01, 0.01, 0.01)))])
+	var zone: Area3D = prop.get_node("InteractZone")
+	if zone.global_position.distance_to(prop.global_position) > 0.7:
+		_fail("interact zone was left behind at %s" % str(zone.global_position))
+
+	chain.emit_event("inpc.follow", {"following": false})
+	await _ticks(2)
+	var parked := prop.global_position
+	player.position = Vector3(3.5, 0.0, 9.0)
+	await _ticks(60)
+	if gs.inpc_following or prop.follow_state() != follow_states["STAYING"] or prop.global_position.distance_to(parked) > 0.05 or gs.ui_locked:
+		_fail("Unfollow did not park it: bit=%s state=%s moved=%.2f locked=%s" % [str(gs.inpc_following), str(prop.follow_state()), prop.global_position.distance_to(parked), str(gs.ui_locked)])
+	else:
+		_ok("Unfollow = Stay: parked at %s while the player walks off" % str(parked.snapped(Vector3(0.01, 0.01, 0.01))))
+
+	chain.emit_event("inpc.follow", {"following": true})
+	await _ticks(30)
+	if not prop.is_following():
+		_fail("Follow after Stay did not resume")
+	chain.emit_event("inpc.closed", {"reason": "sleep", "awake": false})
+	await _ticks(2)
+	if gs.inpc_following or gs.inpc_awake or prop.follow_state() != follow_states["HOME"] or prop.position.distance_to(home) > 0.05 or absf(angle_difference(prop.rotation.y, PI)) > 0.01:
+		_fail("Sleep did not clear follow / send it home: bit=%s awake=%s state=%s pos=%s yaw=%.2f" % [str(gs.inpc_following), str(gs.inpc_awake), str(prop.follow_state()), str(prop.position), prop.rotation.y])
+	else:
+		_ok("Sleep: follow cleared, dormant, snapped home (3.5, 0, 4.5) yaw π")
+	var snap_text := JSON.stringify(gs.inpc_snapshot()).to_lower()
+	if snap_text.find("follow") >= 0:
+		_fail("the follow bit leaked into the player-safe snapshot")
+	else:
+		_ok("snapshot whitelist untouched by follow")
 
 
 func _finish() -> void:
