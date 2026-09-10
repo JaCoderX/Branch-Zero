@@ -105,6 +105,8 @@ Uniswap remains activated **sponsor #3**. Official pitch: Privy + ENS + Uniswap.
 
 **Met 2026-09-10 (parallel, Claude Code):** Shell splash — branded first-paint while Godot loads; hand off to existing player-menu front door — [HANDOFF-shell-splash.md](./HANDOFF-shell-splash.md) · [KICKOFF-shell-splash.md](./KICKOFF-shell-splash.md).
 
+**Also open (parallel, Codex Luna):** iNPC Gum Bot mesh land — replace procedural kiosk with lab ENG-2026-0021 bank Gum Bot — [HANDOFF-inpc-gum-bot-mesh.md](./HANDOFF-inpc-gum-bot-mesh.md) · [KICKOFF-inpc-gum-bot-mesh.md](./KICKOFF-inpc-gum-bot-mesh.md). Mesh-only; do not absorb phone Talk / HUD work.
+
 **Also open:** U7 ship packaging (below), still gated on the principal's polish re-playtest.
 
 > **K7 is PASS.** The FX till `0xB5e8ab92…` completed a Uniswap v4 swap on Sepolia —

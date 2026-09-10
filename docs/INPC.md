@@ -20,6 +20,7 @@ Not a staff NPC (`NPCS.md`). Separate species.
 |-----|--------|
 | [ENG-2026-0019](../../GameLab/work/ENG-2026-0019-inpc-ollama-cloud/) | Ollama Cloud: grounding Yes via lab proxy; **browser → ollama.com direct = CORS No** |
 | [ENG-2026-0020](../../GameLab/work/ENG-2026-0020-inpc-openrouter-direct/) | **Yes** — OpenRouter direct CORS works; Inkling Small **16/16** grounded; session-key hygiene holds |
+| [ENG-2026-0021](../../GameLab/work/ENG-2026-0021-inpc-gum-bot-bank/) | **Yes** — CC0 Gum Bot remapped Graphite / Steel / Brass bezel; Godot Compatibility screen swap proven — product land open |
 
 ## Locks (principal)
 
@@ -65,8 +66,17 @@ Not a staff NPC (`NPCS.md`). Separate species.
 
 Provenance: ENG-0019 fixture → product-owned under `game-knowledge/` (counter limit, Kenji, Sgt. Bale, Mo, viewing wallets, practice dollars). Never read from GameLab at runtime.
 
+## Visual
+
+| Aspect | As built | Next |
+|--------|----------|------|
+| Mesh | Procedural cylinder stack + sphere (`inpc.gd`) | **Land Gum Bot** — [HANDOFF-inpc-gum-bot-mesh.md](./missions/HANDOFF-inpc-gum-bot-mesh.md) · [KICKOFF-inpc-gum-bot-mesh.md](./missions/KICKOFF-inpc-gum-bot-mesh.md) (Codex Luna; lab ENG-2026-0021) |
+| Materials | PropKit Brass · Graphite · Steel · Bulb (awake eye) | Lab ship uses Graphite/Steel albedo + Brass bezel; screen emission swap (not Bulb fill) |
+| Spot | `INPC_SPOT (7.6, 0, 2.4)` · yaw `π/2` | Keep unless import faces wrong |
+
 ## Product docs
 
 - Build brief: [`missions/HANDOFF-inpc-openrouter.md`](./missions/HANDOFF-inpc-openrouter.md)
 - Paste kickoff: [`missions/KICKOFF-inpc-openrouter.md`](./missions/KICKOFF-inpc-openrouter.md)
+- Mesh land: [`missions/HANDOFF-inpc-gum-bot-mesh.md`](./missions/HANDOFF-inpc-gum-bot-mesh.md) · [`missions/KICKOFF-inpc-gum-bot-mesh.md`](./missions/KICKOFF-inpc-gum-bot-mesh.md)
 - Game-knowledge index: [`game-knowledge/README.md`](./game-knowledge/README.md)
