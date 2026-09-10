@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { requestInpcBoardFreshen } from '../bridge/branchZero';
 import { focusCanvas } from '../shell/focus';
 import { INPC_MAX_TOKENS, INPC_MODEL, OPENROUTER_KEYS_PAGE, OpenRouterError, chat, keyInfo } from '../inpc/openrouter';
 import { buildMessages } from '../inpc/prompt';
@@ -14,10 +15,10 @@ import type { ChatMessage } from '../inpc/types';
  *   1. **Wake.** The player pastes their own OpenRouter key. It goes to `sessionStorage` and nowhere else — not to the
  *      bank, not to a `.env`, not to `localStorage`. A best-effort read of the key's own limits names a $0 weekly cap
  *      up front instead of on the first question.
- *   2. **Chat.** Browser → `openrouter.ai` directly, model Inkling Small, `max_tokens` always bounded. The system
- *      prompt is rules + teaching pack + the player-safe snapshot Godot handed over, re-timed at send so READY is
- *      decided from the chain's `releaseTime` at that moment (`freshenSnapshot`). 401 / 402 / 403 are shown as
- *      OpenRouter wrote them, with the bank's plain reading beside them. No retry.
+ *   2. **Chat.** Browser → `openrouter.ai` directly, model Inkling Small, `max_tokens` always bounded. Before each Ask
+ *      the shell asks Godot to re-pull session/passbook and push a fresh player-safe board (`inpc.freshen`); READY is
+ *      then re-timed locally (`freshenSnapshot`). 401 / 402 / 403 are shown as OpenRouter wrote them, with the bank's
+ *      plain reading beside them. No retry.
  *   3. **Sleep.** Wipes the key and the conversation, closes the panel, tells Godot the eye went dark.
  *
  * Focus contract (GODOT.md §5b) is the Terminal's: while this is open the player is typing, so the canvas must not
@@ -114,7 +115,10 @@ export function Inpc({ snapshot, receivedAt, onClose }: InpcProps) {
     setBusy(true);
     const history = getTranscript();
     appendTranscript({ role: 'user', content: q });
-    const fresh = freshenSnapshot(snap, receivedAt);
+    // Re-pull GameState session/passbook via Godot, then local vault-clock freshen. Never desk-debug React state.
+    const board = await requestInpcBoardFreshen();
+    const boardAt = board != null ? Date.now() : receivedAt;
+    const fresh = freshenSnapshot(sanitizeSnapshot(board ?? snapshot), boardAt);
     const ac = new AbortController();
     inflight.current = ac;
     try {

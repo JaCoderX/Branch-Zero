@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { MOCK_MODE, onBridgeTraffic, pushBranchFloatClosed, pushInpcClosed, pushLink, pushStage, pushTerminalClosed, setBranchFloatHost, setInpcHost, setTerminalHost, setWalletAdapter, type PlayerTreasury } from '../bridge/branchZero';
 import { connectDeskEvents, type DeskLink } from '../shell/deskEvents';
 import { focusCanvas } from '../shell/focus';
-import { hasKey as hasInpcKey } from '../inpc/session';
+import { hasKey as hasInpcKey, subscribe as subscribeInpc } from '../inpc/session';
 import { Inpc } from './Inpc';
+import { InpcPhone } from './InpcPhone';
 import { BranchFloat } from './BranchFloat';
 import { Terminal } from './Terminal';
 import { useBranchZeroWallet, type DeskTreasury } from './useBranchZeroWallet';
@@ -65,7 +66,10 @@ export function App({ engineState }: { engineState: string }) {
    * handed over (raw; the panel whitelists it) and `at` the local time it arrived, for the vault clock.
    */
   const [inpc_, setInpc] = useState<{ snapshot: unknown; at: number } | undefined>();
+  const [inpcAwake, setInpcAwake] = useState(() => hasInpcKey());
   const [branchFloat_, setBranchFloat] = useState<{ status: PlayerTreasury; reason?: string } | undefined>();
+
+  useEffect(() => subscribeInpc(() => setInpcAwake(hasInpcKey())), []);
 
   useEffect(() => {
     const push = (l: Line) => setLines((prev) => [...prev.slice(-(MAX - 1)), l]);
@@ -165,7 +169,9 @@ export function App({ engineState }: { engineState: string }) {
         setInpc({ snapshot, at: Date.now() });
         return { awake: hasInpcKey() };
       },
-      update: (snapshot) => setInpc((cur) => (cur ? { snapshot, at: Date.now() } : cur)),
+      update: (snapshot) => {
+        setInpc((cur) => (cur ? { snapshot, at: Date.now() } : cur));
+      },
       close: (reason) => {
         setInpc(undefined);
         pushInpcClosed(reason ?? 'closed', hasInpcKey());
@@ -282,6 +288,10 @@ export function App({ engineState }: { engineState: string }) {
     />
   ) : null;
 
+  // The phone is ambient chrome: awake session only, hidden while the full typing panel owns the floor.
+  // Talk goes through Godot (`requestInpcOpen` → `inpc.open` → `open_inpc`), not a cached shell snapshot.
+  const phone = inpcAwake && !inpc_ ? <InpcPhone /> : null;
+
   const branchFloatStatus = currentPlayerTreasury();
   const branchFloatAvailable = branchFloatStatus !== null;
   useEffect(() => {
@@ -309,6 +319,7 @@ export function App({ engineState }: { engineState: string }) {
         {terminal}
         {assistant}
         {branchFloat}
+        {phone}
         <button style={pill} onClick={() => setDebugOpen(true)} title="Show the desk debug panel (bridge traffic, session, vault board)">
           desk debug · {engineState.startsWith('running') ? 'engine running' : engineState}
           {lines.length ? ` · ${lines.length} msgs` : ''}
@@ -322,6 +333,7 @@ export function App({ engineState }: { engineState: string }) {
       {terminal}
       {assistant}
       {branchFloat}
+      {phone}
       <div style={panel}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, gap: 8 }}>
         <strong>Branch Zero · desk debug</strong>

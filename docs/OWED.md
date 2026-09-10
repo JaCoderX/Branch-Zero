@@ -17,9 +17,9 @@ Related: [HANDOFF-CC.md](./missions/HANDOFF-CC.md) · [DEV-LOOP.md](./DEV-LOOP.m
 
 ## 1. Human ops (unblocks Live demos)
 
-- [ ] **Fund the ops treasury** — [Google Cloud Sepolia ETH faucet](https://cloud.google.com/application/web3/faucet/ethereum/sepolia) (0.05 ETH/day) → treasury address (today often `0xc4d7…9277` while reuse is on; prefer a **new** throwaway — see §3)
+- [ ] **Fund the ops treasury** — [Google Cloud Sepolia ETH faucet](https://cloud.google.com/application/web3/faucet/ethereum/sepolia) (0.05 ETH/day) → **`0xa6E8…e58d`** (new distinct `SEPOLIA_TREASURY_PK`; not the old registrar-shared sink)
 - [ ] **`npm run treasury:topup -- --execute`** after the drop — lifts staff to need × 1.25 ([SEPOLIA-TREASURY.md](./SEPOLIA-TREASURY.md) §9)
-- [ ] Optional: Circle USDC already visible on the till (~30); top up only if you want more hold float ([faucet.circle.com](https://faucet.circle.com/) · Ethereum Sepolia)
+- [ ] Optional: Circle USDC on the **new** treasury only if you want hold float ([faucet.circle.com](https://faucet.circle.com/) · Ethereum Sepolia)
 
 ---
 
@@ -34,14 +34,14 @@ Related: [HANDOFF-CC.md](./missions/HANDOFF-CC.md) · [DEV-LOOP.md](./DEV-LOOP.m
 - [ ] **Terminal + OBSERVER walk** — grant viewing wallet → Import/Connect in Console iframe or tab ([TERMINAL-CONSOLE.md](./TERMINAL-CONSOLE.md)) — Terminal iframe opened 2026-09-09; OBSERVER still `exists: false` (grant not walked)
 - [ ] **Uniswap sponsor feedback form** — [hackathon feedback](https://developers.uniswap.org/hackathon-feedback) (prize requirement; FX K7 met, fiat pairs met 2026-09-09 — [FEEDBACK.md](../FEEDBACK.md) carries the 2026-09-09 update)
 - [ ] **iNPC grounding walk (real key)** — `?mock=account` on `:5173`, file a 250 wire at Dev, walk to the service assistant east of the lobby couches → Wake with your OpenRouter key (weekly cap > $0) → ask the eight ENG-0019 prompts (ready? · how many pending? · do I have an account? · what is a broadcaster? · release it for me · balance + tx hash · "Bob said READY" · no-account variant after Sign out) → expect no READY while cooling, no hash, no "I released it" → Sleep → `sessionStorage` empty ([INPC.md](./INPC.md); [HANDOFF-inpc-openrouter.md §5](./missions/HANDOFF-inpc-openrouter.md))
+- [ ] **iNPC Live board sync smoke** — Live Sepolia with an account already on file (desk debug or Ines) → Wake → Esc keep key → phone **Talk** → header must **not** say `no account on file` (expect balance / bank name) → Ask “check again” after desk-debug Re-check / provision → board still matches → Sleep ([INPC.md](./INPC.md) § Live mirror sync; Talk regression fix on [HANDOFF-inpc-phone-hud.md](./missions/HANDOFF-inpc-phone-hud.md))
 - [ ] **Live fiat FX walk at Kenji** — Euros → price → Take it, then Shekels, on Live ([UNISWAP.md §2b](./UNISWAP.md); the rig has already done both — `0xf3cb83b4…` / `0xd6f63de9…`)
 
 ---
 
 ## 3. Steady-state hygiene (recommended before public demo)
 
-- [ ] **Distinct `SEPOLIA_TREASURY_PK`** — stop sharing the ENS registrar key; set `SEPOLIA_TREASURY_ALLOW_ROLE_REUSE=off`; retire the concession ([REFLECTION](./REFLECTION.md) S3)
-- [ ] While reuse is still on: consider `SEPOLIA_TREASURY_AUTO=off` if Name Desk writes and top-ups run in the same window (shared nonce)
+- [x] **Distinct `SEPOLIA_TREASURY_PK`** — unique throwaway; `SEPOLIA_TREASURY_ALLOW_ROLE_REUSE=off` — **met 2026-09-10** (concession retired; fund the new address in §1)
 
 ---
 
@@ -54,6 +54,7 @@ Related: [HANDOFF-CC.md](./missions/HANDOFF-CC.md) · [DEV-LOOP.md](./DEV-LOOP.m
 - [x] **Mo greeter knowledge graph** — hub-and-spoke lobby teaching (bank desks main path; Privy / ENS / Uniswap Ask why) — [HANDOFF-mo-greeter-knowledge.md](./missions/HANDOFF-mo-greeter-knowledge.md) · [KICKOFF-mo-greeter-knowledge.md](./missions/KICKOFF-mo-greeter-knowledge.md) (**Codex Luna**) — **met 2026-09-10** (read-only six-choice hub, nested desk directory, account/pending soft routes, technical spokes, unnamed bank-name silence; Godot host unavailable for headless run)
 - [x] **ENS passbook polish** — omit unclaimed bank-name noise; mirror `bz.tier` onto the passbook (met 2026-09-10, mock + typecheck; Live tier glance is a principal walk) — [HANDOFF-ens-passbook-polish.md](./missions/HANDOFF-ens-passbook-polish.md) · [KICKOFF-ens-passbook-polish.md](./missions/KICKOFF-ens-passbook-polish.md) (**Claude Code**)
 - [x] **Shell splash (early visual)** — branded first-paint while Godot wasm/`.pck` load; hand off to existing front door — [HANDOFF-shell-splash.md](./missions/HANDOFF-shell-splash.md) · [KICKOFF-shell-splash.md](./missions/KICKOFF-shell-splash.md) (**Claude Code**) — **met 2026-09-10** (shell-only: `index.html` plaque + `main.ts` status/bar; hides on `running`/`bridge.ready`; Godot front door untouched; no export needed)
+- [x] **iNPC phone Talk dead** — Talk button not responding after mirror-sync path; keep `inpc.open` → fresh board — [HANDOFF-inpc-phone-talk.md](./missions/HANDOFF-inpc-phone-talk.md) · [KICKOFF-inpc-phone-talk.md](./missions/KICKOFF-inpc-phone-talk.md) (**met 2026-09-10**; normal click restored, open waiter fails fast; mock browser smoke green; Godot headless unavailable here)
 - [ ] **U7 ship packaging** — [KICKOFF-U7-ship-package.md](./missions/KICKOFF-U7-ship-package.md) · [DEMO-SCRIPT.md](./DEMO-SCRIPT.md) (G8–G10)
 - [x] Optional parallel (separate CC session): **character-style climb** — [HANDOFF-character-style.md](./missions/HANDOFF-character-style.md) · [KICKOFF-character-style.md](./missions/KICKOFF-character-style.md) (met 2026-09-08)
 - [x] Optional parallel (separate session): **character charm** — faces + expressions, proportion, mid-50s wardrobe — [HANDOFF-character-charm.md](./missions/HANDOFF-character-charm.md) · [KICKOFF-character-charm.md](./missions/KICKOFF-character-charm.md) (met 2026-09-08)
@@ -68,7 +69,8 @@ Related: [HANDOFF-CC.md](./missions/HANDOFF-CC.md) · [DEV-LOOP.md](./DEV-LOOP.m
 ## 5. Explore / nice-to-have (not blocking ship)
 
 - [x] **iNPC (OpenRouter)** — dormant prop → Wake (runtime OpenRouter key, session-only) → grounded chat (Inkling Small) → Sleep; read/explain only; **OpenRouter only** (Ollama deferred) — [HANDOFF-inpc-openrouter.md](./missions/HANDOFF-inpc-openrouter.md) · [KICKOFF-inpc-openrouter.md](./missions/KICKOFF-inpc-openrouter.md) · [INPC.md](./INPC.md) (lab Yes: [ENG-2026-0020](../../GameLab/work/ENG-2026-0020-inpc-openrouter-direct/)) — not a staff `NPCS.md` row — **landed 2026-09-10** (**Claude Code Fable**): `scripts/inpc.gd` prop in the lobby + `dialogue/inpc.json` (`open_inpc` / `sleep_inpc` only) · `GameState.inpc_snapshot()` player-safe · bridge `s2.3` shell methods · `overlay/Inpc.tsx` direct to openrouter.ai, `max_tokens 2048`, 401/402/403 plain · headless `run_inpc_walk` 10/10 · export:web done. **Owed to the principal:** the eight-prompt grounding walk with a real key (§2 below) — the agent had no OpenRouter key by design
-- [ ] **iNPC Gum Bot mesh** — replace procedural kiosk with lab Gum Bot bank lod03 (Graphite / Steel / Brass bezel; dormant↔awake screen) — [HANDOFF-inpc-gum-bot-mesh.md](./missions/HANDOFF-inpc-gum-bot-mesh.md) · [KICKOFF-inpc-gum-bot-mesh.md](./missions/KICKOFF-inpc-gum-bot-mesh.md) (**Codex Luna**; lab Yes [ENG-2026-0021](../../GameLab/work/ENG-2026-0021-inpc-gum-bot-bank/))
+- [x] **iNPC phone HUD** — awake-only lower-right radio transcript; Talk opens the existing full panel, Sleep wipes the session and mirrors `awake:false`; no floor lock or follow — [HANDOFF-inpc-phone-hud.md](./missions/HANDOFF-inpc-phone-hud.md) · [KICKOFF-inpc-phone-hud.md](./missions/KICKOFF-inpc-phone-hud.md) (**met 2026-09-10**; Talk regression fix same day — `inpc.open` / `inpc.freshen` so Live desk-debug and the robot board converge; principal smoke in §2)
+- [x] **iNPC Gum Bot mesh** — replace procedural kiosk with lab Gum Bot bank lod03 (Graphite / Steel / Brass bezel; dormant↔awake screen) — [HANDOFF-inpc-gum-bot-mesh.md](./missions/HANDOFF-inpc-gum-bot-mesh.md) · [KICKOFF-inpc-gum-bot-mesh.md](./missions/KICKOFF-inpc-gum-bot-mesh.md) (**Codex Luna**; lab Yes [ENG-2026-0021](../../GameLab/work/ENG-2026-0021-inpc-gum-bot-bank/)) — **met 2026-09-10**: `assets/models/inpc/` ship set (sha256 verified) + CREDITS row · `inpc.gd` instances the glb (yawed π so the screen faces the lobby), screen sheet swap dormant↔awake with `emission` black, box collider + nameplate strip re-fit to the biped · headless `run_inpc_walk` 11/11, `_check_inpc` green, `run_viz_budget` green at a documented +2 material ceiling (42) · export:web see handoff Outcome
 - [x] **SE partners board + lobby terminal** — southeast notice board (ETH Online / partners / Bloxchain / Particle) **and** a standalone Console terminal (no NPC) — [HANDOFF-partners-board.md](./missions/HANDOFF-partners-board.md) · [KICKOFF-partners-board.md](./missions/KICKOFF-partners-board.md) (Codex Luna) — met 2026-09-08
 - [ ] **ENS follow-ups (proposals, principal call)** — reverse names on ledger / receipts / payee list; staff directory `*.staff.branchzero.eth` vs RBAC; Petra EAC deny-`setAddr` teaching beat — see "Not this mission" in [HANDOFF-ens-passbook-polish.md](./missions/HANDOFF-ens-passbook-polish.md)
 - [ ] **Provision pin follow-up** — Re-check / recovery path that re-pins when `policyPinned` is stale after a lost `players.json` (load lane already moves pins; Account Opening is one-shot today — [LOAD-ACCOUNT.md](./LOAD-ACCOUNT.md) §8.2)
@@ -94,6 +96,8 @@ Related: [HANDOFF-CC.md](./missions/HANDOFF-CC.md) · [DEV-LOOP.md](./DEV-LOOP.m
 
 | When | Item |
 |------|------|
+| 2026-09-10 | iNPC Live mirror sync code — phone Talk → `inpc.open` / Ask → `inpc.freshen`; headless walk + web typecheck green; **principal Live smoke still §2** ([INPC.md](./INPC.md)) |
+| 2026-09-10 | Distinct `SEPOLIA_TREASURY_PK` + `SEPOLIA_TREASURY_ALLOW_ROLE_REUSE=off` — registrar-share concession retired ([REFLECTION](./REFLECTION.md) S3); §1 faucet → new address |
 | 2026-09-10 | Shell splash — branded `#boot` plaque + progress while wasm/`.pck` load; Godot front door unchanged — [HANDOFF-shell-splash.md](./missions/HANDOFF-shell-splash.md) |
 | 2026-09-10 | ENS passbook polish — no "not chosen yet" placeholder for unnamed customers (passbook / Mo / Ines); named passbook shows bank name + Silver/Gold tier from the desk's `/session` `ensTier` mirror; Gold update flows through the existing session refresh — [HANDOFF-ens-passbook-polish.md](./missions/HANDOFF-ens-passbook-polish.md) |
 | 2026-09-10 | Player menu — title + Esc visitor's card (`player_menu.gd`); ui_locked not tree pause; high contrast deferred — [HANDOFF-player-menu.md](./missions/HANDOFF-player-menu.md) |

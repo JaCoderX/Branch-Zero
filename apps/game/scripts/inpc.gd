@@ -9,14 +9,27 @@ extends BankTerminal
 ## (`GameState.inpc_snapshot()`) and mirrors one bit back — awake or dormant — for the eye and the prompt.
 ##
 ## It extends BankTerminal for the interact zone and `can_talk()` shape only, so main.gd ranks it with the terminals
-## for the [Space] prompt without a third pick rule. Meshes are palette materials and no new lights (the lobby is at its
-## eight-omni budget); the "eye" swaps between Graphite (dormant) and Bulb (awake) — no new material either.
+## for the [Space] prompt without a third pick rule. The body is the lab-proven CC0 **Gum Bot bank** glb (GameLab
+## ENG-2026-0021: Graphite shell, Steel plates, Brass CRT bezel — one UV set, two surfaces) and no new lights (the lobby is
+## at its eight-omni budget); the screen swaps its emission sheet dormant (dark) ↔ awake (eyes) — no new material either.
+##
+## Signage is a fixed enamel name badge on the lobby face of the CRT body, under the screen (not a billboard stack).
+## World copy stays bank words; OpenRouter is named only in dialogue / the Wake panel (docs/INPC.md Visual).
 
-const PEDESTAL_H := 1.05
-const HEAD_Y := 1.36
+const GUM_BOT := preload("res://assets/models/inpc/gum_bot_bank.glb")
+const SCREEN_AWAKE := preload("res://assets/models/inpc/screen_awake.png")
+## Body as imported (lab findings): 1.14 wide × 1.40 tall × 1.18 deep, feet at y = 0, screen on the glb's +z between
+## y 0.52 and 1.14. The glb is yawed π below so the screen looks out of local −z like every other lobby face
+## (main.gd yaws the node so −z faces the room).
+const BODY_W := 1.14
+const BODY_H := 1.40
+const BODY_D := 1.18
+## Lobby face of the CRT body (local −z, just clear of the shell at −0.59); the badge sits in the band under the screen.
+const FACE_Z := -0.61
+const BADGE_Y := 0.41
 
-var _eye: MeshInstance3D
-var _plate: Label3D
+var _screen_mat: StandardMaterial3D
+var _screen_dormant_tex: Texture2D
 var _state_plate: Label3D
 
 
@@ -51,86 +64,98 @@ func prompt_text() -> String:
 
 # ---------------------------------------------------------------- look
 
-## A service kiosk: brass foot, graphite column, brass collar, steel head with one round eye facing the lobby, and a
-## plate. One cylinder collider on layer 1 / mask 0 like every other blocking prop (bank_interior.gd rules).
+## The Gum Bot bank body plus a name badge under its screen. One box collider on layer 1 / mask 0 sized to the biped
+## like every other blocking prop (bank_interior.gd rules); the old column geometry is gone with the cylinders.
 func _dress() -> void:
 	var brass := PropKit.palette("Brass")
-	var graphite := PropKit.palette("Graphite")
-	var steel := PropKit.palette("Steel")
-	_cyl("Foot", Vector3(0, 0.03, 0), 0.40, 0.06, brass)
-	_cyl("Column", Vector3(0, PEDESTAL_H / 2.0, 0), 0.26, PEDESTAL_H, graphite)
-	_cyl("Collar", Vector3(0, PEDESTAL_H + 0.025, 0), 0.30, 0.05, brass)
-	_cyl("Neck", Vector3(0, PEDESTAL_H + 0.10, 0), 0.06, 0.12, steel)
-	var head := MeshInstance3D.new()
-	head.name = "Head"
-	var sphere := SphereMesh.new()
-	sphere.radius = 0.22
-	sphere.height = 0.44
-	head.mesh = sphere
-	head.position = Vector3(0, HEAD_Y, 0)
-	head.material_override = steel
-	add_child(head)
-	# the eye sits on the face the prop looks out of (local -z; main.gd yaws the node toward the lobby)
-	_eye = MeshInstance3D.new()
-	_eye.name = "Eye"
-	var lens := CylinderMesh.new()
-	lens.top_radius = 0.075
-	lens.bottom_radius = 0.075
-	lens.height = 0.03
-	_eye.mesh = lens
-	_eye.position = Vector3(0, HEAD_Y + 0.02, -0.205)
-	_eye.rotation.x = PI / 2
-	_eye.material_override = graphite
-	add_child(_eye)
+	var paper := PropKit.palette("Paper")
+	var bot: Node3D = GUM_BOT.instantiate()
+	bot.name = "GumBot"
+	bot.rotation.y = PI   # glb screen faces +z; the lobby face of this prop is −z
+	add_child(bot)
+	var mesh := bot.find_child("GumBotBank", true, false) as MeshInstance3D
+	if mesh == null:
+		for c in bot.find_children("*", "MeshInstance3D", true, false):
+			mesh = c
+			break
+	if mesh != null and mesh.mesh != null and mesh.mesh.get_surface_count() > 1:
+		# surface 0 = GumBotBody (imported albedo stays), surface 1 = GumBotScreen. Godot's emission is additive
+		# (EMISSION = emission + emission_texture): keep `emission` black and let the sheet carry the colour — Bulb is
+		# baked into screen_awake.png. A black albedo keeps the asleep screen dark under the lobby sun (lab follow-up).
+		var imported := mesh.mesh.surface_get_material(1) as StandardMaterial3D
+		_screen_mat = imported.duplicate() as StandardMaterial3D
+		_screen_dormant_tex = _screen_mat.emission_texture
+		_screen_mat.emission_enabled = true
+		_screen_mat.emission = Color(0, 0, 0)
+		_screen_mat.albedo_color = Color(0, 0, 0)
+		mesh.set_surface_override_material(1, _screen_mat)
+	else:
+		push_warning("InpcProp: gum_bot_bank.glb has no two-surface mesh — screen swap disabled")
 	var body := StaticBody3D.new()
 	body.name = "InpcCollider"
 	body.collision_layer = 1
 	body.collision_mask = 0
 	var shape := CollisionShape3D.new()
-	var cs := CylinderShape3D.new()
-	cs.radius = 0.34
-	cs.height = HEAD_Y + 0.24
-	shape.shape = cs
-	shape.position.y = (HEAD_Y + 0.24) / 2.0
+	var box_shape := BoxShape3D.new()
+	box_shape.size = Vector3(BODY_W, BODY_H, BODY_D)
+	shape.shape = box_shape
+	shape.position.y = BODY_H / 2.0
 	body.add_child(shape)
 	add_child(body)
+	# Paper face + brass frame under the screen (screen width, y 0.32–0.50) — same class as BRANCH CONSOLE / Arc notice,
+	# not a floating HUD.
+	var board := MeshInstance3D.new()
+	board.name = "PlateBoard"
+	var box := BoxMesh.new()
+	box.size = Vector3(0.84, 0.18, 0.02)   # as wide as the screen above it: a nameplate strip under the CRT
+	board.mesh = box
+	board.position = Vector3(0, BADGE_Y, FACE_Z)
+	board.material_override = paper
+	add_child(board)
+	var frame := MeshInstance3D.new()
+	frame.name = "PlateFrame"
+	var frame_box := BoxMesh.new()
+	frame_box.size = Vector3(0.88, 0.22, 0.015)
+	frame.mesh = frame_box
+	frame.position = Vector3(0, BADGE_Y, FACE_Z + 0.012)
+	frame.material_override = brass
+	add_child(frame)
 	var theme: WingTheme = PropKit.ensure_theme()
-	_plate = _label("SERVICE ASSISTANT", Vector3(0, HEAD_Y + 0.42, 0), 44, theme.trim_color)
-	_state_plate = _label("", Vector3(0, HEAD_Y + 0.30, 0), 30, theme.paper_color)
+	_plaque("SERVICE ASSISTANT", Vector3(0, BADGE_Y + 0.045, FACE_Z - 0.018), 0.10, theme.graphite_color, "InpcTitle")
+	_state_plate = _plaque("", Vector3(0, BADGE_Y - 0.04, FACE_Z - 0.018), 0.08, theme.graphite_color, "InpcState")
 
 
-func _cyl(n: String, pos: Vector3, radius: float, height: float, m: Material) -> void:
-	var mi := MeshInstance3D.new()
-	mi.name = n
-	var c := CylinderMesh.new()
-	c.top_radius = radius
-	c.bottom_radius = radius
-	c.height = height
-	mi.mesh = c
-	mi.position = pos
-	mi.material_override = m
-	add_child(mi)
-
-
-func _label(text: String, pos: Vector3, size: int, color: Color) -> Label3D:
+## Fixed enamel (bank_interior.plaque style): faces local −z into the lobby; never billboarded.
+func _plaque(text: String, pos: Vector3, size: float, color: Color, n: String = "") -> Label3D:
 	var l := Label3D.new()
+	if n != "":
+		l.name = n
 	l.text = text
 	l.font = BankFonts.plaque()
-	l.font_size = size
-	l.pixel_size = 0.0035
-	l.modulate = color
-	l.outline_size = 8
-	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	l.position = pos
+	l.rotation.y = PI   # Label3D reads from +z by default; spin so the ink faces the lobby (−z)
+	l.pixel_size = 0.005 * size / 0.3
+	l.font_size = 48
+	l.outline_size = 6
+	l.double_sided = false
+	l.billboard = BaseMaterial3D.BILLBOARD_DISABLED
+	l.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	l.modulate = color
+	l.outline_modulate = Color(0, 0, 0, 0.6)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(l)
 	return l
 
 
-## The eye and the state line follow the one bit the shell mirrors back: a key in this tab's session or not.
+## The screen and the state line follow the one bit the shell mirrors back: a key in this tab's session or not.
+## Only the emission sheet and its energy change; `emission` stays black (additive) so the awake eyes never flood white.
 func _refresh_look() -> void:
-	if _eye == null:
+	if _state_plate == null:
 		return
 	var awake := GameState.inpc_awake
-	_eye.material_override = PropKit.palette("Bulb") if awake else PropKit.palette("Graphite")
+	if _screen_mat != null:
+		_screen_mat.emission_texture = SCREEN_AWAKE if awake else _screen_dormant_tex
+		_screen_mat.emission = Color(0, 0, 0)
+		_screen_mat.emission_energy_multiplier = 2.0 if awake else 1.0
 	var s: Dictionary = GameState.strings
-	_state_plate.text = str(s.get("inpc_plate_awake", "awake · reads your board")) if awake else str(s.get("inpc_plate_dormant", "asleep · needs your OpenRouter key"))
+	_state_plate.text = str(s.get("inpc_plate_awake", "awake · reads your board")) if awake else str(s.get("inpc_plate_dormant", "asleep · needs your link"))

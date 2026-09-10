@@ -514,6 +514,14 @@ func _check_inpc() -> void:
 	for k in ["prompt_inpc_dormant", "prompt_inpc_awake"]:
 		if not str(strings.get(k, "")).begins_with("[Space]"):
 			bad.append("%s missing or not a [Space] prompt" % k)
+	var plate_dormant := str(strings.get("inpc_plate_dormant", "")).to_lower()
+	if plate_dormant == "" or plate_dormant.find("openrouter") >= 0:
+		bad.append("inpc_plate_dormant must be bank words (no OpenRouter on the world plate)")
+	if str(strings.get("inpc_plate_awake", "")) == "":
+		bad.append("inpc_plate_awake missing")
+	var inpc_src := FileAccess.get_file_as_string("res://scripts/inpc.gd")
+	if inpc_src.find("BILLBOARD_ENABLED") >= 0:
+		bad.append("inpc.gd still billboards its plate — use a fixed column plaque")
 	var errors := _load("res://dialogue/errors.json")
 	if str(errors.get("INPC_UNAVAILABLE", {}).get("line", "")).find("full bank window") < 0:
 		bad.append("INPC_UNAVAILABLE does not say the panel needs the full bank window")

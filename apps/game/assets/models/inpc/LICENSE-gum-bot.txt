@@ -1,0 +1,10 @@
+Creative Commons Zero v1.0 Universal (CC0)
+
+3D Gum Bot by pistachio (OpenGameArt), based on Gum Bot sprites by GrafxKid.
+https://opengameart.org/content/3d-gum-bot
+https://opengameart.org/content/gum-bot-sprites
+
+The author has waived all copyright and related rights to this work.
+You can copy, modify, distribute and perform the work, even for commercial purposes, without asking permission.
+
+Lab intake: GameLab ENG-2026-0021 (lean subset — toon + screen + blend).

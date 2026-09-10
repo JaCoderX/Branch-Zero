@@ -8,7 +8,7 @@
   "prompt_elevator_main": "[Space] Elevator — back to the Main wing",
   "prompt_inpc_dormant": "[Space] Wake the service assistant",
   "prompt_inpc_awake": "[Space] Talk to the service assistant",
-  "inpc_plate_dormant": "asleep · needs your OpenRouter key",
+  "inpc_plate_dormant": "asleep · needs your link",
   "inpc_plate_awake": "awake · reads your board, moves nothing",
   "elevator_arc_deferred": "ARC floor — coming soon. The Arc wing is under construction; the Main wing keeps serving.",
   "continue": "Continue",

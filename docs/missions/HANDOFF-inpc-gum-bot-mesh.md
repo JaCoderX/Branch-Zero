@@ -6,7 +6,7 @@ created: 2026-09-10
 product: Branch-Zero
 mission: Replace procedural iNPC kiosk with lab-proven Gum Bot bank mesh; keep Wake/Sleep/chat behaviour
 kickoff: docs/missions/KICKOFF-inpc-gum-bot-mesh.md
-status: open
+status: met 2026-09-10 (Claude Code Fable — Codex Luna unavailable in this session)
 lab: GameLab ENG-2026-0021 Yes (Phase 1 + brass/Godot follow-up)
 parallel_to: iNPC phone Talk fix · U7 packaging — mesh-only; do not absorb phone/HUD or OpenRouter work
 ---
@@ -78,12 +78,23 @@ Verify hash after copy. Add **CREDITS.md** row (CC0 · pistachio / GrafxKid · b
 
 ## DoD
 
-- [ ] Ship set in `apps/game/assets/models/inpc/` + CREDITS + LICENSE
-- [ ] Lobby still: Gum Bot at east couches, brass bezel readable, dormant screen dark / awake eyes on
-- [ ] Wake / Sleep / Talk / overlay (and phone HUD if present) still work; no OpenRouter / snapshot changes
-- [ ] Headless iNPC checks green (or Godot host noted unavailable)
-- [ ] `docs/INPC.md` Visual + OWED updated; Branch-Zero not carrying GameLab ENG tree
+- [x] Ship set in `apps/game/assets/models/inpc/` + CREDITS + LICENSE
+- [x] Lobby still: Gum Bot at east couches, brass bezel readable, dormant screen dark / awake eyes on
+- [x] Wake / Sleep / Talk / overlay (and phone HUD if present) still work; no OpenRouter / snapshot changes (headless; principal browser walk after export)
+- [x] Headless iNPC checks green (or Godot host noted unavailable)
+- [x] `docs/INPC.md` Visual + OWED updated; Branch-Zero not carrying GameLab ENG tree
 
 ## Stop and ask if
 
 You would change snapshot / OpenRouter / phone Talk logic; spot must move; hash mismatch on lab glb; export:web blocked without a principal call.
+---
+
+## Outcome (2026-09-10)
+
+- **Assets:** `gum_bot_bank.glb` sha256 matches the lab (`7ad8abc5…ffbb`), `screen_awake.png`, `LICENSE-gum-bot.txt`; import preset LODs on, no lightmap UV, embedded images as Basis Universal; `screen_awake.png` lossless. Nothing else from the ENG copied.
+- **`inpc.gd`:** `GumBot` child = the glb yawed π (imported screen faces +z; the prop's lobby face is −z). Surface 1 override duplicated from the import: `emission = black`, sheet dormant ↔ `screen_awake.png`, energy 1.0 / 2.0, `albedo_color` black for a dark asleep screen. Plaque = screen-width paper/brass strip under the CRT (`SERVICE ASSISTANT` + bank-words state); collider = 1.14 × 1.40 × 1.18 box, layer 1 / mask 0. `INPC_SPOT` / `INPC_YAW`, groups, `BankTerminal` interact, dialogue, bridge untouched.
+- **Checks:** `run_inpc_walk` 11/11 PASS · `run_checks` `_check_inpc` ✓ (the run's four other failures — inpc.json "timelock" main-path term and three AO-desk geometry pins — pre-date this unit and belong to the parallel phone/Talk WIP) · `run_viz_budget` PASS with the mesh ceiling raised 40 → 42 (44 with particles): the glb's body albedo + screen override are the only non-palette materials; documented in the test.
+- **Stills:** `tests/inpc_shots.tscn` (windowed) → `docs/progress/captures/inpc-gum-bot/` — dormant / awake close + lobby, badge close.
+- **export:web:** done 2026-09-10 19:07 with Godot 4.5.2.stable → `apps/web/public/game/` (`index.pck` 7,019 KB, `index.wasm` 37,156 KB). Principal: hard-refresh `:5173`, walk to the east couches — asleep dark screen + strip, Wake → eyes, Talk / Sleep unchanged.
+- **Not done:** blink / poweron polish, KayKit plinth (optional). REFLECTION row added.
+

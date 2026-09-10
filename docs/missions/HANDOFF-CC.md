@@ -105,7 +105,9 @@ Uniswap remains activated **sponsor #3**. Official pitch: Privy + ENS + Uniswap.
 
 **Met 2026-09-10 (parallel, Claude Code):** Shell splash — branded first-paint while Godot loads; hand off to existing player-menu front door — [HANDOFF-shell-splash.md](./HANDOFF-shell-splash.md) · [KICKOFF-shell-splash.md](./KICKOFF-shell-splash.md).
 
-**Also open (parallel, Codex Luna):** iNPC Gum Bot mesh land — replace procedural kiosk with lab ENG-2026-0021 bank Gum Bot — [HANDOFF-inpc-gum-bot-mesh.md](./HANDOFF-inpc-gum-bot-mesh.md) · [KICKOFF-inpc-gum-bot-mesh.md](./KICKOFF-inpc-gum-bot-mesh.md). Mesh-only; do not absorb phone Talk / HUD work.
+**Met 2026-09-10 (parallel, Codex Luna):** iNPC phone Talk dead — [HANDOFF-inpc-phone-talk.md](./HANDOFF-inpc-phone-talk.md) · [KICKOFF-inpc-phone-talk.md](./KICKOFF-inpc-phone-talk.md). Normal click restored; Talk still routes through `inpc.open` → fresh Godot snapshot; mock browser smoke green; Godot headless unavailable on the workstation.
+
+**Met 2026-09-10 (parallel, Codex Luna):** iNPC Gum Bot mesh land — lab ENG-2026-0021 bank Gum Bot replaces procedural kiosk — [HANDOFF-inpc-gum-bot-mesh.md](./HANDOFF-inpc-gum-bot-mesh.md) · [KICKOFF-inpc-gum-bot-mesh.md](./KICKOFF-inpc-gum-bot-mesh.md).
 
 **Also open:** U7 ship packaging (below), still gated on the principal's polish re-playtest.
 

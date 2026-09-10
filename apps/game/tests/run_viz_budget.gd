@@ -23,10 +23,12 @@ extends SceneTree
 ## metallic-1 teal survives, +0 unique materials), all of it baked, the arrangements are denser than the 60-tri
 ## pottedPlant they replace, and no planter reaches the ledger-board rows or the vault repeater / clock sightlines.
 
-const MAX_MATERIALS := 40
+## 40 for the art pass; +2 since the iNPC Gum Bot land (2026-09-10, ENG-2026-0021): the glb's textured body albedo and
+## its screen emissive override are the only two non-palette mesh materials in the building.
+const MAX_MATERIALS := 42
 ## Stage 5 particles add two billboard mats counted separately from the mesh walk; KayKit's five body albedos
 ## leave mesh ≤ 40 but mesh+particles at 41–42. Keep the mesh ceiling tight; allow the documented particle pair.
-const MAX_MATERIALS_WITH_PARTICLES := 42
+const MAX_MATERIALS_WITH_PARTICLES := 44
 const MAX_TRIS := 400_000
 const MAX_SURFACES := 350
 const MAX_OMNIS := 8          # Compatibility lights ≤ 8 omnis per mesh and the merged interior sees them all

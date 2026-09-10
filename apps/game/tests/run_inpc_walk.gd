@@ -115,6 +115,15 @@ func _run() -> void:
 		else:
 			_ok("MockChain refuses INPC_UNAVAILABLE → \"%s\"; inpc_open false, floor free" % line)
 
+	print("iNPC — phone Talk event (inpc.open) without a shell")
+	# Same refusal path as the prop: shell emits inpc.open → GameState._on_inpc_open_request → open_inpc.
+	# Await the handler directly so we do not race Dialogue.start against a still-busy run_action.
+	await gs._on_inpc_open_request()
+	if gs.inpc_open or gs.ui_locked or gs.busy:
+		_fail("inpc.open without a shell must not set inpc_open or lock the floor: open=%s locked=%s busy=%s" % [str(gs.inpc_open), str(gs.ui_locked), str(gs.busy)])
+	else:
+		_ok("inpc.open (phone Talk) without a shell leaves inpc_open false and the floor free")
+
 	print("iNPC — dialogue")
 	var d: Dictionary = dlg.load_npc("inpc")
 	var actions := {}

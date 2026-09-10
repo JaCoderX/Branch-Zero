@@ -191,6 +191,98 @@ export function pushInpcClosed(reason: string = 'closed', awake: boolean = hasIn
   godotCallback?.(JSON.stringify({ type: 'event', kind: 'inpc.closed', payload }));
 }
 
+type InpcOpenWaiter = {
+  resolve: (v: { awake: boolean }) => void;
+  reject: (e: Error) => void;
+  timer: ReturnType<typeof setTimeout>;
+};
+type InpcFreshenWaiter = {
+  resolve: (snapshot: unknown) => void;
+  timer: ReturnType<typeof setTimeout>;
+};
+
+let pendingInpcOpen: InpcOpenWaiter | undefined;
+let pendingInpcFreshen: InpcFreshenWaiter | undefined;
+
+const INPC_OPEN_TIMEOUT_MS = 8_000;
+
+function clearPendingInpcOpen(err?: Error): void {
+  if (!pendingInpcOpen) return;
+  clearTimeout(pendingInpcOpen.timer);
+  const w = pendingInpcOpen;
+  pendingInpcOpen = undefined;
+  if (err) w.reject(err);
+}
+
+/**
+ * Phone Talk → Godot `inpc.open` → `GameState.run_action("open_inpc")`. Resolves when Godot calls `openInpc` with a
+ * freshly built snapshot (and sets `inpc_open`). Never opens from a cached shell board.
+ */
+export function requestInpcOpen(): Promise<{ awake: boolean }> {
+  return new Promise((resolve, reject) => {
+    clearPendingInpcOpen(new Error('Another Talk request replaced this one.'));
+    const callback = godotCallback;
+    if (!callback) {
+      reject(bridgeError('INPC_UNAVAILABLE', 'no Godot callback is registered', 'The assistant stays asleep here — it only wakes in the full bank window.'));
+      return;
+    }
+    const timer = setTimeout(() => {
+      clearPendingInpcOpen(new Error('The full conversation did not open after a few seconds.'));
+    }, INPC_OPEN_TIMEOUT_MS);
+    pendingInpcOpen = {
+      resolve: (v) => {
+        clearTimeout(timer);
+        pendingInpcOpen = undefined;
+        resolve(v);
+      },
+      reject,
+      timer,
+    };
+    const msg = { type: 'event' as const, kind: 'inpc.open', payload: {} };
+    emit(msg as BridgeMessage);
+    try {
+      callback(JSON.stringify(msg));
+    } catch (e) {
+      clearPendingInpcOpen(e instanceof Error ? e : new Error(String(e)));
+    }
+  });
+}
+
+/**
+ * Ask → Godot `inpc.freshen` → refresh session/passbook → `inpcSnapshot` push. Returns the fresh board, or `null` if
+ * Godot did not answer in time (caller falls back to local clock freshen on the last board).
+ */
+export function requestInpcBoardFreshen(): Promise<unknown | null> {
+  return new Promise((resolve) => {
+    if (pendingInpcFreshen) {
+      clearTimeout(pendingInpcFreshen.timer);
+      pendingInpcFreshen.resolve(null);
+      pendingInpcFreshen = undefined;
+    }
+    if (!godotCallback) {
+      resolve(null);
+      return;
+    }
+    const timer = setTimeout(() => {
+      if (pendingInpcFreshen) {
+        pendingInpcFreshen = undefined;
+        resolve(null);
+      }
+    }, 8_000);
+    pendingInpcFreshen = {
+      resolve: (snapshot) => {
+        clearTimeout(timer);
+        pendingInpcFreshen = undefined;
+        resolve(snapshot);
+      },
+      timer,
+    };
+    const msg = { type: 'event' as const, kind: 'inpc.freshen', payload: {} };
+    emit(msg as BridgeMessage);
+    godotCallback(JSON.stringify(msg));
+  });
+}
+
 /** Registered once by the overlay, like `setWalletAdapter`: it must be a stable object across renders. */
 export function setTerminalHost(t: TerminalHost | undefined): void {
   if (terminal === t) return;
@@ -453,13 +545,28 @@ const handlers: Record<string, Handler> = {
    */
   async openInpc(args) {
     const host = inpc;
-    if (!host) throw bridgeError('INPC_UNAVAILABLE', 'no iNPC overlay is mounted', 'The assistant stays asleep here — it only wakes in the full bank window.');
-    const opened = await host.open(args.snapshot ?? {});
-    return { opened: true, awake: opened.awake };
+    if (!host) {
+      clearPendingInpcOpen(new Error('The full conversation is not available in this bank window.'));
+      throw bridgeError('INPC_UNAVAILABLE', 'no iNPC overlay is mounted', 'The assistant stays asleep here — it only wakes in the full bank window.');
+    }
+    try {
+      const opened = await host.open(args.snapshot ?? {});
+      if (pendingInpcOpen) {
+        pendingInpcOpen.resolve(opened);
+      }
+      return { opened: true, awake: opened.awake };
+    } catch (e) {
+      clearPendingInpcOpen(e instanceof Error ? e : new Error(String(e)));
+      throw e;
+    }
   },
   /** Godot's mirror changed while the panel is up: hand the panel the fresher board. Harmless when it is closed. */
   async inpcSnapshot(args) {
-    inpc?.update(args.snapshot ?? {});
+    const snapshot = args.snapshot ?? {};
+    inpc?.update(snapshot);
+    if (pendingInpcFreshen) {
+      pendingInpcFreshen.resolve(snapshot);
+    }
     return { delivered: Boolean(inpc?.isOpen()) };
   },
   /** Is a key in this tab's session? Yes/no only — the key itself never crosses the bridge. */
@@ -470,6 +577,7 @@ const handlers: Record<string, Handler> = {
   async sleepInpc() {
     wipeInpcSession();
     if (inpc?.isOpen()) inpc.close('sleep');
+    else pushInpcClosed('sleep', false);
     return { awake: false };
   },
 

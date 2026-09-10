@@ -42,6 +42,7 @@ var strings: Dictionary = {}
 var _reconcile_at: float = 0.0
 var _fx_at: float = 0.0            # last successful fxStatus wall time — throttle pool reads in refresh_all
 var _inpc_pushing: bool = false    # one snapshot hand-over in flight at a time while the assistant's panel is up
+var _inpc_freshening: bool = false # suppress mid-flight pushes while session/passbook re-pull for open / Ask
 var _treasury_at: float = 0.0      # last player-safe treasury status read
 var _treasury_refreshing: bool = false
 var _last_error: Dictionary = {}
@@ -655,12 +656,23 @@ static func clock_display(unix: int) -> String:
 
 ## While the assistant's panel is up, each change of the mirror is handed to the shell (`inpcSnapshot`), so the chat
 ## reads the board as it is now. One hand-over in flight at a time; a missed one is covered by the next `changed`.
+## Suppressed while `_freshen_inpc_mirror` is mid-flight so Ask does not resolve on a half-updated board.
 func _push_inpc_snapshot() -> void:
-	if not inpc_open or _inpc_pushing:
+	if not inpc_open or _inpc_pushing or _inpc_freshening:
 		return
 	_inpc_pushing = true
 	await Chain.call_async("inpcSnapshot", {"snapshot": inpc_snapshot()}, 10.0)
 	_inpc_pushing = false
+
+
+## Re-pull `/session` (+ passbook when logged in) into GameState. Does not push to the shell by itself — callers
+## open with `inpc_snapshot()` or call `inpcSnapshot` once the board is complete.
+func _freshen_inpc_mirror() -> void:
+	_inpc_freshening = true
+	await refresh_session()
+	if logged_in():
+		await refresh_passbook()
+	_inpc_freshening = false
 
 
 # ---------------------------------------------------------------- writes (every desk action lands here)
@@ -832,6 +844,9 @@ func run_action(action: String, args: Dictionary = {}) -> Dictionary:
 			# The iNPC's Wake / chat panel (docs/INPC.md). The shell owns the panel and the player's OpenRouter key;
 			# Godot hands over a player-safe snapshot and locks movement until the shell pushes `inpc.closed`. There is
 			# no bridge verb behind this panel that can pay, wire, release, approve, recall, provision or open the Console.
+			# Refresh the mirror *before* the hand-over so Live desk-debug advances (provision / Pay / Re-check) that
+			# only updated React still converge into this board — the panel must not open on a frozen empty snapshot.
+			await _freshen_inpc_mirror()
 			r = await Chain.call_async("openInpc", {"snapshot": inpc_snapshot()}, 30.0)
 			if r.get("ok", false):
 				inpc_open = true
@@ -952,8 +967,30 @@ func _on_chain_event(kind: String, payload: Dictionary) -> void:
 			_on_branch_float_closed(payload)
 		"inpc.closed":
 			_on_inpc_closed(payload)
+		"inpc.open":
+			# Phone Talk (shell) → same Godot path as the prop: refresh mirror, openInpc with fresh snapshot, set inpc_open.
+			_on_inpc_open_request()
+		"inpc.freshen":
+			# Full panel Ask: re-pull session/passbook, then push one complete board (shell awaits the push).
+			_on_inpc_freshen_request()
 		"bridge.ready":
 			pass
+
+
+## Phone Talk asked the bank to open the full typing panel. Must not open from a cached shell snapshot — reuse
+## `open_inpc` so `inpc_open` + floor lock + `_push_inpc_snapshot` stay on the same contract as the prop.
+func _on_inpc_open_request() -> void:
+	if inpc_open:
+		await _on_inpc_freshen_request()
+		return
+	await run_action("open_inpc", {})
+
+
+## Re-pull the mirror and hand the panel one complete player-safe board. Used before Ask and when Talk hits an
+## already-open panel. Does not touch desk-debug React state.
+func _on_inpc_freshen_request() -> void:
+	await _freshen_inpc_mirror()
+	await Chain.call_async("inpcSnapshot", {"snapshot": inpc_snapshot()}, 10.0)
 
 
 ## The player shut the assistant's panel (Esc, Close, Sleep or the backdrop). Same shape as the Console: the panel is
