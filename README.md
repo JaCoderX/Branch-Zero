@@ -11,15 +11,15 @@ For [ETHOnline 2026](https://ethglobal.com/events/ethonline2026) · Start Fresh.
 ## Screenshots
 
 <p align="center">
-  <img src="docs/media/readme/01_lobby.jpg" width="48%" alt="Lobby with Mo the greeter and the vault" />
-  <img src="docs/media/readme/02_account_opening.jpg" width="48%" alt="Account Opening desk with Ines" />
+  <img src="docs/media/readme/01_lobby.jpg" width="48%" alt="Lobby with Ash the greeter and the vault" />
+  <img src="docs/media/readme/02_account_opening.jpg" width="48%" alt="Account Opening desk with Iris" />
 </p>
 <p align="center">
-  <img src="docs/media/readme/03_counter.jpg" width="48%" alt="Teller counter with Dev" />
+  <img src="docs/media/readme/03_counter.jpg" width="48%" alt="Teller counter with Eve" />
   <img src="docs/media/readme/04_vault.jpg" width="48%" alt="Vault antechamber with Bob" />
 </p>
 <p align="center">
-  <img src="docs/media/readme/05_fx_desk.jpg" width="48%" alt="Kenji at the FX desk" />
+  <img src="docs/media/readme/05_fx_desk.jpg" width="48%" alt="Johnny at the FX desk" />
   <img src="docs/media/readme/06_name_desk.jpg" width="48%" alt="Name Desk with Petra — ENSv2 bank names" />
 </p>
 
@@ -48,16 +48,16 @@ Design pillars (see [`docs/GAME-DESIGN.md`](./docs/GAME-DESIGN.md)):
 
 ## How you play
 
-The loop is errand-driven. The greeter (Mo) routes you; each desk is a real lane:
+The loop is errand-driven. The greeter (Ash) routes you; each desk is a real lane:
 
 | Desk | Staff | What you do | What the chain does |
 |------|-------|-------------|---------------------|
-| **Account Opening** | Ines | Sign in once, consent once | Deploy your `AccountBlox`; Privy session signer + policy |
-| **Counter** | Dev | Pay an approved payee | Lane A — instant meta-tx (`requestAndApproveExecution`) |
+| **Account Opening** | Iris | Sign in once, consent once | Deploy your `AccountBlox`; Privy session signer + policy |
+| **Counter** | Eve | Pay an approved payee | Lane A — instant meta-tx (`requestAndApproveExecution`) |
 | **Vault** | Bob | Wait for the clock, then release | Lane B — time-locked wire; clock is `releaseTime` |
-| **Manager** | Mr. Okafor | Hand-scan Priority, or shred | Skip cooling (meta-approve) or cancel while PENDING |
+| **Manager** | Mr. Walker | Hand-scan Priority, or shred | Skip cooling (meta-approve) or cancel while PENDING |
 | **Name Desk** | Petra | Claim `you.branchzero.eth` | ENSv2 subname + passbook text records |
-| **FX Desk** | Kenji | Ask for a rate, swap | Guarded Uniswap v4 — practice USD → EUR \| ILS |
+| **FX Desk** | Johnny | Ask for a rate, swap | Guarded Uniswap v4 — practice USD → EUR \| ILS |
 
 Walk without an inbox: `http://localhost:5173/?mock=account`. Demo storyboard: [`docs/DEMO-SCRIPT.md`](./docs/DEMO-SCRIPT.md).
 
@@ -69,13 +69,13 @@ Walk without an inbox: `http://localhost:5173/?mock=account`. Demo storyboard: [
 
 | You meet | Role in the story | On-chain identity |
 |----------|-------------------|-------------------|
-| **Mo** | Greeter — routes your first errands | — |
-| **Ines** | Opens your account; explains the one consent | Bank provisioner |
-| **Dev** | Stamps routine slips at the counter | Broadcaster |
+| **Ash** | Greeter — routes your first errands | — |
+| **Iris** | Opens your account; explains the one consent | Bank provisioner |
+| **Eve** | Stamps routine slips at the counter | Broadcaster |
 | **Bob** | Watches the vault clock with you | Timed release path |
-| **Mr. Okafor** | Priority or shredder — never a second timed stamp | Branch manager role |
+| **Mr. Walker** | Priority or shredder — never a second timed stamp | Branch manager role |
 | **Petra** | Engraves your bank name | ENSv2 registrar |
-| **Kenji** | Quotes and swaps at the FX desk | Guarded Universal Router calls |
+| **Johnny** | Quotes and swaps at the FX desk | Guarded Universal Router calls |
 
 Cast and dialogue rules: [`docs/NPCS.md`](./docs/NPCS.md) · World layout: [`docs/WORLD-3D-ENVIRONMENT.md`](./docs/WORLD-3D-ENVIRONMENT.md).
 
