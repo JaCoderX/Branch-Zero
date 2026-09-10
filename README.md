@@ -163,9 +163,11 @@ docs/media/readme/  Screenshots used above
 
 | Start here | |
 |------------|---|
+| [`AGENTS.md`](./AGENTS.md) | Coding / ops agent entry (not the in-game robot) |
 | [`docs/PLAN.md`](./docs/PLAN.md) | Scope, gates, submission |
 | [`docs/GAME-DESIGN.md`](./docs/GAME-DESIGN.md) | Player fantasy, loop, protocol ↔ desk map |
 | [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | Layers, bridge, trust boundaries |
+| [`docs/game-knowledge/`](./docs/game-knowledge/) | iNPC-safe teaching pack (player-facing) |
 | [`docs/DEMO-SCRIPT.md`](./docs/DEMO-SCRIPT.md) | 3-minute video storyboard |
 | [`docs/PRIVY.md`](./docs/PRIVY.md) · [`ENS.md`](./docs/ENS.md) · [`UNISWAP.md`](./docs/UNISWAP.md) | Sponsor surfaces |
 | [`docs/REFLECTION.md`](./docs/REFLECTION.md) | Kill-test log and design review |

@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { onBridgeTraffic, pushLink, pushStage, pushTerminalClosed, setTerminalHost, setWalletAdapter } from '../bridge/branchZero';
+import { MOCK_MODE, onBridgeTraffic, pushBranchFloatClosed, pushInpcClosed, pushLink, pushStage, pushTerminalClosed, setBranchFloatHost, setInpcHost, setTerminalHost, setWalletAdapter, type PlayerTreasury } from '../bridge/branchZero';
 import { connectDeskEvents, type DeskLink } from '../shell/deskEvents';
 import { focusCanvas } from '../shell/focus';
+import { hasKey as hasInpcKey } from '../inpc/session';
+import { Inpc } from './Inpc';
+import { BranchFloat } from './BranchFloat';
 import { Terminal } from './Terminal';
-import { useBranchZeroWallet } from './useBranchZeroWallet';
-import { ARC_TESTNET_CHAIN_ID, type PendingWire } from '@branch-zero/shared';
+import { useBranchZeroWallet, type DeskTreasury } from './useBranchZeroWallet';
+import { ARC_TESTNET_CHAIN_ID, SEPOLIA_CHAIN_ID, type PendingWire } from '@branch-zero/shared';
 
 interface Line {
   t: string;
@@ -20,6 +23,17 @@ interface Passbook {
   wires: PendingWire[];
   /** Teller Desk wall clock at fetch time, unix seconds. The vault clock counts against this, corrected locally. */
   serverNow: number;
+}
+
+function playerTreasuryFromHealth(treasury: DeskTreasury | null | undefined): PlayerTreasury | null {
+  if (!treasury) return null;
+  return {
+    configured: Boolean(treasury.configured),
+    address: treasury.address ?? null,
+    eth: treasury.eth ?? null,
+    treasuryShort: Boolean(treasury.treasuryShort),
+    requiredEth: treasury.requiredEth ?? null,
+  };
 }
 
 /**
@@ -46,6 +60,12 @@ export function App({ engineState }: { engineState: string }) {
    * must never linger as an invisible full-viewport hit target over the canvas (GODOT.md §5b).
    */
   const [console_, setConsole] = useState<{ url: string; account?: string | null; mode: 'iframe' | 'tab' } | undefined>();
+  /**
+   * The iNPC's panel (docs/INPC.md), same rule: `undefined` = not rendered at all. `snapshot` is whatever Godot last
+   * handed over (raw; the panel whitelists it) and `at` the local time it arrived, for the vault clock.
+   */
+  const [inpc_, setInpc] = useState<{ snapshot: unknown; at: number } | undefined>();
+  const [branchFloat_, setBranchFloat] = useState<{ status: PlayerTreasury; reason?: string } | undefined>();
 
   useEffect(() => {
     const push = (l: Line) => setLines((prev) => [...prev.slice(-(MAX - 1)), l]);
@@ -71,6 +91,13 @@ export function App({ engineState }: { engineState: string }) {
   // fresh object each render would loop: bridge traffic re-renders this panel, which would re-register.
   const latest = useRef(w);
   latest.current = w;
+  const currentPlayerTreasury = (): PlayerTreasury | null => {
+    const current = latest.current;
+    // MockChain and Developer Mode are deliberately absent from this player surface, even if a real desk health
+    // response happens to be reachable in the same browser tab.
+    if (MOCK_MODE || current.mode !== 'live' || current.activeChainId !== SEPOLIA_CHAIN_ID) return null;
+    return playerTreasuryFromHealth(current.desk?.treasury);
+  };
   useEffect(() => {
     setWalletAdapter({
       login: () => latest.current.loginAndWait(),
@@ -86,6 +113,27 @@ export function App({ engineState }: { engineState: string }) {
       isReady: () => latest.current.ready,
     });
     return () => setWalletAdapter(undefined);
+  }, []);
+
+  // The player-safe ops float host never receives the full DeskTreasury object and has no spend method.
+  const branchFloatOpen = useRef(false);
+  branchFloatOpen.current = Boolean(branchFloat_);
+  useEffect(() => {
+    setBranchFloatHost({
+      open: async ({ reason }) => {
+        const status = currentPlayerTreasury();
+        if (!status?.configured || !status.address) throw new Error('the Live treasury is not configured');
+        setBranchFloat({ status, reason });
+        return { status };
+      },
+      close: (reason) => {
+        setBranchFloat(undefined);
+        pushBranchFloatClosed(reason ?? 'closed');
+      },
+      isOpen: () => branchFloatOpen.current,
+      status: () => currentPlayerTreasury(),
+    });
+    return () => setBranchFloatHost(undefined);
   }, []);
 
   // The same lending pattern for the terminal overlay: the bridge asks, React renders. Stable object, one
@@ -105,6 +153,26 @@ export function App({ engineState }: { engineState: string }) {
       isOpen: () => consoleOpen.current,
     });
     return () => setTerminalHost(undefined);
+  }, []);
+
+  // And once more for the assistant. The bridge opens it with Godot's snapshot and keeps feeding fresher ones while
+  // it is up; every exit path pushes `inpc.closed` so the bank unlocks on the event, never on the open promise.
+  const inpcOpen = useRef(false);
+  inpcOpen.current = Boolean(inpc_);
+  useEffect(() => {
+    setInpcHost({
+      open: async (snapshot) => {
+        setInpc({ snapshot, at: Date.now() });
+        return { awake: hasInpcKey() };
+      },
+      update: (snapshot) => setInpc((cur) => (cur ? { snapshot, at: Date.now() } : cur)),
+      close: (reason) => {
+        setInpc(undefined);
+        pushInpcClosed(reason ?? 'closed', hasInpcKey());
+      },
+      isOpen: () => inpcOpen.current,
+    });
+    return () => setInpcHost(undefined);
   }, []);
 
   // U3: the greybox is the product surface now; this panel is the debug view of the same bridge traffic.
@@ -203,10 +271,44 @@ export function App({ engineState }: { engineState: string }) {
     />
   ) : null;
 
+  const assistant = inpc_ ? (
+    <Inpc
+      snapshot={inpc_.snapshot}
+      receivedAt={inpc_.at}
+      onClose={(reason, awake) => {
+        setInpc(undefined);
+        pushInpcClosed(reason, awake);
+      }}
+    />
+  ) : null;
+
+  const branchFloatStatus = currentPlayerTreasury();
+  const branchFloatAvailable = branchFloatStatus !== null;
+  useEffect(() => {
+    if (!branchFloat_ || branchFloatAvailable) return;
+    // Live is the only allowed surface. If the health-backed status disappears or the wing changes, do not
+    // leave stale treasury data visible or strand GameState behind a panel that is no longer mounted.
+    setBranchFloat(undefined);
+    pushBranchFloatClosed('treasury-unavailable');
+    focusCanvas();
+  }, [branchFloat_, branchFloatAvailable]);
+
+  const branchFloat = branchFloat_ && branchFloatStatus ? (
+    <BranchFloat
+      treasury={branchFloatStatus}
+      onClose={(reason) => {
+        setBranchFloat(undefined);
+        pushBranchFloatClosed(reason);
+      }}
+    />
+  ) : null;
+
   if (!debugOpen) {
     return (
       <>
         {terminal}
+        {assistant}
+        {branchFloat}
         <button style={pill} onClick={() => setDebugOpen(true)} title="Show the desk debug panel (bridge traffic, session, vault board)">
           desk debug · {engineState.startsWith('running') ? 'engine running' : engineState}
           {lines.length ? ` · ${lines.length} msgs` : ''}
@@ -218,6 +320,8 @@ export function App({ engineState }: { engineState: string }) {
   return (
     <>
       {terminal}
+      {assistant}
+      {branchFloat}
       <div style={panel}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, gap: 8 }}>
         <strong>Branch Zero · desk debug</strong>

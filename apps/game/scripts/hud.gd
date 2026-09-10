@@ -11,8 +11,12 @@ const HELP_SECONDS := 25.0    # the key legend fades once the player has had a l
 
 var _debug := false           # main.gd: F-key teleports are live → the legend shows their line too
 const BRASS := Color(0.86, 0.69, 0.32)
+const FLOAT_QUIET_EDGE := Color(0.34, 0.30, 0.20)
+const FLOAT_URGENT_EDGE := Color(0.85, 0.55, 0.18)
+const FLOAT_URGENT_TEXT := Color(1.0, 0.72, 0.28)
 
 var _passbook: Label
+var _branch_float: Button
 var _zone: Label
 var _prompt: Label
 var _stage: Label
@@ -32,6 +36,29 @@ func _ready() -> void:
 	_passbook = _label("Passbook", Vector2(0, 1), Vector4(16, -54, 456, -54), 14, Color(0.95, 0.95, 0.95))
 	_passbook.grow_vertical = Control.GROW_DIRECTION_BEGIN   # zero-height box: the card hugs the help line and grows upward with its lines
 	_passbook.add_theme_stylebox_override("normal", _panel_style(true))
+	_branch_float = Button.new()
+	_branch_float.name = "BranchFloat"
+	_branch_float.anchor_left = 0.0
+	_branch_float.anchor_right = 0.0
+	_branch_float.anchor_top = 1.0
+	_branch_float.anchor_bottom = 1.0
+	# The passbook can grow upward with its rows, so keep the compact meter just above it in the bottom-left band.
+	_branch_float.offset_left = 16
+	_branch_float.offset_top = -226
+	_branch_float.offset_right = 190
+	_branch_float.offset_bottom = -192
+	_branch_float.text = "⛽ —"
+	_branch_float.focus_mode = Control.FOCUS_NONE
+	_branch_float.add_theme_font_size_override("font_size", 13)
+	_branch_float.add_theme_color_override("font_color", BRASS)
+	_branch_float.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.78))
+	_branch_float.add_theme_stylebox_override("normal", _chip_style(FLOAT_QUIET_EDGE))
+	_branch_float.add_theme_stylebox_override("hover", _chip_style(BRASS))
+	_branch_float.add_theme_stylebox_override("pressed", _chip_style(BRASS))
+	_branch_float.pressed.connect(func() -> void:
+		GameState.open_branch_float("hud"))
+	add_child(_branch_float)
+	_branch_float.visible = false
 	_zone = _label("Zone", Vector2(1, 1), Vector4(-236, -94, -16, -54), 17, BRASS)
 	_zone.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_zone.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -104,6 +131,16 @@ func _panel_style(brass_edge: bool = false) -> StyleBoxFlat:
 	return sb
 
 
+func _chip_style(edge: Color) -> StyleBoxFlat:
+	var sb := _panel_style()
+	sb.border_width_left = 1
+	sb.border_width_top = 1
+	sb.border_width_right = 1
+	sb.border_width_bottom = 1
+	sb.border_color = edge
+	return sb
+
+
 func _refresh() -> void:
 	var s: Dictionary = GameState.strings
 	var v := GameState.vars()
@@ -130,6 +167,26 @@ func _refresh() -> void:
 	if Chain.use_mock:
 		lines.append(str(s.get("passbook_mock", "MockChain — nothing here is on a chain")))
 	_passbook.text = "\n".join(lines)
+	_refresh_branch_float()
+
+
+func _refresh_branch_float() -> void:
+	if _branch_float == null:
+		return
+	var short := GameState.treasury_short()
+	var eth: Variant = GameState.treasury_status.get("eth")
+	var amount := "—" if eth == null or str(eth) == "" or str(eth) == "<null>" else GameState.fmt_amount(eth)
+	_branch_float.text = "⛽ LOW" if short else "⛽ %s ETH" % amount
+	var edge := FLOAT_URGENT_EDGE if short else FLOAT_QUIET_EDGE
+	var text_color := FLOAT_URGENT_TEXT if short else BRASS
+	var hover_color := Color(1.0, 0.92, 0.60) if short else Color(1.0, 0.95, 0.78)
+	_branch_float.add_theme_color_override("font_color", text_color)
+	_branch_float.add_theme_color_override("font_hover_color", hover_color)
+	_branch_float.add_theme_color_override("font_pressed_color", hover_color)
+	_branch_float.add_theme_stylebox_override("normal", _chip_style(edge))
+	_branch_float.add_theme_stylebox_override("hover", _chip_style(hover_color))
+	_branch_float.add_theme_stylebox_override("pressed", _chip_style(hover_color))
+	_branch_float.tooltip_text = "Bank ops ETH on Sepolia — help keep the branch open. Not your wallet or passbook."
 
 
 func _on_stage(ev: Dictionary) -> void:
@@ -198,6 +255,7 @@ func _process(delta: float) -> void:
 	_stage.visible = t < _stage_until and _stage.text != ""
 	_toast.visible = t < _toast_until and _toast.text != ""
 	_passbook.visible = not GameState.ui_locked
+	_branch_float.visible = not GameState.ui_locked and GameState.branch_float_available()
 	_zone.visible = not GameState.ui_locked and _zone.text != ""
 	var want_help := not GameState.ui_locked and (_help_pinned or t < _help_until)
 	if want_help != _help_shown:

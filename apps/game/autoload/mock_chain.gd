@@ -162,6 +162,17 @@ func call_method(method: String, args: Dictionary) -> Dictionary:
 			# (desktop) or when the shell was told to stand down (`?mock`). Saying "opened" here would be a lie the
 			# player could see through — an empty screen — so it refuses with a line the terminal has.
 			return _err("CONSOLE_UNAVAILABLE", "MockChain has no browser panel to open")
+		"openInpc", "sleepInpc", "inpcSnapshot":
+			# The assistant's panel is the browser shell's too (docs/INPC.md). Chain.gd routes these to a real shell even
+			# under `?mock`; the mock only answers when there is no shell at all — and then there is nobody to wake.
+			return _err("INPC_UNAVAILABLE", "MockChain has no browser panel to wake the assistant on")
+		"inpcStatus":
+			return _ok({"awake": false})
+		"treasuryStatus":
+			# MockChain is not Live and must never borrow a real /healthz treasury balance for the player HUD.
+			return _ok({"configured": false, "address": null, "eth": null, "treasuryShort": false, "requiredEth": null})
+		"openBranchFloat":
+			return _err("FLOAT_UNAVAILABLE", "MockChain has no Live treasury panel")
 		"observerList":
 			return _ok(_observer_list())
 		"observerGrant":

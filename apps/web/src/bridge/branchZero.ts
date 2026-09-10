@@ -21,6 +21,11 @@
  * Terminal Console (stretch): openConsole (asks the shell for the terminal overlay — an iframe of bloxchain.app, or
  *             a top-level tab if the Console ever refuses framing) and observerGrant / observerRevoke / observerList
  *             (the OBSERVER viewing role: membership only, no function permissions — docs/TERMINAL-CONSOLE.md).
+ * iNPC (s2.3): openInpc / inpcSnapshot / inpcStatus / sleepInpc — the optional service assistant's Wake / chat / Sleep
+ *             panel (docs/INPC.md). Shell surfaces only: they read no chain, sign nothing and hold no bank secret. The
+ *             player's OpenRouter key lives in `sessionStorage` for the session and is never seen by Godot or the desk.
+ * Player ops float (s2.4): treasuryStatus / openBranchFloat — the whitelisted `/healthz` treasury slice and its
+ *             read-only Copy + faucet panel. The panel never calls a top-up route.
  *
  * Everything that needs a Privy identity is delegated to the React overlay through a small adapter it
  * registers at mount: the bridge itself holds no token and no key, and a method that needs one before the
@@ -33,13 +38,16 @@ import deployments from '../../../../infra/deployments/remote-evm.json';
 import type { DeskLink } from '../shell/deskEvents';
 import { focusCanvas } from '../shell/focus';
 import { starGithubRepo } from '../shell/githubStar';
+import { hasKey as hasInpcKey, wipe as wipeInpcSession } from '../inpc/session';
 
 /**
- * `s2.2`: Front-door GitHub stars — `starGithub` opens a small OAuth popup (or a repo popup when the
- * OAuth app is not configured), stamps `PUT /user/starred/{owner}/{repo}`, and returns without
- * navigating the Godot shell away. `s2.1` before it: Load Account…
+ * `s2.4`: the player ops float — `treasuryStatus` / `openBranchFloat` (docs/missions/HANDOFF-help-keep-branch-open.md).
+ * `s2.3` before it: the optional iNPC — `openInpc` / `inpcSnapshot` / `inpcStatus` / `sleepInpc` (docs/INPC.md). Panel and key
+ * are the shell's; Godot hands over a player-safe snapshot and mirrors one bit (awake) back. `s2.2` before it:
+ * front-door GitHub stars — `starGithub` opens a small OAuth popup (or a repo popup when the OAuth app is not
+ * configured), stamps `PUT /user/starred/{owner}/{repo}`, and returns without navigating the Godot shell away.
  */
-export const BRIDGE_VERSION = 's2.2';
+export const BRIDGE_VERSION = 's2.4';
 
 /**
  * Where the bank computer points. `/accounts` is the Console screen that matters: it is where the player imports
@@ -122,8 +130,66 @@ export interface TerminalHost {
   isOpen(): boolean;
 }
 
+/**
+ * The iNPC panel, lent by React the same way. `open` resolves once the panel is mounted; `awake` says whether a key is
+ * already in this tab's session (a reload keeps it) so Godot can light the eye without asking twice.
+ */
+export interface InpcHost {
+  open(snapshot: unknown): Promise<{ awake: boolean }>;
+  /** A fresher snapshot while the panel is up (Godot pushes one on every change of its mirror). */
+  update(snapshot: unknown): void;
+  close(reason?: string): void;
+  isOpen(): boolean;
+}
+
+/** The only treasury fields that may cross into the player shell. All values come from `/healthz`. */
+export interface PlayerTreasury {
+  configured: boolean;
+  address: string | null;
+  eth: string | null;
+  treasuryShort: boolean;
+  requiredEth: string | null;
+}
+
+/** The read-only player ops float panel, lent by React to the bridge. */
+export interface BranchFloatHost {
+  open(opts: { reason?: string }): Promise<{ status: PlayerTreasury }>;
+  close(reason?: string): void;
+  isOpen(): boolean;
+  status(): PlayerTreasury | null;
+}
+
 let adapter: WalletAdapter | undefined;
 let terminal: TerminalHost | undefined;
+let inpc: InpcHost | undefined;
+let branchFloat: BranchFloatHost | undefined;
+
+export function setInpcHost(h: InpcHost | undefined): void {
+  if (inpc === h) return;
+  inpc = h;
+}
+
+export function setBranchFloatHost(h: BranchFloatHost | undefined): void {
+  if (branchFloat === h) return;
+  branchFloat = h;
+}
+
+/** The player shut the read-only ops float panel. Godot clears its temporary overlay ownership on this event. */
+export function pushBranchFloatClosed(reason: string = 'closed'): void {
+  const payload = { reason };
+  emit({ type: 'event', kind: 'branch-float.closed', payload });
+  godotCallback?.(JSON.stringify({ type: 'event', kind: 'branch-float.closed', payload }));
+}
+
+/**
+ * The player shut the assistant's panel (Esc, Close, backdrop, Sleep). Same contract as `terminal.closed`: Godot
+ * unlocks movement on this event, not on the `openInpc` promise. `awake` rides along so the eye follows Sleep.
+ */
+export function pushInpcClosed(reason: string = 'closed', awake: boolean = hasInpcKey()): void {
+  const payload = { reason, awake };
+  emit({ type: 'event', kind: 'inpc.closed', payload });
+  godotCallback?.(JSON.stringify({ type: 'event', kind: 'inpc.closed', payload }));
+}
 
 /** Registered once by the overlay, like `setWalletAdapter`: it must be a stable object across renders. */
 export function setTerminalHost(t: TerminalHost | undefined): void {
@@ -375,6 +441,52 @@ const handlers: Record<string, Handler> = {
   },
   async observerList() {
     return requireAdapter().call('/observer/list');
+  },
+
+  // --- iNPC (docs/INPC.md): the optional service assistant. Shell surfaces; no chain, no desk, no bank secret. ---
+
+  /**
+   * Open the Wake / chat panel with the snapshot Godot built (`GameState.inpc_snapshot()`, player-safe by
+   * construction and whitelisted again in the panel). Resolves when the panel is mounted; the bank stays locked until
+   * the panel pushes `inpc.closed`. Nothing here, or behind the panel, can reach pay / wire / approve / cancel /
+   * priority / provision — the panel has no bridge verbs at all, only OpenRouter.
+   */
+  async openInpc(args) {
+    const host = inpc;
+    if (!host) throw bridgeError('INPC_UNAVAILABLE', 'no iNPC overlay is mounted', 'The assistant stays asleep here — it only wakes in the full bank window.');
+    const opened = await host.open(args.snapshot ?? {});
+    return { opened: true, awake: opened.awake };
+  },
+  /** Godot's mirror changed while the panel is up: hand the panel the fresher board. Harmless when it is closed. */
+  async inpcSnapshot(args) {
+    inpc?.update(args.snapshot ?? {});
+    return { delivered: Boolean(inpc?.isOpen()) };
+  },
+  /** Is a key in this tab's session? Yes/no only — the key itself never crosses the bridge. */
+  async inpcStatus() {
+    return { awake: hasInpcKey() };
+  },
+  /** Sleep from the prop's dialogue: wipe key + transcript; close the panel if it happens to be up. */
+  async sleepInpc() {
+    wipeInpcSession();
+    if (inpc?.isOpen()) inpc.close('sleep');
+    return { awake: false };
+  },
+
+  // --- Player ops float (docs/missions/HANDOFF-help-keep-branch-open.md): health slice + read-only panel. ---
+
+  /** Return only the configured/address/balance/shortfall fields the player can act on. */
+  async treasuryStatus() {
+    return branchFloat?.status() ?? null;
+  },
+  /** Mount the panel; the panel itself only copies the published address or opens the human faucet. */
+  async openBranchFloat(args) {
+    const host = branchFloat;
+    if (!host) throw bridgeError('FLOAT_UNAVAILABLE', 'no branch float panel is mounted', 'The branch float panel is not available in this bank window.');
+    const status = host.status();
+    if (!status?.configured || !status.address) throw bridgeError('FLOAT_UNAVAILABLE', 'the Live treasury is not configured', 'The branch float is not configured on this wing.');
+    const opened = await host.open({ reason: typeof args.reason === 'string' ? args.reason : undefined });
+    return { opened: true, status: opened.status };
   },
 
   // --- S1: Kenji's FX desk (Uniswap v4 on Sepolia; the Main wing's lanes are untouched) ---

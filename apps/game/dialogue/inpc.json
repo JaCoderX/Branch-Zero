@@ -1,0 +1,53 @@
+{
+  "id": "inpc",
+  "name": "Service assistant",
+  "role": "iNPC · explains, never acts",
+  "_comment": "Not a staff NPC (docs/NPCS.md). The only verbs are open_inpc (the shell's Wake / chat panel) and sleep_inpc (forget the key). No pay / wire / approve / cancel / priority / provision — docs/INPC.md.",
+  "start": [
+    { "if": "!booted", "node": "booting" },
+    { "if": "inpc_awake", "node": "awake" },
+    { "node": "dormant" }
+  ],
+  "nodes": {
+    "booting": {
+      "text": "The assistant's eye stays dark while the branch opens.",
+      "choices": [ { "text": "Wait.", "next": "end" } ]
+    },
+    "dormant": {
+      "text": "A brass plate reads SERVICE ASSISTANT. Its eye is dark.\n\nIt can talk you through how the bank works and read your passbook and the vault board back to you — but it only thinks with a link of your own. Paste an OpenRouter key to wake it; the key lives in this tab until it sleeps.",
+      "choices": [
+        { "text": "Wake it (paste an OpenRouter key)", "action": "open_inpc", "working": "Warming up…", "on_ok": "end", "on_error": "refused" },
+        { "text": "Ask why", "next": "why_key" },
+        { "text": "Leave it.", "next": "end" }
+      ]
+    },
+    "awake": {
+      "text": "The assistant's eye is lit. It reads the same board you do, and it cannot touch a penny of it.",
+      "choices": [
+        { "text": "Talk", "action": "open_inpc", "working": "One moment…", "on_ok": "end", "on_error": "refused" },
+        { "text": "Put it to sleep (forget the key)", "action": "sleep_inpc", "working": "Forgetting the key…", "on_ok": "asleep", "on_error": "refused" },
+        { "text": "Ask why", "next": "why_key" },
+        { "text": "Leave it.", "next": "end" }
+      ]
+    },
+    "asleep": {
+      "text": "The eye goes dark. The key and the conversation are gone from this tab.",
+      "choices": [ { "text": "OK.", "next": "end" } ]
+    },
+    "why_key": {
+      "text": "The branch keeps no AI key of its own and runs no relay: your browser talks to OpenRouter directly, with the key you paste, and the key is held only in this tab's session storage — Sleep wipes it, and so does closing the tab.\n\nThe assistant is a reader. It is handed a snapshot of what your passbook and the vault board already show — nothing from behind the counter — and it has no way to sign, pay, wire, release, recall or open anything. Staff at their desks do those, and only with your signature.",
+      "choices": [ { "text": "OK.", "next": "end" } ]
+    },
+    "refused": {
+      "text": "{reason_line}",
+      "choices": [
+        { "text": "Ask why", "next": "refused_why" },
+        { "text": "Leave it.", "next": "end" }
+      ]
+    },
+    "refused_why": {
+      "text": "{reason_why}",
+      "choices": [ { "text": "OK.", "next": "end" } ]
+    }
+  }
+}

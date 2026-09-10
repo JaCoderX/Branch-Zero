@@ -41,11 +41,17 @@ func _ready() -> void:
 
 
 ## Mirrors `Npc.can_talk()` so main.gd can rank NPCs and terminals with one rule. A terminal is never busy
-## on its own account: while the Console overlay is up the player cannot reach the canvas at all.
+## on its own account: while a shell overlay (the Console, the iNPC panel) is up the player cannot reach the canvas.
 func can_talk() -> bool:
-	return not Dialogue.active and not GameState.busy and not GameState.terminal_open
+	return not Dialogue.active and not GameState.busy and not GameState.overlay_open()
 
 
 func interact() -> void:
 	if can_talk():
 		Dialogue.start("terminal")
+
+
+## The HUD line offered while the player stands in reach. main.gd asks the prop rather than assuming every terminal
+## is a bank computer — the iNPC (scripts/inpc.gd) ranks with the terminals for the [Space] prompt but says "wake".
+func prompt_text() -> String:
+	return Dialogue.interpolate(str(GameState.strings.get("prompt_terminal", "[Space] Use {terminal}")), {"terminal": display_name})

@@ -29,7 +29,7 @@ Paste into a **new** Cursor / Codex session. Prefer **Codex Luna**.
 | “Sponsor” = ETHOnline partners | Not gas paymasters / 4337 |
 | Desk Ask-why already deep | Mo = one beat + send to desk |
 | Hub menus get long | Cap ~5–6 top choices; nest “More…” |
-| iNPC has `TEACHING_PACK` | Align facts; don’t rebuild freeform chat in JSON |
+| iNPC has `docs/game-knowledge/` teaching pack | Align facts; don’t rebuild freeform chat in JSON |
 | `has_ens_name` polish shipped | Never print unnamed placeholders |
 | Dialogue box fit met | Don’t regress with huge choice lists |
 

@@ -148,7 +148,7 @@ func resume() -> void:
 	visible = false
 	# mirror Dialogue.close(): the Console overlay keeps the lock if it is up (it cannot be — Esc would not have
 	# opened the card — but the rule stays in one shape)
-	GameState.ui_locked = GameState.terminal_open
+	GameState.ui_locked = GameState.overlay_open()
 	mode_changed.emit()
 
 
@@ -158,7 +158,7 @@ func _enter() -> void:
 	mode = Mode.NONE
 	_page = ""
 	visible = false
-	GameState.ui_locked = GameState.terminal_open
+	GameState.ui_locked = GameState.overlay_open()
 	mode_changed.emit()
 	entered.emit()
 

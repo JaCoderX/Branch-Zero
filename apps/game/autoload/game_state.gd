@@ -31,14 +31,23 @@ var observers: Array = []           # viewing wallets on the OBSERVER role (addr
 var fx: Dictionary = {}             # S1: Kenji's till on Sepolia — USD/EUR/ILS balances, the two fiat pools (`pairs`), whitelist (bridge `fxStatus`)
 var fx_quote: Dictionary = {}       # the rate currently on the quote board (bridge `fxQuote`); empty = board dark
 var terminal_open: bool = false     # the bank computer's Console overlay is up in the shell (bridge `terminal.closed` clears it)
+var inpc_open: bool = false         # the iNPC's Wake / chat overlay is up in the shell (bridge `inpc.closed` clears it) — docs/INPC.md
+var inpc_awake: bool = false        # the shell holds the player's session-only OpenRouter key; mirrored yes/no, the key itself never comes here
+var branch_float_open: bool = false # the read-only Live ops float panel is up in the shell (bridge `branch-float.closed` clears it)
+var _branch_float_opening: bool = false
+var treasury_status: Dictionary = {} # player-safe `/healthz` slice only: configured/address/eth/treasuryShort/requiredEth
 var errors: Dictionary = {}
 var strings: Dictionary = {}
 
 var _reconcile_at: float = 0.0
 var _fx_at: float = 0.0            # last successful fxStatus wall time — throttle pool reads in refresh_all
+var _inpc_pushing: bool = false    # one snapshot hand-over in flight at a time while the assistant's panel is up
+var _treasury_at: float = 0.0      # last player-safe treasury status read
+var _treasury_refreshing: bool = false
 var _last_error: Dictionary = {}
 
 const FX_REFRESH_SEC := 12.0       # Sepolia pair reads are not free; refresh_all reuses a warm board within this window
+const TREASURY_REFRESH_SEC := 5.0  # the React side polls /healthz; this cheap bridge read keeps the HUD responsive
 
 
 func _ready() -> void:
@@ -46,6 +55,7 @@ func _ready() -> void:
 	errors = _load_json(ERRORS_PATH)
 	strings = _load_json(STRINGS_PATH)
 	Chain.event.connect(_on_chain_event)
+	changed.connect(_push_inpc_snapshot)
 	boot()
 
 
@@ -55,6 +65,7 @@ func boot() -> void:
 	await Chain.wait_ready(4.0)
 	var t1 := Time.get_ticks_msec()
 	await refresh_session()
+	await refresh_treasury(true)
 	if logged_in():
 		await refresh_passbook()
 	booted = true
@@ -64,6 +75,7 @@ func boot() -> void:
 	if logged_in():
 		await refresh_observers()
 		await refresh_fx()
+	await refresh_inpc()
 	print("GameState: booted — bridge ready after %d ms, session after %d ms (%s)" % [t1 - t0, Time.get_ticks_msec() - t1, "MockChain" if Chain.use_mock else "bridge " + Chain.bridge_version])
 	changed.emit()
 
@@ -128,6 +140,12 @@ func account() -> String:
 	return str(session.get("account", "")) if has_account() else ""
 
 
+## A shell overlay owns the screen: the Console (terminal) or the iNPC panel. While either is up the player is typing
+## in the DOM, so movement, Space and the visitor's card stay locked until the shell says it closed (docs/GODOT.md §5b).
+func overlay_open() -> bool:
+	return terminal_open or inpc_open or branch_float_open
+
+
 func owner() -> String:
 	return str(session.get("owner", ""))
 
@@ -153,6 +171,30 @@ func mode() -> String:
 	if m != "":
 		return m
 	return "dev" if active_chain_id() == DEV_CHAIN_ID else "live"
+
+
+## The only player-facing treasury truth: a whitelisted slice of the selected Live desk's `/healthz` response.
+## MockChain, Developer Mode and Arc never borrow a real Live health response for this surface.
+func _treasury_surface_allowed() -> bool:
+	return not Chain.use_mock and mode() == "live" and active_chain_id() == SEPOLIA_CHAIN_ID
+
+
+func treasury_configured() -> bool:
+	var address: Variant = treasury_status.get("address")
+	return _treasury_surface_allowed() and bool(treasury_status.get("configured", false)) and address != null and str(address) != ""
+
+
+func treasury_short() -> bool:
+	return treasury_configured() and bool(treasury_status.get("treasuryShort", false))
+
+
+func branch_float_available() -> bool:
+	return treasury_configured()
+
+
+func branch_float_status() -> Dictionary:
+	return treasury_status.duplicate(true)
+
 
 
 ## What the board, the passbook and the NPCs call the chain the money is actually on.
@@ -264,6 +306,11 @@ func facts() -> Dictionary:
 		"desk_linked": desk_linked,
 		"observers": observers.size(),
 		"terminal_open": terminal_open,
+		"inpc_open": inpc_open,
+		"inpc_awake": inpc_awake,
+		"branch_float_open": branch_float_open,
+		"treasury_configured": treasury_configured(),
+		"treasury_short": treasury_short(),
 		# S1 — Kenji's desk. `fx_till` = the player has an AccountBlox on Sepolia; `fx_open` = its exchange door is
 		# registered (the three whitelisted calls); `fx_quoted` = a rate is on the board and still inside its deadline.
 		"fx_till": has_fx_till(),
@@ -477,6 +524,7 @@ func reconcile_pending(reason: String = "focus") -> void:
 
 func refresh_all() -> void:
 	await refresh_session()
+	await refresh_treasury()
 	if logged_in():
 		await refresh_passbook()
 		# Provision / login / Re-check used to skip FX — Kenji then stayed on desk_closed with an empty `fx`.
@@ -484,13 +532,190 @@ func refresh_all() -> void:
 		await refresh_fx(not fx.has("pairs"))
 
 
+## Read the current player-safe treasury slice from the React shell. The shell is the one place that polls `/healthz`;
+## this call never reaches a funding writer and the result is whitelisted again before it enters GameState.
+func refresh_treasury(force: bool = false) -> void:
+	if not _treasury_surface_allowed():
+		if not treasury_status.is_empty():
+			treasury_status = {}
+			changed.emit()
+		_treasury_at = 0.0
+		return
+	if not force and (Time.get_unix_time_from_system() - _treasury_at) < TREASURY_REFRESH_SEC:
+		return
+	if _treasury_refreshing:
+		return
+	_treasury_refreshing = true
+	var r := await Chain.call_async("treasuryStatus", {}, 10.0)
+	_treasury_refreshing = false
+	_treasury_at = Time.get_unix_time_from_system()
+	if not r.get("ok", false):
+		return
+	var raw: Variant = r.get("result")
+	var next: Dictionary = {}
+	if raw is Dictionary:
+		next = {
+			"configured": bool(raw.get("configured", false)),
+			"address": raw.get("address", null),
+			"eth": raw.get("eth", null),
+			"treasuryShort": bool(raw.get("treasuryShort", false)),
+			"requiredEth": raw.get("requiredEth", null),
+		}
+	var was_short := treasury_short()
+	var changed_now := next != treasury_status
+	if changed_now:
+		treasury_status = next
+		if was_short and not treasury_short() and bool(next.get("configured", false)):
+			toast.emit("Branch float restored.", "info")
+		changed.emit()
+
+
+func _process(_delta: float) -> void:
+	if not booted:
+		return
+	if _treasury_surface_allowed() and Time.get_unix_time_from_system() - _treasury_at >= TREASURY_REFRESH_SEC:
+		refresh_treasury()
+
+
+# ---------------------------------------------------------------- iNPC (docs/INPC.md) — a reader, never a desk
+
+## Is the assistant awake in this tab? The shell owns the key (sessionStorage) and answers yes/no; Godot never sees the
+## key. Silent on failure — a dark assistant must never delay Account Opening or the lanes. MockChain answers "no".
+func refresh_inpc() -> void:
+	var r := await Chain.call_async("inpcStatus", {}, 10.0)
+	if r.get("ok", false) and r.get("result") is Dictionary:
+		var awake := bool(r["result"].get("awake", false))
+		if awake != inpc_awake:
+			inpc_awake = awake
+			changed.emit()
+
+
+## The only player-specific truth the iNPC gets (HANDOFF-inpc-openrouter §4). Every field is already on a surface the
+## player reads — passbook, vault board, name board, the terminal's viewing count — and nothing here is desk chrome:
+## no addresses beyond the payee the board already shortens, no tx hashes, no calldata, no keys, no owner, no
+## Live/Dev or link-health flags, no receipts. `release_ready` is the board's own rule (`remaining() <= 0`); the shell
+## re-derives it at send time from `release_at_unix` against the desk clock, so a wire that finished cooling while the
+## player typed is READY on that question, not on the next open.
+func inpc_snapshot() -> Dictionary:
+	var pending: Array = []
+	for w in wires:
+		var rem := remaining(w)
+		var release_at := int(str(w.get("releaseTime", "0")))
+		pending.append({
+			"slip": "#%s" % str(w.get("txId", "?")),
+			"amount_display": "%s %s" % [fmt_amount(w.get("amount", "?")), symbol],
+			"payee_short": short_address(str(w.get("to", "?"))),
+			"status": str(w.get("status", "PENDING")),
+			"board_word": "READY" if rem <= 0 else "PENDING",
+			"release_ready": rem <= 0,
+			"cooling_left_display": fmt_duration(rem) if rem > 0 else "0:00",
+			"release_at_unix": release_at,
+			"release_at_display": clock_display(release_at),
+		})
+	var help: Array = []
+	if not has_account():
+		help.append("Ines at Account Opening opens an account (or loads one you already hold).")
+	else:
+		help.append("Dev or Ama at the counter take an over-the-counter payment up to the counter limit; larger amounts go to the vault as a scheduled wire.")
+		if pending.size() > 0:
+			help.append("Bob at the vault window releases a wire once its clock shows READY — not before.")
+			help.append("Mr. Okafor in the manager's office can recall a pending wire" + (" or run Priority (a hand scan) before the clock." if priority_enabled() else "."))
+		if not has_ens_name():
+			help.append("Petra at the Name Desk registers a bank name.")
+	var network := "MockChain (practice — nothing here is on a chain)" if Chain.use_mock else _session_str("chainName")
+	return {
+		"schema": "branch-zero-inpc-snapshot/1",
+		"desk_now_unix": now(),
+		"logged_in": logged_in(),
+		"has_account": has_account(),
+		"wing": active_wing(),
+		"network": network,
+		"bank_name": ens_name() if has_ens_name() else "",
+		"tier": ens_tier(),
+		"balance_display": ("%s %s" % [fmt_amount(balance), symbol]) if has_account() else "",
+		"currency_note": "%s are practice dollars — no real money moves in this branch." % symbol,
+		"counter_limit_display": ("%s %s per over-the-counter payment" % [fmt_amount(str(session.get("instantLimit", "100"))), symbol]) if has_account() else "",
+		"cooling_period_display": fmt_duration(timelock_sec()) if has_account() else "",
+		"pending_count": pending.size(),
+		"pending_wires": pending,
+		"viewing_wallets_count": observers.size(),
+		"player_zone": current_zone,
+		"who_can_help": help,
+	}
+
+
+## `HH:MM` on the player's own clock for a unix instant — how the vault clock's release time reads to a person.
+static func clock_display(unix: int) -> String:
+	if unix <= 0:
+		return ""
+	var bias := int(Time.get_time_zone_from_system().get("bias", 0))   # minutes east of UTC
+	var d := Time.get_datetime_dict_from_unix_time(unix + bias * 60)
+	return "%02d:%02d" % [int(d.get("hour", 0)), int(d.get("minute", 0))]
+
+
+## While the assistant's panel is up, each change of the mirror is handed to the shell (`inpcSnapshot`), so the chat
+## reads the board as it is now. One hand-over in flight at a time; a missed one is covered by the next `changed`.
+func _push_inpc_snapshot() -> void:
+	if not inpc_open or _inpc_pushing:
+		return
+	_inpc_pushing = true
+	await Chain.call_async("inpcSnapshot", {"snapshot": inpc_snapshot()}, 10.0)
+	_inpc_pushing = false
+
+
 # ---------------------------------------------------------------- writes (every desk action lands here)
+
+func _needs_treasury_gate(action: String) -> bool:
+	return [
+		"provision", "load_account", "pay", "wire", "approve", "cancel", "manager_cancel", "priority",
+		"ens_mint", "ens_set_text", "fx_enable", "fx_swap",
+	].has(action)
+
+
+## Refuse the write locally while the existing Live health signal is short. The popup is dismissible and the player
+## can continue walking after it closes; no top-up or other spend call is made here.
+func _gate_treasury_write(action: String) -> Dictionary:
+	if Dialogue.active:
+		# A gated choice should not leave a dialogue trapped behind the shell panel. The player can walk after dismissing.
+		Dialogue.close()
+	var opened := await open_branch_float("write:%s" % action)
+	var error := {
+		"code": "TREASURY_SHORT",
+		"message": "the Live ops treasury is short; no write was sent",
+		"bankLine": "The branch is low on ops gas — no slip was sent. Staff are being topped up in the background.",
+	}
+	if not opened.get("ok", false):
+		error = opened.get("error", error)
+	_note_error(error)
+	return {"ok": false, "result": {}, "error": error}
+
+
+func open_branch_float(reason: String = "hud") -> Dictionary:
+	if branch_float_open:
+		return {"ok": true, "result": {"opened": true, "alreadyOpen": true}}
+	if _branch_float_opening:
+		return {"ok": true, "result": {"opened": true, "alreadyOpening": true}}
+	_branch_float_opening = true
+	if not branch_float_available():
+		await refresh_treasury(true)
+	if not branch_float_available():
+		_branch_float_opening = false
+		return {"ok": false, "result": {}, "error": {"code": "FLOAT_UNAVAILABLE", "message": "the Live treasury is not configured"}}
+	var r := await Chain.call_async("openBranchFloat", {"reason": reason}, 30.0)
+	_branch_float_opening = false
+	if r.get("ok", false):
+		branch_float_open = true
+		ui_locked = true
+		changed.emit()
+	return r
 
 ## Run one desk action through the bridge. Returns {"ok", "result", "error"}. Refreshes the mirror afterwards
 ## whatever the outcome (a refused approve still moved the clock; a provision changes the session).
 ## Vault verbs (U4+): `approve` = Bob (owner, after the clock) · `priority` = Okafor (hand scan, before the clock) ·
 ## `cancel` / `manager_cancel` = recall. There is no manager approve.
 func run_action(action: String, args: Dictionary = {}) -> Dictionary:
+	if _needs_treasury_gate(action) and treasury_short():
+		return await _gate_treasury_write(action)
 	busy = true
 	changed.emit()
 	var r: Dictionary
@@ -603,6 +828,22 @@ func run_action(action: String, args: Dictionary = {}) -> Dictionary:
 			if r.get("ok", false):
 				terminal_open = true
 				ui_locked = true
+		"open_inpc":
+			# The iNPC's Wake / chat panel (docs/INPC.md). The shell owns the panel and the player's OpenRouter key;
+			# Godot hands over a player-safe snapshot and locks movement until the shell pushes `inpc.closed`. There is
+			# no bridge verb behind this panel that can pay, wire, release, approve, recall, provision or open the Console.
+			r = await Chain.call_async("openInpc", {"snapshot": inpc_snapshot()}, 30.0)
+			if r.get("ok", false):
+				inpc_open = true
+				ui_locked = true
+				if r.get("result") is Dictionary:
+					inpc_awake = bool(r["result"].get("awake", inpc_awake))
+		"sleep_inpc":
+			# Forget the key from the prop's own dialogue: the shell wipes sessionStorage + the conversation and
+			# closes its panel if it was up. The same wipe runs behind the panel's own Sleep button.
+			r = await Chain.call_async("sleepInpc", {}, 30.0)
+			if r.get("ok", false):
+				inpc_awake = false
 		"observer_list":
 			r = await Chain.call_async("observerList", {}, 20.0)
 		"observer_grant":
@@ -707,8 +948,24 @@ func _on_chain_event(kind: String, payload: Dictionary) -> void:
 			_on_desk_link(payload)
 		"terminal.closed":
 			_on_terminal_closed(payload)
+		"branch-float.closed":
+			_on_branch_float_closed(payload)
+		"inpc.closed":
+			_on_inpc_closed(payload)
 		"bridge.ready":
 			pass
+
+
+## The player shut the assistant's panel (Esc, Close, Sleep or the backdrop). Same shape as the Console: the panel is
+## the shell's, so this event is what makes the bank walkable again. `awake` rides along because Sleep is one of the
+## ways the panel closes, and the eye must go dark on the same frame.
+func _on_inpc_closed(p: Dictionary) -> void:
+	if p.has("awake"):
+		inpc_awake = bool(p["awake"])
+	if inpc_open:
+		inpc_open = false
+		ui_locked = Dialogue.active or overlay_open()
+	changed.emit()
 
 
 ## The player shut the Console overlay. The panel is the shell's, so this is the only signal that the bank is
@@ -718,9 +975,18 @@ func _on_terminal_closed(_p: Dictionary) -> void:
 	if not terminal_open:
 		return
 	terminal_open = false
-	if not Dialogue.active:
-		ui_locked = false
+	ui_locked = Dialogue.active or overlay_open()
 	refresh_observers()
+	changed.emit()
+
+
+## The player dismissed the read-only ops float panel. Unlike a hard funding lock, this always restores the prior
+## floor state even while the health signal remains short.
+func _on_branch_float_closed(_p: Dictionary) -> void:
+	if not branch_float_open:
+		return
+	branch_float_open = false
+	ui_locked = Dialogue.active or overlay_open()
 	changed.emit()
 
 

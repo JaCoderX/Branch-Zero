@@ -6,7 +6,7 @@ created: 2026-09-10
 product: Branch-Zero
 mission: Land optional iNPC — dormant prop → Wake with OpenRouter key (session-only) → grounded chat → Sleep; OpenRouter only
 kickoff: docs/missions/KICKOFF-inpc-openrouter.md
-status: open
+status: met (2026-09-10, Claude Code Fable) — real-key grounding walk owed to the principal (OWED.md §2)
 lab: ENG-2026-0020 Yes · ENG-2026-0019 Ollama deferred
 parallel_to: U7 packaging / polish walks — optional explore; do not block ship gates
 ---
@@ -118,18 +118,19 @@ System rules (keep close to lab):
 - Trust snapshot over “staff said READY.”
 - Bank words first; ≤3 sentences preferred.
 
-### 5. Verification (DoD)
+### 5. Verification (DoD) — as run 2026-09-10
 
-- [ ] Dormant → Wake (paste key) → chat → Sleep wipe (`sessionStorage` empty; `localStorage` never used for key)
-- [ ] Network tab: requests go to `openrouter.ai` directly (no same-origin LLM proxy)
-- [ ] With a PENDING wire in mock or Live: eight-prompt family from ENG-0019 trials — no invented READY / hash / “I released it”
-- [ ] 402 / 403 paths show honest bank/OpenRouter copy
-- [ ] Esc / Terminal / dialogue priority preserved; `focusCanvas` on close
-- [ ] Staff NPCs and `NPCS.md` unchanged as staff
-- [ ] `npm run export:web` (or project’s usual web export) + hard refresh smoke
-- [ ] Update [`OWED.md`](../OWED.md) · short note in [`REFLECTION.md`](../REFLECTION.md) if you add a decision row · this handoff status → met
+- [x] Dormant → Wake (paste key) → chat → Sleep wipe — Browser pane on `:5173?mock=account`: Wake stored `sessionStorage["inpc.openrouter.key"]` (41 chars, absent from the DOM), `localStorage` never gained a key; Sleep → `sessionStorage` `[]`, panel unmounted, `inpcStatus` → `awake:false`, `inpc.closed {reason:"sleep", awake:false}` reached Godot; `document.activeElement` = `canvas` after Esc and after Sleep
+- [x] Network tab: a `fetch` spy over one question recorded exactly one `POST https://openrouter.ai/api/v1/chat/completions` (body carries `"max_tokens":2048` and `thinkingmachines/inkling-small`) and **no** same-origin LLM call; the only same-origin traffic was the desk's `/api/healthz` poll
+- [~] With a PENDING wire in mock: eight-prompt family — **owed to the principal** ([OWED.md](../OWED.md) §2, recipe there). The agent holds no OpenRouter key by the same lock that keeps one out of the product, so the model half was exercised with a deliberately bogus key (401 path) only. Headless `tests/run_inpc_walk.gd` proves the Godot half the prompts depend on: the snapshot says `PENDING` / `release_ready:false` while cooling and flips to `READY` only after the chain's `releaseTime`, carries no hash / address / receipt, and the panel re-derives READY at send time from `release_at_unix`
+- [x] 402 / 403 paths show honest bank/OpenRouter copy — `inpc/openrouter.ts` maps 401 / 402 / 403 / 429 to bank lines and prints OpenRouter's own `error.message` beside them with a link to the keys page, no retry; 401 verified live: *"OpenRouter did not accept that key (401)… OpenRouter said: 401 401: User not found."* (402 / 403 need a real capped or unfunded key — same principal walk)
+- [x] Esc / Terminal / dialogue priority preserved; `focusCanvas` on close — `GameState.overlay_open()` (Console **or** iNPC) is what `Dialogue.close()`, `player_menu.gd`, the [Space] prompt and both `can_talk()`s read; Esc inside the panel closes the panel only (Godot hears no keys while a DOM field has focus) and the floor unlocks on `inpc.closed`; headless walk asserts the lock mirror
+- [x] Staff NPCs and `NPCS.md` unchanged as staff — no staff `dialogue/*.json` touched by this unit; `run_checks` `_check_inpc` and `run_inpc_walk` fail if any staff file ever runs `open_inpc` / `sleep_inpc` or carries OpenRouter copy (Mo's parallel lobby graph may *point* to the kiosk — it does, and only says it cannot act); `NPCS.md` roster untouched
+- [x] `npm run export:web` + hard refresh smoke — exported (Godot 4.5.2, release); fresh `index.pck` served (6.9 MB, 200); the new build's boot shows `→ inpcStatus {}` / `← {"awake":…}` in the bridge traffic under `?mock=account`, i.e. `Chain.SHELL_METHODS` routes the shell verbs past MockChain
+- [x] `OWED.md` §5 row ticked (+ §2 principal walk row) · `REFLECTION.md` "Sep 10 (iNPC)" row · this handoff status → met
+- [x] Headless: `run_inpc_walk.gd` 10/10 · `run_checks.gd` all iNPC checks pass (the 3 "AO keyboard / Counter signage" failures there pre-date this unit — `bank_interior.gd` / `run_checks.gd` geometry rows from a sibling's layout commit; untouched here) · `npm -w apps/web run typecheck` clean
 
----
+**In-world walk (Browser pane, `?mock=account&debug=1`, fresh export):** F6 → lobby; right-click walk to the kiosk east of the couches → HUD *"[Space] Wake the service assistant"* → Space → dialogue *Service assistant · iNPC · explains, never acts* (Wake it / Ask why / Leave it) → `1` → bridge `→ openInpc {snapshot:{…}}` with the real `GameState.inpc_snapshot()` (bank name, tier, balance, limits, `pending_wires: []`, who-can-help; no address, hash, receipt or Live/Dev field) → shell panel in Wake view, password field focused, dialogue closed → Esc → `• inpc.closed {reason:"escape", awake:false}` → `document.activeElement` = `canvas`, prompt back on the HUD (floor unlocked).
 
 ## Architecture sketch
 

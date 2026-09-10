@@ -164,6 +164,43 @@ Rules:
 - Every call has a timeout (15 s) and returns `{ error: { code, message } }` on failure; NPCs have a line for each `code` (see [NPCS.md](./NPCS.md) § 5).
 - On desktop (editor) `MockChain.gd` implements the same API with fake latency and canned data so gameplay can be iterated offline.
 
+### 4d. Bridge version `s2.3` (as built 2026-09-10; adds the optional iNPC)
+
+`apps/web/src/bridge/branchZero.ts`. `s2.3` adds four **shell-only** methods for the optional service assistant
+([INPC.md](./INPC.md), [missions/HANDOFF-inpc-openrouter.md](./missions/HANDOFF-inpc-openrouter.md)) and one event:
+
+| Method / event | Direction | What it does |
+|---|---|---|
+| `openInpc({snapshot})` | Godot → shell | Mounts the Wake / chat / Sleep panel (`overlay/Inpc.tsx`) with `GameState.inpc_snapshot()`; resolves `{opened, awake}` once mounted |
+| `inpcSnapshot({snapshot})` | Godot → shell | A fresher snapshot while the panel is up (GameState pushes one on every `changed` while `inpc_open`) |
+| `inpcStatus()` | Godot → shell | `{awake}` — is an OpenRouter key in this tab's `sessionStorage`? Yes/no only; read once at boot |
+| `sleepInpc()` | Godot → shell | Wipe key + transcript (the prop's "Put it to sleep" choice); closes the panel if it is up |
+| `inpc.closed {reason, awake}` | shell → Godot | Every exit path of the panel (Esc, Close, backdrop, Sleep). Godot unlocks on this event, never on the `openInpc` promise, and mirrors `awake` into the prop's eye |
+
+Rules that follow, all mirroring the Terminal Console pattern:
+
+- **The key never crosses the bridge.** The player pastes it in the panel; it lives in `sessionStorage` under
+  `inpc.openrouter.key`; `localStorage`, `.env`, `VITE_*` and the Godot side never hold it. Sleep and closing the tab
+  wipe it. `inpcStatus` answers a boolean.
+- **The snapshot is player-safe by construction** (`GameState.inpc_snapshot()`): no account / owner address, no tx
+  hash, no calldata, no receipts, no Live/Dev or desk-link chrome. The shell whitelists it again (`inpc/snapshot.ts`)
+  and re-derives READY from the chain's `releaseTime` against the desk clock at send time.
+- **No product proxy.** The panel POSTs `https://openrouter.ai/api/v1/chat/completions` from the browser, model
+  `thinkingmachines/inkling-small`, `max_tokens: 2048` always. 401 / 402 / 403 bodies are shown as OpenRouter wrote
+  them, with a bank line beside them and no retry.
+- **`Chain.SHELL_METHODS`.** These four go to the real shell even under `?mock` (they touch no chain), which is how a
+  MockChain walk with a pending wire drives the real panel. With no shell at all, MockChain refuses `INPC_UNAVAILABLE`.
+- **Locks.** `GameState.overlay_open()` = `terminal_open or inpc_open`; `Dialogue.close()`, the player menu and the
+  prompt all read it, so Esc order (dialogue → slips → Console / iNPC panel → visitor's card) and `focusCanvas()` on
+  close hold for both overlays. `run_action("open_inpc")` sets `inpc_open` + `ui_locked`; `inpc.closed` clears them.
+- **In-world.** `scripts/inpc.gd` (`InpcProp extends BankTerminal`, so `main.gd` ranks it with the terminals for the
+  [Space] prompt) stands at `(7.6, 0, 2.4)` facing west; `dialogue/inpc.json` has two verbs, `open_inpc` and
+  `sleep_inpc`. `tests/run_inpc_walk.gd` walks the Godot half headless; `tests/run_checks.gd` guards the verb list, the
+  copy and staff-file silence.
+
+`s2.2` before it added `starGithub` (front-door GitHub stars); `s2.4` after it (a parallel unit) adds the player ops
+float. Everything below is unchanged.
+
 ### 4c. Bridge version `s2.1` (as built; adds Ines's load slip)
 
 `apps/web/src/bridge/branchZero.ts`. `s2.1` adds one method, **`loadAccount`** — Ines adopting an AccountBlox the

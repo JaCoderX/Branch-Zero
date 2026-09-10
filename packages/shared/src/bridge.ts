@@ -46,6 +46,8 @@ export type BridgeMessage = BridgeResponse | BridgeEvent;
  * S1 adds the FX desk: `fxStatus` / `fxEnable` / `fxQuote` / `fxSwap`. The swap is executed by a *second* AccountBlox
  * on Sepolia (the "FX till") through the same Lane A shape — owner's session signer signs, the Sepolia broadcaster
  * submits — so it opens no new Privy surface and leaves the 1337 lanes untouched (docs/UNISWAP.md).
+ * S2.4 adds the player-safe ops float: `treasuryStatus` and `openBranchFloat` expose only the existing Live
+ * `/healthz` treasury slice and a read-only faucet panel; no top-up route is exposed to the player.
  */
 export type BridgeMethod =
   | 'echo'
@@ -100,7 +102,10 @@ export type BridgeMethod =
   // S2 — Live | Dev desk choice (operator); not a wing switch
   | 'setMode'
   // Front-door GitHub ★ CTAs — OAuth popup + API star, or repo popup fallback
-  | 'starGithub';
+  | 'starGithub'
+  // Live-only player ops float — read-only `/healthz` slice + Copy/faucet panel
+  | 'treasuryStatus'
+  | 'openBranchFloat';
 
 /** How the owner's signature is obtained for meta-transactions. */
 export type SigningMode = 'session' | 'client';
@@ -214,8 +219,9 @@ export interface DeskSession {
  * game unlocks movement again. `openConsole` resolves as soon as the panel is up; it deliberately does not
  * wait for the close, because a player may read the Console for minutes and no bridge call should be held
  * open that long (docs/GODOT.md §4, per-call timeouts).
+ * The player ops float adds `branch-float.closed` {reason}; it is dismissible even while the treasury is short.
  */
-export type BridgeEventKind = 'bridge.ready' | 'stage' | 'tab.visible' | 'desk.link' | 'terminal.closed';
+export type BridgeEventKind = 'bridge.ready' | 'stage' | 'tab.visible' | 'desk.link' | 'terminal.closed' | 'branch-float.closed';
 
 export interface BranchZeroBridge {
   /** Godot registers its `JavaScriptBridge.create_callback` here; JS calls it with one JSON string. */

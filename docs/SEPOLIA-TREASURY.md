@@ -132,7 +132,7 @@ hook and the interval watcher.
 ## 7. Out of scope
 
 - Walkable player-facing **Treasury Desk** quest (full lobby desk) — still parked
-- Thin HUD **Help keep the branch open** CTA — **not** out of scope; open unit [HANDOFF-help-keep-branch-open.md](./missions/HANDOFF-help-keep-branch-open.md)  
+- Player-facing Live HUD **Help keep the branch open** CTA is authorized; the full walkable **Treasury Desk** quest remains out of scope — [HANDOFF-help-keep-branch-open.md](./missions/HANDOFF-help-keep-branch-open.md)
 - Collapsing manager/broadcaster into treasury  
 - Migrating practice token to Circle USDC  
 - Arc revive / sharing Remote EVM  

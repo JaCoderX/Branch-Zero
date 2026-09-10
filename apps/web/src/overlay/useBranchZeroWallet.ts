@@ -289,6 +289,12 @@ export function useBranchZeroWallet() {
     void probeDesk(activeChainId);
   }, [activeChainId, probeDesk]);
 
+  /** Keep the existing `/healthz` treasury view fresh for the player chip and the operator row. */
+  useEffect(() => {
+    const timer = setInterval(() => void probeDesk(activeChainId), 15_000);
+    return () => clearInterval(timer);
+  }, [activeChainId, probeDesk]);
+
   /** Switch only the payment wing. ENS stays on Sepolia and the user's single Privy consent is reused. */
   const switchWing = useCallback(
     async (chainId: number): Promise<Session> => {

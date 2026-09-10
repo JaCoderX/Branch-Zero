@@ -5,9 +5,11 @@ Product docs for the walkable 3D bank built for [ETHOnline 2026](https://ethglob
 | | |
 |--|--|
 | **Public pitch** | Root [`README.md`](../README.md) · screenshots in [`media/readme/`](./media/readme/) |
+| **Agent entry** | Root [`AGENTS.md`](../AGENTS.md) — coding / ops briefing (not the in-game iNPC) |
 | **What’s open** | [`OWED.md`](./OWED.md) |
 | **Cold agent start** | [`missions/HANDOFF-CC.md`](./missions/HANDOFF-CC.md) |
 | **Mission briefs** | [`missions/`](./missions/) — all `HANDOFF-*` / `KICKOFF-*` |
+| **iNPC knowledge** | [`game-knowledge/`](./game-knowledge/) — player-safe pack allowlist only |
 
 ---
 
@@ -34,6 +36,7 @@ Then open the topic doc that matches the surface you are changing.
 | [GAME-DESIGN.md](./GAME-DESIGN.md) | Gameplay, HUD, tutorial errands |
 | [NPCS.md](./NPCS.md) | Staff roster, dialogue, on-chain roles |
 | [INPC.md](./INPC.md) | Optional intelligent NPC (OpenRouter) — lab learnings + locks |
+| [game-knowledge/](./game-knowledge/) | iNPC-safe teaching pack SoT (bundled into `apps/web`) |
 | [WORLD-3D-ENVIRONMENT.md](./WORLD-3D-ENVIRONMENT.md) | Zones, layout, art direction, perf budget |
 | [DEMO-SCRIPT.md](./DEMO-SCRIPT.md) | Demo video storyboard and submission checklist |
 

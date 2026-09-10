@@ -14,6 +14,8 @@ prior_mission: Live OTP walk MET 2026-09-09 — provision + ENS + Lane A + Lane 
 
 You are a **cold agent** unless the human says you are continuing a prior session. Prefer reading this file over chat memory. You have **freedom on how**. You do **not** have freedom on constraints, scope, or protocol semantics.
 
+**Short entry:** root [`AGENTS.md`](../../AGENTS.md) — layout, hard stops, iNPC vs coding-agent context split. Then this handoff for the open mission index.
+
 **Open checklist:** [`docs/OWED.md`](../OWED.md) — human ops, principal walks, packaging gate, follow-ups, parked items.
 
 > **Load Account (Ines) — MET 2026-09-08.** Ines adopts a player-owned AccountBlox by number on the current
@@ -95,7 +97,9 @@ FX requires a real Sepolia account. Do **not** share Remote EVM. Arc stays **DEF
 
 **S1 / S1b Uniswap v4 FX Desk — MET 2026-09-08.** Spec: [`docs/UNISWAP.md`](../UNISWAP.md). Mission record: **§5i**.
 Uniswap remains activated **sponsor #3**. Official pitch: Privy + ENS + Uniswap.
-**Also open (parallel, Codex Luna):** Help keep the branch open — Live HUD ops-float CTA [HANDOFF-help-keep-branch-open.md](./HANDOFF-help-keep-branch-open.md).
+**Met 2026-09-10 (parallel, Codex Luna):** Help keep the branch open — Live HUD ops-float CTA [HANDOFF-help-keep-branch-open.md](./HANDOFF-help-keep-branch-open.md).
+
+**Also open (parallel, Codex Luna):** Ops float credit meter — compact passbook-band HUD polish [HANDOFF-ops-float-credit-hud.md](./HANDOFF-ops-float-credit-hud.md) · [KICKOFF-ops-float-credit-hud.md](./KICKOFF-ops-float-credit-hud.md).
 
 **Met 2026-09-10 (parallel, Codex Luna):** Mo greeter knowledge graph — lobby hub-and-spoke teaching [HANDOFF-mo-greeter-knowledge.md](./HANDOFF-mo-greeter-knowledge.md) · [KICKOFF-mo-greeter-knowledge.md](./KICKOFF-mo-greeter-knowledge.md).
 

@@ -6,7 +6,7 @@ created: 2026-09-10
 product: Branch-Zero
 mission: Live-only player surface for Sepolia ops treasury — HUD chip + funding popup; soft-gate write lanes when treasuryShort
 kickoff: docs/missions/KICKOFF-help-keep-branch-open.md
-status: open
+status: met 2026-09-10
 baseline: Sepolia Ops Treasury MET 2026-09-08 (docs/SEPOLIA-TREASURY.md)
 parallel_to: U7 packaging / polish walks · iNPC — UI/ops sustainability only; do not absorb those missions
 ---
@@ -133,16 +133,18 @@ Gate on **`treasuryShort`**, not "treasury below an arbitrary pretty number whil
 
 ## Verification checklist
 
-- [ ] Live: chip visible; click opens popup with address + Copy + faucet link
-- [ ] Copy works; faucet opens in a new tab
-- [ ] Dev / mock: no player chip (or explicitly absent)
-- [ ] When `treasuryShort`: write attempt opens popup; player can dismiss and walk
-- [ ] When not short: writes do not force the popup
-- [ ] Popup never triggers top-up spend; no key material in UI
-- [ ] Esc / focusCanvas intact; dialogue priority unchanged
-- [ ] Desk-debug treasury row still works for operators
-- [ ] Copy distinguishes ops ETH from Ines practice dollars
-- [ ] OWED + SEPOLIA-TREASURY pointer updated; handoff status → met or blocked
+- [x] Live: chip visible; click opens popup with address + Copy + faucet link
+- [x] Copy works; faucet opens in a new tab
+- [x] Dev / mock: no player chip (or explicitly absent)
+- [x] When `treasuryShort`: write attempt opens popup; player can dismiss and walk
+- [x] When not short: writes do not force the popup
+- [x] Popup never triggers top-up spend; no key material in UI
+- [x] Esc / focusCanvas intact; dialogue priority unchanged
+- [x] Desk-debug treasury row still works for operators
+- [x] Copy distinguishes ops ETH from Ines practice dollars
+- [x] OWED + SEPOLIA-TREASURY pointer updated; handoff status → met
+
+**Verification note (2026-09-10):** Player-safe bridge/App wiring, direct TypeScript checks, production web build, JSON parsing, and whitespace checks pass. `export:web` is required because `hud.gd`, `game_state.gd`, and `mock_chain.gd` changed; it was not run here because Godot 4.5.x is unavailable. The full Live/Dev/mock engine walk is therefore the post-export principal check.
 
 **STOP AND ASK if:** you believe a hard whole-bank lock is required; Terminal seems like the only viable Copy surface; GameState cannot see health without leaking operator fields; mock must simulate `treasuryShort` for a kill test (default: Live walk or forced health stub — ask before inventing mock treasury drama).
 

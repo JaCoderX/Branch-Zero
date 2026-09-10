@@ -34,6 +34,12 @@ const TERMINALS := [
 	["lobby", Vector3(11.35, 0.4, 9.15), "the lobby terminal"],
 ]
 
+## The optional service assistant (docs/INPC.md): a dormant prop east of the lobby seating, facing west into the room.
+## Off the entrance walk (x ≈ 5 north from the door), the escort line ((-2, -1) → (6, -3.5)) and the elevator approach
+## (near-check at (11, 5.5) r 2.6). Not a staff NPC; it ranks with the terminals for the [Space] prompt.
+const INPC_SPOT := Vector3(7.6, 0.0, 2.4)
+const INPC_YAW := PI / 2
+
 const ARC_CHAIN_ID := 5042002
 const MAIN_CHAIN_ID := 1337
 
@@ -121,6 +127,11 @@ func _ready() -> void:
 		t.display_name = spec[2]
 		t.player_near.connect(_on_terminal_near)
 		terminals.add_child(t)
+	var inpc := InpcProp.new()
+	inpc.position = INPC_SPOT
+	inpc.rotation.y = INPC_YAW
+	inpc.player_near.connect(_on_terminal_near)
+	terminals.add_child(inpc)
 
 	player = CharacterBody3D.new()
 	player.set_script(load("res://scripts/player.gd"))
@@ -328,10 +339,10 @@ func _update_prompt() -> void:
 	var t: BankTerminal = pick[1]
 	_prompt_npc = n
 	_prompt_terminal = t
-	if Dialogue.active or GameState.terminal_open:
+	if Dialogue.active or GameState.overlay_open():
 		hud.set_prompt("")
 	elif t != null:
-		hud.set_prompt(Dialogue.interpolate(str(s.get("prompt_terminal", "[Space] Use {terminal}")), {"terminal": t.display_name}))
+		hud.set_prompt(t.prompt_text())
 	elif n != null:
 		hud.set_prompt(Dialogue.interpolate(str(s.get("prompt_talk", "[Space] Talk to {npc}")), {"npc": n.display_name}))
 	else:

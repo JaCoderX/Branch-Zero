@@ -16,6 +16,11 @@ signal ready_changed()
 
 const TIMEOUT_SEC := 15.0
 
+## Shell-only surfaces (the iNPC overlay, docs/INPC.md). They read no chain and sign nothing, so MockChain has nothing
+## to stand in for: when a real shell is present they go to it even under `?mock` — which is how a mock walk with a
+## pending wire drives the real Wake / chat / Sleep panel. Without a shell (desktop) the mock refuses them honestly.
+const SHELL_METHODS := ["openInpc", "inpcSnapshot", "inpcStatus", "sleepInpc", "treasuryStatus", "openBranchFloat"]
+
 var is_web: bool = false
 var bridge_ready: bool = false
 var bridge_version: String = ""
@@ -62,7 +67,8 @@ func wait_ready(max_sec: float = 3.0) -> void:
 func call_async(method: String, args: Dictionary = {}, timeout_sec: float = TIMEOUT_SEC) -> Dictionary:
 	_seq += 1
 	var id := "%d-%d" % [_seq, Time.get_ticks_msec()]
-	if use_mock or _bz == null:
+	var shell_only := method in SHELL_METHODS and _bz != null
+	if _bz == null or (use_mock and not shell_only):
 		return await _mock.call_method(method, args)
 	_pending[id] = true
 	_bz.request(method, JSON.stringify(args), id)

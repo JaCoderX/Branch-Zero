@@ -91,9 +91,9 @@ func close() -> void:
 		return
 	active = false
 	is_working = false
-	# The Console overlay outlives the dialogue that opened it: while it is up the player types in the DOM
-	# instead of walking the bank, so movement stays locked until the shell reports `terminal.closed`.
-	GameState.ui_locked = GameState.terminal_open
+	# A shell overlay (the Console, the iNPC panel) outlives the dialogue that opened it: while it is up the player
+	# types in the DOM instead of walking the bank, so movement stays locked until the shell reports it closed.
+	GameState.ui_locked = GameState.overlay_open()
 	var id := npc_id
 	npc_id = ""
 	closed.emit(id)
