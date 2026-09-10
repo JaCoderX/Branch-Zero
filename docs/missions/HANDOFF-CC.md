@@ -103,6 +103,8 @@ Uniswap remains activated **sponsor #3**. Official pitch: Privy + ENS + Uniswap.
 
 **Met 2026-09-10 (parallel, Codex Luna):** Mo greeter knowledge graph — lobby hub-and-spoke teaching [HANDOFF-mo-greeter-knowledge.md](./HANDOFF-mo-greeter-knowledge.md) · [KICKOFF-mo-greeter-knowledge.md](./KICKOFF-mo-greeter-knowledge.md).
 
+**Met 2026-09-10 (parallel, Claude Code):** Shell splash — branded first-paint while Godot loads; hand off to existing player-menu front door — [HANDOFF-shell-splash.md](./HANDOFF-shell-splash.md) · [KICKOFF-shell-splash.md](./KICKOFF-shell-splash.md).
+
 **Also open:** U7 ship packaging (below), still gated on the principal's polish re-playtest.
 
 > **K7 is PASS.** The FX till `0xB5e8ab92…` completed a Uniswap v4 swap on Sepolia —

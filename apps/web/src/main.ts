@@ -30,11 +30,28 @@ function setState(s: string) {
   render();
   const boot = document.getElementById('boot');
   if (boot) {
-    // Once the engine runs the status div goes away entirely (it is `pointer-events: none` regardless — an
+    // Once the engine runs the splash goes away entirely (it is `pointer-events: none` regardless — an
     // invisible full-viewport div over the canvas is what broke canvas re-focus in the U4 playtest).
     boot.hidden = s.startsWith('running');
-    boot.textContent = boot.hidden ? '' : `Branch Zero — ${s}`;
+    const status = document.getElementById('boot-status');
+    if (status) status.textContent = boot.hidden ? '' : splashLine(s);
+    const bar = document.querySelector<HTMLElement>('#boot-bar > i');
+    if (bar) {
+      const pct = /^loading (\d+)%/.exec(s);
+      if (pct) bar.style.width = `${pct[1]}%`;
+      else if (s.startsWith('starting')) bar.style.width = '100%';
+    }
   }
+}
+// Everyday bank words for the splash status line; errors and unknown states are shown as written.
+function splashLine(s: string): string {
+  if (s === 'not started' || s === 'loading engine…') return 'Opening the branch…';
+  if (s === 'starting…') return 'Unlocking the doors…';
+  const pct = /^loading (\d+)%/.exec(s);
+  if (pct) return `Opening the branch… ${pct[1]}%`;
+  const kb = /^loading (\d+) KB/.exec(s);
+  if (kb) return `Opening the branch… ${Number(kb[1]).toLocaleString()} KB`;
+  return s;
 }
 render();
 

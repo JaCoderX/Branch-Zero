@@ -282,7 +282,7 @@ off it and WASD / `Space` go dead. Rules that follow:
 - Nothing may sit over the canvas as a hit target when it is not meant to be one. The U4 playtest bug was the
   full-viewport `#boot` status div (`position: fixed; inset: 0`) left in the DOM after loading: every click on the
   bank hit it, so Godot's own `mousedown → canvas.focus()` never ran. It is `pointer-events: none` and `hidden` once
-  the engine runs (`apps/web/index.html`, `src/main.ts`).
+  the engine runs (`apps/web/index.html`, `src/main.ts`). The branded shell splash (2026-09-10) lives *inside* that same `#boot` div for this reason — no second layer.
 - The shell calls `focusCanvas()` (`src/shell/focus.ts`) after the interactions it owns: the debug panel's *hide*,
   and the bridge's `login` / `addSessionSigner` once the Privy flow settles. It focuses now and again on two
   timers — not `requestAnimationFrame`, which a background tab never runs — because React unmounts the clicked button

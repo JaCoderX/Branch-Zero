@@ -13,13 +13,35 @@
       #overlay > * { pointer-events: auto; }
       /* Status text while the engine loads. Never a hit target: it sits over #game, and a full-viewport div that
          takes clicks is exactly what kept Godot from re-focusing its canvas after the overlay was used (U4). */
-      #boot { position: fixed; inset: 0; display: grid; place-items: center; font-size: 14px; color: #9aa4b2; pointer-events: none; }
+      #boot { position: fixed; inset: 0; display: grid; place-items: center; text-align: center; pointer-events: none; color: #b8c0c9;
+              background: radial-gradient(ellipse at 50% 38%, #171c26 0%, #0b0e14 62%, #070910 100%); }
       #boot[hidden] { display: none; }
+      #boot * { pointer-events: none; }
+      #boot-plaque { display: grid; gap: 14px; padding: 36px 56px; border: 1px solid rgba(219, 176, 82, 0.35); border-radius: 4px;
+                     background: rgba(12, 15, 22, 0.94); box-shadow: 0 0 0 6px rgba(12, 15, 22, 0.94), 0 24px 60px rgba(0, 0, 0, 0.55); }
+      #boot-brand { margin: 0; font: 600 56px/1.1 Georgia, 'Palatino Linotype', 'Book Antiqua', 'Times New Roman', serif; letter-spacing: 0.06em; color: #dbb052; }
+      #boot-tagline { margin: 0; font-size: 20px; color: #f2edde; font-style: italic; }
+      #boot-rule { width: 96px; height: 1px; margin: 4px auto 0; background: rgba(219, 176, 82, 0.55); }
+      #boot-status { margin: 0; font-size: 14px; color: #9aa4b2; min-height: 1.4em; }
+      #boot-bar { width: 260px; height: 3px; margin: 0 auto; background: rgba(255, 255, 255, 0.08); border-radius: 2px; overflow: hidden; }
+      #boot-bar > i { display: block; width: 0; height: 100%; background: #dbb052; transition: width 0.25s ease-out; }
+      @media (max-width: 600px) { #boot-plaque { padding: 28px 24px; } #boot-brand { font-size: 38px; } #boot-tagline { font-size: 16px; } #boot-bar { width: 200px; } }
     </style>
   </head>
   <body>
     <div id="game"><canvas id="canvas" tabindex="0"></canvas></div>
-    <div id="boot">Branch Zero — loading shell…</div>
+    <!-- Shell splash: brand + tagline (same words as the Godot title, dialogue/strings.json menu_*) and an honest load
+         line while the engine downloads. Non-interactive placeholder only: the real front door (Enter the branch) is
+         Godot's player_menu. main.ts fills #boot-status / #boot-bar and hides #boot once the engine runs. -->
+    <div id="boot">
+      <div id="boot-plaque">
+        <h1 id="boot-brand">Branch Zero</h1>
+        <p id="boot-tagline">A bank you can walk through.</p>
+        <div id="boot-rule"></div>
+        <p id="boot-status">Opening the branch…</p>
+        <div id="boot-bar"><i></i></div>
+      </div>
+    </div>
     <div id="overlay"></div>
     <!-- The shell (bridge first, then the engine). window.BranchZero must exist before Godot's first frame. -->
     <script type="module" src="/src/main.ts"></script>
