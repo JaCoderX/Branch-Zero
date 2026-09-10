@@ -62,6 +62,7 @@ Related: [HANDOFF-CC.md](./missions/HANDOFF-CC.md) · [DEV-LOOP.md](./DEV-LOOP.m
 
 ## 5. Explore / nice-to-have (not blocking ship)
 
+- [ ] **iNPC (intelligent NPC)** — optional companion: dormant → Ollama Cloud key (session-only) → chat (+ later follow); read/explain only; lab-first [GameLab ENG-2026-0019](../../GameLab/work/ENG-2026-0019-inpc-ollama-cloud/) — **do not land until findings Yes + handoff**; not a staff `NPCS.md` row
 - [x] **SE partners board + lobby terminal** — southeast notice board (ETH Online / partners / Bloxchain / Particle) **and** a standalone Console terminal (no NPC) — [HANDOFF-partners-board.md](./missions/HANDOFF-partners-board.md) · [KICKOFF-partners-board.md](./missions/KICKOFF-partners-board.md) (Codex Luna) — met 2026-09-08
 - [ ] **ENS follow-ups (proposals, principal call)** — reverse names on ledger / receipts / payee list; staff directory `*.staff.branchzero.eth` vs RBAC; Petra EAC deny-`setAddr` teaching beat — see "Not this mission" in [HANDOFF-ens-passbook-polish.md](./missions/HANDOFF-ens-passbook-polish.md)
 - [ ] **Provision pin follow-up** — Re-check / recovery path that re-pins when `policyPinned` is stale after a lost `players.json` (load lane already moves pins; Account Opening is one-shot today — [LOAD-ACCOUNT.md](./LOAD-ACCOUNT.md) §8.2)
