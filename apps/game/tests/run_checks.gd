@@ -587,6 +587,7 @@ func _check_player_menu() -> void:
 	var strings := _load("res://dialogue/strings.json")
 	var bad: PackedStringArray = []
 	var keys := ["menu_brand", "menu_tagline", "menu_enter", "menu_controls", "menu_about", "menu_about_text", "menu_back",
+		"menu_star_game", "menu_star_protocol",
 		"pause_title", "pause_resume", "pause_controls", "pause_sound_on", "pause_sound_off", "pause_leave", "pause_leave_ask",
 		"pause_leave_yes", "pause_leave_no"]
 	var blob := ""

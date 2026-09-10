@@ -97,6 +97,13 @@ export const config = {
   rpcUrl,
   allowedOrigins: opt('ALLOWED_ORIGINS', 'http://localhost:5173').split(',').map((s) => s.trim()),
 
+  /**
+   * Optional GitHub OAuth App for front-door ★ CTAs (docs: player menu). Public client id is also
+   * mirrored as `VITE_GITHUB_CLIENT_ID` for the shell popup; the secret stays on the desk only.
+   */
+  githubClientId: opt('GITHUB_OAUTH_CLIENT_ID', opt('GITHUB_CLIENT_ID', '')),
+  githubClientSecret: opt('GITHUB_OAUTH_CLIENT_SECRET', opt('GITHUB_CLIENT_SECRET', '')),
+
   broadcasterPk: req(key('BROADCASTER_PK')) as Hex,
   deployerPk: req(key('DEPLOYER_PK')) as Hex,
   /** Optional (U2). Branch Manager: a runtime `BRANCH_MANAGER` role holder who may approve / cancel wires directly. */

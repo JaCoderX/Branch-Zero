@@ -137,6 +137,51 @@ app.get('/healthz', async () => {
 });
 
 /**
+ * Front-door GitHub star OAuth — exchange the popup's `code` for a user access token.
+ * No Privy auth: starring is independent of the bank session. Requires
+ * `GITHUB_OAUTH_CLIENT_ID` + `GITHUB_OAUTH_CLIENT_SECRET` on the desk (and matching
+ * `VITE_GITHUB_CLIENT_ID` in the shell). The secret never reaches Godot or the browser bundle.
+ */
+app.post('/github/oauth', async (req, reply) => {
+  const body = (req.body ?? {}) as { code?: string };
+  const code = String(body.code ?? '').trim();
+  if (!code) return reply.code(400).send({ code: 'BAD_ARGS', message: 'code required', bankLine: 'GitHub did not send a sign-in code.' });
+  if (!config.githubClientId || !config.githubClientSecret) {
+    return reply.code(503).send({
+      code: 'NOT_CONFIGURED',
+      message: 'GitHub OAuth app not configured on this desk',
+      bankLine: 'This branch has not plugged in GitHub starring yet.',
+    });
+  }
+  try {
+    const res = await fetch('https://github.com/login/oauth/access_token', {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_id: config.githubClientId,
+        client_secret: config.githubClientSecret,
+        code,
+      }),
+    });
+    const data = (await res.json()) as { access_token?: string; error?: string; error_description?: string; scope?: string };
+    if (!res.ok || !data.access_token) {
+      return reply.code(401).send({
+        code: 'AUTH',
+        message: data.error_description || data.error || `github oauth HTTP ${res.status}`,
+        bankLine: 'GitHub would not finish signing you in.',
+      });
+    }
+    return { access_token: data.access_token, scope: data.scope ?? '' };
+  } catch (e) {
+    return reply.code(502).send({
+      code: 'RPC',
+      message: (e as Error).message,
+      bankLine: 'The branch could not reach GitHub just now.',
+    });
+  }
+});
+
+/**
  * Exchange a Privy access token for a Teller Desk session view of the player.
  *
  * Also mints the player's policy if they do not have one yet, and hands back its id: the overlay passes

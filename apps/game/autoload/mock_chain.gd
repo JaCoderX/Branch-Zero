@@ -86,6 +86,10 @@ func call_method(method: String, args: Dictionary) -> Dictionary:
 	match method:
 		"echo":
 			return _ok({"echo": args.get("msg"), "bridge": "mock"})
+		"starGithub":
+			# Front-door CTA — mock always "stars" so title walks stay offline.
+			var repo := str(args.get("repo", ""))
+			return _ok({"starred": true, "already": false, "via": "api", "repo": repo, "mock": true})
 		"getSession":
 			return _ok(_session())
 		"login":

@@ -96,7 +96,11 @@ export type BridgeMethod =
    * Ordinary Teller Desk call (`POST /account/load`), no new Privy surface: the desk re-pins the existing
    * app-owned policy rules to the loaded address itself.
    */
-  | 'loadAccount';
+  | 'loadAccount'
+  // S2 — Live | Dev desk choice (operator); not a wing switch
+  | 'setMode'
+  // Front-door GitHub ★ CTAs — OAuth popup + API star, or repo popup fallback
+  | 'starGithub';
 
 /** How the owner's signature is obtained for meta-transactions. */
 export type SigningMode = 'session' | 'client';
@@ -194,6 +198,8 @@ export interface DeskSession {
   manager?: string | null;
   /** U5: the latest customer subname this player claimed under branchzero.eth. */
   ensName?: string | null;
+  /** Passbook tier mirrored from the name's `bz.tier` text record (Silver | Gold). */
+  ensTier?: string | null;
   /** U4+: the branch runs Priority releases and this account carries the META_APPROVE split (ROLE_SET 3). */
   priority?: boolean;
   token?: { address: string; symbol: string; decimals: number };

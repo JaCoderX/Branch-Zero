@@ -230,6 +230,13 @@ func _render() -> void:
 		row.add_child(_button(str(s.get("menu_controls", "Controls")), func() -> void: _open_page("controls")))
 		row.add_child(_button(str(s.get("menu_about", "About the branch")), func() -> void: _open_page("about")))
 		_title_box.add_child(row)
+		# GitHub ★ CTAs — two repos, one row. Star goes through the shell (`starGithub`); the canvas stays put.
+		var stars := HBoxContainer.new()
+		stars.alignment = BoxContainer.ALIGNMENT_CENTER
+		stars.add_theme_constant_override("separation", 12)
+		stars.add_child(_button(str(s.get("menu_star_game", "★ Star the game")), func() -> void: _star_repo("JaCoderX/Branch-Zero")))
+		stars.add_child(_button(str(s.get("menu_star_protocol", "★ Star the protocol")), func() -> void: _star_repo("PracticalParticle/Bloxchain-Protocol")))
+		_title_box.add_child(stars)
 		_title_box.add_child(_text(str(s.get("menu_hint_enter", "Enter ↵")), 13, MUTED, BankFonts.ui(), HORIZONTAL_ALIGNMENT_CENTER))
 		enter.grab_focus.call_deferred()
 	elif _card.visible:
@@ -273,6 +280,28 @@ func _render() -> void:
 func _open_page(page: String) -> void:
 	_page = page
 	_render()
+
+
+## Front-door GitHub star. The shell keeps the bank mounted; a small popup handles GitHub consent / the repo page.
+func _star_repo(repo: String) -> void:
+	GameState.toast.emit(str(GameState.strings.get("menu_star_working", "Opening GitHub…")), "info")
+	var r: Dictionary = await Chain.call_async("starGithub", {"repo": repo}, 180.0)
+	if r.get("ok", false):
+		var result: Dictionary = r.get("result", {})
+		if typeof(result) != TYPE_DICTIONARY:
+			result = {}
+		var via := str(result.get("via", ""))
+		if via == "api":
+			if result.get("already", false):
+				GameState.toast.emit(str(GameState.strings.get("menu_star_already", "Already starred — thank you.")), "info")
+			else:
+				GameState.toast.emit(str(GameState.strings.get("menu_star_done", "Starred — thank you.")), "info")
+		else:
+			GameState.toast.emit(str(GameState.strings.get("menu_star_popup", "If you are signed into GitHub, tap Star, then close the window.")), "info")
+		return
+	var err: Dictionary = r.get("error", {})
+	var line := str(err.get("bankLine", err.get("message", GameState.strings.get("menu_star_failed", "GitHub would not take the star just now."))))
+	GameState.toast.emit(line, "error")
 
 
 ## Rows are numbered like the dialogue box's choices so 1–4 work from the keyboard (the web canvas gets keys, and

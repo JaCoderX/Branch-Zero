@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Branch Zero — GitHub</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        font: 16px/1.4 system-ui, sans-serif;
+        background: #0b0d12;
+        color: #e8e6e1;
+      }
+    </style>
+  </head>
+  <body>
+    <p id="msg">Finishing with GitHub…</p>
+    <script>
+      (function () {
+        var params = new URLSearchParams(location.search);
+        var code = params.get('code');
+        var state = params.get('state');
+        var err = params.get('error') || params.get('error_description');
+        var msg = document.getElementById('msg');
+        var payload = err
+          ? { type: 'bz.github.oauth', error: err }
+          : { type: 'bz.github.oauth', code: code || '', state: state || '' };
+        try {
+          if (window.opener) window.opener.postMessage(payload, location.origin);
+        } catch (e) {
+          /* ignore */
+        }
+        msg.textContent = err ? 'GitHub said no — you can close this window.' : 'Done — you can close this window.';
+        window.setTimeout(function () {
+          try {
+            window.close();
+          } catch (e) {
+            /* ignore */
+          }
+        }, 250);
+      })();
+    </script>
+  </body>
+</html>

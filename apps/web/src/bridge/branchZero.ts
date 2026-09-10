@@ -32,21 +32,14 @@ import { ARC_TESTNET_CHAIN_ID, REMOTE_EVM_CHAIN_ID, SEPOLIA_CHAIN_ID, remoteEvmW
 import deployments from '../../../../infra/deployments/remote-evm.json';
 import type { DeskLink } from '../shell/deskEvents';
 import { focusCanvas } from '../shell/focus';
+import { starGithubRepo } from '../shell/githubStar';
 
 /**
- * `s2.1`: Load Account — `loadAccount` hands Ines an AccountBlox address the player already owns on the current
- * wing (docs/LOAD-ACCOUNT.md). It is an ordinary Teller Desk call and opens **no** Privy surface: the desk
- * re-pins the app-owned policy rules to the loaded address on its own side, so the one consent the player gave
- * at Account Opening still covers it.
- *
- * `s2.0` before it: Sepolia Live — `setMode` picks the payment wing (`live` = Sepolia, the default; `dev` =
- * Remote EVM 1337, Developer Mode) and `getSession` carries `mode` / `chainName` / `fxTillIsMain` so the board
- * and the passbook name the chain they are actually on. Everything before that is unchanged and must stay that
- * way: `s1.0` (Kenji's FX desk — `fxStatus` / `fxEnable` / `fxQuote` / `fxSwap`; since the fiat pairs of 2026-09-09
- * `fxQuote` / `fxSwap` carry `pair` EUR | ILS, default EUR), `u5.1` (Terminal Console
- * `openConsole` + `observer*`), `u5.0` (ENS Name Desk) and `u4.1` (`priority`, Okafor's hand scan).
+ * `s2.2`: Front-door GitHub stars — `starGithub` opens a small OAuth popup (or a repo popup when the
+ * OAuth app is not configured), stamps `PUT /user/starred/{owner}/{repo}`, and returns without
+ * navigating the Godot shell away. `s2.1` before it: Load Account…
  */
-export const BRIDGE_VERSION = 's2.1';
+export const BRIDGE_VERSION = 's2.2';
 
 /**
  * Where the bank computer points. `/accounts` is the Console screen that matters: it is where the player imports
@@ -504,6 +497,21 @@ const handlers: Record<string, Handler> = {
     const status = await requireAdapter().call<{ receipts?: unknown[]; serverNow?: string }>('/status');
     const all = status.receipts ?? [];
     return { items: all.slice(-limit), serverNow: status.serverNow };
+  },
+
+  /**
+   * Front-door CTA: star a public GitHub repo without navigating the bank away.
+   * Needs `VITE_GITHUB_CLIENT_ID` + desk `GITHUB_OAUTH_CLIENT_SECRET` for one-click API stars;
+   * otherwise opens the repo in a popup for a manual Star.
+   */
+  async starGithub(args) {
+    const repo = String(args.repo ?? args.full ?? '').trim();
+    if (!repo) throw bridgeError('BAD_ARGS', 'repo required', 'Which repository should we star?');
+    try {
+      return await starGithubRepo(repo);
+    } finally {
+      focusCanvas();
+    }
   },
 };
 
