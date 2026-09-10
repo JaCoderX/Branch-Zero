@@ -9,8 +9,9 @@ extends SceneTree
 ## the condition evaluator and interpolation behave.
 
 const NPCS := ["greeter", "clerk", "teller", "vault_keeper", "manager", "registrar", "dealer"]
-## Dialogue files that are not NPCs. The bank computer runs the same format (docs/TERMINAL-CONSOLE.md §3).
-const PROPS := ["terminal"]
+## Dialogue files that are not NPCs. The bank computer runs the same format (docs/TERMINAL-CONSOLE.md §3); so does the
+## optional service assistant (docs/INPC.md), which is a prop and not a staff row.
+const PROPS := ["terminal", "inpc"]
 
 ## NPCS.md §5 rows, the SDK names behind them, plus every code the Teller Desk and the bridge can return.
 const REQUIRED_CODES := [
@@ -33,6 +34,8 @@ const REQUIRED_CODES := [
 	"MANAGER_NO_STAMP", "NOT_COOLING", "PRIORITY_OFF", "PRIORITY_CANCELLED", "MFA_FAILED", "PRIORITY_EXPIRED",
 	# Terminal Console stretch — the bank computer and the OBSERVER viewing role
 	"CONSOLE_UNAVAILABLE", "OBSERVER_SELF", "OBSERVER_FULL", "NOT_OBSERVER", "RoleWalletLimitReached",
+	# iNPC (docs/INPC.md) — the assistant's panel is the shell's; MockChain says so
+	"INPC_UNAVAILABLE",
 	# Load Account (Ines adopts an owned AccountBlox by number) — docs/LOAD-ACCOUNT.md
 	"ACCOUNT_NOT_OWNED", "ACCOUNT_NOT_A_VAULT", "LOAD_POLICY",
 	# S1 — Kenji's FX desk (Uniswap v4 on Sepolia)
@@ -51,9 +54,11 @@ func _initialize() -> void:
 		_check_npc(id)
 	for id in PROPS:
 		_check_npc(id)
+	_check_greeter_graph(Dlg)
 	_check_faucet_choice()
 	_check_load_account()
 	_check_terminal()
+	_check_inpc()
 	_check_se_corner()
 	_check_fx_desk()
 	_check_vault_desks()
@@ -175,6 +180,97 @@ func _check_npc(id: String) -> void:
 	if nodes.has("refused") and str(nodes["refused"].get("text", "")).find("{reason_line}") < 0:
 		_fail("refused node does not show {reason_line}")
 	_ok("%d nodes, %d action choices, targets resolve" % [nodes.size(), action_nodes])
+
+
+## Mo's lobby graph: the three ready-to-talk states must reach the small hub; bank language stays out of the
+## technical spokes; named-customer copy remains quiet until has_ens_name is true; and Mo stays read-only.
+func _check_greeter_graph(Dlg) -> void:
+	print("Mo greeter knowledge graph")
+	var d := _load("res://dialogue/greeter.json")
+	var nodes: Dictionary = d.get("nodes", {})
+	var bad: PackedStringArray = []
+	for id in ["hub", "directory", "directory_more", "payments_vault", "desk_ines", "desk_counter", "desk_vault", "desk_manager", "desk_petra", "desk_fx", "service_assistant", "partners_strip", "lore_bank", "lore_bank_tech", "why_privy", "why_counter", "why_vault", "why_vault_tech", "why_manager", "why_ens", "why_fx", "why_partners"]:
+		if not nodes.has(id):
+			bad.append("greeter graph is missing %s" % id)
+	for id in ["no_account", "has_account", "pending"]:
+		var reaches_hub := false
+		for c in nodes.get(id, {}).get("choices", []):
+			if str(c.get("next", "")) == "hub":
+				reaches_hub = true
+		if not reaches_hub:
+			bad.append("%s cannot return to the lobby hub" % id)
+	for pin in [
+		["no_account", "Point me to Ines.", "desk_ines"],
+		["has_account", "Claim a bank name?", "desk_petra"],
+		["hub", "What desks are open?", "directory"],
+		["hub", "Who powers the desks?", "partners_strip"],
+		["directory", "More desks", "directory_more"],
+		["directory_more", "FX Desk · Kenji", "desk_fx"],
+		["directory_more", "Service assistant kiosk", "service_assistant"],
+		["pending", "Go to the vault.", "desk_vault"],
+	]:
+		var found := false
+		for c in nodes.get(pin[0], {}).get("choices", []):
+			if str(c.get("text", "")) == pin[1] and str(c.get("next", "")) == pin[2]:
+				found = true
+		if not found:
+			bad.append("mock walk lost %s → %s → %s" % [pin[0], pin[1], pin[2]])
+	# Soft ENS invite is only for unnamed customers.
+	var ens_invite_ok := false
+	for c in nodes.get("has_account", {}).get("choices", []):
+		if str(c.get("text", "")) == "Claim a bank name?" and str(c.get("if", "")) == "!has_ens_name" and str(c.get("next", "")) == "desk_petra":
+			ens_invite_ok = true
+	if not ens_invite_ok:
+		bad.append("has_account lost the !has_ens_name Name Desk invite")
+	var hub_choices: Array = nodes.get("hub", {}).get("choices", [])
+	if hub_choices.size() > 6:
+		bad.append("hub exposes %d choices; keep it at six or fewer" % hub_choices.size())
+	var hub_no_account := false
+	var hub_account := false
+	for c in hub_choices:
+		if str(c.get("text", "")) == "Open an account" and str(c.get("if", "")) == "!has_account":
+			hub_no_account = true
+		if str(c.get("text", "")) == "Payments & the vault" and str(c.get("if", "")) == "has_account":
+			hub_account = true
+	if not hub_no_account or not hub_account:
+		bad.append("hub lost the account-aware opening/payment routes")
+	if _actions_in(d).size() > 0:
+		bad.append("greeter.json contains a write action")
+	var main_path := ""
+	for id in ["no_account", "has_account", "pending", "hub", "directory", "directory_more", "payments_vault", "desk_ines", "desk_counter", "desk_vault", "desk_manager", "desk_petra", "desk_fx", "service_assistant", "partners_strip", "lore_bank", "why_vault"]:
+		main_path += str(nodes.get(id, {}).get("text", "")).to_lower()
+	for jargon in ["privy", "uniswap", "ensv2", "meta-transaction", "broadcaster", "timelock", "releasetime", " gas"]:
+		if main_path.find(jargon) >= 0:
+			bad.append("main path leaks Ask-why term '%s'" % jargon.strip_edges())
+	var tech_expectations := {
+		"why_privy": ["privy", "session signer"],
+		"why_counter": ["meta-transaction", "broadcaster", "gas"],
+		"why_vault_tech": ["bloxchain", "releasetime", "not my timer"],
+		"why_manager": ["hand-scan", "cooling", "bob"],
+		"why_ens": ["ensv2", "accountblox"],
+		"why_fx": ["uniswap v4", "sepolia"],
+		"why_partners": ["privy", "ens", "uniswap", "arc", "coming soon"],
+		"lore_bank_tech": ["bloxchain", "broadcaster", "timelock"],
+	}
+	for id in tech_expectations.keys():
+		var text := str(nodes.get(id, {}).get("text", "")).to_lower()
+		for needle in tech_expectations[id]:
+			if text.find(str(needle)) < 0:
+				bad.append("%s is missing Ask-why fact '%s'" % [id, needle])
+	var unnamed := {"booted": true, "logged_in": true, "has_account": true, "has_ens_name": false}
+	var named := unnamed.duplicate()
+	named["has_ens_name"] = true
+	var petra_quiet: String = Dlg.resolve_text(nodes.get("desk_petra", {}), unnamed)
+	var petra_named: String = Dlg.resolve_text(nodes.get("desk_petra", {}), named)
+	if petra_quiet.find("{bank_name}") >= 0 or petra_quiet.to_lower().find("bank name") >= 0:
+		bad.append("greeter.desk_petra names the bank name for an unnamed customer")
+	if petra_named.find("{bank_name}") < 0:
+		bad.append("greeter.desk_petra lost the named-customer bank name")
+	if bad.is_empty():
+		_ok("hub reachable from all starts · six-choice cap · bank words on main path · technical spokes pinned · Mo read-only")
+	else:
+		for b in bad:
+			_fail(b)
 
 
 ## U4+ (HANDOFF §5e): Bob waits the clock, Okafor bypasses it. The dialogue must not hand either the other's verb.
@@ -390,6 +486,53 @@ func _check_terminal() -> void:
 		bad.append("CONSOLE_UNAVAILABLE does not say the panel needs the full bank window")
 	if bad.is_empty():
 		_ok("terminal: open_console + viewing list only, no write verbs · [Space] prompt · read-only copy present")
+	else:
+		for b in bad:
+			_fail(b)
+
+
+## iNPC (docs/INPC.md): a prop, not staff. Its dialogue may only open the shell's panel or forget the key; the copy must
+## tell the player the key is theirs, session-only and wiped on Sleep; the prompt is a [Space] line; MockChain's refusal
+## has a bank line; and no staff file mentions it (the roster in NPCS.md is unchanged).
+func _check_inpc() -> void:
+	print("iNPC (service assistant)")
+	var d := _load("res://dialogue/inpc.json")
+	var actions := _actions_in(d)
+	var bad: PackedStringArray = []
+	for a in actions.keys():
+		if not ["open_inpc", "sleep_inpc"].has(str(a)):
+			bad.append("inpc.json runs '%s' — the assistant may only open its panel or forget the key" % str(a))
+	if not actions.has("open_inpc"):
+		bad.append("inpc.json never opens the panel")
+	if not actions.has("sleep_inpc"):
+		bad.append("inpc.json cannot put the assistant to sleep")
+	var text := FileAccess.get_file_as_string("res://dialogue/inpc.json").to_lower()
+	for needle in ["openrouter", "session", "wipe", "never acts"]:
+		if text.find(needle) < 0:
+			bad.append("inpc.json copy is missing '%s'" % needle)
+	var strings := _load("res://dialogue/strings.json")
+	for k in ["prompt_inpc_dormant", "prompt_inpc_awake"]:
+		if not str(strings.get(k, "")).begins_with("[Space]"):
+			bad.append("%s missing or not a [Space] prompt" % k)
+	var errors := _load("res://dialogue/errors.json")
+	if str(errors.get("INPC_UNAVAILABLE", {}).get("line", "")).find("full bank window") < 0:
+		bad.append("INPC_UNAVAILABLE does not say the panel needs the full bank window")
+	# Staff may point the way to the kiosk (Mo's lobby graph does); none may run its verbs or carry its key copy.
+	for id in NPCS:
+		var st := FileAccess.get_file_as_string("res://dialogue/%s.json" % id).to_lower()
+		if st.find("open_inpc") >= 0 or st.find("sleep_inpc") >= 0 or st.find("openrouter") >= 0:
+			bad.append("%s.json runs the assistant's verbs or talks OpenRouter — staff dialogue stays staff" % id)
+	var main_text := FileAccess.get_file_as_string("res://scripts/main.gd")
+	if main_text.find("InpcProp.new()") < 0:
+		bad.append("main.gd does not place the assistant")
+	var gs := FileAccess.get_file_as_string("res://autoload/game_state.gd")
+	for forbidden in ["\"hash\"", "\"owner\":", "\"account\":", "receipts", "desk_linked", "mode()"]:
+		var fn_start := gs.find("func inpc_snapshot()")
+		var fn_end := gs.find("static func clock_display", fn_start)
+		if fn_start >= 0 and fn_end > fn_start and gs.substr(fn_start, fn_end - fn_start).find(forbidden) >= 0:
+			bad.append("inpc_snapshot() touches %s — not player-safe" % forbidden)
+	if bad.is_empty():
+		_ok("inpc: open_inpc + sleep_inpc only · session-only key copy · [Space] prompts · MockChain line · no staff file runs its verbs · snapshot builder avoids hashes/addresses/receipts/mode")
 	else:
 		for b in bad:
 			_fail(b)

@@ -6,7 +6,7 @@ created: 2026-09-10
 product: Branch-Zero
 mission: Expand Mo (greeter.json) from thin router into a hub-and-spoke conversation knowledge graph — bank services + optional sponsor/tech Ask-why — without stealing desk verbs or competing with the iNPC
 kickoff: docs/missions/KICKOFF-mo-greeter-knowledge.md
-status: open
+status: met
 parallel_to: Help keep the branch open · U7 packaging (gated) · iNPC principal grounding walk — this unit is copy/graph only
 ---
 
@@ -129,16 +129,20 @@ Prefer not to force `export:web` solely for JSON dialogue if the principal alrea
 
 ## Verification checklist
 
-- [ ] `no_account` can reach directory + Ines route + lore without dead ends
-- [ ] `has_account` hub covers Counter / Vault / Name / FX / partners (or nested “More…”)
-- [ ] `pending>0` still highlights Bob / Okafor and can deepen on vault
-- [ ] Main path has no “Privy / Uniswap / meta-transaction / GuardController” unless behind Ask why
-- [ ] Unnamed customers never hear “not chosen yet” / empty bank-name clauses (`has_ens_name` only)
-- [ ] Mo has **no** `action` / write verbs
-- [ ] Hub choice count stays on-screen (dialogue box fit already met — don’t regress)
-- [ ] `run_checks.gd` green when Godot host available; light mock walk Mo → Ines → glance hub → leave
-- [ ] `NPCS.md` §4.1 matches shipped nodes
-- [ ] HANDOFF status set; OWED row ticked
+- [x] `no_account` can reach directory + Ines route + lore without dead ends
+- [x] `has_account` hub covers Counter / Vault / Name / FX / partners (directory nests the side hall)
+- [x] `pending>0` still highlights Bob / Okafor and can deepen on vault
+- [x] Main path has no “Privy / Uniswap / meta-transaction / GuardController” unless behind Ask why
+- [x] Unnamed customers never hear “not chosen yet” / empty bank-name clauses (`has_ens_name` only)
+- [x] Mo has **no** `action` / write verbs
+- [x] Hub choice count stays on-screen (six raw choices; account-aware rows filter at runtime)
+- [x] `run_checks.gd` has graph pins and the JSON/mock checks pass; Godot was unavailable on this host, so the headless suite is noted rather than claimed green
+- [x] `NPCS.md` §4.1 matches shipped nodes
+- [x] HANDOFF status set; OWED row ticked
+
+## Closeout — 2026-09-10
+
+`greeter.json` now has a read-only hub, a two-page desk directory, account-aware opening/payment routes, and short Ask-why spokes for the bank rails and pitch partners. No export was forced for this JSON/docs-only pass; the principal can hard-refresh `:5173` if the dialogue pack is rebuilt.
 
 ---
 

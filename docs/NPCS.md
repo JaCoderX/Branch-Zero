@@ -75,27 +75,154 @@ Style guide: max 2 sentences per line; no jargon on the main path; humour dry, n
 
 ### 4.1 Greeter — Mo (Lobby)
 
-Purpose: routing, tutorial pacing, celebration.
+Purpose: read-only orientation and a curated lobby knowledge hub. Mo explains one beat in bank words, then points to the desk that owns the work; he never opens an account, moves money, releases a wire, claims a name, or swaps currency.
 
 ```text
-[enter, no account]
+[enter, !booted]
+Mo: Morning! Give the desk a second to open up.
+  > Sure.                  → end
+
+[enter, !has_account]
 Mo: Welcome to Branch Zero. First time? Account Opening is the desk with the plant — Ines will sort you out.
+  > Show me around.        → hub
   > Where am I?            → lore_bank
+  > Point me to Ines.      → desk_ines
   > Thanks.                → end
 
-[enter, has account, pending == 0]
-Mo: Morning, {name}. Bank name: {bank_name}. Counter is open and the vault's quiet; Dev can help with a florist payment.
+[enter, has_account, pending == 0]
+Mo: Morning, {name}. Counter is open and the vault's quiet; Dev can help with a small payment.
+    (if has_ens_name) Your bank name {bank_name} is on file — Petra keeps the name desk, and Dev can take it on a payment slip.
+  > Show me around.        → hub
   > What's the vault for?  → why_vault
+  > Claim a bank name?     → desk_petra          (if !has_ens_name)
   > Thanks.                → end
 
 [enter, pending > 0]
-Mo: You've got {pending} wire(s) cooling in the vault. The clock's on the wall; Bob releases them when it runs down, or Mr. Okafor can recall one or skip the cooling with a hand scan.
+Mo: You've got {pending} wire(s) cooling in the vault. Bob releases them when the clock runs down; Mr. Okafor handles a recall or the early hand-scan route.
+  > Show me around.        → hub
+  > Go to the vault.       → desk_vault
+  > What's the vault for?  → why_vault
+  > Thanks.                → end
 
+[hub]
+Mo: This is the lobby. Pick an errand and I'll point; the desks do the actual work.
+  > How does this bank work?  → lore_bank
+  > What desks are open?      → directory
+  > Open an account           → desk_ines          (if !has_account)
+  > Payments & the vault     → payments_vault      (if has_account)
+  > Who powers the desks?    → partners_strip
+  > Thanks.                  → end
+
+[lore_bank]
+Mo: Branch Zero keeps its records in the open. Every desk handles a real errand on your account; we just do the paperwork out loud.
+  > Ask why                  → lore_bank_tech
+  > Back to the lobby        → hub
+[lore_bank_tech]
+Mo: Your account is a Bloxchain smart account on {chain}. The tellers hold the broadcaster role, the vault is its timelock, and the boards read back from the chain — this branch keeps no clock of its own.
+  > Back to the bank tour   → lore_bank
+  > Back to the lobby       → hub
+
+[directory]
+Mo: The desk map is simple: accounts, payments, and the vault are straight ahead. The other desks are through the side hall.
+  > Account Opening · Ines  → desk_ines
+  > Counter · Dev            → desk_counter
+  > Vault · Bob              → desk_vault
+  > More desks               → directory_more
+  > Back to the lobby        → hub
+[directory_more]
+Mo: These desks keep names, exchange, and the unusual vault work in their own rooms. The small service kiosk can explain the branch too.
+  > Manager · Mr. Okafor    → desk_manager
+  > Name Desk · Petra        → desk_petra
+  > FX Desk · Kenji          → desk_fx
+  > Service assistant kiosk  → service_assistant
+  > Back to the desk map     → directory
+
+[payments_vault]
+Mo: Small payments go across Dev's counter. Larger wires cool at Bob's vault, while Mr. Okafor handles a recall or the early hand-scan route.
+  > Counter · Dev            → desk_counter
+  > Vault · Bob              → desk_vault
+  > Manager · Mr. Okafor    → desk_manager
+  > Back to the lobby        → hub
+
+[desk_ines]
+Mo: Account Opening is the desk with the plant. Ines handles sign-in and the account paperwork; she owns the opening, I only point.
+  > Ask why                  → why_privy
+  > Back to the desk map     → directory
+  > Back to the lobby        → hub
+[why_privy]
+Mo: Ines uses Privy for an embedded wallet you control. With your consent, a scoped session signer is limited to this account's bank slips; she owns the opening, I only point.
+  > Back to Account Opening  → desk_ines
+  > Back to the lobby        → hub
+
+[desk_counter]
+Mo: Dev's Counter handles small payments to approved payees. For anything larger, the slip goes to Bob's vault.
+  > Ask why                  → why_counter
+  > Back to the desk map     → directory
+  > Back to the lobby        → hub
+[why_counter]
+Mo: Under the hood, the slip is a meta-transaction: you sign the instruction, the teller's broadcaster desk submits it and pays gas. Dev's desk owns the payment; I only point.
+  > Back to the counter      → desk_counter
+  > Back to the lobby        → hub
+
+[desk_vault]
+Mo: Bob keeps larger wires in the vault for a cooling period. When the clock runs down he releases them; Mr. Okafor handles a recall or an early hand-scan route.
+  > Ask why                  → why_vault
+  > Back to the desk map     → directory
+  > Back to the lobby        → hub
 [why_vault]
-Mo: Big money doesn't move instantly here. It sits in the vault for a cooling period, then someone has to release it. If you didn't mean it, you can recall it before then.
-  > Ask why (technical)    → why_vault_tech
+Mo: Big money doesn't move instantly here. It sits in the vault for {timelock}, then Bob releases it; if you change your mind, Mr. Okafor can recall it while it cools.
+  > Ask why                  → why_vault_tech
+  > Back to the vault        → desk_vault
+  > Back to the lobby        → hub
 [why_vault_tech]
-Mo: Your account is a state machine. Large transfers are time-locked transactions: requested now, executable only after releaseTime, and cancellable until then.
+Mo: Technically, the wire is a Bloxchain time-locked transaction: requested now, executable only after releaseTime, and cancellable until then. The wall clock reads that record; it is not my timer.
+  > Back to the vault        → desk_vault
+  > Back to the lobby        → hub
+
+[desk_manager]
+Mo: Mr. Okafor's office handles the unusual vault choices. He can recall a cooling wire or take the hand-scan Priority route; Bob remains the release desk after the clock.
+  > Ask why                  → why_manager
+  > Back to the desk map     → directory
+  > Back to the lobby        → hub
+[why_manager]
+Mo: Priority needs your own hand-scan signature; Okafor only submits it. That skips the cooling clock — it does not replace Bob's timed release, and the silent teller stamp stays out of that path.
+  > Back to the manager     → desk_manager
+  > Back to the lobby        → hub
+
+[desk_petra]
+Mo: Petra's Name Desk puts a chosen customer name on your account so people can pay you by it.
+    (if has_ens_name) Your bank name {bank_name} is on file; Petra can help with the name desk.
+  > Ask why                  → why_ens
+  > Back to the desk map     → directory_more
+  > Back to the lobby        → hub
+[why_ens]
+Mo: Technically, Petra registers an ENSv2 subname under branchzero.eth that points at your AccountBlox; the passbook can carry text records too. She owns the name work; I only point.
+  > Back to the Name Desk   → desk_petra
+  > Back to the lobby        → hub
+
+[desk_fx]
+Mo: Kenji's FX Desk shows practice-dollar prices for euros and shekels. The exchange lives on the Sepolia wing, and Kenji handles the quote and swap.
+  > Ask why                  → why_fx
+  > Back to the desk map     → directory_more
+  > Back to the lobby        → hub
+[why_fx]
+Mo: Technically, the board uses guarded Uniswap v4 calls on Sepolia only, with three whitelisted services for the till. Kenji owns the quote and swap; I only point.
+  > Back to the FX Desk      → desk_fx
+  > Back to the lobby        → hub
+
+[service_assistant]
+Mo: The service assistant kiosk can explain the branch from a read-only passbook snapshot. It cannot pay, wire, release, recall, open accounts, or change anything.
+  > Back to the desk map     → directory_more
+  > Back to the lobby        → hub
+
+[partners_strip]
+Mo: The lobby board carries a partner notice. It is a credit line for the branch, not another desk; ask why if you want the names.
+  > Ask why                  → why_partners
+  > Back to the lobby        → hub
+[why_partners]
+Mo: The ETHOnline pitch partners are Privy, ENS, and Uniswap; Arc is listed as coming soon. That is an event-board credit, not a claim that Branch Zero is an official product of any of them.
+  > Back to the partner notice → partners_strip
+  > Back to the lobby          → hub
 ```
 
 ### 4.2 Account Clerk — Ines (Account Opening)

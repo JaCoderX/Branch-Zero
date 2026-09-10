@@ -16,48 +16,208 @@
     "no_account": {
       "text": "Welcome to Branch Zero. First time? Account Opening is the desk with the plant — Ines will sort you out.",
       "choices": [
+        { "text": "Show me around.", "next": "hub" },
         { "text": "Where am I?", "next": "lore_bank" },
+        { "text": "Point me to Ines.", "next": "desk_ines" },
         { "text": "Thanks.", "next": "end" }
       ]
     },
     "has_account": {
       "text": [
-        "Morning, {name}. Counter is open and the vault's quiet; Dev can help with a florist payment.",
-        { "if": "has_ens_name", "text": "Your bank name {bank_name} is on file — Dev takes it on a payment slip." }
+        "Morning, {name}. Counter is open and the vault's quiet; Dev can help with a small payment.",
+        { "if": "has_ens_name", "text": "Your bank name {bank_name} is on file — Petra keeps the name desk, and Dev can take it on a payment slip." }
       ],
       "choices": [
+        { "text": "Show me around.", "next": "hub" },
         { "text": "What's the vault for?", "next": "why_vault" },
+        { "text": "Claim a bank name?", "if": "!has_ens_name", "next": "desk_petra" },
         { "text": "Thanks.", "next": "end" }
       ]
     },
     "pending": {
-      "text": "You've got {pending} wire(s) cooling in the vault. The clock's on the wall; Bob releases them when it runs down, or Mr. Okafor can recall one or skip the cooling with a hand scan.",
+      "text": "You've got {pending} wire(s) cooling in the vault. Bob releases them when the clock runs down; Mr. Okafor handles a recall or the early hand-scan route.",
       "choices": [
+        { "text": "Show me around.", "next": "hub" },
+        { "text": "Go to the vault.", "next": "desk_vault" },
         { "text": "What's the vault for?", "next": "why_vault" },
+        { "text": "Thanks.", "next": "end" }
+      ]
+    },
+    "hub": {
+      "text": "This is the lobby. Pick an errand and I'll point; the desks do the actual work.",
+      "choices": [
+        { "text": "How does this bank work?", "next": "lore_bank" },
+        { "text": "What desks are open?", "next": "directory" },
+        { "text": "Open an account", "if": "!has_account", "next": "desk_ines" },
+        { "text": "Payments & the vault", "if": "has_account", "next": "payments_vault" },
+        { "text": "Who powers the desks?", "next": "partners_strip" },
         { "text": "Thanks.", "next": "end" }
       ]
     },
     "lore_bank": {
       "text": "Branch Zero keeps its records in the open. Every desk handles a real errand on your account; we just do the paperwork out loud.",
       "choices": [
-        { "text": "Ask why (technical)", "next": "lore_bank_tech" },
-        { "text": "Got it.", "next": "end" }
+        { "text": "Ask why", "next": "lore_bank_tech" },
+        { "text": "Back to the lobby", "next": "hub" }
       ]
     },
     "lore_bank_tech": {
-      "text": "Your account is a Bloxchain smart account on {chain}. The tellers hold the broadcaster role, the vault is its timelock, and everything you see on the boards is read back from the chain — this branch keeps no clock of its own.",
-      "choices": [ { "text": "Got it.", "next": "end" } ]
+      "text": "Your account is a Bloxchain smart account on {chain}. The tellers hold the broadcaster role, the vault is its timelock, and the boards read back from the chain — this branch keeps no clock of its own.",
+      "choices": [
+        { "text": "Back to the bank tour", "next": "lore_bank" },
+        { "text": "Back to the lobby", "next": "hub" }
+      ]
+    },
+    "directory": {
+      "text": "The desk map is simple: accounts, payments, and the vault are straight ahead. The other desks are through the side hall.",
+      "choices": [
+        { "text": "Account Opening · Ines", "next": "desk_ines" },
+        { "text": "Counter · Dev", "next": "desk_counter" },
+        { "text": "Vault · Bob", "next": "desk_vault" },
+        { "text": "More desks", "next": "directory_more" },
+        { "text": "Back to the lobby", "next": "hub" }
+      ]
+    },
+    "directory_more": {
+      "text": "These desks keep names, exchange, and the unusual vault work in their own rooms. The small service kiosk can explain the branch too.",
+      "choices": [
+        { "text": "Manager · Mr. Okafor", "next": "desk_manager" },
+        { "text": "Name Desk · Petra", "next": "desk_petra" },
+        { "text": "FX Desk · Kenji", "next": "desk_fx" },
+        { "text": "Service assistant kiosk", "next": "service_assistant" },
+        { "text": "Back to the desk map", "next": "directory" }
+      ]
+    },
+    "payments_vault": {
+      "text": "Small payments go across Dev's counter. Larger wires cool at Bob's vault, while Mr. Okafor handles a recall or the early hand-scan route.",
+      "choices": [
+        { "text": "Counter · Dev", "next": "desk_counter" },
+        { "text": "Vault · Bob", "next": "desk_vault" },
+        { "text": "Manager · Mr. Okafor", "next": "desk_manager" },
+        { "text": "Back to the lobby", "next": "hub" }
+      ]
+    },
+    "desk_ines": {
+      "text": "Account Opening is the desk with the plant. Ines handles sign-in and the account paperwork; she owns the opening, I only point.",
+      "choices": [
+        { "text": "Ask why", "next": "why_privy" },
+        { "text": "Back to the desk map", "next": "directory" },
+        { "text": "Back to the lobby", "next": "hub" }
+      ]
+    },
+    "why_privy": {
+      "text": "Ines uses Privy for an embedded wallet you control. With your consent, a scoped session signer is limited to this account's bank slips; she owns the opening, I only point.",
+      "choices": [
+        { "text": "Back to Account Opening", "next": "desk_ines" },
+        { "text": "Back to the lobby", "next": "hub" }
+      ]
+    },
+    "desk_counter": {
+      "text": "Dev's Counter handles small payments to approved payees. For anything larger, the slip goes to Bob's vault.",
+      "choices": [
+        { "text": "Ask why", "next": "why_counter" },
+        { "text": "Back to the desk map", "next": "directory" },
+        { "text": "Back to the lobby", "next": "hub" }
+      ]
+    },
+    "why_counter": {
+      "text": "Under the hood, the slip is a meta-transaction: you sign the instruction, the teller's broadcaster desk submits it and pays gas. Dev's desk owns the payment; I only point.",
+      "choices": [
+        { "text": "Back to the counter", "next": "desk_counter" },
+        { "text": "Back to the lobby", "next": "hub" }
+      ]
+    },
+    "desk_vault": {
+      "text": "Bob keeps larger wires in the vault for a cooling period. When the clock runs down he releases them; Mr. Okafor handles a recall or an early hand-scan route.",
+      "choices": [
+        { "text": "Ask why", "next": "why_vault" },
+        { "text": "Back to the desk map", "next": "directory" },
+        { "text": "Back to the lobby", "next": "hub" }
+      ]
     },
     "why_vault": {
-      "text": "Big money doesn't move instantly here. It sits in the vault for a cooling period of {timelock}, then someone has to release it. If you didn't mean it, you can recall it before then.",
+      "text": "Big money doesn't move instantly here. It sits in the vault for {timelock}, then Bob releases it; if you change your mind, Mr. Okafor can recall it while it cools.",
       "choices": [
-        { "text": "Ask why (technical)", "next": "why_vault_tech" },
-        { "text": "Thanks.", "next": "end" }
+        { "text": "Ask why", "next": "why_vault_tech" },
+        { "text": "Back to the vault", "next": "desk_vault" },
+        { "text": "Back to the lobby", "next": "hub" }
       ]
     },
     "why_vault_tech": {
-      "text": "Your account is a state machine. Large transfers are time-locked transactions: requested now, executable only after releaseTime, and cancellable until then. The clock on the vault wall is that releaseTime, read from the record.",
-      "choices": [ { "text": "Thanks.", "next": "end" } ]
+      "text": "Technically, the wire is a Bloxchain time-locked transaction: requested now, executable only after releaseTime, and cancellable until then. The wall clock reads that record; it is not my timer.",
+      "choices": [
+        { "text": "Back to the vault", "next": "desk_vault" },
+        { "text": "Back to the lobby", "next": "hub" }
+      ]
+    },
+    "desk_manager": {
+      "text": "Mr. Okafor's office handles the unusual vault choices. He can recall a cooling wire or take the hand-scan Priority route; Bob remains the release desk after the clock.",
+      "choices": [
+        { "text": "Ask why", "next": "why_manager" },
+        { "text": "Back to the desk map", "next": "directory" },
+        { "text": "Back to the lobby", "next": "hub" }
+      ]
+    },
+    "why_manager": {
+      "text": "Priority needs your own hand-scan signature; Okafor only submits it. That skips the cooling clock — it does not replace Bob's timed release, and the silent teller stamp stays out of that path.",
+      "choices": [
+        { "text": "Back to the manager", "next": "desk_manager" },
+        { "text": "Back to the lobby", "next": "hub" }
+      ]
+    },
+    "desk_petra": {
+      "text": [
+        "Petra's Name Desk puts a chosen customer name on your account so people can pay you by it.",
+        { "if": "has_ens_name", "text": "Your bank name {bank_name} is on file; Petra can help with the name desk." }
+      ],
+      "choices": [
+        { "text": "Ask why", "next": "why_ens" },
+        { "text": "Back to the desk map", "next": "directory_more" },
+        { "text": "Back to the lobby", "next": "hub" }
+      ]
+    },
+    "why_ens": {
+      "text": "Technically, Petra registers an ENSv2 subname under branchzero.eth that points at your AccountBlox; the passbook can carry text records too. She owns the name work; I only point.",
+      "choices": [
+        { "text": "Back to the Name Desk", "next": "desk_petra" },
+        { "text": "Back to the lobby", "next": "hub" }
+      ]
+    },
+    "desk_fx": {
+      "text": "Kenji's FX Desk shows practice-dollar prices for euros and shekels. The exchange lives on the Sepolia wing, and Kenji handles the quote and swap.",
+      "choices": [
+        { "text": "Ask why", "next": "why_fx" },
+        { "text": "Back to the desk map", "next": "directory_more" },
+        { "text": "Back to the lobby", "next": "hub" }
+      ]
+    },
+    "why_fx": {
+      "text": "Technically, the board uses guarded Uniswap v4 calls on Sepolia only, with three whitelisted services for the till. Kenji owns the quote and swap; I only point.",
+      "choices": [
+        { "text": "Back to the FX Desk", "next": "desk_fx" },
+        { "text": "Back to the lobby", "next": "hub" }
+      ]
+    },
+    "service_assistant": {
+      "text": "The service assistant kiosk can explain the branch from a read-only passbook snapshot. It cannot pay, wire, release, recall, open accounts, or change anything.",
+      "choices": [
+        { "text": "Back to the desk map", "next": "directory_more" },
+        { "text": "Back to the lobby", "next": "hub" }
+      ]
+    },
+    "partners_strip": {
+      "text": "The lobby board carries a partner notice. It is a credit line for the branch, not another desk; ask why if you want the names.",
+      "choices": [
+        { "text": "Ask why", "next": "why_partners" },
+        { "text": "Back to the lobby", "next": "hub" }
+      ]
+    },
+    "why_partners": {
+      "text": "The ETHOnline pitch partners are Privy, ENS, and Uniswap; Arc is listed as coming soon. That is an event-board credit, not a claim that Branch Zero is an official product of any of them.",
+      "choices": [
+        { "text": "Back to the partner notice", "next": "partners_strip" },
+        { "text": "Back to the lobby", "next": "hub" }
+      ]
     }
   }
 }
