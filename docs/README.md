@@ -33,6 +33,7 @@ Then open the topic doc that matches the surface you are changing.
 |-----|----------|
 | [GAME-DESIGN.md](./GAME-DESIGN.md) | Gameplay, HUD, tutorial errands |
 | [NPCS.md](./NPCS.md) | Staff roster, dialogue, on-chain roles |
+| [INPC.md](./INPC.md) | Optional intelligent NPC (OpenRouter) — lab learnings + locks |
 | [WORLD-3D-ENVIRONMENT.md](./WORLD-3D-ENVIRONMENT.md) | Zones, layout, art direction, perf budget |
 | [DEMO-SCRIPT.md](./DEMO-SCRIPT.md) | Demo video storyboard and submission checklist |
 
