@@ -34,7 +34,7 @@ Not a staff NPC (`NPCS.md`). Separate species.
 | Context | Allowlisted [`docs/game-knowledge/`](./game-knowledge/) pack + **player-safe** `GameState` snapshot — not desk-debug; **not** root `AGENTS.md` or the rest of `docs/` |
 | Request | Bound `max_tokens` (2048); surface 401 / 402 / 403 plainly |
 | Ollama | **Deferred** (local install distribution; Cloud CORS blocked) — do not build in this mission |
-| Companion follow | **Phase 1 met 2026-09-10** — phone **Follow / Unfollow**, awake only; escort-lite seek on a `CharacterBody3D` (no `NavigationRegion3D` bake; **slide**, no walk clip); **never a lock** (`inpc_open` / `overlay_open()` untouched); Unfollow = Stay; Sleep = Unfollow + snap home — [HANDOFF-inpc-companion-follow.md](./missions/HANDOFF-inpc-companion-follow.md). **Skinned walk:** GameLab [ENG-2026-0022](../../GameLab/work/ENG-2026-0022-inpc-gum-bot-walk/) open (idle + walk on Gum Bot Rig); product land only after Yes |
+| Companion follow | **Phase 1 met 2026-09-10** — phone **Follow / Unfollow**, awake only; escort-lite seek on a `CharacterBody3D` (no `NavigationRegion3D` bake; **slide** until land); **never a lock**; Unfollow = Stay; Sleep = Unfollow + snap home — [HANDOFF-inpc-companion-follow.md](./missions/HANDOFF-inpc-companion-follow.md). **Skinned walk:** GameLab [ENG-2026-0022](../../GameLab/work/ENG-2026-0022-inpc-gum-bot-walk/) **Yes** — land open: [HANDOFF-inpc-gum-bot-walk.md](./missions/HANDOFF-inpc-gum-bot-walk.md) · [KICKOFF-inpc-gum-bot-walk.md](./missions/KICKOFF-inpc-gum-bot-walk.md) |
 
 ## Learnings worth keeping
 
@@ -121,7 +121,7 @@ Provenance: ENG-0019 fixture → product-owned under `game-knowledge/` (counter 
 | Spot | `INPC_SPOT (3.5, 0, 4.5)` · `INPC_YAW π` (south, beside Ash) | Lobby greeter pair |
 | Interact | Extends `BankTerminal` for near/Space only; not in `terminal` group; mover = `CharacterBody3D` cylinder r 0.58 × 1.40 on layer 1 / mask 1 (solid when parked; ignores player + staff while following) | Correct — zone radius 1.9 still clears the body and travels with it |
 
-**Still optional:** blink / poweron polish, KayKit plinth. **Skinned walk** in lab: [ENG-2026-0022](../../GameLab/work/ENG-2026-0022-inpc-gum-bot-walk/) (slides in product until land). Companion follow Phase 1 met (above). Stills: `tests/inpc_shots.tscn` (windowed) → `docs/progress/captures/inpc-gum-bot/`.
+**Still optional:** blink / poweron polish, KayKit plinth. **Skinned walk land open:** [HANDOFF-inpc-gum-bot-walk.md](./missions/HANDOFF-inpc-gum-bot-walk.md) (lab ENG-2026-0022 Yes; product still slides until land). Companion follow Phase 1 met (above). Stills: `tests/inpc_shots.tscn` (windowed) → `docs/progress/captures/inpc-gum-bot/`.
 
 **Mesh land (met 2026-09-10):** lab Gum Bot bank remap Yes — [HANDOFF-inpc-gum-bot-mesh.md](./missions/HANDOFF-inpc-gum-bot-mesh.md) · [KICKOFF-inpc-gum-bot-mesh.md](./missions/KICKOFF-inpc-gum-bot-mesh.md) (ENG-2026-0021); ship set + CC0 licence in `assets/models/inpc/`, [CREDITS.md](../CREDITS.md) row.
 
