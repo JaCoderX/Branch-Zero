@@ -30,17 +30,20 @@ const REQUIRED_CODES := [
 	"FAUCET_OFF", "FAUCET_EMPTY", "FAUCET_TX_FAILED",
 	# U5 ENS Name Desk codes
 	"INVALID_NAME", "NAME_TAKEN", "NAME_NOT_FOUND", "NAME_NOT_OWNED", "ENS_NOT_CONFIGURED", "ENS_RPC", "ENS_TX_FAILED", "ENS_RECORD_FAILED",
-	# U4+ Priority release (Okafor) — desk + overlay codes
+	# U4+ Priority release (Walker) — desk + overlay codes
 	"MANAGER_NO_STAMP", "NOT_COOLING", "PRIORITY_OFF", "PRIORITY_CANCELLED", "MFA_FAILED", "PRIORITY_EXPIRED",
 	# Terminal Console stretch — the bank computer and the OBSERVER viewing role
 	"CONSOLE_UNAVAILABLE", "OBSERVER_SELF", "OBSERVER_FULL", "NOT_OBSERVER", "RoleWalletLimitReached",
 	# iNPC (docs/INPC.md) — the assistant's panel is the shell's; MockChain says so
 	"INPC_UNAVAILABLE",
-	# Load Account (Ines adopts an owned AccountBlox by number) — docs/LOAD-ACCOUNT.md
+	# Load Account (Iris adopts an owned AccountBlox by number) — docs/LOAD-ACCOUNT.md
 	"ACCOUNT_NOT_OWNED", "ACCOUNT_NOT_A_VAULT", "LOAD_POLICY",
-	# S1 — Kenji's FX desk (Uniswap v4 on Sepolia)
+	# S1 — Johnny's FX desk (Uniswap v4 on Sepolia)
 	"FX_NOT_CONFIGURED", "FX_TILL_CLOSED", "FX_NOT_ENABLED", "FX_TELLER_DRY", "FX_AMOUNT",
 	"FX_QUOTE_FAILED", "FX_QUOTE_EXPIRED", "FX_SLIPPAGE", "FX_ROUTER", "FX_RPC", "FX_TX_FAILED", "FX_TILL_SHORT",
+	"FX_TILL_NOT_SEPOLIA", "FX_SEPOLIA_ONLY", "FX_PAIR",
+	# FX bidirectional + fiat Lane A (2026-09-10) — a direction the desk does not know; a currency the counter does not move
+	"FX_SIDE", "PAY_TOKEN",
 	"default",
 ]
 
@@ -160,7 +163,7 @@ func _check_npc(id: String) -> void:
 			if str(c.get("text", "")).begins_with("Ask why"):
 				has_ask_why = true
 			if c.has("form"):
-				# One-value slips (Petra's label, Ines's account number) route through `on_submit`; the payment
+				# One-value slips (Petra's label, Iris's account number) route through `on_submit`; the payment
 				# slip is the only form whose value decides which node comes next (over/under the instant limit).
 				var form_kind := str(c.get("form", ""))
 				if form_kind == "name_claim" or form_kind == "load_account":
@@ -182,14 +185,14 @@ func _check_npc(id: String) -> void:
 	_ok("%d nodes, %d action choices, targets resolve" % [nodes.size(), action_nodes])
 
 
-## Mo's lobby graph: the three ready-to-talk states must reach the small hub; bank language stays out of the
-## technical spokes; named-customer copy remains quiet until has_ens_name is true; and Mo stays read-only.
+## Ash's lobby graph: the three ready-to-talk states must reach the small hub; bank language stays out of the
+## technical spokes; named-customer copy remains quiet until has_ens_name is true; and Ash stays read-only.
 func _check_greeter_graph(Dlg) -> void:
-	print("Mo greeter knowledge graph")
+	print("Ash greeter knowledge graph")
 	var d := _load("res://dialogue/greeter.json")
 	var nodes: Dictionary = d.get("nodes", {})
 	var bad: PackedStringArray = []
-	for id in ["hub", "directory", "directory_more", "payments_vault", "desk_ines", "desk_counter", "desk_vault", "desk_manager", "desk_petra", "desk_fx", "service_assistant", "partners_strip", "lore_bank", "lore_bank_tech", "why_privy", "why_counter", "why_vault", "why_vault_tech", "why_manager", "why_ens", "why_fx", "why_partners"]:
+	for id in ["hub", "directory", "directory_more", "payments_vault", "desk_iris", "desk_counter", "desk_vault", "desk_manager", "desk_petra", "desk_fx", "service_assistant", "partners_strip", "lore_bank", "lore_bank_tech", "why_privy", "why_counter", "why_vault", "why_vault_tech", "why_manager", "why_ens", "why_fx", "why_partners"]:
 		if not nodes.has(id):
 			bad.append("greeter graph is missing %s" % id)
 	for id in ["no_account", "has_account", "pending"]:
@@ -200,12 +203,12 @@ func _check_greeter_graph(Dlg) -> void:
 		if not reaches_hub:
 			bad.append("%s cannot return to the lobby hub" % id)
 	for pin in [
-		["no_account", "Point me to Ines.", "desk_ines"],
+		["no_account", "Point me to Iris.", "desk_iris"],
 		["has_account", "Claim a bank name?", "desk_petra"],
 		["hub", "What desks are open?", "directory"],
 		["hub", "Who powers the desks?", "partners_strip"],
 		["directory", "More desks", "directory_more"],
-		["directory_more", "FX Desk · Kenji", "desk_fx"],
+		["directory_more", "FX Desk · Johnny", "desk_fx"],
 		["directory_more", "Blox-47 (beside me)", "service_assistant"],
 		["pending", "Go to the vault.", "desk_vault"],
 	]:
@@ -237,7 +240,7 @@ func _check_greeter_graph(Dlg) -> void:
 	if _actions_in(d).size() > 0:
 		bad.append("greeter.json contains a write action")
 	var main_path := ""
-	for id in ["no_account", "has_account", "pending", "hub", "directory", "directory_more", "payments_vault", "desk_ines", "desk_counter", "desk_vault", "desk_manager", "desk_petra", "desk_fx", "service_assistant", "partners_strip", "lore_bank", "why_vault"]:
+	for id in ["no_account", "has_account", "pending", "hub", "directory", "directory_more", "payments_vault", "desk_iris", "desk_counter", "desk_vault", "desk_manager", "desk_petra", "desk_fx", "service_assistant", "partners_strip", "lore_bank", "why_vault"]:
 		main_path += str(nodes.get(id, {}).get("text", "")).to_lower()
 	for jargon in ["privy", "uniswap", "ensv2", "meta-transaction", "broadcaster", "timelock", "releasetime", " gas"]:
 		if main_path.find(jargon) >= 0:
@@ -267,13 +270,13 @@ func _check_greeter_graph(Dlg) -> void:
 	if petra_named.find("{bank_name}") < 0:
 		bad.append("greeter.desk_petra lost the named-customer bank name")
 	if bad.is_empty():
-		_ok("hub reachable from all starts · six-choice cap · bank words on main path · technical spokes pinned · Mo read-only")
+		_ok("hub reachable from all starts · six-choice cap · bank words on main path · technical spokes pinned · Ash read-only")
 	else:
 		for b in bad:
 			_fail(b)
 
 
-## U4+ (HANDOFF §5e): Bob waits the clock, Okafor bypasses it. The dialogue must not hand either the other's verb.
+## U4+ (HANDOFF §5e): Bob waits the clock, Walker bypasses it. The dialogue must not hand either the other's verb.
 func _check_vault_desks() -> void:
 	print("vault desks (U4+)")
 	var m := _load("res://dialogue/manager.json")
@@ -281,7 +284,7 @@ func _check_vault_desks() -> void:
 	var m_actions := _actions_in(m)
 	var r_actions := _actions_in(r)
 	if m_actions.has("approve") or m_actions.has("manager_approve"):
-		_fail("manager.json still stamps a timed approve (Okafor is not a second Bob)")
+		_fail("manager.json still stamps a timed approve (Walker is not a second Bob)")
 	if not m_actions.has("priority"):
 		_fail("manager.json has no priority action")
 	if not m_actions.has("cancel"):
@@ -298,10 +301,10 @@ func _check_vault_desks() -> void:
 	var strings := _load("res://dialogue/strings.json")
 	if str(strings.get("priority_copy", "")) != "Skip the cooling period — hand scan required.":
 		_fail("strings.json priority_copy is not the mandated line")
-	_ok("Bob: approve only · Okafor: priority + cancel, no approve · copy present")
+	_ok("Bob: approve only · Walker: priority + cancel, no approve · copy present")
 
 
-## U7 practice faucet: Ines exposes the explicit top-up as a done/passbook action, not as Re-check.
+## U7 practice faucet: Iris exposes the explicit top-up as a done/passbook action, not as Re-check.
 func _check_faucet_choice() -> void:
 	print("practice faucet choice")
 	var clerk := _load("res://dialogue/clerk.json")
@@ -319,14 +322,14 @@ func _check_faucet_choice() -> void:
 	if not found:
 		_fail("clerk done has no faucet choice")
 	else:
-		_ok("Ines offers Top up practice dollars from the done/passbook node")
+		_ok("Iris offers Top up practice dollars from the done/passbook node")
 
 
-## Load Account (docs/LOAD-ACCOUNT.md §7): Ines offers the load slip whether or not the player already has an
+## Load Account (docs/LOAD-ACCOUNT.md §7): Iris offers the load slip whether or not the player already has an
 ## account, the slip routes into a node that really runs `load_account`, and "Open my account" keeps the
 ## last-clone default — a load must be a second, named choice, never a replacement for auto-recovery.
 func _check_load_account() -> void:
-	print("load account (Ines)")
+	print("load account (Iris)")
 	var clerk := _load("res://dialogue/clerk.json")
 	var nodes: Dictionary = clerk.get("nodes", {})
 	var bad: PackedStringArray = []
@@ -372,13 +375,13 @@ func _check_load_account() -> void:
 	if str(strings.get("load_account_hint", "")).to_lower().find("terminal") < 0:
 		bad.append("load_account_hint does not point at the desk terminal")
 	if bad.is_empty():
-		_ok("Ines offers the load slip from open/done/start_over → %s; Open my account still recovers the last clone" % ", ".join(PackedStringArray(submits.keys())))
+		_ok("Iris offers the load slip from open/done/start_over → %s; Open my account still recovers the last clone" % ", ".join(PackedStringArray(submits.keys())))
 	else:
 		for b in bad:
 			_fail(b)
 
 
-## AO desk polish: Ines can open the existing terminal from the post-account path, but never edits OBSERVER wallets.
+## AO desk polish: Iris can open the existing terminal from the post-account path, but never edits OBSERVER wallets.
 func _check_ao_desk_polish() -> void:
 	print("Account Opening terminal choice")
 	var clerk := _load("res://dialogue/clerk.json")
@@ -411,7 +414,7 @@ func _check_ao_desk_polish() -> void:
 		if actions.has(forbidden):
 			bad.append("clerk.json must not run %s" % forbidden)
 	if bad.is_empty():
-		_ok("Ines: done + start_over open_console paths · close copy present · no OBSERVER verbs")
+		_ok("Iris: done + start_over open_console paths · close copy present · no OBSERVER verbs")
 	else:
 		for b in bad:
 			_fail(b)
@@ -441,8 +444,8 @@ func _check_counter_labels() -> void:
 		if text.find("Counter 1") >= 0 or text.find("Counter 2") >= 0 or text.find("COUNTER 1") >= 0 or text.find("COUNTER 2") >= 0:
 			bad.append("%s.json still contains numbered Counter copy" % id)
 	var main_text := FileAccess.get_file_as_string("res://scripts/main.gd")
-	if main_text.find("[\"teller\", \"Dev\", \"Teller · Counter\"") < 0:
-		bad.append("main.gd Dev display role is not Teller · Counter")
+	if main_text.find("[\"teller\", \"Eve\", \"Teller · Counter\"") < 0:
+		bad.append("main.gd Eve display role is not Teller · Counter")
 	if main_text.find("[\"opening\", Vector3(-8.6, 0.4, 7.95)") < 0:
 		bad.append("opening terminal does not follow AO screen z")
 	if bad.is_empty():
@@ -525,7 +528,7 @@ func _check_inpc() -> void:
 	var errors := _load("res://dialogue/errors.json")
 	if str(errors.get("INPC_UNAVAILABLE", {}).get("line", "")).find("full bank window") < 0:
 		bad.append("INPC_UNAVAILABLE does not say the panel needs the full bank window")
-	# Staff may point the way to the kiosk (Mo's lobby graph does); none may run its verbs or carry its key copy.
+	# Staff may point the way to the kiosk (Ash's lobby graph does); none may run its verbs or carry its key copy.
 	for id in NPCS:
 		var st := FileAccess.get_file_as_string("res://dialogue/%s.json" % id).to_lower()
 		if st.find("open_inpc") >= 0 or st.find("sleep_inpc") >= 0 or st.find("openrouter") >= 0:
@@ -564,7 +567,7 @@ func _check_se_corner() -> void:
 			_fail(b)
 
 
-## S1 (HANDOFF §5i): Kenji quotes and swaps, and does nothing else. The FX desk is a *third* lane on a *second* chain,
+## S1 (HANDOFF §5i): Johnny quotes and swaps, and does nothing else. The FX desk is a *third* lane on a *second* chain,
 ## so the risk it adds is scope creep in the dialogue — a dealer who could pay, wire or release would put the vault's
 ## whole story behind a desk with no clock. He may only price (a read), open the till, and swap; the guard story has
 ## to be sayable at the desk; and the quote board must promise a countdown the desk clock can actually keep.
@@ -576,7 +579,7 @@ func _check_fx_desk() -> void:
 	var bad: PackedStringArray = []
 	for a in actions.keys():
 		if not allowed.has(str(a)):
-			bad.append("dealer.json runs '%s' — Kenji may only quote, open the till and swap" % str(a))
+			bad.append("dealer.json runs '%s' — Johnny may only quote, open the till and swap" % str(a))
 	for want in allowed:
 		if not actions.has(want):
 			bad.append("dealer.json never runs '%s'" % want)
@@ -584,29 +587,41 @@ func _check_fx_desk() -> void:
 	# the guard story is the submission's whole angle: it must be on the main path, not only in a why_ node
 	if text.find("approved list") < 0:
 		bad.append("dealer.json never tells the player the router is on an approved list")
-	# fiat pairs (2026-09-09): Kenji sells euros and shekels, both reachable by choice, and never ether
-	var pairs_quoted := {}
+	# fiat pairs (2026-09-09): Johnny deals in euros and shekels, both reachable by choice, and never ether.
+	# bidirectional (2026-09-10): every pair is quotable as a buy *and* a sell, and a sell prices the fiat amount.
+	var sides_quoted := {}
 	for nid in dealer.get("nodes", {}).keys():
 		for c in dealer["nodes"][nid].get("choices", []):
 			if str(c.get("action", "")) == "fx_quote":
-				pairs_quoted[str(c.get("args", {}).get("pair", ""))] = true
+				var a: Dictionary = c.get("args", {})
+				sides_quoted["%s/%s" % [str(a.get("pair", "")), str(a.get("side", "buy"))]] = true
+				if str(a.get("side", "buy")) == "sell" and str(c.get("text", "")).find("{fx_symbol_in}") >= 0:
+					bad.append("dealer.json %s: a sell choice prices dollars — the amount is in the sold currency" % nid)
 	for pair in ["EUR", "ILS"]:
-		if not pairs_quoted.has(pair):
-			bad.append("dealer.json never quotes %s — both fiat pairs must be a dialogue choice" % pair)
+		for side in ["buy", "sell"]:
+			if not sides_quoted.has("%s/%s" % [pair, side]):
+				bad.append("dealer.json never quotes a %s %s — both pairs, both directions, must be a dialogue choice" % [pair, side])
 	if text.to_lower().find("ether") >= 0:
-		bad.append("dealer.json still talks about ether — the FX desk is fiat (USD → EUR | ILS)")
+		bad.append("dealer.json still talks about ether — the FX desk is fiat (USD ↔ EUR | ILS)")
+	for phrase in ["one-way", "don't buy them back", "only ever come in"]:
+		if text.to_lower().find(phrase) >= 0:
+			bad.append("dealer.json still says '%s' — the desk trades both ways since 2026-09-10" % phrase)
 	for word in ["euro", "shekel"]:
 		if text.to_lower().find(word) < 0:
 			bad.append("dealer.json never says '%s'" % word)
-	for phrase in ["approve(address,uint256)", "execute(bytes,bytes[],uint256)"]:
+	for phrase in ["approve(address,uint256)", "execute(bytes,bytes[],uint256)", "transfer(address,uint256)"]:
 		if text.find(phrase) < 0:
 			bad.append("dealer.json 'Ask why' does not name %s" % phrase)
-	# a quote the player can act on has to say what it is worth and how long it stands
+	# a quote the player can act on has to say what it is worth, in which currency, and how long it stands
 	var quoted: Dictionary = dealer.get("nodes", {}).get("quoted", {})
 	var quoted_text := str(quoted.get("text", ""))
-	for token in ["{fx_amount_out}", "{fx_min_out}", "{fx_valid}"]:
+	for token in ["{fx_amount_out}", "{fx_min_out}", "{fx_valid}", "{fx_quote_in}"]:
 		if quoted_text.find(token) < 0:
 			bad.append("dealer.json quoted node does not show %s" % token)
+	# the receipt line must read the fill, not a board that has just been cleared
+	var swapped_text := str(dealer.get("nodes", {}).get("swapped", {}).get("text", ""))
+	if swapped_text.find("{fx_filled_out}") < 0 or swapped_text.find("{fx_amount_in}") >= 0:
+		bad.append("dealer.json swapped node must read the last fill ({fx_filled_*}), not the cleared quote")
 	var strings := _load("res://dialogue/strings.json")
 	for key in ["fx_board_title", "fx_board_quote", "fx_board_valid", "fx_board_whitelist", "fx_board_dark", "fx_board_idle", "fx_board_till"]:
 		if str(strings.get(key, "")) == "":
@@ -616,16 +631,21 @@ func _check_fx_desk() -> void:
 	for token in ["{fx_rate_eur}", "{fx_rate_ils}"]:
 		if str(strings.get("fx_board_idle", "")).find(token) < 0:
 			bad.append("the idle quote board does not show %s" % token)
-	# errors.json carries the fiat desk's refusal for a currency it does not deal in
+	if str(strings.get("fx_board_quote", "")).find("{fx_quote_in}") < 0:
+		bad.append("the quote board's quote line must name the sold currency ({fx_quote_in}) — a sell is not in dollars")
+	if str(strings.get("fx_board_whitelist", "")).to_lower().find("one-way") >= 0:
+		bad.append("the quote board still calls the desk one-way")
+	# errors.json carries the fiat desk's refusals: a currency it does not deal in, a direction it does not know
 	var errs := _load("res://dialogue/errors.json")
-	if str(errs.get("FX_PAIR", {}).get("line", "")) == "":
-		bad.append("errors.json has no FX_PAIR line")
+	for code in ["FX_PAIR", "FX_SIDE", "PAY_TOKEN"]:
+		if str(errs.get(code, {}).get("line", "")) == "":
+			bad.append("errors.json has no %s line" % code)
 	# MockChain must never be mistaken for the sponsor evidence
 	var mock := FileAccess.get_file_as_string("res://autoload/mock_chain.gd")
 	if mock.find("MockChain: no Uniswap here") < 0:
 		bad.append("mock_chain.gd does not label its fake swap")
 	if bad.is_empty():
-		_ok("Kenji: quote + open till + swap only · EUR and ILS both quotable, no ether · guard story on the main path · board names the exchange, both pairs and its countdown")
+		_ok("Johnny: quote + open till + swap only · EUR and ILS quotable both ways (sell prices the fiat), no ether, no one-way copy · guard story names approve/execute/transfer · board names the exchange, both pairs, the sold currency and its countdown")
 	else:
 		for b in bad:
 			_fail(b)
@@ -678,7 +698,7 @@ func _check_polish() -> void:
 
 ## Copy/ENS refinement: the cheap truthful surfaces share one vocabulary — passbook, customer-name board and payment slip.
 ## This check deliberately does not require a new reverse-resolution route: that remains an owed proposal.
-## ENS passbook polish: the name row and the tier row exist only for a named customer, and Mo / Ines never print a
+## ENS passbook polish: the name row and the tier row exist only for a named customer, and Ash / Iris never print a
 ## "not chosen yet" placeholder; the tier comes from the desk mirror (`/session.ensTier`), never a local fake.
 func _check_copy_ens_surface(Dlg) -> void:
 	print("Copy and ENS surfaces")
@@ -705,7 +725,7 @@ func _check_copy_ens_surface(Dlg) -> void:
 	var mock_src := FileAccess.get_file_as_string("res://autoload/mock_chain.gd")
 	if mock_src.find("\"ensTier\"") < 0:
 		bad.append("MockChain session does not carry ensTier like the Teller Desk /session")
-	# Mo and Ines mention the bank name only for a named customer; an unnamed one hears nothing about it.
+	# Ash and Iris mention the bank name only for a named customer; an unnamed one hears nothing about it.
 	var unnamed := {"booted": true, "logged_in": true, "has_account": true, "has_ens_name": false}
 	var named := unnamed.duplicate()
 	named["has_ens_name"] = true
@@ -724,14 +744,14 @@ func _check_copy_ens_surface(Dlg) -> void:
 	if interior.find("Customer names") < 0:
 		bad.append("payee plaque does not mention customer names")
 	if bad.is_empty():
-		_ok("passbook bank name + tier only when named · Mo / Ines quiet when unnamed · customer-name board · pay-by-name slip · honest limit/cooling hints")
+		_ok("passbook bank name + tier only when named · Ash / Iris quiet when unnamed · customer-name board · pay-by-name slip · honest limit/cooling hints")
 	else:
 		for b in bad:
 			_fail(b)
 
 
 ## Player menu (docs/HANDOFF-player-menu.md): the front door and the visitor's card use everyday bank words and never
-## carry a desk or operator verb — Sign in / Load Account stay with Ines, Live / Dev / Mock with desk-debug, the wing
+## carry a desk or operator verb — Sign in / Load Account stay with Iris, Live / Dev / Mock with desk-debug, the wing
 ## switch with the elevator, the Console with the terminals. No SaaS chrome (New Game / Options / Quit) either.
 func _check_player_menu() -> void:
 	print("Player menu strings")

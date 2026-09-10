@@ -6,8 +6,8 @@ created: 2026-09-06
 updated: 2026-09-09
 product: Branch-Zero
 objective: OBJ-2026-0004
-first_mission: U7 ship packaging once the polish gate clears (docs/missions/KICKOFF-U7-ship-package.md). Lane B timed Release opaque MET 2026-09-09 — wire #14 released `0x16b519b5…d46b`; root cause Privy `policy_violation` (release rule pinned away by a positional id pin), fixed by name-based `reconcileTxRules` on /session, Load Account and a one-shot heal in Release; see HANDOFF-lane-b-release-opaque. Live OTP walk MET 2026-09-09 (OWED); Load Account via Ines MET 2026-09-08; Sepolia Ops Treasury MET 2026-09-08; KayKit cast ladder MET 2026-09-09; U6 Arc G7 deferred
-prior_mission: Live OTP walk MET 2026-09-09 — provision + ENS + Lane A + Lane B wire release on Sepolia (timed Release later regressed on wire #14 — see HANDOFF-lane-b-release-opaque). Before it: Load Account (Ines) MET 2026-09-08 - POST /account/load adopts a player-owned AccountBlox on the current wing after getCode + owner() + initialized() + ISecureOwnable, re-pins the Privy policies before switching the file, and re-runs the Re-check sync with no cloneBlox; bridge s2.1; killtests:load 12/12 on 1337; owed: a Live load walk. Before it: Sepolia Ops Treasury MET 2026-09-08 - SEPOLIA_TREASURY_PK collects Live ETH + USDC and tops staff wallets to need x 1.25 (CLI, pre-cloneBlox hook, interval watcher, desk-debug row); killtests:treasury 7/7; owed: one faucet claim. Before it: Sepolia Live + Developer Mode MET 2026-09-08 — Live Main wing is Sepolia (CopyBlox 0x443ECf16…, account 0xf8EECc6B…, Lane A/B/Priority/faucet/OBSERVER/ENS/K7 on Etherscan); Remote EVM 1337 is Developer Mode behind the desk-debug toggle. Before it: S1b FX validate, Terminal Console + OBSERVER, U7 polish, practice faucet, U5 ENS
+first_mission: U7 ship packaging once the polish gate clears (docs/missions/KICKOFF-U7-ship-package.md). Lane B timed Release opaque MET 2026-09-09 — wire #14 released `0x16b519b5…d46b`; root cause Privy `policy_violation` (release rule pinned away by a positional id pin), fixed by name-based `reconcileTxRules` on /session, Load Account and a one-shot heal in Release; see HANDOFF-lane-b-release-opaque. Live OTP walk MET 2026-09-09 (OWED); Load Account via Iris MET 2026-09-08; Sepolia Ops Treasury MET 2026-09-08; KayKit cast ladder MET 2026-09-09; U6 Arc G7 deferred
+prior_mission: Live OTP walk MET 2026-09-09 — provision + ENS + Lane A + Lane B wire release on Sepolia (timed Release later regressed on wire #14 — see HANDOFF-lane-b-release-opaque). Before it: Load Account (Iris) MET 2026-09-08 - POST /account/load adopts a player-owned AccountBlox on the current wing after getCode + owner() + initialized() + ISecureOwnable, re-pins the Privy policies before switching the file, and re-runs the Re-check sync with no cloneBlox; bridge s2.1; killtests:load 12/12 on 1337; owed: a Live load walk. Before it: Sepolia Ops Treasury MET 2026-09-08 - SEPOLIA_TREASURY_PK collects Live ETH + USDC and tops staff wallets to need x 1.25 (CLI, pre-cloneBlox hook, interval watcher, desk-debug row); killtests:treasury 7/7; owed: one faucet claim. Before it: Sepolia Live + Developer Mode MET 2026-09-08 — Live Main wing is Sepolia (CopyBlox 0x443ECf16…, account 0xf8EECc6B…, Lane A/B/Priority/faucet/OBSERVER/ENS/K7 on Etherscan); Remote EVM 1337 is Developer Mode behind the desk-debug toggle. Before it: S1b FX validate, Terminal Console + OBSERVER, U7 polish, practice faucet, U5 ENS
 ---
 
 # Handoff — Claude Code (Fable 5.1)
@@ -18,8 +18,8 @@ You are a **cold agent** unless the human says you are continuing a prior sessio
 
 **Open checklist:** [`docs/OWED.md`](../OWED.md) — human ops, principal walks, packaging gate, follow-ups, parked items.
 
-> **Load Account (Ines) — MET 2026-09-08.** Ines adopts a player-owned AccountBlox by number on the current
-> wing (a non-latest CopyBlox clone, or a second account); the terminal still discovers, Ines loads. Gate:
+> **Load Account (Iris) — MET 2026-09-08.** Iris adopts a player-owned AccountBlox by number on the current
+> wing (a non-latest CopyBlox clone, or a second account); the terminal still discovers, Iris loads. Gate:
 > `getCode` → `owner()` + `initialized()` + ERC-165 `ISecureOwnable` → `owner()` == the session's Privy owner,
 > then the policies are re-pinned **before** the file moves and the Re-check sync runs with **no** `cloneBlox`.
 > Bridge is **`s2.1`** (`loadAccount` → `POST /account/load`). `killtests:load` **12/12** on Remote EVM 1337.
@@ -97,12 +97,12 @@ FX requires a real Sepolia account. Do **not** share Remote EVM. Arc stays **DEF
 
 **S1 / S1b Uniswap v4 FX Desk — MET 2026-09-08.** Spec: [`docs/UNISWAP.md`](../UNISWAP.md). Mission record: **§5i**.
 Uniswap remains activated **sponsor #3**. Official pitch: Privy + ENS + Uniswap.
-Fiat pairs (USD→EUR|ILS) **met 2026-09-09**. **Also open (parallel, Claude Code · Fable):** bidirectional USD↔EUR|ILS + EUR/ILS Lane A transfer on first FX grant — [HANDOFF-fx-bidirectional.md](./HANDOFF-fx-bidirectional.md) · [KICKOFF-fx-bidirectional.md](./KICKOFF-fx-bidirectional.md).
+Fiat pairs (USD→EUR|ILS) **met 2026-09-09**. **Bidirectional USD↔EUR|ILS + EUR/ILS Lane A transfer on first FX grant — met 2026-09-10 (Claude Code · Fable):** `side` buy|sell on quote/swap (amount in the sold currency), `enableFx` heals a one-way till to seven whitelist rows (approve USD/EUR/ILS · Permit2 · router · transfer EUR/ILS), `/pay` takes `token` USD|EUR|ILS on Live, all four directed trades + fiat pays proven on Sepolia — [HANDOFF-fx-bidirectional.md](./HANDOFF-fx-bidirectional.md) · [UNISWAP.md §2b](../UNISWAP.md). Not done and not owed here: EUR↔ILS cross, fiat Lane B / Priority / faucet, a currency picker in Eve's slip.
 **Met 2026-09-10 (parallel, Codex Luna):** Help keep the branch open — Live HUD ops-float CTA [HANDOFF-help-keep-branch-open.md](./HANDOFF-help-keep-branch-open.md).
 
 **Also open (parallel, Codex Luna):** Ops float credit meter — compact passbook-band HUD polish [HANDOFF-ops-float-credit-hud.md](./HANDOFF-ops-float-credit-hud.md) · [KICKOFF-ops-float-credit-hud.md](./KICKOFF-ops-float-credit-hud.md).
 
-**Met 2026-09-10 (parallel, Codex Luna):** Mo greeter knowledge graph — lobby hub-and-spoke teaching [HANDOFF-mo-greeter-knowledge.md](./HANDOFF-mo-greeter-knowledge.md) · [KICKOFF-mo-greeter-knowledge.md](./KICKOFF-mo-greeter-knowledge.md).
+**Met 2026-09-10 (parallel, Codex Luna):** Ash greeter knowledge graph — lobby hub-and-spoke teaching [HANDOFF-mo-greeter-knowledge.md](./HANDOFF-mo-greeter-knowledge.md) · [KICKOFF-mo-greeter-knowledge.md](./KICKOFF-mo-greeter-knowledge.md).
 
 **Met 2026-09-10 (parallel, Claude Code):** Shell splash — branded first-paint while Godot loads; hand off to existing player-menu front door — [HANDOFF-shell-splash.md](./HANDOFF-shell-splash.md) · [KICKOFF-shell-splash.md](./KICKOFF-shell-splash.md).
 
@@ -151,7 +151,7 @@ elevator stays “coming soon.” Do not regress the U4 freeze, the U4+ Priority
 (Bob, Space/E, debug-gated F-keys, Petra at Counter 2), or the practice faucet.
 
 > **Practice faucet met:** [`docs/missions/KICKOFF-U7-practice-faucet.md`](./KICKOFF-U7-practice-faucet.md) —
-> Ines **Top up practice dollars** → `/faucet` restores demo balance **up to** `OPENING_BALANCE_USDC` (500);
+> Iris **Top up practice dollars** → `/faucet` restores demo balance **up to** `OPENING_BALANCE_USDC` (500);
 > provision `fundAccount` stays zero-only; Arc refuses `FAUCET_OFF`. Mock: `tests/run_faucet_walk.gd`. Live 1337:
 > `npm -w apps/teller-desk run smoke:faucet` (restore + already-full no-op). Craft lessons:
 > GameDevOS `keep-opening-fund-zero-only`, `track-engine-uid-for-new-scripts`.
@@ -162,7 +162,7 @@ elevator stays “coming soon.” Do not regress the U4 freeze, the U4+ Priority
 > the elevator refuses Arc with "ARC floor — coming soon" and never rebuilds the interior. **Owed:** the principal's
 > re-playtest of the ten findings before packaging. **Live Priority (same evening):** free balance below wire amount →
 > meta-approve mined, record `FAILED` / `RECORD_FAILED` (auth OK). **Met:** `/wire` balance pre-check +
-> `RECORD_FAILED` copy (`3209ab8`); hygiene follow-up: `RECORD_FAILED` → HTTP 409, Ruth→Bob desk strings, Ines tip on
+> `RECORD_FAILED` copy (`3209ab8`); hygiene follow-up: `RECORD_FAILED` → HTTP 409, Bob desk strings, Iris tip on
 > InsufficientBalance. Craft lessons scrubbed to GameDevOS (`pending-count-is-not-reserved-balance`,
 > `outer-tx-success-is-not-record-completed`, plus four polish lessons).
 
@@ -175,7 +175,7 @@ elevator stays “coming soon.” Do not regress the U4 freeze, the U4+ Priority
 >
 > **U4+ met 2026-09-07 — Priority release is the third way out of the vault.** Read
 > [`docs/progress/2026-09-07-u4-plus-priority-release.md`](./progress/2026-09-07-u4-plus-priority-release.md)
-> **first**. Ruth is wait-only (owner timed approve after the clock, silent); Mr. Okafor submits an owner-signed
+> **first**. Bob is wait-only (owner timed approve after the clock, silent); Mr. Walker submits an owner-signed
 > `SIGN_META_APPROVE` **before** the clock, and that signature is made in the browser by the player's own Privy signer
 > behind a Passkey — the "hand scan". `ROLE_SET_VERSION` is **3**: OWNER +`SIGN_META_APPROVE`, `BRANCH_MANAGER`
 > +`EXECUTE_META_APPROVE` −`EXECUTE_TIME_DELAY_APPROVE` on `transfer`; Re-check (`/provision`, or
@@ -197,11 +197,11 @@ elevator stays “coming soon.” Do not regress the U4 freeze, the U4+ Priority
 > (Godot listens for keys on the canvas, GODOT.md §5b); a dead Teller Desk came back as `INTERNAL`, now `RPC`; an
 > expired Privy token came back as 500 `INTERNAL`, now 401 `AUTH`; the SSE stream closed for good on its first error,
 > now it reconnects with a fresh token and Godot hears `desk.link`; half-provisioned players are refused with
-> `NOT_CONFIGURED` (Ines re-checks) instead of the chain's `NoPermission`; the player index is written synchronously
+> `NOT_CONFIGURED` (Iris re-checks) instead of the chain's `NoPermission`; the player index is written synchronously
 > and receipts survive a restart. Bridge is `u4.0` (no new methods). First load measured: `.wasm` 36.3 MB raw /
 > 7.05 MB brotli, `.pck` 127 KB, shell entry 2.6 MB raw / 0.53 MB brotli. The principal's real-bridge walk (pay,
 > wire, manager release) is on chain and recorded there with hashes; **still owed by a human:** the door-clock
-> release at Ruth's window on the real bridge *with the tab visible* for the 30 s clip (the committed clip is the mock).
+> release at Bob's window on the real bridge *with the tab visible* for the 30 s clip (the committed clip is the mock).
 > `tsx watch` does **not** respawn a killed desk — save a file or restart it.
 >
 > **U3 met 2026-09-06.** The bank is walkable: five NPCs drive the existing lanes through
@@ -245,7 +245,7 @@ Not: a wallet UI, DeFi protocol, Bloxchain fork, mainnet, Tactical-AI, GameLab m
 
 ## 2. Read order (before code)
 
-1. **This file** (§5l Load Account **met** — Ines adopts an owned AccountBlox by number; §5k treasury **met**; §5j Sepolia Live **met** — Live wing is Sepolia; §5i Uniswap **met** — K7 PASS; §5h Terminal **met**; packaging §6 is the open unit; U6 §5g deferred)
+1. **This file** (§5l Load Account **met** — Iris adopts an owned AccountBlox by number; §5k treasury **met**; §5j Sepolia Live **met** — Live wing is Sepolia; §5i Uniswap **met** — K7 PASS; §5h Terminal **met**; packaging §6 is the open unit; U6 §5g deferred)
 2. [`docs/DEV-LOOP.md`](../DEV-LOOP.md) — U6 row; ENG-0006 **yes** (K3); U5 / G6 **met**
 3. [`docs/progress/2026-09-07-u5-ens-g6.md`](./progress/2026-09-07-u5-ens-g6.md) — Name Desk frozen; then
    [`…k6-yes.md`](./progress/2026-09-07-k6-yes.md) only if you need Sepolia address pins
@@ -255,7 +255,7 @@ Not: a wallet UI, DeFi protocol, Bloxchain fork, mainnet, Tactical-AI, GameLab m
 5. [`docs/SEPOLIA-LIVE.md`](../SEPOLIA-LIVE.md) §1–2, §6.1, §6.3 — Live is Sepolia and is the default; Dev is 1337
 5b. [`docs/SEPOLIA-TREASURY.md`](../SEPOLIA-TREASURY.md) §8–9 — faucet drops go to `SEPOLIA_TREASURY_PK`; staff
    wallets are topped to `need × 1.25`; the treasury holds **no** role and never sends Circle's USDC
-5c. [`docs/LOAD-ACCOUNT.md`](../LOAD-ACCOUNT.md) §8 — Ines loads an owned AccountBlox by number; the shape gate is
+5c. [`docs/LOAD-ACCOUNT.md`](../LOAD-ACCOUNT.md) §8 — Iris loads an owned AccountBlox by number; the shape gate is
    `owner()` + `initialized()` + `ISecureOwnable` (**not** `IBaseStateMachine`, which CopyBlox itself answers), and
    the policy re-pin happens **before** the file moves
 6. [`docs/REMOTE-EVM.md`](../REMOTE-EVM.md) — **do not wipe**; 1337 is now **Developer Mode**, never public infra
@@ -337,7 +337,7 @@ EIP-712 domain name from SDK: **`Bloxchain`** (`META_TX_DOMAIN`).
 - U4+ (G5b): `ROLE_SET_VERSION` 3 grant split (`lanes/provision.ts` `desiredGrants`, `PRIORITY_RELEASE` flag);
   `lanes/priority.ts` + `/priority/prepare` `/priority/submit`; `/approve` owner-only; typed-data rule pins
   `params.action` (`privy.ts`, `packages/shared/src/metaTx.ts`); overlay `priority()` (user signer + MFA);
-  bridge `u4.1` `priority`; Godot `run_action("priority")`, Ruth wait-only, Okafor Priority + recall, 6 new error
+  bridge `u4.1` `priority`; Godot `run_action("priority")`, Bob wait-only, Walker Priority + recall, 6 new error
   lines, MockChain; `npm -w apps/teller-desk run killtests:u4plus` (Y0–Y9) and `upgrade-players`
 
 ## 4d. U3 already done (do not redo)
@@ -345,7 +345,7 @@ EIP-712 domain name from SDK: **`Bloxchain`** (`META_TX_DOMAIN`).
 - Godot greybox (`apps/game`): Entrance, Lobby, Account Opening, Counter 1, Ledger board wall, Vault antechamber
   + door, Manager's glass office; signage for Name Desk / Elevator / FX / Side door. Code-built boxes
   (`scripts/bank_interior.gd`), zones as `Area3D`
-- Five NPCs (Mo, Ines, Dev, Ruth, Mr. Okafor) with JSON dialogue (`dialogue/*.json`, NPCS.md §4), every action with
+- Five NPCs (Ash, Iris, Eve, Bob, Mr. Walker) with JSON dialogue (`dialogue/*.json`, NPCS.md §4), every action with
   an "Ask why"; `dialogue/errors.json` — 85 codes (NPCS.md §5 + every SDK `ERROR_SIGNATURES` name + desk/bridge/Privy)
 - `autoload/game_state.gd` (desk mirror, `run_action`, desk-clock offset, focus reconcile), `autoload/dialogue.gd`
   (runner), `autoload/mock_chain.gd` (`?mock` / `?mock=account`), vault door + ledger board (SubViewport), HUD, slip
@@ -480,7 +480,7 @@ Promote only after lab handoffs + principal OK (likely U6+).
 
 - [x] Human walk on the real bridge: the principal's 2026-09-07 playtest is on chain — account `0x9C01…5Cb9`, pay
       records #3 / #4, wire #6 (112.5 dUSDC, `0x6f94c24f…`), released by the manager's stamp at block 99
-      (`0x5b4be600…`); one modal (the Privy sign-in at Ines) per the playtest report. Recorded with hashes in the progress
+      (`0x5b4be600…`); one modal (the Privy sign-in at Iris) per the playtest report. Recorded with hashes in the progress
       note (`npm -w apps/teller-desk run evidence` regenerates it)
 - [x] Error UX: dead desk → `RPC` (was `INTERNAL`), bad token → `AUTH` (was 500), half-provisioned → `NOT_CONFIGURED`;
       86 codes have lines, `run_checks.gd` green. `TIMEOUT` / `RPC` verified at the bridge layer by killing the desk;
@@ -507,24 +507,24 @@ Promote only after lab handoffs + principal OK (likely U6+).
 
 Kept as the record of what G5b required and how it was answered. The next mission is §5f.
 
-A **third** workflow, not a rename of Ruth’s timed vault release and **not** ENG-0010’s short clock.
+A **third** workflow, not a rename of Bob’s timed vault release and **not** ENG-0010’s short clock.
 
 | Path | Who | When | Credential |
 |------|-----|------|------------|
-| Wait | **Ruth** | After `releaseTime` | Silent session signer — today’s owner `approveTimeLockExecution` |
-| Priority | **Mr. Okafor** | Before `releaseTime` | Owner Passkey / in-game “hand scan”; manager submits meta-approve |
+| Wait | **Bob** | After `releaseTime` | Silent session signer — today’s owner `approveTimeLockExecution` |
+| Priority | **Mr. Walker** | Before `releaseTime` | Owner Passkey / in-game “hand scan”; manager submits meta-approve |
 | Recall | Owner and/or manager | While PENDING | Unchanged |
 
-**Okafor must stop being a second Ruth.** Remove his post-clock vault stamp. Copy: “Skip the cooling period — hand scan required.” Prefer **Priority release** / **Manager’s bypass** over “Express.”
+**Walker must stop being a second Bob.** Remove his post-clock vault stamp. Copy: “Skip the cooling period — hand scan required.” Prefer **Priority release** / **Manager’s bypass** over “Express.”
 
 Kickoff: [`docs/missions/KICKOFF-U4-plus.md`](./KICKOFF-U4-plus.md). Labs (do not edit):
 [ENG-0012](https://github.com/D9-Studio/GameLab/blob/main/work/ENG-2026-0012-express-meta-approve-bypass/handoff.md) (chain yes),
 [ENG-0011](https://github.com/D9-Studio/GameLab/blob/main/work/ENG-2026-0011-privy-step-up/handoff.md) (two signers),
 [ENG-0013](https://github.com/D9-Studio/GameLab/blob/main/work/ENG-2026-0013-privy-mfa-silent-vs-step-up/handoff.md) (Passkey; `promptMfa()` is not a 1-min cache). ENG-0010 stays timed dual-control only.
 
-**Grant split (product, not a copy of the 0012 clone):** the throwaway lab withheld owner timed-approve. This bank needs Ruth **and** Priority on the same account:
+**Grant split (product, not a copy of the 0012 clone):** the throwaway lab withheld owner timed-approve. This bank needs Bob **and** Priority on the same account:
 
-- OWNER: Lane A `SIGN_META_REQUEST_AND_APPROVE` + `EXECUTE_TIME_DELAY_REQUEST` + `_CANCEL` + timed `_APPROVE` (Ruth) + `SIGN_META_APPROVE` (Priority payload)
+- OWNER: Lane A `SIGN_META_REQUEST_AND_APPROVE` + `EXECUTE_TIME_DELAY_REQUEST` + `_CANCEL` + timed `_APPROVE` (Bob) + `SIGN_META_APPROVE` (Priority payload)
 - `BRANCH_MANAGER`: `_CANCEL` (recall) + `EXECUTE_META_APPROVE` (submit). **Remove** `EXECUTE_TIME_DELAY_APPROVE` from the manager
 - Never one role with both `SIGN_META_APPROVE` and `EXECUTE_META_APPROVE` (`ConflictingMetaTxPermissions`)
 - Bump `ROLE_SET_VERSION` (currently 2). META bits are account-wide: any PENDING can bypass once granted. Vault-only mode (no META) stays the U2 invariant if you keep a hard switch.
@@ -535,31 +535,31 @@ Kickoff: [`docs/missions/KICKOFF-U4-plus.md`](./KICKOFF-U4-plus.md). Labs (do no
 
 - Route name and whether Godot uses `as: "priority"` vs a new action verb
 - Whether Passkey every time (`clear()` + `promptMfa()`, 0013 M2 — recommended for teaching) vs sign-only without `promptMfa()` (unmeasured)
-- How Okafor’s desk lists cooling vs ready wires (Priority vs refuse)
+- How Walker’s desk lists cooling vs ready wires (Priority vs refuse)
 
 ### Out of scope
 
 - ENS (U5), Arc (U6), Uniswap, art/audio, greybox redesign
-- Restoring Okafor’s post-clock timed stamp
+- Restoring Walker’s post-clock timed stamp
 - ENG-0010 short-clock desk; wiping Remote EVM; editing GameLab ENG folders
 - Lane A amount routing / policy rewrite; claiming dashboard MFA cache
 
 ### Definition of Done (G5b) — met
 
-- [x] Same account (rig clone `0xD026…8DbD`, kill tests Y2 / Y3 / Y7 on 1337, blocks 235–244): Ruth early →
-      `BeforeReleaseTime`; Okafor Priority early → `COMPLETED` 102 s before `releaseTime` (`0xf34c88f6…`), payee paid;
-      Ruth after clock → `COMPLETED` (`0x99f8a3e5…`)
-- [x] Okafor has no post-clock timed stamp: `EXECUTE_TIME_DELAY_APPROVE` removed from `BRANCH_MANAGER` on `transfer`
+- [x] Same account (rig clone `0xD026…8DbD`, kill tests Y2 / Y3 / Y7 on 1337, blocks 235–244): Bob early →
+      `BeforeReleaseTime`; Walker Priority early → `COMPLETED` 102 s before `releaseTime` (`0xf34c88f6…`), payee paid;
+      Bob after clock → `COMPLETED` (`0x99f8a3e5…`)
+- [x] Walker has no post-clock timed stamp: `EXECUTE_TIME_DELAY_APPROVE` removed from `BRANCH_MANAGER` on `transfer`
       (Y0), manager direct approve → `NoPermission` before **and** after the clock (Y2b, Y7b), `/approve as: manager` →
       `MANAGER_NO_STAMP`, `manager.json` offers `priority` + `cancel` only (`run_checks.gd` enforces). Manager cannot
       file (Y5). Owner cannot submit their own meta-approve (Y4)
 - [x] Passkey / hand scan on Priority only: the `priority` bridge method is the one second Privy surface (user signer,
-      `clear()` + `promptMfa()` when enrolled, `showWalletUIs`); Lane A / Ruth / recall untouched. The session signer
+      `clear()` + `promptMfa()` when enrolled, `showWalletUIs`); Lane A / Bob / recall untouched. The session signer
       cannot sign the bypass payload (Y8a `policy_violation`) and still signs a counter pay (Y8b). **Human walk
       2026-09-07:** wire #9, `mfaPrompted: true`, `0xaa381c00…`, 61 s before `releaseTime` (progress note)
 - [x] `ROLE_SET_VERSION` 3; Re-check (`/provision`) re-syncs REMOVE+ADD in one batch (Y0 on a roleSet-2 account);
       `upgrade-players` script for players on file; `NOT_CONFIGURED` until then; player index written synchronously (U4)
-- [x] NPCS.md §4.4–4.5 as built; `errors.json` 92 lines (+6 codes); `run_checks.gd` checks the Ruth/Okafor verb split
+- [x] NPCS.md §4.4–4.5 as built; `errors.json` 92 lines (+6 codes); `run_checks.gd` checks the Bob/Walker verb split
       and the copy line; MockChain answers `priority` (labelled fake) and refuses `approve as: manager`;
       `tests/run_mock_walk.gd` walks both desks headlessly against the mock (PASS)
 - [x] Freeze intact: one Account Opening modal (Priority is the documented exception); `focusCanvas()` after the Passkey
@@ -571,7 +571,7 @@ Kickoff: [`docs/missions/KICKOFF-U4-plus.md`](./KICKOFF-U4-plus.md). Labs (do no
 
 1. Grants + ROLE_SET bump + provision upgrade.
 2. Teller Priority path (user-sign meta, manager execute).
-3. Ruth wait-only; Okafor Priority + recall; copy + errors.
+3. Bob wait-only; Walker Priority + recall; copy + errors.
 4. Kill tests Y1–Y7 + freeze; progress + HANDOFF → U5.
 
 ---
@@ -699,7 +699,7 @@ itself can reach stays a Console-side **VERIFY** (TERMINAL-CONSOLE §7) — gran
 ## 5i. Mission S1 / S1b — Uniswap v4 FX Desk — **MET 2026-09-08**
 
 Activated **2026-09-08** as sponsor **#3** while U6 Arc stays deferred. End-to-end: Sepolia infra → AccountBlox
-guards → Teller `/quote` `/swap` → bridge → Kenji + FX desk visualization → `FEEDBACK.md` + Uniswap form.
+guards → Teller `/quote` `/swap` → bridge → Johnny + FX desk visualization → `FEEDBACK.md` + Uniswap form.
 Spec: [`docs/UNISWAP.md`](../UNISWAP.md). Kickoff:
 [`docs/missions/KICKOFF-S1-uniswap-fx.md`](./KICKOFF-S1-uniswap-fx.md). Prefer **Fable 5.1**.
 
@@ -745,11 +745,11 @@ npm -w apps/teller-desk run killtests:s1 -- --amount 0.5
 - [x] **Live K7: AccountBlox completes a v4 swap on Sepolia** —
       [`0xd98efc64…`](https://sepolia.etherscan.io/tx/0xd98efc64e579758b04aa338b2ec777536839b7e48908000e6c6a0b93e8f686b3),
       0.5 USDC → 0.000206381989870823 WETH; repeat swap `0x77f8076a…` in one transaction. **K7-a…f all green**
-- [x] Desk `/fx/status` `/fx/quote` `/fx/enable` `/fx/swap` + bridge `s1.0` + Kenji dialogue (mock + live paths)
-- [x] In-world FX desk + Kenji + quote board + sponsor signage; `run_viz_budget` green (35 materials, 37 with
+- [x] Desk `/fx/status` `/fx/quote` `/fx/enable` `/fx/swap` + bridge `s1.0` + Johnny dialogue (mock + live paths)
+- [x] In-world FX desk + Johnny + quote board + sponsor signage; `run_viz_budget` green (35 materials, 37 with
       particles, ≤ 40) and named shots `33_fx_desk_close` / `34_fx_talk` / `35_fx_board_close`
 - [x] `FEEDBACK.md` committed; README points at integration lines; form reminder in the progress note
-- [x] `run_checks` green (120 codes, Kenji's verb split enforced), `run_fx_walk` green, `run_mock_walk` green,
+- [x] `run_checks` green (120 codes, Johnny's verb split enforced), `run_fx_walk` green, `run_mock_walk` green,
       `npm run typecheck` green; no freeze / Priority / ENS / faucet regression
 - [x] REFLECTION K7 = **PASS** + S1/S1b decision-log rows; this §5i DoD updated
 - [x] S1b: `budget()` hard-fails `FX_TELLER_DRY` and every write is sized from a **state-override `eth_estimateGas`**
@@ -779,7 +779,7 @@ mode with no bleed — checked by `killtests:s2` S2-2 from both sides.
 
 ### Freedom envelope (as used)
 
-- Proxy names: kept Arc's shape — `/api` (Live) + `/dev-api` (Dev), Arc rehomed to `:8789`
+- Proxy names: kept Arc's shape — `/api` (Live) + `/dev-api` (Eve), Arc rehomed to `:8789`
 - Dev selected by a `--dev` **argv flag** rather than an env var, so both desks start from `package.json` on
   cmd.exe and neither can inherit the other's `PORT`
 - Live **unifies** the FX till with the Main account (`fxTillIsMain`); Dev keeps them apart, because a 1337
@@ -870,7 +870,7 @@ automated faucet claiming; Remote EVM treasury.
       pre-`cloneBlox` hook, and the interval watcher — one planner behind all three
 - [x] Circle USDC visible on the treasury (**30 USDC**, live), pinned as `tokens.circleUsdc` in
       `sepolia.json`, hold-only; practice float documented off with the reason
-- [x] `killtests:treasury` **7/7 Live**, **6 PASS + 1 SKIP Dev** (Dev does not read the key at all);
+- [x] `killtests:treasury` **7/7 Live**, **6 PASS + 1 SKIP Eve** (Dev does not read the key at all);
       `killtests:s2` **6/6 on both wings**; `npm run typecheck` clean
 - [x] No role collapse in code: refused by derived address, demo opt-in is loud (below); the Ganache-parity
       refusal covers the treasury slot
@@ -889,9 +889,9 @@ automated faucet claiming; Remote EVM treasury.
 
 ---
 
-## 5l. Mission Load Account — Ines adopts an owned AccountBlox — **MET 2026-09-08**
+## 5l. Mission Load Account — Iris adopts an owned AccountBlox — **MET 2026-09-08**
 
-Ines has a second, named way to give a player their account: **Load an existing account**. The player hands
+Iris has a second, named way to give a player their account: **Load an existing account**. The player hands
 her an `0x` number; the desk reads the chain and, only if that contract really is a player-owned AccountBlox
 on the wing this desk serves, files it as their Main account — policies re-pinned, guard/role sync re-run,
 **no clone**. Plan + as-built: [`docs/LOAD-ACCOUNT.md`](../LOAD-ACCOUNT.md) §7–§8. Handoff:
@@ -905,7 +905,7 @@ the newest — leaving **four** owned accounts, with their own balances and poss
 unreachable from the game. Auto-recovery keeps that last-clone default; loading is the escape hatch.
 
 **Shape as built.** `apps/teller-desk/src/lanes/loadAccount.ts` → `POST /account/load { account }`, bridge
-**`s2.1`** `loadAccount`, Ines's slip `apps/game/scripts/load_account_form.gd` + `clerk.json`
+**`s2.1`** `loadAccount`, Iris's slip `apps/game/scripts/load_account_form.gd` + `clerk.json`
 `loading` / `loaded` / `why_load`. The gate is four reads and no signature: `getAddress` → `getCode` on this
 wing → `owner()` answers **and** `initialized()` **and** ERC-165 `ISecureOwnable` → `owner()` == the session's
 Privy owner. Then the policies are re-pinned **before** the index moves, and the Re-check sync runs
@@ -946,10 +946,10 @@ the Name Desk recorded — possibly the one being moved away from); Arc; treasur
 
 ### Owed by a human
 
-- **A browser walk on Live**: sign in → Ines → Load an existing account → paste a Sepolia account of your own.
-  Nobody has typed into the slip on the Live wing; the desk paths are headless-proven on Dev. Same shape as the
+- **A browser walk on Live**: sign in → Iris → Load an existing account → paste a Sepolia account of your own.
+  Nobody has typed into the slip on the Live wing; the desk paths are headless-proven on Eve. Same shape as the
   Console walk still owed from the stretch.
-- Optional stretch, **not** built: list this owner's `BloxCloned` clones as Ines choices, so the number need not
+- Optional stretch, **not** built: list this owner's `BloxCloned` clones as Iris choices, so the number need not
   come from the terminal. Still a log filter, still no factory getter.
 
 ---
@@ -958,7 +958,7 @@ the Name Desk recorded — possibly the one being moved away from); Arc; treasur
 
 | Next | Gate |
 |------|------|
-| **Load Account (Ines)** | **met** 2026-09-08 (§5l; adopt an owned AccountBlox by number, `killtests:load` 12/12; owed: a Live browser walk) |
+| **Load Account (Iris)** | **met** 2026-09-08 (§5l; adopt an owned AccountBlox by number, `killtests:load` 12/12; owed: a Live browser walk) |
 | **Sepolia ops treasury (S3)** | **met** 2026-09-08 (§5k; faucet → treasury → staff at need × 1.25; owed: one human faucet claim) |
 | **Sepolia Live + Developer Mode (S2)** | **met** 2026-09-08 (§5j; Live wing on Sepolia, Dev = 1337 toggle) |
 | **Uniswap v4 FX Desk (S1/S1b)** | K7 — **met** 2026-09-08 (§5i; live swap `0xd98efc64…`, re-run on the Live till `0xd1d9cd8e…`); owed: the sponsor feedback form |

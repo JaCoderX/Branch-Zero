@@ -5,13 +5,14 @@
  *
  *   npm -w apps/teller-desk run fx:preflight
  *
- * Fiat pairs (2026-09-09): the door is the same three schemas / three targets it was for the WETH desk — one-way
- * USD → fiat approves only the practice dollar — so a till opened before the fiat pools needs no new config batch.
+ * Bidirectional (2026-09-10): the door is three schemas and **seven** whitelist rows — `approve` × USD, EUR, ILS,
+ * Permit2, the router, and EUR + ILS on the counter's built-in `transfer`. A till opened one-way (2026-09-09) shows
+ * the four fiat rows as MISSING here until Johnny's next enable heals it (one small guard batch, no schema).
  */
 import { formatEther, formatUnits, parseAbi } from 'viem';
 import { GuardController, RuntimeRBAC } from '@bloxchain/sdk';
 import { config } from '../src/config.ts';
-import { FX_FUNCTIONS, FX_PAIRS, FX_SELECTORS, fxDeployment, _fxClients } from '../src/lanes/fx.ts';
+import { FX_FUNCTIONS, FX_PAIRS, FX_SELECTORS, FX_TRANSFER, fxDeployment, readDoor, _fxClients } from '../src/lanes/fx.ts';
 import { BROADCASTER_ROLE, OWNER_ROLE } from '../src/lanes/provision.ts';
 
 const erc20 = parseAbi(['function balanceOf(address) view returns (uint256)']);
@@ -70,6 +71,10 @@ async function main(): Promise<void> {
     const targets = has ? await gc.getFunctionWhitelistTargets(sel).catch(() => []) : [];
     console.log(`  schema ${fn.key.padEnd(8)} ${sel} ${has ? 'registered' : 'MISSING'} · whitelist [${(targets as string[]).join(', ') || '—'}]`);
   }
+  const transfer = await gc.getFunctionWhitelistTargets(FX_TRANSFER.selector).catch(() => []);
+  console.log(`  schema ${'transfer'.padEnd(8)} ${FX_TRANSFER.selector} built-in   · whitelist [${(transfer as string[]).join(', ') || '—'}]`);
+  const door = await readDoor(till);
+  console.log(`  door   ${door.open ? 'OPEN both ways' : `SHUT — missing ${door.missing.map((m) => `${m.function.split('(')[0]}→${m.symbol}`).join(', ') || '(roles)'}`} · counter pays ${door.payable.join(' · ') || '—'}`);
   for (const [role, name] of [[OWNER_ROLE, 'OWNER'], [BROADCASTER_ROLE, 'BROADCASTER']] as const) {
     const perms = (await rbac.getActiveRolePermissions(role)) as Array<{ functionSelector: string; grantedActionsBitmap: number | bigint }>;
     for (const fn of FX_FUNCTIONS) {

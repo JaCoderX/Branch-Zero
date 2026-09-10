@@ -1,5 +1,5 @@
 extends Node3D
-## Kenji's quote board — the FX desk's LED panel (docs/UNISWAP.md §4, KICKOFF §F.20).
+## Johnny's quote board — the FX desk's LED panel (docs/UNISWAP.md §4, KICKOFF §F.20).
 ##
 ## Same shape as ledger_board.gd and names_board.gd: a small SubViewport drawn into the wall quad
 ## `bank_interior.gd` left inside the brass frame above the FX counter. It renders only what the chain told us —
@@ -84,14 +84,15 @@ func _redraw() -> void:
 		lines.append(str(s.get("fx_board_dark", "Board dark — the branch can't reach the exchange floor.")))
 	else:
 		if GameState.fx_quoted():
-			lines.append(Dialogue.interpolate(str(s.get("fx_board_quote", "{fx_amount_in} {fx_symbol_in}  →  {fx_amount_out} {fx_symbol_out}")), v))
+			# `fx_quote_in` is the sold currency — dollars on a buy, euros / shekels on a sell (2026-09-10).
+			lines.append(Dialogue.interpolate(str(s.get("fx_board_quote", "{fx_amount_in} {fx_quote_in}  →  {fx_amount_out} {fx_symbol_out}")), v))
 			lines.append(Dialogue.interpolate(str(s.get("fx_board_rate", "{fx_rate}")), v))
 			lines.append(Dialogue.interpolate(str(s.get("fx_board_min", "minimum {fx_min_out} {fx_symbol_out} · rate room {fx_slippage}")), v))
 			lines.append(Dialogue.interpolate(str(s.get("fx_board_valid", "quote valid {fx_valid}")), v))
 		else:
 			# Both pairs' mid rates, read from each pool's own slot0 by the desk — a reading, not a quote.
 			lines.append(Dialogue.interpolate(str(s.get("fx_board_idle", "{fx_rate_eur} · {fx_rate_ils} · exchange fee {fx_pool_fee}")), v))
-			lines.append(str(s.get("fx_board_ask", "Ask Kenji for a euro or shekel price.")))
+			lines.append(str(s.get("fx_board_ask", "Ask Johnny for a euro or shekel price.")))
 		lines.append("")
 		if GameState.has_fx_till():
 			lines.append(Dialogue.interpolate(str(s.get("fx_board_till", "till  {fx_usdc} {fx_symbol_in} · {fx_eur} EUR · {fx_ils} ILS")), v))
@@ -100,7 +101,7 @@ func _redraw() -> void:
 		if not GameState.fx_open():
 			lines.append(str(s.get("fx_board_closed", "exchange door not on your approved list")))
 		else:
-			lines.append(Dialogue.interpolate(str(s.get("fx_board_whitelist", "approved services: prepare dollars · authorise exchange · place trade")), v))
+			lines.append(Dialogue.interpolate(str(s.get("fx_board_whitelist", "approved services: prepare currency · authorise exchange · place trade — USD ↔ EUR | ILS both ways")), v))
 		for pair in ["EUR", "ILS"]:
 			var pool: Dictionary = GameState.fx_pair(pair).get("pool", {})
 			if str(pool.get("tick", "")) != "":

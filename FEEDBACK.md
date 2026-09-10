@@ -152,11 +152,20 @@ The swap is live on Sepolia as of 2026-09-08 —
 the account spending its own practice dollars through the Universal Router — so what follows is what the demo still
 does *not* prove, rather than an apology for what it could not reach.
 
-**Two pools, one direction, one hop.** Since 2026-09-09 we trade USD → EUR and USD → ILS against two pools we
-created and seeded ourselves (the original thin USDC/WETH pool is still on chain but no longer quoted). The fiat books
-are deep on purpose, so the board shows the fee rather than impact. Nothing here exercises routing, multi-hop, the
-reverse direction, or liquidity we did not put there; our `ExactInputSingleParams` is hand-encoded for exactly this
-shape. If the desk ever needed a second hop we would reach for `@uniswap/v4-sdk` rather than extend the hand-encoding.
+**Two pools, both directions, one hop.** Since 2026-09-09 we trade USD against EUR and ILS on two pools we created
+and seeded ourselves (the original thin USDC/WETH pool is still on chain but no longer quoted), and since 2026-09-10
+in **both** directions. The fiat books are deep on purpose, so the board shows the fee rather than impact. Nothing
+here exercises routing, multi-hop, or liquidity we did not put there; our `ExactInputSingleParams` is hand-encoded
+for exactly this shape. If the desk ever needed a second hop we would reach for `@uniswap/v4-sdk` rather than extend
+the hand-encoding.
+
+*Reverse was cheap, and that is worth saying.* Adding fiat → USD was a `zeroForOne` flip, swapping the `SETTLE_ALL` /
+`TAKE_ALL` currencies, and running the `approve` → `Permit2.approve` ladder against the input token instead of the
+dollar — Permit2 allowances being per `(owner, token, spender)` is the one fact an integrator has to hold in mind.
+What cost more than the swap was the **account side**: the guard had whitelisted only the dollar for `approve`, so
+reverse needed two more whitelist targets, and "is the desk open?" had to grow from three rows to seven or a
+half-configured account would have reported open and reverted three meta-transactions in. None of that is Uniswap's
+problem; it is what "a governed account, not a wallet" costs, and it is the part a swap widget never shows you.
 
 **The account, not the wallet, is the integration.** Everything above is written from a contract account with a
 permission system, which is a narrow vantage point. We never touched the front-end SDKs a dapp would use, so we

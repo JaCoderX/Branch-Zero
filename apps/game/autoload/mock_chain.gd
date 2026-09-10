@@ -38,7 +38,7 @@ const FX_SLIPPAGE_BPS := 100.0
 const FX_QUOTE_TTL := 300
 
 ## Cooling period the mock writes into new wires. The demo autopilot stretches it so the vault beats
-## (Bob refuses early, Okafor's Priority release) still happen at a human reading pace.
+## (Bob refuses early, Walker's Priority release) still happen at a human reading pace.
 var timelock_sec: int = TIMELOCK_SEC
 
 var logged_in := false
@@ -51,7 +51,7 @@ var ens_name := ""
 var ens_tier := "Silver"
 var ens_names: Array = []
 var observers: Array = []    # viewing wallets on the mock OBSERVER role (addresses, strings only)
-var fx_till := ""            # S1: the mock Sepolia AccountBlox; "" until Kenji opens it
+var fx_till := ""            # S1: the mock Sepolia AccountBlox; "" until Johnny opens it
 var fx_open := false         # the three whitelisted calls are registered on it
 var fx_usdc := 0.0
 var fx_eur := 0.0            # fiat pairs (2026-09-09): the till's Practice EUR / ILS
@@ -254,7 +254,7 @@ func _observer_revoke(args: Dictionary) -> Dictionary:
 	return _ok(res)
 
 
-## ---------------------------------------------------------------- S1: Kenji's FX desk, mocked
+## ---------------------------------------------------------------- S1: Johnny's FX desk, mocked
 ##
 ## Enough shape for the greybox to walk the desk: a till, an exchange door that has to be registered before a swap,
 ## a board with two fiat pairs (USD → EUR, USD → ILS) whose rate comes from a deep constant-product book, and a swap
@@ -274,29 +274,46 @@ func _fx_pair_status(pair: String) -> Dictionary:
 	}
 
 
+## The whitelist rows an open till carries since 2026-09-10: three `approve` targets (USD, EUR, ILS — a sell approves the
+## fiat), Permit2, the router, and EUR + ILS as `transfer` targets so the counter can pay them out (Lane A only).
+const FX_TOKENS := {"USD": "0xM0CK00000000000000000000000000000000dUSD", "EUR": "0xM0CK00000000000000000000000000000000dEUR", "ILS": "0xM0CK00000000000000000000000000000000dILS"}
+
+
+func _fx_whitelist() -> Array:
+	var rows: Array = []
+	for sym in ["USD", "EUR", "ILS"]:
+		rows.append({"function": "approve(address,uint256)", "selector": "0x095ea7b3", "target": FX_TOKENS[sym], "symbol": sym})
+	rows.append({"function": "approve(address,address,uint160,uint48)", "selector": "0x87517c45", "target": "0x000000000022D473030F116dDEE9F6B43aC78BA3", "symbol": "Permit2"})
+	rows.append({"function": "execute(bytes,bytes[],uint256)", "selector": "0x3593564c", "target": "0xM0CK000000000000000000000000000000R0UTR", "symbol": "UniversalRouter"})
+	for sym in ["EUR", "ILS"]:
+		rows.append({"function": "transfer(address,uint256)", "selector": "0xa9059cbb", "target": FX_TOKENS[sym], "symbol": sym})
+	return rows
+
+
 func _fx_status() -> Dictionary:
 	return {
 		"chainId": 11155111, "configured": true,
 		"account": fx_till if fx_till != "" else null,
 		"enabled": fx_open,
 		"usdc": _fmt(fx_usdc), "eur": "%.6f" % fx_eur, "ils": "%.6f" % fx_ils,
-		"symbolIn": "USD",
+		"symbolIn": "USD", "sides": ["buy", "sell"],
 		"pairs": [_fx_pair_status("EUR"), _fx_pair_status("ILS")],
 		"router": "0xM0CK000000000000000000000000000000R0UTR", "quoter": "0xM0CK00000000000000000000000000000QU0TER",
-		"whitelist": [
-			{"function": "approve(address,uint256)", "selector": "0x095ea7b3", "target": "0xM0CK00000000000000000000000000000000dUSD"},
-			{"function": "approve(address,address,uint160,uint48)", "selector": "0x87517c45", "target": "0x000000000022D473030F116dDEE9F6B43aC78BA3"},
-			{"function": "execute(bytes,bytes[],uint256)", "selector": "0x3593564c", "target": "0xM0CK000000000000000000000000000000R0UTR"},
-		],
+		"whitelist": _fx_whitelist(),
+		"missing": [] if fx_open else _fx_whitelist(),
+		"payable": ["USD", "EUR", "ILS"] if fx_open else ["USD"],
 		"explorer": {"account": "", "pools": {"EUR": "", "ILS": ""}},
 		"serverNow": _now_str(),
 	}
 
 
 ## Constant product with a 0.30 % fee on a $100M book: a bigger order gets a fractionally worse rate, invisibly so.
-func _fx_out(pair: String, amount: float) -> float:
+## `side` buy: dollars in, fiat out. `side` sell: fiat in, dollars out — the same book read the other way.
+func _fx_out(pair: String, amount: float, side: String = "buy") -> float:
 	var pool: Dictionary = FX_POOLS[pair]
 	var in_after_fee := amount * (1.0 - FX_FEE_BPS / 10000.0)
+	if side == "sell":
+		return (float(pool["usd"]) * in_after_fee) / (float(pool["fiat"]) + in_after_fee)
 	return (float(pool["fiat"]) * in_after_fee) / (float(pool["usd"]) + in_after_fee)
 
 
@@ -306,24 +323,37 @@ func _fx_pair_of(v) -> String:
 	return pair if FX_POOLS.has(pair) else ""
 
 
+## buy | sell (missing = buy), or "" for an FX_SIDE refusal.
+func _fx_side_of(v) -> String:
+	var side := str(v).strip_edges().to_lower()
+	if side == "":
+		return "buy"
+	return side if side == "buy" or side == "sell" else ""
+
+
 func _fx_quote(args: Dictionary) -> Dictionary:
 	var pair := _fx_pair_of(args.get("pair", "EUR"))
 	if pair == "":
-		return _err("FX_PAIR", "the FX desk sells EUR or ILS for practice dollars; \"%s\" is not a pair it deals in" % str(args.get("pair", "")))
+		return _err("FX_PAIR", "the FX desk trades EUR or ILS against practice dollars; \"%s\" is not a pair it deals in" % str(args.get("pair", "")))
+	var side := _fx_side_of(args.get("side", "buy"))
+	if side == "":
+		return _err("FX_SIDE", "the FX desk buys or sells — \"%s\" is not a direction it knows" % str(args.get("side", "")))
 	var amount := float(str(args.get("amount", "1")))
 	if amount <= 0.0:
 		return _err("FX_AMOUNT", "amount must be a positive number")
-	var out := _fx_out(pair, amount)
+	var out := _fx_out(pair, amount, side)
 	if out <= 0.0:
 		return _err("FX_QUOTE_FAILED", "the pool returned nothing for that amount")
+	var sym_in := "USD" if side == "buy" else pair
+	var sym_out := pair if side == "buy" else "USD"
 	var min_out := out * (1.0 - FX_SLIPPAGE_BPS / 10000.0)
 	var quote_id := "mockq%03d" % (_fx_quotes.size() + 1)
-	_fx_quotes[quote_id] = {"pair": pair, "amount": amount, "minOut": min_out, "deadline": _now() + FX_QUOTE_TTL}
+	_fx_quotes[quote_id] = {"pair": pair, "side": side, "amount": amount, "minOut": min_out, "deadline": _now() + FX_QUOTE_TTL}
 	return _ok({
-		"quoteId": quote_id, "chainId": 11155111, "pair": pair,
+		"quoteId": quote_id, "chainId": 11155111, "pair": pair, "side": side,
 		"amountIn": _fmt(amount), "amountOut": "%.6f" % out, "minOut": "%.6f" % min_out,
-		"rate": "1 USD ≈ %.4f %s" % [out / amount, pair], "rateOut": "1 %s ≈ %.4f USD" % [pair, amount / out],
-		"symbolIn": "USD", "symbolOut": pair, "fee": "0.30%", "slippage": "1%",
+		"rate": "1 %s ≈ %.4f %s" % [sym_in, out / amount, sym_out], "rateOut": "1 %s ≈ %.4f %s" % [sym_out, amount / out, sym_in],
+		"symbolIn": sym_in, "symbolOut": sym_out, "fee": "0.30%", "slippage": "1%",
 		"deadline": str(_now() + FX_QUOTE_TTL), "serverNow": _now_str(), "validSec": FX_QUOTE_TTL,
 		"gasEstimate": "120000", "poolId": str(FX_POOLS[pair]["id"]),
 	})
@@ -359,45 +389,63 @@ func _fx_swap(args: Dictionary) -> Dictionary:
 	var quote_id := str(args.get("quoteId", ""))
 	var amount := float(str(args.get("amount", "0")))
 	var pair := ""
+	var side := "buy"
 	if quote_id != "":
 		if not _fx_quotes.has(quote_id) or int(_fx_quotes[quote_id]["deadline"]) <= _now():
 			return _err("FX_QUOTE_EXPIRED", "that quote has gone stale")
 		amount = float(_fx_quotes[quote_id]["amount"])
 		pair = str(_fx_quotes[quote_id]["pair"])
+		side = str(_fx_quotes[quote_id].get("side", "buy"))
+		if str(args.get("side", "")) != "" and _fx_side_of(args.get("side", "")) != side:
+			return _err("FX_SIDE", "quote %s is a %s, not a %s" % [quote_id, side, str(args.get("side", ""))])
 	else:
 		pair = _fx_pair_of(args.get("pair", ""))
 		if pair == "":
-			return _err("FX_PAIR", "the FX desk sells EUR or ILS for practice dollars; \"%s\" is not a pair it deals in" % str(args.get("pair", "")))
+			return _err("FX_PAIR", "the FX desk trades EUR or ILS against practice dollars; \"%s\" is not a pair it deals in" % str(args.get("pair", "")))
+		side = _fx_side_of(args.get("side", "buy"))
+		if side == "":
+			return _err("FX_SIDE", "the FX desk buys or sells — \"%s\" is not a direction it knows" % str(args.get("side", "")))
 	if amount <= 0.0:
 		return _err("FX_AMOUNT", "a quote or an amount is required")
-	if amount > fx_usdc:
-		return _err("FX_TILL_SHORT", "the FX till holds %s USD; the order needs %s" % [_fmt(fx_usdc), _fmt(amount)])
+	var sym_in := "USD" if side == "buy" else pair
+	var sym_out := pair if side == "buy" else "USD"
+	var held: float = fx_usdc if side == "buy" else (fx_eur if pair == "EUR" else fx_ils)
+	if amount > held:
+		return _err("FX_TILL_SHORT", "the FX till holds %s %s; the order needs %s" % [_fmt(held), sym_in, _fmt(amount)])
 	var job := _new_job()
 	var steps: Array = []
-	_stage(job, "FX", "signing", "Preparing the dollar payment at the exchange…")
+	_stage(job, "FX", "signing", "Preparing the %s payment at the exchange…" % ("dollar" if side == "buy" else sym_in))
 	await get_tree().create_timer(0.6).timeout
 	steps.append({"step": "approve", "hash": _hash(), "explorer": ""})
 	_stage(job, "FX", "signing", "Setting the trade's spending limit…")
 	await get_tree().create_timer(0.5).timeout
 	steps.append({"step": "permit2", "hash": _hash(), "explorer": ""})
-	_stage(job, "FX", "signing", "Placing the %s USD → %s trade… (MockChain: no exchange here)" % [_fmt(amount), pair])
+	_stage(job, "FX", "signing", "Placing the %s %s → %s trade… (MockChain: no exchange here)" % [_fmt(amount), sym_in, sym_out])
 	await get_tree().create_timer(0.8).timeout
-	var out := _fx_out(pair, amount)
-	fx_usdc -= amount
-	if pair == "EUR":
-		fx_eur += out
+	var out := _fx_out(pair, amount, side)
+	if side == "buy":
+		fx_usdc -= amount
+		if pair == "EUR":
+			fx_eur += out
+		else:
+			fx_ils += out
 	else:
-		fx_ils += out
+		if pair == "EUR":
+			fx_eur -= amount
+		else:
+			fx_ils -= amount
+		fx_usdc += out
 	var h := _hash()
 	steps.append({"step": "execute", "hash": h, "explorer": ""})
-	_stage(job, "FX", "mined", "Swapped %s USD for %.6f %s." % [_fmt(amount), out, pair], {"hash": h, "account": fx_till})
+	_stage(job, "FX", "mined", "Swapped %s %s for %.6f %s." % [_fmt(amount), sym_in, out, sym_out], {"hash": h, "account": fx_till})
 	if quote_id != "":
 		_fx_quotes.erase(quote_id)
+	var out_after: float = fx_usdc if side == "sell" else (fx_eur if pair == "EUR" else fx_ils)
 	return _ok({
-		"jobId": job, "account": fx_till, "chainId": 11155111, "pair": pair,
+		"jobId": job, "account": fx_till, "chainId": 11155111, "pair": pair, "side": side,
 		"amountIn": _fmt(amount), "amountOut": "%.6f" % out, "minOut": "%.6f" % (out * 0.99),
-		"symbolIn": "USD", "symbolOut": pair, "steps": steps, "hash": h, "explorer": "",
-		"usdcAfter": _fmt(fx_usdc), "outAfter": "%.6f" % (fx_eur if pair == "EUR" else fx_ils),
+		"symbolIn": sym_in, "symbolOut": sym_out, "steps": steps, "hash": h, "explorer": "",
+		"usdcAfter": _fmt(fx_usdc), "outAfter": "%.6f" % out_after,
 		"eurAfter": "%.6f" % fx_eur, "ilsAfter": "%.6f" % fx_ils,
 		"poolId": str(FX_POOLS[pair]["id"]), "deadline": str(_now() + FX_QUOTE_TTL),
 	})
@@ -407,10 +455,37 @@ func _pay(args: Dictionary) -> Dictionary:
 	if account == "":
 		return _err("NO_ACCOUNT", "No account opened for this player")
 	var amount := float(str(args.get("amount", "0")))
+	# Multi-token Lane A (2026-09-10): USD by default; EUR | ILS come out of the FX till Johnny opened (on Live that
+	# till *is* the Main account). Anything else, or fiat before the exchange door is open, is refused in words.
+	var token := str(args.get("token", "USD")).strip_edges().to_upper()
+	if token == "" or token == "USDC" or token == "DUSDC":
+		token = "USD"
+	if token != "USD" and token != "EUR" and token != "ILS":
+		return _err("PAY_TOKEN", "the counter pays USD, EUR or ILS; \"%s\" is not a currency it moves" % str(args.get("token", "")))
 	if amount > float(INSTANT_LIMIT):
 		return _err("POLICY", "over the %s instant limit — that is a wire: use /wire" % INSTANT_LIMIT)
 	if not str(args.get("to", "")).begins_with("0x"):
 		return _err("TargetNotWhitelisted", "payee refused by the guard")
+	if token != "USD":
+		if not fx_open:
+			return _err("FX_NOT_ENABLED", "%s is not on this account's transfer list yet — the exchange desk grants it" % token)
+		var held: float = fx_eur if token == "EUR" else fx_ils
+		if amount > held:
+			return _err("FX_TILL_SHORT", "the account holds %s %s; the payment needs %s" % [_fmt(held), token, _fmt(amount)])
+		var fjob := _new_job()
+		_stage(fjob, "A", "signing", "Stamping your slip…")
+		await get_tree().create_timer(0.6).timeout
+		_stage(fjob, "A", "broadcasting", "Taking it to the counter…")
+		await get_tree().create_timer(0.6).timeout
+		if token == "EUR":
+			fx_eur -= amount
+		else:
+			fx_ils -= amount
+		var ftx := _next_tx_id
+		_next_tx_id += 1
+		var fh := _hash()
+		_stage(fjob, "A", "mined", "Paid %s %s." % [_fmt(amount), token], {"hash": fh, "txId": str(ftx), "amount": _fmt(amount), "symbol": token})
+		return _ok({"jobId": fjob, "hash": fh, "txId": str(ftx), "to": args.get("to"), "amount": _fmt(amount), "symbol": token, "token": FX_TOKENS[token], "balanceAfter": "%.6f" % (fx_eur if token == "EUR" else fx_ils)})
 	var job := _new_job()
 	_stage(job, "A", "signing", "Stamping your slip…")
 	await get_tree().create_timer(0.6).timeout
@@ -423,7 +498,7 @@ func _pay(args: Dictionary) -> Dictionary:
 	var tx_id := _next_tx_id
 	_next_tx_id += 1
 	_stage(job, "A", "mined", "Paid %s dUSDC." % _fmt(amount), {"hash": _hash(), "txId": str(tx_id), "amount": _fmt(amount)})
-	return _ok({"jobId": job, "hash": _hash(), "txId": str(tx_id), "to": args.get("to"), "amount": _fmt(amount), "balanceAfter": _fmt(balance)})
+	return _ok({"jobId": job, "hash": _hash(), "txId": str(tx_id), "to": args.get("to"), "amount": _fmt(amount), "symbol": "dUSDC", "token": FX_TOKENS["USD"], "balanceAfter": _fmt(balance)})
 
 
 ## Practice faucet: an explicit, Main-wing-only top-up to the opening balance. Full is a no-op.
@@ -595,7 +670,7 @@ func _decide(args: Dictionary, kind: String) -> Dictionary:
 	return _ok({"jobId": job, "hash": _hash(), "txId": tx_id, "status": "CANCELLED", "actor": actor})
 
 
-## U4+ Okafor's Priority release, mocked: no Passkey, no signature, nothing on a chain — it only lets the greybox
+## U4+ Walker's Priority release, mocked: no Passkey, no signature, nothing on a chain — it only lets the greybox
 ## walk the desk. The real path is /priority/prepare → Privy MFA + user-signer sign sheet → /priority/submit.
 ## Pass `dismiss: true` (or txId `dismiss`) to exercise the Passkey/sign-sheet cancel line without a browser.
 func _priority(args: Dictionary) -> Dictionary:
@@ -686,6 +761,8 @@ func _status() -> Dictionary:
 	return {
 		"owner": OWNER, "chainId": chain_id, "signingMode": "session" if delegated else "client",
 		"account": account if account != "" else null, "balance": _fmt(balance), "symbol": str(_token()["symbol"]),
+		# Multi-token passbook (2026-09-10): the dollar row always; the fiat rows only once Johnny's till exists (Live: the same account).
+		"balances": ([{"symbol": str(_token()["symbol"]), "token": FX_TOKENS["USD"], "balance": _fmt(balance)}] + ([{"symbol": "EUR", "token": FX_TOKENS["EUR"], "balance": "%.6f" % fx_eur}, {"symbol": "ILS", "token": FX_TOKENS["ILS"], "balance": "%.6f" % fx_ils}] if fx_till != "" else [])),
 		"pending": wires.size(), "wires": wires.duplicate(true), "serverNow": _now_str(),
 		"timeLockSec": timelock_sec, "receipts": receipts.duplicate(true),
 	}

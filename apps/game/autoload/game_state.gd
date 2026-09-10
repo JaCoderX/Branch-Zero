@@ -28,8 +28,9 @@ var ui_locked: bool = false            # dialogue / form open → player does no
 var current_zone: String = ""
 var desk_linked: bool = true        # Teller Desk SSE stream up (bridge `desk.link`); false while reconnecting
 var observers: Array = []           # viewing wallets on the OBSERVER role (addresses, strings only)
-var fx: Dictionary = {}             # S1: Kenji's till on Sepolia — USD/EUR/ILS balances, the two fiat pools (`pairs`), whitelist (bridge `fxStatus`)
+var fx: Dictionary = {}             # S1: Johnny's till on Sepolia — USD/EUR/ILS balances, the two fiat pools (`pairs`), whitelist (bridge `fxStatus`)
 var fx_quote: Dictionary = {}       # the rate currently on the quote board (bridge `fxQuote`); empty = board dark
+var fx_last: Dictionary = {}        # the last filled trade (bridge `fxSwap` result) — Johnny's "Filled." line reads it after the board clears
 var terminal_open: bool = false     # the bank computer's Console overlay is up in the shell (bridge `terminal.closed` clears it)
 var inpc_open: bool = false         # the iNPC's Wake / chat overlay is up in the shell (bridge `inpc.closed` clears it) — docs/INPC.md
 var inpc_awake: bool = false        # the shell holds the player's session-only OpenRouter key; mirrored yes/no, the key itself never comes here
@@ -133,7 +134,7 @@ func has_manager() -> bool:
 
 
 ## U4+: the branch runs the Priority desk and this account carries the META_APPROVE split (ROLE_SET 3). When false
-## the manager can still shred, but nobody skips the cooling (vault-only, or Ines has to re-check the file).
+## the manager can still shred, but nobody skips the cooling (vault-only, or Iris has to re-check the file).
 func priority_enabled() -> bool:
 	return has_manager() and bool(session.get("priority", false))
 
@@ -314,7 +315,7 @@ func facts() -> Dictionary:
 		"branch_float_open": branch_float_open,
 		"treasury_configured": treasury_configured(),
 		"treasury_short": treasury_short(),
-		# S1 — Kenji's desk. `fx_till` = the player has an AccountBlox on Sepolia; `fx_open` = its exchange door is
+		# S1 — Johnny's desk. `fx_till` = the player has an AccountBlox on Sepolia; `fx_open` = its exchange door is
 		# registered (the three whitelisted calls); `fx_quoted` = a rate is on the board and still inside its deadline.
 		"fx_till": has_fx_till(),
 		"fx_open": fx_open(),
@@ -348,25 +349,36 @@ func vars(extra: Dictionary = {}) -> Dictionary:
 		"chain": chain_label(),
 		"mode": mode(),
 		"mode_label": "Developer Mode" if mode() == "dev" else "Live",
-		# FX is Sepolia in both modes. What differs is whether the till is the account Ines opened (Live) or a
-		# second account on another chain (Dev) — Kenji says whichever is true rather than one line for both.
-		"fx_till_note": ("a second account of your own on Sepolia, where the exchange lives — separate books from your counter money" if mode() == "dev" else "the very account Ines opened for you: the exchange lives on this same chain, so there is one balance and one guard list"),
+		# FX is Sepolia in both modes. What differs is whether the till is the account Iris opened (Live) or a
+		# second account on another chain (Eve) — Johnny says whichever is true rather than one line for both.
+		"fx_till_note": ("a second account of your own on Sepolia, where the exchange lives — separate books from your counter money" if mode() == "dev" else "the very account Iris opened for you: the exchange lives on this same chain, so there is one balance and one guard list"),
 		"fx_chain_note": ("Currency exchange is on Sepolia only — that is where the pool is. Your payments and wires are on the development chain in this mode." if mode() == "dev" else "Currency exchange is on Sepolia only — the same chain your payments and wires already use."),
-		"manager_name": "Mr. Okafor",
+		"manager_name": "Mr. Walker",
 		"priority_copy": str(strings.get("priority_copy", "Skip the cooling period — hand scan required.")),
 		"ens_name": ens_name() if has_ens_name() else "no name yet",
 		# Bank surfaces condition on has_ens_name and never print a placeholder: no name means no name row, no clause.
 		"bank_name": ens_name() if has_ens_name() else "",
 		"bank_tier": ens_tier(),
 		"observers": str(observers.size()),
-		# S1 — the quote board and Kenji's lines. Everything here came from the chain (V4Quoter, StateView) or is "—".
+		# S1 — the quote board and Johnny's lines. Everything here came from the chain (V4Quoter, StateView) or is "—".
 		"fx_usdc": fmt_amount(fx.get("usdc", "0")),
 		"fx_eur": fmt_amount(fx.get("eur", "0")),
 		"fx_ils": fmt_amount(fx.get("ils", "0")),
+		# The till's own currency — the practice dollar — whatever is on the board.
 		"fx_symbol_in": str(fx.get("symbolIn", "USD")),
-		# The bought currency belongs to the quote on the board (EUR | ILS); with no quote the board names both pairs.
+		# Bidirectional (2026-09-10): the quote's sold / bought currencies. A buy sells USD; a sell sells EUR | ILS.
+		"fx_quote_in": str(fx_quote.get("symbolIn", fx.get("symbolIn", "USD"))),
 		"fx_symbol_out": str(fx_quote.get("symbolOut", "EUR")),
+		"fx_side": str(fx_quote.get("side", "buy")),
+		"fx_side_word": ("selling" if str(fx_quote.get("side", "buy")) == "sell" else "buying"),
 		"fx_pair": str(fx_quote.get("pair", "")),
+		# The last fill, kept after the board clears so the receipt line does not read zeros.
+		"fx_filled_in": fmt_amount(fx_last.get("amountIn", "0")),
+		"fx_filled_in_symbol": str(fx_last.get("symbolIn", "USD")),
+		"fx_filled_out": fmt_amount(fx_last.get("amountOut", "0")),
+		"fx_filled_out_symbol": str(fx_last.get("symbolOut", "EUR")),
+		# Currencies Eve's counter may pay from this account (Live: USD + whatever Johnny's grant added; Dev: USD).
+		"fx_payable": " · ".join(fx.get("payable", [])) if fx.get("payable", []).size() > 0 else str(fx.get("symbolIn", "USD")),
 		"fx_rate_eur": str(fx_pair("EUR").get("midRate", "—")),
 		"fx_rate_ils": str(fx_pair("ILS").get("midRate", "—")),
 		"fx_pool_fee": str(fx_pair("EUR").get("pool", {}).get("fee", "0.30%")),
@@ -395,11 +407,13 @@ func refresh_session() -> void:
 			receipts = []
 			fx = {}
 			fx_quote = {}
+			fx_last = {}
 			_fx_at = 0.0
 		elif account() != prev_account or mode() != prev_mode:
 			# New till / Live↔Dev: drop the stale board so refresh_all forces fxStatus.
 			fx = {}
 			fx_quote = {}
+			fx_last = {}
 			_fx_at = 0.0
 	else:
 		session = {"loggedIn": false, "ready": false}
@@ -463,7 +477,7 @@ func fx_quoted() -> bool:
 	return not fx_quote.is_empty() and fx_quote_remaining() > 0
 
 
-## Kenji's till and his pools. Silent on failure: a Sepolia hiccup must never break Account Opening or the Main lanes.
+## Johnny's till and his pools. Silent on failure: a Sepolia hiccup must never break Account Opening or the Main lanes.
 ## Pass `force` when the player is at the FX desk — a Re-check / late login must not leave the board dark for 12 s.
 func refresh_fx(force: bool = false) -> void:
 	if not logged_in():
@@ -475,9 +489,9 @@ func refresh_fx(force: bool = false) -> void:
 		return
 	var r := await Chain.call_async("fxStatus", {}, 30.0)
 	if not r.get("ok", false):
-		# Keep a warm board on a transient RPC blip; clear only when we never had pairs (so Kenji stays honest).
+		# Keep a warm board on a transient RPC blip; clear only when we never had pairs (so Johnny stays honest).
 		if not fx.has("pairs"):
-			print("GameState: fxStatus failed — Kenji's board stays dark (%s)" % str(r.get("error", {}).get("code", "unknown")))
+			print("GameState: fxStatus failed — Johnny's board stays dark (%s)" % str(r.get("error", {}).get("code", "unknown")))
 		return
 	if r.get("result") is Dictionary:
 		fx = r["result"]
@@ -530,7 +544,7 @@ func refresh_all() -> void:
 	await refresh_treasury()
 	if logged_in():
 		await refresh_passbook()
-		# Provision / login / Re-check used to skip FX — Kenji then stayed on desk_closed with an empty `fx`.
+		# Provision / login / Re-check used to skip FX — Johnny then stayed on desk_closed with an empty `fx`.
 		# Force when the board has never loaded; otherwise reuse a warm status within FX_REFRESH_SEC.
 		await refresh_fx(not fx.has("pairs"))
 
@@ -619,12 +633,12 @@ func inpc_snapshot() -> Dictionary:
 		})
 	var help: Array = []
 	if not has_account():
-		help.append("Ines at Account Opening opens an account (or loads one you already hold).")
+		help.append("Iris at Account Opening opens an account (or loads one you already hold).")
 	else:
-		help.append("Dev or Ama at the counter take an over-the-counter payment up to the counter limit; larger amounts go to the vault as a scheduled wire.")
+		help.append("Eve at the counter takes an over-the-counter payment up to the counter limit; larger amounts go to the vault as a scheduled wire.")
 		if pending.size() > 0:
 			help.append("Bob at the vault window releases a wire once its clock shows READY — not before.")
-			help.append("Mr. Okafor in the manager's office can recall a pending wire" + (" or run Priority (a hand scan) before the clock." if priority_enabled() else "."))
+			help.append("Mr. Walker in the manager's office can recall a pending wire" + (" or run Priority (a hand scan) before the clock." if priority_enabled() else "."))
 		if not has_ens_name():
 			help.append("Petra at the Name Desk registers a bank name.")
 	var network := "MockChain (practice — nothing here is on a chain)" if Chain.use_mock else _session_str("chainName")
@@ -727,7 +741,7 @@ func open_branch_float(reason: String = "hud") -> Dictionary:
 
 ## Run one desk action through the bridge. Returns {"ok", "result", "error"}. Refreshes the mirror afterwards
 ## whatever the outcome (a refused approve still moved the clock; a provision changes the session).
-## Vault verbs (U4+): `approve` = Bob (owner, after the clock) · `priority` = Okafor (hand scan, before the clock) ·
+## Vault verbs (U4+): `approve` = Bob (owner, after the clock) · `priority` = Walker (hand scan, before the clock) ·
 ## `cancel` / `manager_cancel` = recall. There is no manager approve.
 func run_action(action: String, args: Dictionary = {}) -> Dictionary:
 	if _needs_treasury_gate(action) and treasury_short():
@@ -763,7 +777,7 @@ func run_action(action: String, args: Dictionary = {}) -> Dictionary:
 		"provision":
 			r = await Chain.call_async("provision", {}, 300.0)         # clone + config batches + funding
 		"load_account":
-			# Ines adopts an account the player already owns on this wing (docs/LOAD-ACCOUNT.md). The address
+			# Iris adopts an account the player already owns on this wing (docs/LOAD-ACCOUNT.md). The address
 			# comes from the load slip; the desk checks `owner()` on the chain and refuses anything else. No
 			# Privy surface — the policy re-pin happens behind the counter — so this waits like a Re-check, not
 			# like a sign-in. Godot never reads the chain itself: it only carries the string the player typed.
@@ -785,9 +799,10 @@ func run_action(action: String, args: Dictionary = {}) -> Dictionary:
 		"fx_status":
 			r = await Chain.call_async("fxStatus", {}, 30.0)
 		"fx_quote":
-			# A read: the V4Quoter prices it with an eth_call. Kenji shows the board before anyone signs anything.
+			# A read: the V4Quoter prices it with an eth_call. Johnny shows the board before anyone signs anything.
 			# `pair` is EUR | ILS (fiat pairs, 2026-09-09); the desk refuses anything else with FX_PAIR.
-			r = await Chain.call_async("fxQuote", {"amount": str(args.get("amount", "1")), "pair": str(args.get("pair", "EUR"))}, 30.0)
+			# `side` is buy (USD → fiat, amount in dollars) | sell (fiat → USD, amount in that fiat) — 2026-09-10.
+			r = await Chain.call_async("fxQuote", {"amount": str(args.get("amount", "1")), "pair": str(args.get("pair", "EUR")), "side": str(args.get("side", "buy"))}, 30.0)
 			if r.get("ok", false) and r.get("result") is Dictionary:
 				fx_quote = r["result"]
 				_sync_clock(fx_quote.get("serverNow"))
@@ -813,13 +828,17 @@ func run_action(action: String, args: Dictionary = {}) -> Dictionary:
 				if str(args.get("amount", "")) != "":
 					swap_args["amount"] = str(args["amount"])
 				elif not swap_args.has("quoteId"):
-					r = {"ok": false, "error": {"code": "FX_AMOUNT", "message": "ask Kenji for a price before taking one"}}
+					r = {"ok": false, "error": {"code": "FX_AMOUNT", "message": "ask Johnny for a price before taking one"}}
 				if str(args.get("pair", "")) != "":
 					swap_args["pair"] = str(args["pair"])   # a bare amount needs its currency; a quote already carries it
+				if str(args.get("side", "")) != "":
+					swap_args["side"] = str(args["side"])   # ... and its direction (buy | sell); the desk refuses a mismatch with FX_SIDE
 				if not r.has("error"):
 					r = await Chain.call_async("fxSwap", swap_args, 300.0)
 					if r.get("ok", false):
 						fx_quote = {}
+						if r.get("result") is Dictionary:
+							fx_last = r["result"]
 		"pay":
 			r = await _run_payment_lane("pay", args)
 		"wire":
@@ -828,11 +847,11 @@ func run_action(action: String, args: Dictionary = {}) -> Dictionary:
 			# Bob's wait path — the owner's timed release after the clock, silent. Never the manager (U4+).
 			r = await Chain.call_async("approve", {"txId": str(args.get("txId", "")), "as": "owner"}, 120.0)
 		"manager_approve":
-			# Okafor's post-clock stamp was removed in U4+ (ROLE_SET 3). Kept as a refusal so a stale dialogue line
+			# Walker's post-clock stamp was removed in U4+ (ROLE_SET 3). Kept as a refusal so a stale dialogue line
 			# gets his bank line instead of a chain revert.
 			r = {"ok": false, "error": {"code": "MANAGER_NO_STAMP", "message": "the manager does not stamp vault releases (U4+); use priority before the clock or Bob after it"}}
 		"priority":
-			# Okafor's Priority release: the one call that may open a second Privy surface (Passkey + sign sheet).
+			# Walker's Priority release: the one call that may open a second Privy surface (Passkey + sign sheet).
 			# A human scans a hand, so the timeout is generous, like login.
 			r = await Chain.call_async("priority", {"txId": str(args.get("txId", ""))}, 300.0)
 		"cancel", "manager_cancel":
@@ -882,14 +901,16 @@ func run_action(action: String, args: Dictionary = {}) -> Dictionary:
 		await refresh_names()
 	if action.begins_with("observer"):
 		await refresh_observers()
-	if action.begins_with("fx") and action != "fx_quote":
-		await refresh_fx()
+	# An enable or a fill *changed* the till (door rows, balances) — force the re-read; the FX_REFRESH_SEC throttle is
+	# for idle polling, not for a board that has just been told "Filled." A fiat counter pay moves the same balances.
+	if (action.begins_with("fx") and action != "fx_quote") or (action == "pay" and str(args.get("token", "")) != ""):
+		await refresh_fx(true)
 	# A load changes *which* account this desk works from, so two mirrors that are keyed to the account and not
-	# to the owner go stale: the viewing list (OBSERVER lives on the account) and, on Live, Kenji's till — where
-	# `fxTillIsMain` makes the till the very account Ines just swapped (docs/SEPOLIA-LIVE.md §1).
+	# to the owner go stale: the viewing list (OBSERVER lives on the account) and, on Live, Johnny's till — where
+	# `fxTillIsMain` makes the till the very account Iris just swapped (docs/SEPOLIA-LIVE.md §1).
 	if action == "load_account":
 		await refresh_observers()
-		await refresh_fx()
+		await refresh_fx(true)
 	busy = false
 	changed.emit()
 	return r
@@ -907,6 +928,10 @@ func _run_payment_lane(lane: String, args: Dictionary) -> Dictionary:
 		var target: Dictionary = resolved.get("result", {})
 		to = str(target.get("address", ""))
 	var method_args := {"to": to, "amount": str(args.get("amount", "")), "memo": args.get("memo", "")}
+	# Multi-token Lane A (2026-09-10): `token` = USD (default) | EUR | ILS. Only the counter (`pay`) takes it; the
+	# vault is practice dollars only, and the desk refuses a fiat wire in words rather than here.
+	if lane == "pay" and str(args.get("token", "")) != "":
+		method_args["token"] = str(args["token"]).to_upper()
 	return await Chain.call_async(lane, method_args, 120.0)
 
 

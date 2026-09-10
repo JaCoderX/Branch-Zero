@@ -18,7 +18,7 @@ import type { StageEvent } from '@branch-zero/shared';
 import { broadcasterAddress, chain, deployerAddress, managerAddress, publicClient } from './chain.ts';
 import { config, deployments, explorerTx, redact } from './config.ts';
 import { createPlayerPolicy, ensureTypedDataRule, identify, recoverPolicy } from './privy.ts';
-import { pay, passbook } from './lanes/laneA.ts';
+import { pay, passbook, payTokenOf } from './lanes/laneA.ts';
 import { approve, cancel, listPending, resumeWatchers, wire, type Actor } from './lanes/laneB.ts';
 import { preparePriority, submitPriority } from './lanes/priority.ts';
 import { ROLE_SET_VERSION, ensureTxPolicy, ensureTypedDataPolicy, faucetAccount, provision, recoverAccount } from './lanes/provision.ts';
@@ -284,7 +284,7 @@ app.post('/provision', async (req, reply) => {
 });
 
 /**
- * Load Account (Ines) — adopt a specific AccountBlox the player owns on this wing (docs/LOAD-ACCOUNT.md).
+ * Load Account (Iris) — adopt a specific AccountBlox the player owns on this wing (docs/LOAD-ACCOUNT.md).
  *
  * The escape hatch from `recoverAccount`, which can only ever return the **last** `BloxCloned` for an owner
  * (CopyBlox has no owner→clones map). "Open my account" keeps that last-clone default; this route is how a
@@ -329,7 +329,7 @@ app.post('/faucet', async (req, reply) => {
  * U4: a player whose account is on file but whose provisioning never recorded its end (`configured` /
  * `roleSet`) has no guarantee the counter and vault role grants landed — the 2026-09-07 playtest hit
  * `NoPermission` on `executeWithTimeLock` in exactly that state. Refuse with a code the clerk has a line for
- * ("ask Ines to re-check") instead of letting the chain refuse with a less helpful one. `/provision` is the
+ * ("ask Iris to re-check") instead of letting the chain refuse with a less helpful one. `/provision` is the
  * re-check: it reads the chain first and sends only what is missing.
  */
 function requireConfigured(player: Player): void {
@@ -347,18 +347,25 @@ function parseTransfer(body: { to?: string; amount?: string }) {
   return { to: getAddress(body.to) as Address, amount: body.amount };
 }
 
+/**
+ * Lane A. `token` (alias `symbol`) picks the currency — `USD` (default) or, on Live once Johnny has opened the till,
+ * `EUR` | `ILS` (HANDOFF-fx-bidirectional §C). The instant limit is read as a plain number in whichever currency is
+ * moving; a fiat amount above it is refused `POLICY` like a dollar one, and there is **no** fiat vault to send it to.
+ */
 app.post('/pay', async (req, reply) => {
   try {
     const player = await requirePlayer(req as never);
-    const { to, amount } = parseTransfer((req.body ?? {}) as { to?: string; amount?: string });
+    const body = (req.body ?? {}) as { to?: string; amount?: string; token?: string; symbol?: string };
+    const { to, amount } = parseTransfer(body);
+    const token = payTokenOf(body.token ?? body.symbol);
     if (Number(amount) > Number(config.instantLimit)) {
       // Off-chain routing only — docs/REFLECTION.md §2.2 records this as a partial invariant.
-      throw Object.assign(new Error(`over the ${config.instantLimit} instant limit — that is a wire: use /wire`), { statusCode: 400, code: 'POLICY' });
+      throw Object.assign(new Error(`over the ${config.instantLimit} instant limit — that is a wire: use /wire${token.symbol === deployments().token.symbol ? '' : ` (and the vault takes practice dollars only — ${token.symbol} stays Lane A)`}`), { statusCode: 400, code: 'POLICY' });
     }
     const jobId = newJobId();
     const current = getPlayer(player.privyUserId)!;
     requireConfigured(current);
-    const result = await serialize(player.privyUserId, () => pay(current, to, amount, jobId, auditFor(player)));
+    const result = await serialize(player.privyUserId, () => pay(current, to, amount, jobId, auditFor(player), token));
     return { jobId, ...result };
   } catch (e) {
     return fail(reply, e);
@@ -389,8 +396,8 @@ function parseDecision(body: { txId?: string | number; as?: string }): { txId: b
 }
 
 /**
- * Open the vault after `releaseTime` — the **wait** path, Ruth's window, always the owner (silent session signer).
- * U4+: `as: 'manager'` is refused. Mr. Okafor no longer holds the timed stamp (ROLE_SET 3 removed it); his desk is
+ * Open the vault after `releaseTime` — the **wait** path, Bob's window, always the owner (silent session signer).
+ * U4+: `as: 'manager'` is refused. Mr. Walker no longer holds the timed stamp (ROLE_SET 3 removed it); his desk is
  * `/priority/*`, which needs the player's Passkey, and `/cancel` (recall).
  */
 app.post('/approve', async (req, reply) => {
@@ -398,7 +405,7 @@ app.post('/approve', async (req, reply) => {
     const player = await requirePlayer(req as never);
     const { txId, actor } = parseDecision((req.body ?? {}) as never);
     if (actor === 'manager') {
-      throw Object.assign(new Error('the Branch Manager does not stamp vault releases (U4+): Ruth releases after the clock, Okafor bypasses it with /priority'), { statusCode: 400, code: 'MANAGER_NO_STAMP' });
+      throw Object.assign(new Error('the Branch Manager does not stamp vault releases (U4+): Bob releases after the clock, Walker bypasses it with /priority'), { statusCode: 400, code: 'MANAGER_NO_STAMP' });
     }
     const jobId = newJobId();
     const current = getPlayer(player.privyUserId)!;
@@ -410,12 +417,12 @@ app.post('/approve', async (req, reply) => {
   }
 });
 
-// ============ U4+ — Priority release (Okafor's desk) ============
+// ============ U4+ — Priority release (Walker's desk) ============
 
 /**
  * Step 1: build the owner's `SIGN_META_APPROVE` payload for a wire that is still cooling. Returns EIP-712 typed data
  * for the player's own signer (Passkey in the browser) and a `priorityId` to hand back with the signature. Refuses a
- * released wire (`NOT_COOLING` — that is Ruth's), a settled one (`NOT_PENDING`), a vault-only branch (`PRIORITY_OFF`).
+ * released wire (`NOT_COOLING` — that is Bob's), a settled one (`NOT_PENDING`), a vault-only branch (`PRIORITY_OFF`).
  */
 app.post('/priority/prepare', async (req, reply) => {
   try {
@@ -473,7 +480,7 @@ app.post('/cancel', async (req, reply) => {
  * opens a second Privy surface.
  *
  * `requireConfigured` applies for the same reason the payment lanes use it: a half-provisioned account has no
- * guarantee its role machinery landed, and "ask Ines to re-check" is a better answer than a chain revert.
+ * guarantee its role machinery landed, and "ask Iris to re-check" is a better answer than a chain revert.
  */
 app.post('/observer/grant', async (req, reply) => {
   try {
@@ -627,26 +634,28 @@ app.get('/events', async (req, reply) => {
   return reply;
 });
 
-// ============ S1 — Kenji's FX desk (Uniswap v4 on Sepolia; fiat pairs USD → EUR | ILS since 2026-09-09) ============
+// ============ S1 — Johnny's FX desk (Uniswap v4 on Sepolia; fiat pairs USD ↔ EUR | ILS, both ways since 2026-09-10) ============
 
 /**
  * The quote board. A read: `V4Quoter.quoteExactInputSingle` by `eth_call`, minus 1 % slippage, good for five
  * minutes. Public like `/ens/available` — a player standing at the desk sees the rate before signing in — but a
  * signed-in caller's quote is remembered against their id so `/fx/swap` can honour the exact price they accepted.
+ * `side` is `buy` (USD → fiat, amount in USD; the default and the historical one-way direction) or `sell`
+ * (fiat → USD, amount in that fiat). The amount is always the currency being sold.
  */
 app.get('/fx/quote', async (req, reply) => {
   try {
-    const { amount, pair } = (req.query ?? {}) as { amount?: string; pair?: string };
+    const { amount, pair, side } = (req.query ?? {}) as { amount?: string; pair?: string; side?: string };
     if (!amount) throw Object.assign(new Error('`amount` is required'), { statusCode: 400, code: 'BAD_ARGS' });
     const player = await requirePlayer(req as never).catch(() => undefined);
     // `pair` is EUR | ILS (fiat pairs, 2026-09-09); anything else is `FX_PAIR`. Default EUR keeps an old caller quoting.
-    return await fxQuote(player ? getPlayer(player.privyUserId) : undefined, amount, pair ?? 'EUR');
+    return await fxQuote(player ? getPlayer(player.privyUserId) : undefined, amount, pair ?? 'EUR', side ?? 'buy');
   } catch (e) {
     return fail(reply, e);
   }
 });
 
-/** The till: balances, whether the exchange door is registered, the pool, and the three whitelisted calls. */
+/** The till: balances, whether the exchange door is fully registered (incl. fiat approve + transfer targets), the pools, the whitelist rows and any still missing. */
 app.get('/fx/status', async (req, reply) => {
   try {
     const player = await requirePlayer(req as never);
@@ -657,9 +666,11 @@ app.get('/fx/status', async (req, reply) => {
 });
 
 /**
- * Open the till: register the three function schemas, whitelist their three targets, and grant OWNER `SIGN_` /
- * BROADCASTER `EXECUTE_META_REQUEST_AND_APPROVE` on each. `requireConfigured` applies for the Main-wing reason —
- * a half-provisioned player has no policy to sign with, and "ask Ines to re-check" beats a chain revert.
+ * Open the till: register the three function schemas, whitelist their targets (USD + EUR + ILS on `approve`, Permit2,
+ * the router), add EUR + ILS as `transfer` targets for Lane A, and grant OWNER `SIGN_` / BROADCASTER
+ * `EXECUTE_META_REQUEST_AND_APPROVE` on each FX selector. Idempotent: a till opened one-way (2026-09-09) heals here.
+ * `requireConfigured` applies for the Main-wing reason — a half-provisioned player has no policy to sign with, and
+ * "ask Iris to re-check" beats a chain revert.
  */
 app.post('/fx/enable', async (req, reply) => {
   try {
@@ -675,18 +686,18 @@ app.post('/fx/enable', async (req, reply) => {
   }
 });
 
-/** The swap itself: up to three guarded Lane A meta-transactions on Sepolia (approve → Permit2 → V4_SWAP). */
+/** The swap itself: up to three guarded Lane A meta-transactions on Sepolia (approve → Permit2 → V4_SWAP), either direction. */
 app.post('/fx/swap', async (req, reply) => {
   try {
     const player = await requirePlayer(req as never);
-    const body = (req.body ?? {}) as { quoteId?: string; amount?: string; pair?: string };
+    const body = (req.body ?? {}) as { quoteId?: string; amount?: string; pair?: string; side?: string };
     if (body.amount !== undefined && !/^\d+(\.\d+)?$/.test(String(body.amount))) throw Object.assign(new Error('`amount` must be a decimal string'), { statusCode: 400, code: 'BAD_ARGS' });
     const jobId = newJobId();
     const current = getPlayer(player.privyUserId)!;
     requireConfigured(current);
-    // The pair rides on the quote when there is one; a bare amount needs `pair` (EUR | ILS) beside it.
-    const result = await serialize(player.privyUserId, () => fxSwap(current, body.quoteId, body.amount, jobId, auditFor(player), body.pair));
-    app.log.info({ owner: current.ownerAddress, till: result.account, pair: result.pair, amountIn: result.amountIn, amountOut: result.amountOut, hash: result.hash, steps: result.steps.length }, 'FX desk: guarded Uniswap v4 swap completed on Sepolia');
+    // Pair and side ride on the quote when there is one; a bare amount needs `pair` (EUR | ILS) and, for a sell, `side`.
+    const result = await serialize(player.privyUserId, () => fxSwap(current, body.quoteId, body.amount, jobId, auditFor(player), body.pair, body.side));
+    app.log.info({ owner: current.ownerAddress, till: result.account, pair: result.pair, side: result.side, amountIn: `${result.amountIn} ${result.symbolIn}`, amountOut: `${result.amountOut} ${result.symbolOut}`, hash: result.hash, steps: result.steps.length }, 'FX desk: guarded Uniswap v4 swap completed on Sepolia');
     return { jobId, ...result };
   } catch (e) {
     return fail(reply, e);

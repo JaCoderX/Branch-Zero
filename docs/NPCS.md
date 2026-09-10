@@ -10,13 +10,13 @@ Related: [GAME-DESIGN.md](./GAME-DESIGN.md) § 4 mapping · [BLOXCHAIN-INTEGRATI
 
 | NPC | Zone | On-chain identity | Reads | Writes | Ships in |
 |-----|------|-------------------|-------|--------|----------|
-| **Greeter** (Mo) | Lobby | none | account existence, pending count, achievements | — | MVP |
-| **Account Clerk** (Ines) | Account Opening | deployer wallet (bank) | Privy user, `owner()`, `initialized()` | deploy `AccountBlox`, guard config batch, faucet top-up | MVP |
-| **Teller A** (Dev) / **Teller B** (Ama) | Counters | `BROADCASTER_ROLE` (Teller Desk hot wallet) | balance, whitelist, `getFunctionSchema`, ENS resolve | Lane A `requestAndApproveExecution`; Lane B `executeWithTimeLock` request | MVP |
-| **Vault Keeper** (Bob — was Ruth until U7 polish) | Vault antechamber | none (owner acts) | `getPendingTransactions`, `getTransaction` | **Wait path:** owner timed `approveTimeLockExecution` **after** `releaseTime`, silent session signer | MVP; U4+ wait-only |
-| **Branch Manager** (Mr. Okafor) | Manager's office | runtime role `BRANCH_MANAGER` | pending list (cooling vs ready), role membership | **Priority:** submits the owner's Passkey-signed `SIGN_META_APPROVE` via `approveTimeLockExecutionWithMetaTx` **before** the clock (`EXECUTE_META_APPROVE`); **recall** `cancelTimeLockExecution`. **No** post-clock timed stamp (removed in ROLE_SET 3) | U4+ **built 2026-09-07** |
+| **Greeter** (Ash) | Lobby | none | account existence, pending count, achievements | — | MVP |
+| **Account Clerk** (Iris) | Account Opening | deployer wallet (bank) | Privy user, `owner()`, `initialized()` | deploy `AccountBlox`, guard config batch, faucet top-up | MVP |
+| **Teller** (Eve) | Counters | `BROADCASTER_ROLE` (Teller Desk hot wallet) | balance, whitelist, `getFunctionSchema`, ENS resolve | Lane A `requestAndApproveExecution`; Lane B `executeWithTimeLock` request | MVP |
+| **Vault Keeper** (Bob) | Vault antechamber | none (owner acts) | `getPendingTransactions`, `getTransaction` | **Wait path:** owner timed `approveTimeLockExecution` **after** `releaseTime`, silent session signer | MVP; U4+ wait-only |
+| **Branch Manager** (Mr. Walker) | Manager's office | runtime role `BRANCH_MANAGER` | pending list (cooling vs ready), role membership | **Priority:** submits the owner's Passkey-signed `SIGN_META_APPROVE` via `approveTimeLockExecutionWithMetaTx` **before** the clock (`EXECUTE_META_APPROVE`); **recall** `cancelTimeLockExecution`. **No** post-clock timed stamp (removed in ROLE_SET 3) | U4+ **built 2026-09-07** |
 | **Registrar** (Petra) | Name Desk — serves from the south teller bay; names board on the west wall | bank's ENSv2 registrar key | availability, records | mint subname, `setText`, EAC delegation | T1 |
-| **Dealer** (Kenji) | FX Desk | none | Uniswap quote (USD → EUR \| ILS) | guarded swap | S1 · fiat pairs 2026-09-09 |
+| **Dealer** (Johnny) | FX Desk | none | Uniswap quote (USD ↔ EUR \| ILS, buy or sell) | guarded swap either way; first visit grants EUR/ILS `approve` + `transfer` targets | S1 · fiat pairs 2026-09-09 · bidirectional 2026-09-10 |
 | **Security Officer** (Sgt. Bale) | Side door | `RECOVERY_ROLE` | `getRecovery()` | `transferOwnershipRequest` | S2 (MVP: lore) |
 | **Elevator voice** | Elevator | none | chain id | — | T2 |
 | Ambient customers ×4 | Lobby | none | — | — | Day 8 |
@@ -73,191 +73,191 @@ Style guide: max 2 sentences per line; no jargon on the main path; humour dry, n
 
 ## 4. Per-NPC scripts
 
-### 4.1 Greeter — Mo (Lobby)
+### 4.1 Greeter — Ash (Lobby)
 
-Purpose: read-only orientation and a curated lobby knowledge hub. Mo explains one beat in bank words, then points to the desk that owns the work; he never opens an account, moves money, releases a wire, claims a name, or swaps currency.
+Purpose: read-only orientation and a curated lobby knowledge hub. Ash explains one beat in bank words, then points to the desk that owns the work; he never opens an account, moves money, releases a wire, claims a name, or swaps currency.
 
 ```text
 [enter, !booted]
-Mo: Morning! Give the desk a second to open up.
+Ash: Morning! Give the desk a second to open up.
   > Sure.                  → end
 
 [enter, !has_account]
-Mo: Welcome to Branch Zero. First time? Account Opening is the desk with the plant — Ines will sort you out.
+Ash: Welcome to Branch Zero. First time? Account Opening is the desk with the plant — Iris will sort you out.
   > Show me around.        → hub
   > Where am I?            → lore_bank
-  > Point me to Ines.      → desk_ines
+  > Point me to Iris.      → desk_iris
   > Thanks.                → end
 
 [enter, has_account, pending == 0]
-Mo: Morning, {name}. Counter is open and the vault's quiet; Dev can help with a small payment.
-    (if has_ens_name) Your bank name {bank_name} is on file — Petra keeps the name desk, and Dev can take it on a payment slip.
+Ash: Morning, {name}. Counter is open and the vault's quiet; Eve can help with a small payment.
+    (if has_ens_name) Your bank name {bank_name} is on file — Petra keeps the name desk, and Eve can take it on a payment slip.
   > Show me around.        → hub
   > What's the vault for?  → why_vault
   > Claim a bank name?     → desk_petra          (if !has_ens_name)
   > Thanks.                → end
 
 [enter, pending > 0]
-Mo: You've got {pending} wire(s) cooling in the vault. Bob releases them when the clock runs down; Mr. Okafor handles a recall or the early hand-scan route.
+Ash: You've got {pending} wire(s) cooling in the vault. Bob releases them when the clock runs down; Mr. Walker handles a recall or the early hand-scan route.
   > Show me around.        → hub
   > Go to the vault.       → desk_vault
   > What's the vault for?  → why_vault
   > Thanks.                → end
 
 [hub]
-Mo: This is the lobby. Pick an errand and I'll point; the desks do the actual work.
+Ash: This is the lobby. Pick an errand and I'll point; the desks do the actual work.
   > How does this bank work?  → lore_bank
   > What desks are open?      → directory
-  > Open an account           → desk_ines          (if !has_account)
+  > Open an account           → desk_iris          (if !has_account)
   > Payments & the vault     → payments_vault      (if has_account)
   > Who powers the desks?    → partners_strip
   > Thanks.                  → end
 
 [lore_bank]
-Mo: Branch Zero keeps its records in the open. Every desk handles a real errand on your account; we just do the paperwork out loud.
+Ash: Branch Zero keeps its records in the open. Every desk handles a real errand on your account; we just do the paperwork out loud.
   > Ask why                  → lore_bank_tech
   > Back to the lobby        → hub
 [lore_bank_tech]
-Mo: Your account is a Bloxchain smart account on {chain}. The tellers hold the broadcaster role, the vault is its timelock, and the boards read back from the chain — this branch keeps no clock of its own.
+Ash: Your account is a Bloxchain smart account on {chain}. The tellers hold the broadcaster role, the vault is its timelock, and the boards read back from the chain — this branch keeps no clock of its own.
   > Back to the bank tour   → lore_bank
   > Back to the lobby       → hub
 
 [directory]
-Mo: The desk map is simple: accounts, payments, and the vault are straight ahead. The other desks are through the side hall.
-  > Account Opening · Ines  → desk_ines
-  > Counter · Dev            → desk_counter
+Ash: The desk map is simple: accounts, payments, and the vault are straight ahead. The other desks are through the side hall.
+  > Account Opening · Iris  → desk_iris
+  > Counter · Eve            → desk_counter
   > Vault · Bob              → desk_vault
   > More desks               → directory_more
   > Back to the lobby        → hub
 [directory_more]
-Mo: These desks keep names, exchange, and the unusual vault work in their own rooms. The small service kiosk can explain the branch too.
-  > Manager · Mr. Okafor    → desk_manager
+Ash: These desks keep names, exchange, and the unusual vault work in their own rooms. The small service kiosk can explain the branch too.
+  > Manager · Mr. Walker    → desk_manager
   > Name Desk · Petra        → desk_petra
-  > FX Desk · Kenji          → desk_fx
+  > FX Desk · Johnny          → desk_fx
   > Service assistant kiosk  → service_assistant
   > Back to the desk map     → directory
 
 [payments_vault]
-Mo: Small payments go across Dev's counter. Larger wires cool at Bob's vault, while Mr. Okafor handles a recall or the early hand-scan route.
-  > Counter · Dev            → desk_counter
+Ash: Small payments go across Eve's counter. Larger wires cool at Bob's vault, while Mr. Walker handles a recall or the early hand-scan route.
+  > Counter · Eve            → desk_counter
   > Vault · Bob              → desk_vault
-  > Manager · Mr. Okafor    → desk_manager
+  > Manager · Mr. Walker    → desk_manager
   > Back to the lobby        → hub
 
-[desk_ines]
-Mo: Account Opening is the desk with the plant. Ines handles sign-in and the account paperwork; she owns the opening, I only point.
+[desk_iris]
+Ash: Account Opening is the desk with the plant. Iris handles sign-in and the account paperwork; she owns the opening, I only point.
   > Ask why                  → why_privy
   > Back to the desk map     → directory
   > Back to the lobby        → hub
 [why_privy]
-Mo: Ines uses Privy for an embedded wallet you control. With your consent, a scoped session signer is limited to this account's bank slips; she owns the opening, I only point.
-  > Back to Account Opening  → desk_ines
+Ash: Iris uses Privy for an embedded wallet you control. With your consent, a scoped session signer is limited to this account's bank slips; she owns the opening, I only point.
+  > Back to Account Opening  → desk_iris
   > Back to the lobby        → hub
 
 [desk_counter]
-Mo: Dev's Counter handles small payments to approved payees. For anything larger, the slip goes to Bob's vault.
+Ash: Eve's Counter handles small payments to approved payees. For anything larger, the slip goes to Bob's vault.
   > Ask why                  → why_counter
   > Back to the desk map     → directory
   > Back to the lobby        → hub
 [why_counter]
-Mo: Under the hood, the slip is a meta-transaction: you sign the instruction, the teller's broadcaster desk submits it and pays gas. Dev's desk owns the payment; I only point.
+Ash: Under the hood, the slip is a meta-transaction: you sign the instruction, the teller's broadcaster desk submits it and pays gas. Eve's desk owns the payment; I only point.
   > Back to the counter      → desk_counter
   > Back to the lobby        → hub
 
 [desk_vault]
-Mo: Bob keeps larger wires in the vault for a cooling period. When the clock runs down he releases them; Mr. Okafor handles a recall or an early hand-scan route.
+Ash: Bob keeps larger wires in the vault for a cooling period. When the clock runs down he releases them; Mr. Walker handles a recall or an early hand-scan route.
   > Ask why                  → why_vault
   > Back to the desk map     → directory
   > Back to the lobby        → hub
 [why_vault]
-Mo: Big money doesn't move instantly here. It sits in the vault for {timelock}, then Bob releases it; if you change your mind, Mr. Okafor can recall it while it cools.
+Ash: Big money doesn't move instantly here. It sits in the vault for {timelock}, then Bob releases it; if you change your mind, Mr. Walker can recall it while it cools.
   > Ask why                  → why_vault_tech
   > Back to the vault        → desk_vault
   > Back to the lobby        → hub
 [why_vault_tech]
-Mo: Technically, the wire is a Bloxchain time-locked transaction: requested now, executable only after releaseTime, and cancellable until then. The wall clock reads that record; it is not my timer.
+Ash: Technically, the wire is a Bloxchain time-locked transaction: requested now, executable only after releaseTime, and cancellable until then. The wall clock reads that record; it is not my timer.
   > Back to the vault        → desk_vault
   > Back to the lobby        → hub
 
 [desk_manager]
-Mo: Mr. Okafor's office handles the unusual vault choices. He can recall a cooling wire or take the hand-scan Priority route; Bob remains the release desk after the clock.
+Ash: Mr. Walker's office handles the unusual vault choices. He can recall a cooling wire or take the hand-scan Priority route; Bob remains the release desk after the clock.
   > Ask why                  → why_manager
   > Back to the desk map     → directory
   > Back to the lobby        → hub
 [why_manager]
-Mo: Priority needs your own hand-scan signature; Okafor only submits it. That skips the cooling clock — it does not replace Bob's timed release, and the silent teller stamp stays out of that path.
+Ash: Priority needs your own hand-scan signature; Walker only submits it. That skips the cooling clock — it does not replace Bob's timed release, and the silent teller stamp stays out of that path.
   > Back to the manager     → desk_manager
   > Back to the lobby        → hub
 
 [desk_petra]
-Mo: Petra's Name Desk puts a chosen customer name on your account so people can pay you by it.
+Ash: Petra's Name Desk puts a chosen customer name on your account so people can pay you by it.
     (if has_ens_name) Your bank name {bank_name} is on file; Petra can help with the name desk.
   > Ask why                  → why_ens
   > Back to the desk map     → directory_more
   > Back to the lobby        → hub
 [why_ens]
-Mo: Technically, Petra registers an ENSv2 subname under branchzero.eth that points at your AccountBlox; the passbook can carry text records too. She owns the name work; I only point.
+Ash: Technically, Petra registers an ENSv2 subname under branchzero.eth that points at your AccountBlox; the passbook can carry text records too. She owns the name work; I only point.
   > Back to the Name Desk   → desk_petra
   > Back to the lobby        → hub
 
 [desk_fx]
-Mo: Kenji's FX Desk shows practice-dollar prices for euros and shekels. The exchange lives on the Sepolia wing, and Kenji handles the quote and swap.
+Ash: Johnny's FX Desk shows practice-dollar prices for euros and shekels. The exchange lives on the Sepolia wing, and Johnny handles the quote and swap.
   > Ask why                  → why_fx
   > Back to the desk map     → directory_more
   > Back to the lobby        → hub
 [why_fx]
-Mo: Technically, the board uses guarded Uniswap v4 calls on Sepolia only, with three whitelisted services for the till. Kenji owns the quote and swap; I only point.
+Ash: Technically, the board uses guarded Uniswap v4 calls on Sepolia only, with three whitelisted services for the till. Johnny owns the quote and swap; I only point.
   > Back to the FX Desk      → desk_fx
   > Back to the lobby        → hub
 
 [service_assistant]
-Mo: Blox-47 stands right here beside me. It can explain the branch from a read-only passbook snapshot. It cannot pay, wire, release, recall, open accounts, or change anything.
+Ash: Blox-47 stands right here beside me. It can explain the branch from a read-only passbook snapshot. It cannot pay, wire, release, recall, open accounts, or change anything.
   > Back to the desk map     → directory_more
   > Back to the lobby        → hub
 
 [partners_strip]
-Mo: The lobby board carries a partner notice. It is a credit line for the branch, not another desk; ask why if you want the names.
+Ash: The lobby board carries a partner notice. It is a credit line for the branch, not another desk; ask why if you want the names.
   > Ask why                  → why_partners
   > Back to the lobby        → hub
 [why_partners]
-Mo: The ETHOnline pitch partners are Privy, ENS, and Uniswap; Arc is listed as coming soon. That is an event-board credit, not a claim that Branch Zero is an official product of any of them.
+Ash: The ETHOnline pitch partners are Privy, ENS, and Uniswap; Arc is listed as coming soon. That is an event-board credit, not a claim that Branch Zero is an official product of any of them.
   > Back to the partner notice → partners_strip
   > Back to the lobby          → hub
 ```
 
-### 4.2 Account Clerk — Ines (Account Opening)
+### 4.2 Account Clerk — Iris (Account Opening)
 
 Purpose: Privy login, delegation, account deployment / **load by address**, revoke, faucet, and the desk terminal.
 
 ```text
 [no login]
-Ines: Let's open your account. Sign in with email, a passkey, or whatever suits you; it's the one pop-up you'll see in this building.
+Iris: Let's open your account. Sign in with email, a passkey, or whatever suits you; it's the one pop-up you'll see in this building.
   > Sign in                → action: privy_login
   > Ask why                → why_login
 
 [why_login]
-Ines: Signing in creates a wallet for you that you control. We never see the key; it lives in a secure enclave.
+Iris: Signing in creates a wallet for you that you control. We never see the key; it lives in a secure enclave.
 
 [logged in, no account]
-Ines: One more thing. Would you like our tellers to stamp slips on your instructions, so you don't sign each one? You can revoke that here any time.
+Iris: One more thing. Would you like our tellers to stamp slips on your instructions, so you don't sign each one? You can revoke that here any time.
   > Yes, let tellers act for me   → action: privy_add_session_signer  (policy: bz-typed-data)
   > No, I'll sign each slip       → set signing_mode = client
   > Ask why                       → why_delegate
 
 [why_delegate]
-Ines: You'd be adding our branch as a signer on your wallet, limited by a policy to signing bank slips for your own account. Nothing else. Technically: a scoped session signer for eth_signTypedData_v4 on the Bloxchain EIP-712 domain.
+Iris: You'd be adding our branch as a signer on your wallet, limited by a policy to signing bank slips for your own account. Nothing else. Technically: a scoped session signer for eth_signTypedData_v4 on the Bloxchain EIP-712 domain.
 
 [open / no account on file]
-Ines: Ready to open your account? I'll put the desks and approved payees in order, then give you a practice balance.
+Iris: Ready to open your account? I'll put the desks and approved payees in order, then give you a practice balance.
   > Open my account        → action: provision (recover last clone or cloneBlox)
   > Load an existing account → form: load_account { account } → node `loading` → action: load_account
   > Ask why
 
 [deploying]  (WORKING; progress lines are real stages)
-Ines: Opening your account…
+Iris: Opening your account…
 
 [done]
-Ines: Done. Here's your passbook. Your account lives at {short_address} on the {wing} wing, with {balance} practice dollars in it.
+Iris: Done. Here's your passbook. Your account lives at {short_address} on the {wing} wing, with {balance} practice dollars in it.
       (named customers only) Your bank name is {bank_name}.
   > Re-check my account
   > Load an existing account → form: load_account { account }   (non-latest clone / multi-account)
@@ -266,51 +266,51 @@ Ines: Done. Here's your passbook. Your account lives at {short_address} on the {
   > Use the desk terminal  → action: open_console
 
 [console_open]
-Ines: Console is on the desk screen. Close the panel when you're done.
+Iris: Console is on the desk screen. Close the panel when you're done.
   > Done.                  → end
 ```
 
 Bridge actions: `privy_login`, `privy_add_session_signer`, `provision_account` (deploy + init + guard batch), `load_account` (adopt an owned AccountBlox after the `owner()` check — bridge `loadAccount` → `POST /account/load`), `faucet`, `privy_remove_session_signer`, `open_console` (terminal only; viewing-wallet verbs remain at the terminal).
 
-The desk terminal helps **discover** addresses; Ines **loads** them into the session. Auto-recovery still keeps the latest `BloxCloned` when the player chooses Open my account.
+The desk terminal helps **discover** addresses; Iris **loads** them into the session. Auto-recovery still keeps the latest `BloxCloned` when the player chooses Open my account.
 
 **As built (2026-09-08).** The load slip is `scripts/load_account_form.gd` (one LineEdit, 0x + 40 hex checked
 locally and nothing else — whether an address is an account is the chain's answer, not the form's). It routes to
-the `loading` node, whose `enter_action` runs `load_account`; on success Ines reads the `loaded` line, on refusal
+the `loading` node, whose `enter_action` runs `load_account`; on success Iris reads the `loaded` line, on refusal
 the ordinary `refused` / Ask-why pair. Three refusals have their own bank lines: `ACCOUNT_NOT_OWNED` (the ledger
 names someone else), `ACCOUNT_NOT_A_VAULT` (nothing of ours at that number on this wing — which is also what a
 pasted address from the other wing looks like) and `LOAD_POLICY` (the signing rules could not be moved, so the
 file was left alone). Evidence: [`progress/2026-09-08-load-account.md`](./progress/2026-09-08-load-account.md).
 
-### 4.3 Tellers — Dev (Counter), Ama (second teller)
+### 4.3 Teller — Eve (Counter)
 
 Purpose: payment intake, lane routing, execution (Lane A), request (Lane B), refusal with reasons.
 
 ```text
 [idle]
-Dev: Counter. Paying someone? The slip takes an address or a registered customer name.
+Eve: Counter. Paying someone? The slip takes an address or a registered customer name.
   > Make a payment         → form: payment_slip {recipient, amount, memo}
   > Who can I pay?         → the florist, landlord, demo merchant or a registered customer name
   > What services here?    → list: service menu (from function schemas)
 
 [slip submitted, amount <= limit]
-Dev: Over the counter — one moment.   (WORKING: type → stamp → print)
+Eve: Over the counter — one moment.   (WORKING: type → stamp → print)
   stage signing:      "Stamping your slip…"
   stage broadcasting: "Sending…"
   stage mined:        "Done. Here's your receipt."
   > Ask why            → why_instant
 [why_instant]
-Dev: You sign the slip; I execute it. That's a meta-transaction: your signature authorises, my desk pays the gas and submits. Within your instant limit it's approved and executed in one step.
+Eve: You sign the slip; I execute it. That's a meta-transaction: your signature authorises, my desk pays the gas and submits. Within your instant limit it's approved and executed in one step.
 
 [slip submitted, amount > limit]
-Dev: That's above what I can do here. It goes through the vault — there's a cooling period of {timelock} and then it needs a release. Walk with me.
+Eve: That's above what I can do here. It goes through the vault — there's a cooling period of {timelock} and then it needs a release. Walk with me.
   > OK                 → action: lane_b_request, then ESCORTING to vault
   > Ask why            → why_vault_route
 [why_vault_route]
-Dev: Large movements are requested now and executed later. Between the two, you or the manager can recall it. It's the same account, just a slower lane.
+Eve: Large movements are requested now and executed later. Between the two, you or the manager can recall it. It's the same account, just a slower lane.
 
 [revert]
-Dev: Sorry — {reason_line}.
+Eve: Sorry — {reason_line}.
   > Ask why            → shows decoded error name + short explanation
 ```
 
@@ -324,7 +324,7 @@ the manager for a recall or a hand-scanned priority release. As built in `dialog
 
 ```text
 [pending > 0, before release]                                     (node: cooling)
-Bob: {pending} wire(s) in the vault, the soonest releases in {release_in}. Have a seat — or see Mr. Okafor: he can
+Bob: {pending} wire(s) in the vault, the soonest releases in {release_in}. Have a seat — or see Mr. Walker: he can
       shred it, or skip the cooling if you bring a hand scan. I wait the clock.
   > Try to release #{txId} …   → action: approve (owner)   → refused "Still cooling — {release_in} to go." (BeforeReleaseTime)
   > Ask why                    → why_cooling
@@ -342,7 +342,7 @@ Bob: {released} wire(s) ready. Say the word and it goes — no scan, no manager,
 Bob: Quiet day. Nothing cooling.
 ```
 
-### 4.5 Branch Manager — Mr. Okafor (Manager's office)
+### 4.5 Branch Manager — Mr. Walker (Manager's office)
 
 Purpose: **U4+ Priority release** (bypass cooling; owner Passkey + manager submit) and **recall**. He is *not* a second
 Bob: the timed stamp was removed from `BRANCH_MANAGER` (ROLE_SET 3) and `/approve as: "manager"` is refused
@@ -351,11 +351,11 @@ Bob: the timed stamp was removed from `BRANCH_MANAGER` (ROLE_SET 3) and `/approv
 
 ```text
 [start]  !manager → lore ("no manager key … nobody skips the cooling")
-         !priority → vault_only ("priority desk isn't open for your account — vault-only branch, or Ines re-checks")
+         !priority → vault_only ("priority desk isn't open for your account — vault-only branch, or Iris re-checks")
                        > Recall a wire  > Ask why (why_vault_only: META_APPROVE bits, deliberately absent)
 
 [idle]
-Okafor: Come in. {pending} wire(s) in the vault, {cooling} still cooling. {priority_copy} Or I can shred one.
+Walker: Come in. {pending} wire(s) in the vault, {cooling} still cooling. {priority_copy} Or I can shred one.
   > Priority release — hand scan   (cooling > 0)              → priority_list
   > Priority release — hand scan   (cooling == 0, released > 0) → not_cooling: "Those have finished cooling — Bob
                                                                   releases them … I don't stamp after the clock."
@@ -371,14 +371,14 @@ Okafor: Come in. {pending} wire(s) in the vault, {cooling} still cooling. {prior
   > Ask why → why_priority
 
 [why_priority]
-Okafor: A priority release is a meta-transaction. You signed an approval for that exact record with your own key — the
+Walker: A priority release is a meta-transaction. You signed an approval for that exact record with your own key — the
         hand scan guards that key — and my BRANCH_MANAGER role submitted it. The contract lets this path skip
         releaseTime by design, which is why the branch never lets the silent teller signer sign it: its policy only
         covers counter slips. Fine print: once an account carries these permissions, any cooling wire on it can leave
         this way — always under your scan, never without.
 
 [why_manager]
-Okafor: I hold a runtime role — BRANCH_MANAGER. I cannot start a payment. I cannot open the vault after the clock —
+Walker: I hold a runtime role — BRANCH_MANAGER. I cannot start a payment. I cannot open the vault after the clock —
         that is Bob's window, and the chain would refuse me anyway; my timed stamp was removed. I can shred a wire,
         or submit a priority release before the clock when you bring a hand scan.
 ```
@@ -398,35 +398,43 @@ Petra: Names! Pick one and people can pay you by it.
 Petra: You're getting a subname under branchzero.eth on ENSv2. Your name points at your account; the passbook tier is a text record; the staff only get the rights the registry grants them.
 ```
 
-### 4.7 Dealer — Kenji (FX Desk) — S1 **built 2026-09-08** · **fiat pairs 2026-09-09**
+### 4.7 Dealer — Johnny (FX Desk) — S1 **built 2026-09-08** · **fiat pairs 2026-09-09** · **both ways 2026-09-10**
 
 Purpose: price a Uniswap v4 swap off-chain, and execute it **from the player's own account on Sepolia** through three
-whitelisted calls. Since 2026-09-09 Kenji is a **bank FX dealer**: he sells practice dollars for **Practice EUR** or
-**Practice ILS** (two ≈ $100M pools, docs/UNISWAP.md §2b), one-way, and never quotes ether again — a currency he does
-not deal in is refused `FX_PAIR` before anything is priced. The pair is a dialogue choice (Euros / Shekels) and then a
-size (25 / 100 / 250 dollars). Dialogue keeps euros and shekels in words; `run_checks` fails the build if `dealer.json`
-stops quoting either pair or starts talking about ether again. Kenji is not a teller: he cannot pay, wire, release or recall, and `tests/run_checks.gd` fails the
-build if `dealer.json` ever grows a verb other than `fx_quote` / `fx_enable` / `fx_swap`. The FX till is a **second**
-`AccountBlox`, on the chain the exchange lives on; the Main wing's counter and vault stay on Remote EVM 1337.
+whitelisted calls. Since 2026-09-09 Johnny is a **bank FX dealer**: he trades practice dollars against **Practice EUR**
+and **Practice ILS** (two ≈ $100M pools, docs/UNISWAP.md §2b) and never quotes ether again — a currency he does not
+deal in is refused `FX_PAIR` before anything is priced. Since 2026-09-10 he trades **both ways**: the pair is a
+dialogue choice (Euros / Shekels), then the direction (Buy / Sell), then a size **in the currency being sold** — 25 /
+100 / 250 dollars to buy; 25 / 100 / 250 euros or 100 / 250 / 500 shekels to sell. A quote taken as its own mirror is
+refused `FX_SIDE`. Johnny also owns the **fiat grants**: his first "Register the exchange door" whitelists USD, EUR
+and ILS on `approve` and adds EUR + ILS as `transfer` targets, so euros and shekels bought at his desk can be paid
+out over Eve's counter (Lane A only — no fiat wire, Priority or faucet, no EUR ↔ ILS). Iris never grants those; a till
+opened one-way heals on the next visit. Dialogue keeps euros and shekels in words and names
+`approve` / `execute` / `transfer` in "Ask why"; `run_checks` fails the build if `dealer.json` stops quoting either
+pair in either direction, prices a sell in dollars, says "one-way", or talks about ether. Johnny is not a teller: he
+cannot pay, wire, release or recall, and `tests/run_checks.gd` fails the build if `dealer.json` ever grows a verb
+other than `fx_quote` / `fx_enable` / `fx_swap`. On Live the FX till **is** the Main account (`fxTillIsMain`); in
+Developer Mode it is a second `AccountBlox` on Sepolia while the counter and vault stay on Remote EVM 1337 — where
+the Main account holds practice dollars only and the passbook says so.
 
 As built in `dialogue/dealer.json` (start node follows the chain, not memory: `fx_desk` → `fx_till` → `fx_open` → `fx_quoted`).
-Talking to Kenji always re-reads `fxStatus` first so a Re-check / late login cannot leave him on `desk_closed` with an empty board;
+Talking to Johnny always re-reads `fxStatus` first so a Re-check / late login cannot leave him on `desk_closed` with an empty board;
 `refresh_all` also loads FX when `pairs` are missing (provision / login).
 
 ```text
 [no FX deployment]                                        (node: desk_closed)
-Kenji: Board's dark today — the branch can't reach the exchange floor. Counter and the vault are unaffected.
+Johnny: Board's dark today — the branch can't reach the exchange floor. Counter and the vault are unaffected.
 
 [no till on Sepolia]                                      (node: no_till)
-Kenji: You've no till on the exchange floor yet. I can open one — same account pattern, just on the other chain.
+Johnny: You've no till on the exchange floor yet. I can open one — same account pattern, just on the other chain.
   > Open my FX till            → action: fx_enable
 
 [till, but the exchange door is not whitelisted]          (node: closed_door)
-Kenji: Till's there, but the exchange door isn't on your approved list yet. Three doors, three keys.
+Johnny: Till's there, but the exchange door isn't on your approved list yet. Three doors, three keys.
   > Register the exchange door → action: fx_enable   → opened
 
 [idle]
-Kenji: Dollars for euros or shekels? Board's live: {fx_rate_eur} · {fx_rate_ils}. You've {fx_usdc} USD, {fx_eur} EUR
+Johnny: Dollars for euros or shekels? Board's live: {fx_rate_eur} · {fx_rate_ils}. You've {fx_usdc} USD, {fx_eur} EUR
        and {fx_ils} ILS in the till; the exchange fee is {fx_pool_fee}.
   > Euros                           → euros     (node: pick a size)
   > Shekels                         → shekels
@@ -434,20 +442,20 @@ Kenji: Dollars for euros or shekels? Board's live: {fx_rate_eur} · {fx_rate_ils
   > Ask why                         → why_swap
 
 [euros | shekels]
-Kenji: Euros. {fx_rate_eur} on the board — the price I quote includes the exchange fee.
+Johnny: Euros. {fx_rate_eur} on the board — the price I quote includes the exchange fee.
   > Price 25 / 100 / 250 USD  → action: fx_quote {amount, pair: EUR|ILS}   (V4Quoter, an eth_call — signs nothing)
 
 [quoted]
-Kenji: {fx_amount_in} USD buys {fx_amount_out} {fx_symbol_out} — {fx_rate}. I won't accept less than {fx_min_out};
+Johnny: {fx_amount_in} USD buys {fx_amount_out} {fx_symbol_out} — {fx_rate}. I won't accept less than {fx_min_out};
        that leaves a little room for the rate to move. Good for {fx_valid}.
   > Take it                    → action: fx_swap  → swapped   (refused FX_QUOTE_EXPIRED once the deadline passes;
                                                                 the pair rides on the quote)
 
 [why_swap]
-Kenji: Your account calls the exchange router directly, but only because that router is on your approved list for
+Johnny: Your account calls the exchange router directly, but only because that router is on your approved list for
        that exact function. Same guard as payments.
 [why_guard]
-Kenji: GuardController holds a whitelist per function selector. Your till registered three schemas —
+Johnny: GuardController holds a whitelist per function selector. Your till registered three schemas —
        approve(address,uint256), Permit2's approve, and execute(bytes,bytes[],uint256) — and whitelisted one address
        for each. You sign a meta-transaction, the FX teller submits it, and the account refuses any target that is
        not on that list. A swap is a treasury operation here, not a wallet pop-up.
@@ -458,7 +466,7 @@ names boards) shows the quoted pair, the rate, the floor, the pool's fee tier an
 from the quote's own deadline against the **desk** clock — never a local timer, for the same reason the vault door
 counts that way. With no quote it shows **both pools' mid rates** (read from each pool's `slot0` by the desk) and the
 till in USD / EUR / ILS instead of inventing a rate; with no FX deployment it says the board is dark. **No new Privy surface:** the swap is signed by the same silent session signer that stamps counter
-slips (the hand scan stays unique to Okafor's Priority release).
+slips (the hand scan stays unique to Walker's Priority release).
 
 ### 4.8 Security Officer — Sgt. Bale (Side door) — S2 / lore
 
@@ -491,13 +499,13 @@ Decoded via the SDK's `decodeRevertReason` / `getUserFriendlyErrorMessage`, then
 | Timelock not expired | "Still cooling — {release_in} to go." |
 | Invalid signature / signer mismatch | "That slip isn't signed by the account holder." |
 | Deadline passed | "That slip expired — let's write a new one." |
-| Insufficient free balance (`InsufficientBalance`) | "Free balance is lower than the requested amount — nothing was filed. Ask Ines to top up practice dollars." |
+| Insufficient free balance (`InsufficientBalance`) | "Free balance is lower than the requested amount — nothing was filed. Ask Iris to top up practice dollars." |
 | Release transaction mined but record ended `FAILED` (`RECORD_FAILED`) | "The release was mined, but execution failed — free balance may have been spent down, so nothing was sent." |
 | Nonce mismatch | "Someone already used that slip number — writing a fresh one." |
 | Teller Desk unreachable (`RPC`; a dead desk answers 5xx with no JSON through the proxy) | "The branch can't reach the ledger right now." |
 | No answer within the call's timeout (`TIMEOUT`, raised by `Chain.gd`) | "The desk is taking longer than usual — the board will catch up when it answers." |
-| Expired / invalid Privy token (`AUTH`, 401) | "I'll need you signed in for that — Ines can help at Account Opening." |
-| Account on file but provisioning never recorded its end, or its role set is behind `ROLE_SET_VERSION` (`NOT_CONFIGURED`, 409 on `/pay` `/wire` `/priority/*`) | "Your account is on file, but the desks aren't authorised for it yet — ask Ines to re-check your account." |
+| Expired / invalid Privy token (`AUTH`, 401) | "I'll need you signed in for that — Iris can help at Account Opening." |
+| Account on file but provisioning never recorded its end, or its role set is behind `ROLE_SET_VERSION` (`NOT_CONFIGURED`, 409 on `/pay` `/wire` `/priority/*`) | "Your account is on file, but the desks aren't authorised for it yet — ask Iris to re-check your account." |
 | Manager asked for a timed stamp (`MANAGER_NO_STAMP`, U4+) | "The manager doesn't stamp vault releases any more — Bob does, once the clock runs down." |
 | Priority asked for a wire already past `releaseTime` (`NOT_COOLING`) | "That one's done cooling — Bob releases it at the vault window, no hand scan needed." |
 | Vault-only branch (`PRIORITY_OFF`) | "This branch runs vault-only — nobody skips the cooling here." |

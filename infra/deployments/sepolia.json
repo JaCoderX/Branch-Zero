@@ -83,7 +83,7 @@
       "address": "0xD3322B29a7BdEe707D1684676f149bf41Aa3422f",
       "symbol": "USDC",
       "decimals": 6,
-      "note": "U5 Sepolia mock USDC (open mint) — the practice dollar. Kenji sells it for Practice EUR / ILS through uniswap.pools"
+      "note": "U5 Sepolia mock USDC (open mint) — the practice dollar. Johnny sells it for Practice EUR / ILS through uniswap.pools"
     },
     "weth": {
       "address": "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14",
@@ -107,7 +107,7 @@
       "deployedAtBlock": 11668140,
       "deployer": "0xDD46DA5d8d27817b78989FdA1C686724CFEBFB63",
       "source": "infra/contracts/PracticeFiat.sol (OpenZeppelin ERC20 + open mint, 6 decimals)",
-      "note": "Practice EUR: open-mint, same family as tokens.demoUsdc. Kenji sells these for practice USD through uniswap.pools.usdEur. Never real money."
+      "note": "Practice EUR: open-mint, same family as tokens.demoUsdc. Johnny sells these for practice USD through uniswap.pools.usdEur. Never real money."
     },
     "practiceIls": {
       "address": "0x5Bca93fc8C9e383280C220252651635B8B2f4336",
@@ -118,7 +118,7 @@
       "deployedAtBlock": 11668141,
       "deployer": "0xDD46DA5d8d27817b78989FdA1C686724CFEBFB63",
       "source": "infra/contracts/PracticeFiat.sol (OpenZeppelin ERC20 + open mint, 6 decimals)",
-      "note": "Practice ILS: open-mint, same family as tokens.demoUsdc. Kenji sells these for practice USD through uniswap.pools.usdIls. Never real money."
+      "note": "Practice ILS: open-mint, same family as tokens.demoUsdc. Johnny sells these for practice USD through uniswap.pools.usdIls. Never real money."
     }
   },
   "uniswap": {
@@ -149,7 +149,7 @@
     "pools": {
       "usdEur": {
         "pair": "EUR",
-        "product": "USD → EUR (one-way in v1)",
+        "product": "USD ↔ EUR (both ways since 2026-09-10; one-way in v1)",
         "id": "0x3b57bf6e9a835de1b54562b23156abeed18e44a420d2ecd6e8773d9a9ac333de",
         "currency0": "0xB6a3e346C5aEddC14BD1006017Fd04697069BF98",
         "currency1": "0xD3322B29a7BdEe707D1684676f149bf41Aa3422f",
@@ -157,7 +157,7 @@
         "tickSpacing": 60,
         "hooks": "0x0000000000000000000000000000000000000000",
         "usdIsCurrency0": false,
-        "zeroForOne": "USD → EUR is zeroForOne = false",
+        "zeroForOne": "USD → EUR is zeroForOne = false; EUR → USD (sell) is zeroForOne = true",
         "usd": "0xD3322B29a7BdEe707D1684676f149bf41Aa3422f",
         "fiat": "0xB6a3e346C5aEddC14BD1006017Fd04697069BF98",
         "seedRate": "0.86103",
@@ -177,7 +177,7 @@
       },
       "usdIls": {
         "pair": "ILS",
-        "product": "USD → ILS (one-way in v1)",
+        "product": "USD ↔ ILS (both ways since 2026-09-10; one-way in v1)",
         "id": "0x93adbf0b5794f0ebcf20c4dffdd9ff4036dd6808031af0db33392b65b88e0733",
         "currency0": "0x5Bca93fc8C9e383280C220252651635B8B2f4336",
         "currency1": "0xD3322B29a7BdEe707D1684676f149bf41Aa3422f",
@@ -185,7 +185,7 @@
         "tickSpacing": 60,
         "hooks": "0x0000000000000000000000000000000000000000",
         "usdIsCurrency0": false,
-        "zeroForOne": "USD → ILS is zeroForOne = false",
+        "zeroForOne": "USD → ILS is zeroForOne = false; ILS → USD (sell) is zeroForOne = true",
         "usd": "0xD3322B29a7BdEe707D1684676f149bf41Aa3422f",
         "fiat": "0x5Bca93fc8C9e383280C220252651635B8B2f4336",
         "seedRate": "3.0118",
@@ -204,7 +204,7 @@
         "seedTx": "0xdf0917d09b9531b1420d04afe17eb19d57b61ee62894bcff1e0bbb01aade7a94"
       }
     },
-    "productPath": "USD → EUR | USD → ILS, one-way (uniswap.pools.usdEur / usdIls). The demo USDC/WETH pool below is deprecated for the product: left on chain, no longer quoted (2026-09-09, docs/HANDOFF-fx-fiat-pairs.md)."
+    "productPath": "USD ↔ EUR | USD ↔ ILS, both ways since 2026-09-10 (uniswap.pools.usdEur / usdIls; docs/missions/HANDOFF-fx-bidirectional.md). The demo USDC/WETH pool below is deprecated for the product: left on chain, no longer quoted (2026-09-09, docs/HANDOFF-fx-fiat-pairs.md)."
   },
   "applications": {
     "CopyBlox": {

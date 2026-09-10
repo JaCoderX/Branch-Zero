@@ -7,7 +7,7 @@ product: Branch-Zero
 objective: OBJ-2026-0004
 mission: Bidirectional FX at Johnny (USD↔EUR and USD↔ILS) plus account view/transfer of Practice EUR/ILS; permissions granted on first FX interaction
 kickoff: docs/missions/KICKOFF-fx-bidirectional.md
-status: open
+status: met 2026-09-10 — one-way Live till healed to seven whitelist rows in one guard batch; USD→EUR, EUR→USD, USD→ILS, ILS→USD all completed on the Main till; Lane A paid EUR + ILS; killtests:s1 K7-a…h, run_fx_walk, run_checks (FX desk) green — see §Outcome
 baseline: FX fiat pairs MET 2026-09-09 (USD→EUR|ILS one-way; pools ~$100M; Live fxTillIsMain) — HANDOFF-fx-fiat-pairs.md · UNISWAP.md §2b
 parallel_to: U7 packaging / polish re-playtest — do not steal those gates; do not absorb EUR↔ILS cross or multi-currency Lane B
 ---
@@ -47,7 +47,7 @@ Freedom on **how**. No freedom on constraints, scope, or protocol semantics.
 | Role grants are selector-scoped | Adding approve/transfer **targets** does **not** need new OWNER/BROADCASTER grants on those selectors if grants already exist |
 | `transfer` schema exists from `initialize` | Only need `ADD_TARGET_TO_WHITELIST` for EUR/ILS on `ERC20_TRANSFER` — do this in **`enableFx`**, not `provision.whitelistToken` |
 | Lane A `/pay` is USD-only today | Extend with `token` / `symbol` (`USD` \| `EUR` \| `ILS`); refuse unknown |
-| Live `fxTillIsMain` | On Live, one account = pay + FX; multi-token passbook matters. Dev: EUR/ILS live on **Sepolia till**, not 1337 Main — do not lie in UI |
+| Live `fxTillIsMain` | On Live, one account = pay + FX; multi-token passbook matters. Eve: EUR/ILS live on **Sepolia till**, not 1337 Main — do not lie in UI |
 | Kill tests encode one-way | `killtests:s1` K7-b and `run_fx_walk` assert no fiat on approve / "exactly 3" one-way copy — **invert** those assertions |
 | Deep books | Tiny reverse swaps stay flat — desired; do not shrink TVL |
 
@@ -84,7 +84,7 @@ Update `fxEnabled` / `/fx/status` whitelist reporting so “open” means revers
 ### C. Desk — Lane A multi-token (view + transfer)
 
 8. `POST /pay` (and `laneA.pay`): accept token symbol/address for USD \| EUR \| ILS; use that token as the guarded `transfer` target.
-9. `GET /status` (and shell passbook): expose EUR + ILS balances when the wing/account can hold them (Live Main; Dev: be honest that Main is 1337 USD-only and FX till is separate — prefer showing fiat on `/fx/status` + Johnny board there).
+9. `GET /status` (and shell passbook): expose EUR + ILS balances when the wing/account can hold them (Live Main; Eve: be honest that Main is 1337 USD-only and FX till is separate — prefer showing fiat on `/fx/status` + Johnny board there).
 10. Do **not** extend `/wire`, Priority, or faucet to fiat in this unit.
 
 ### D. Godot / bridge / dialogue
@@ -115,14 +115,36 @@ Update `fxEnabled` / `/fx/status` whitelist reporting so “open” means revers
 
 ## Verification checklist
 
-- [ ] Quote + swap USD→EUR and EUR→USD on Live (Main till)
-- [ ] Quote + swap USD→ILS and ILS→USD on Live
-- [ ] `enableFx` lists USD+EUR+ILS on approve; EUR+ILS on transfer; `fxEnabled` true after heal
-- [ ] Lane A `/pay` moves EUR and ILS (Live); unknown token refused
-- [ ] Johnny dialogue no longer claims one-way; board copy updated
-- [ ] `killtests:s1`, `run_fx_walk`, `run_checks` green (assertions updated for bidirectional)
-- [ ] WETH still `FX_PAIR`
-- [ ] Docs: `UNISWAP.md`, `NPCS.md`, OWED tick, HANDOFF status → met
+- [x] Quote + swap USD→EUR and EUR→USD on Live (Main till) — K7-c/d `EUR-buy` / `EUR-sell`
+- [x] Quote + swap USD→ILS and ILS→USD on Live — K7-c/d `ILS-buy` / `ILS-sell`
+- [x] `enableFx` lists USD+EUR+ILS on approve; EUR+ILS on transfer; `fxEnabled` true after heal — K7-b ("healed a till missing approve→EUR, approve→ILS, transfer→EUR, transfer→ILS … fxEnabled false → true")
+- [x] Lane A `/pay` moves EUR and ILS (Live); unknown token refused — K7-h
+- [x] Johnny dialogue no longer claims one-way; board copy updated — `run_checks` FX desk fails on "one-way" / "don't buy them back" / a sell priced in dollars
+- [x] `killtests:s1`, `run_fx_walk` green; `run_checks` FX desk green (four unrelated failures in the working tree come from a sibling's uncommitted greeter / AO-desk work — see §Outcome)
+- [x] WETH still `FX_PAIR` — K7-g
+- [x] Docs: `UNISWAP.md` §2b / §3.1 / §4, `NPCS.md`, `GODOT.md` §4b, `FEEDBACK.md`, `REFLECTION.md` §8, OWED tick, HANDOFF status → met
+
+## Outcome (2026-09-10)
+
+**Desk.** `lanes/fx.ts` gained `side` (`buy` = USD → fiat, `sell` = fiat → USD; amount in the sold currency; the quote
+store keeps pair + side and refuses a mirror with `FX_SIDE`). A sell flips `zeroForOne`, settles the fiat, takes the
+dollar, and runs approve → Permit2 against the input token. `enableFx` whitelists three `approve` targets and adds
+EUR + ILS as `transfer` targets; `readDoor` / `fxEnabled` demand all seven rows, and `/fx/status` reports `missing`
+and `payable`. No new role grant unless the chain proves a role holds nothing on `transfer` (Dev till only).
+`laneA.pay` takes a `PayToken` (`payTokenOf`: USD default, EUR | ILS on Live, `PAY_TOKEN` otherwise; fiat before the
+grant is `FX_NOT_ENABLED`), and `passbook` returns `balances[]`. Bridge carries `side` and `token` (no version bump).
+
+**Godot.** `dealer.json`: Euros / Shekels → Buy / Sell → sizes in the sold currency; "Ask why" names
+`approve` / `execute` / `transfer`; the receipt reads `GameState.fx_last`. `strings.json` board copy, `errors.json`
+`FX_SIDE` + `PAY_TOKEN` (and honest `FX_PAIR` / `FX_TILL_SHORT` / `FX_NOT_ENABLED`), MockChain both sides + fiat pay,
+`run_fx_walk` both sides + pays + refusals, `run_checks` bidirectional assertions. `GameState.run_action` now
+**forces** `refresh_fx` after an enable / fill / fiat pay — the 12 s idle throttle a sibling added had left the mock
+walk reading a stale board.
+
+**Live evidence** is in [`UNISWAP.md` §2b](../UNISWAP.md) (heal batch, four swaps, two pays, Etherscan links).
+
+**Not done, by design:** EUR ↔ ILS cross · fiat Lane B / Priority / wire / faucet · a currency picker in Eve's slip
+(the desk API takes `token`; the teller dialogue still pays dollars) · Uniswap feedback form (human, OWED §2).
 
 ---
 

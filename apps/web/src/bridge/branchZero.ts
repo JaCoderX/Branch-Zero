@@ -10,12 +10,12 @@
  * U2 methods: wire, approve, cancel, listPending (the vault — Lane B).
  * U3 methods: getSession (who is at the desk, never opens a modal), getHistory (ledger receipts). Both call
  *             routes that already exist (`/session`, `/status`); U3 added no chain semantics.
- * U4+ method: priority (Okafor's desk) — the one call allowed to open a second Privy surface: the player's own
+ * U4+ method: priority (Walker's desk) — the one call allowed to open a second Privy surface: the player's own
  *             signer signs the meta-approve bypass behind a Passkey, the Branch Manager submits it before the clock.
  * U5 methods: ensAvailable / ensMint / ensSetText / resolveName — ENSv2 identity on Sepolia, on either wing.
  * S2 method:  setMode ('live' | 'dev') — which Teller Desk, and so which payment chain, the bank runs against.
  *             `approve` is owner-only from here (Bob's wait path); `as: 'manager'` is refused by the desk.
- * S2.1 method: loadAccount — Ines adopts an AccountBlox the player already owns on the current wing (an older
+ * S2.1 method: loadAccount — Iris adopts an AccountBlox the player already owns on the current wing (an older
  *             CopyBlox clone, or a second account). The desk checks `owner()` on the chain before it switches
  *             anything; docs/LOAD-ACCOUNT.md.
  * Terminal Console (stretch): openConsole (asks the shell for the terminal overlay — an iframe of bloxchain.app, or
@@ -618,7 +618,7 @@ const handlers: Record<string, Handler> = {
     return { opened: true, status: opened.status };
   },
 
-  // --- S1: Kenji's FX desk (Uniswap v4 on Sepolia; the Main wing's lanes are untouched) ---
+  // --- S1: Johnny's FX desk (Uniswap v4 on Sepolia; the Main wing's lanes are untouched) ---
 
   /** The till: balances, whether the exchange door is registered, the pool, and the three whitelisted calls. */
   async fxStatus() {
@@ -632,8 +632,10 @@ const handlers: Record<string, Handler> = {
     const amount = typeof args.amount === 'string' ? args.amount.trim() : String(args.amount ?? '');
     if (!/^\d+(\.\d+)?$/.test(amount) || Number(amount) <= 0) throw bridgeError('FX_AMOUNT', `not an amount: ${amount}`, 'That is not an amount the dealer can price.');
     // Fiat pairs (2026-09-09): `pair` is EUR | ILS. The desk validates it (`FX_PAIR`); the bridge only carries it.
+    // Bidirectional (2026-09-10): `side` is buy (USD → fiat, amount in USD) | sell (fiat → USD, amount in fiat); `FX_SIDE` otherwise.
     const pair = String(args.pair ?? 'EUR').trim().toUpperCase();
-    return requireAdapter().call(`/fx/quote?amount=${encodeURIComponent(amount)}&pair=${encodeURIComponent(pair)}`);
+    const side = String(args.side ?? 'buy').trim().toLowerCase();
+    return requireAdapter().call(`/fx/quote?amount=${encodeURIComponent(amount)}&pair=${encodeURIComponent(pair)}&side=${encodeURIComponent(side)}`);
   },
   /** Open the till: register the three schemas, whitelist their targets, grant the two roles. Silent (Lane A shape). */
   async fxEnable() {
@@ -648,6 +650,7 @@ const handlers: Record<string, Handler> = {
     if (typeof args.quoteId === 'string' && args.quoteId) body.quoteId = args.quoteId;
     if (args.amount !== undefined && String(args.amount) !== '') body.amount = String(args.amount);
     if (args.pair !== undefined && String(args.pair) !== '') body.pair = String(args.pair).trim().toUpperCase();
+    if (args.side !== undefined && String(args.side) !== '') body.side = String(args.side).trim().toLowerCase();
     if (!body.quoteId && !body.amount) throw bridgeError('FX_AMOUNT', 'a quote or an amount is required', 'Ask the dealer for a quote first.');
     return requireAdapter().call('/fx/swap', body);
   },
@@ -661,7 +664,10 @@ const handlers: Record<string, Handler> = {
     const amount = typeof args.amount === 'string' ? args.amount : String(args.amount ?? '');
     if (!/^0x[0-9a-fA-F]{40}$/.test(to)) throw bridgeError('BAD_ARGS', `not an address: ${to}`, 'That payee is not on your approved list.');
     if (!/^\d+(\.\d+)?$/.test(amount)) throw bridgeError('BAD_ARGS', `not an amount: ${amount}`, 'That is not an amount the counter can take.');
-    return requireAdapter().call('/pay', { to, amount, memo: args.memo });
+    // Multi-token Lane A (2026-09-10): `token` = USD (default) | EUR | ILS. The desk decides (`PAY_TOKEN`); the bridge carries it.
+    const body: Record<string, unknown> = { to, amount, memo: args.memo };
+    if (args.token !== undefined && String(args.token) !== '') body.token = String(args.token).trim().toUpperCase();
+    return requireAdapter().call('/pay', body);
   },
 
   // --- U2: the vault (Lane B) ---
@@ -678,7 +684,7 @@ const handlers: Record<string, Handler> = {
     return requireAdapter().call('/approve', { txId: String(args.txId ?? ''), as: 'owner' });
   },
   /**
-   * U4+ — Okafor's Priority release. The hand scan is a Privy MFA sheet plus a visible sign sheet, so like `login`
+   * U4+ — Walker's Priority release. The hand scan is a Privy MFA sheet plus a visible sign sheet, so like `login`
    * it leaves DOM focus behind: the canvas gets it back whatever the outcome (docs/GODOT.md §5b).
    */
   async priority(args) {

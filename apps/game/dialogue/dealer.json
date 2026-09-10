@@ -1,6 +1,6 @@
 {
   "id": "dealer",
-  "name": "Kenji",
+  "name": "Johnny",
   "role": "Dealer · FX Desk",
   "nodes": {
     "booting": {
@@ -8,7 +8,7 @@
       "choices": [ { "text": "Sure.", "next": "end" } ]
     },
     "no_account": {
-      "text": "Dollars for euros or shekels? I'd love to, but I trade out of your account, not out of my pocket. Ines opens one at Account Opening.",
+      "text": "Dollars to euros or shekels, or back again? I'd love to, but I trade out of your account, not out of my pocket. Iris opens one at Account Opening.",
       "choices": [
         { "text": "Ask why", "next": "why_account" },
         { "text": "OK.", "next": "end" }
@@ -42,7 +42,7 @@
       "choices": [ { "text": "OK.", "next": "end" } ]
     },
     "closed_door": {
-      "text": "Till's there, but the exchange door isn't on your approved list yet. Three doors, three keys — I can't trade until the manager's list says so.",
+      "text": "Till's there, but the exchange isn't fully on your approved list yet — the three exchange services, each currency you might sell, and euros and shekels on the counter's list too. I can't trade until the manager's list says so.",
       "choices": [
         { "text": "Register the exchange door", "action": "fx_enable", "working": "Setting up the exchange desk…", "on_ok": "opened", "on_error": "refused" },
         { "text": "Ask why", "next": "why_guard" },
@@ -50,16 +50,16 @@
       ]
     },
     "opened": {
-      "text": "Done. Your account may now prepare the dollar payment, authorise the exchange, and place the trade — exactly three services. Nothing else; euros and shekels only ever come in. {fx_usdc} {fx_symbol_in} in the till.",
+      "text": "Done. Your account may now prepare a payment in dollars, euros or shekels, authorise the exchange, and place the trade — both ways. And what you hold in euros or shekels can go out over Eve's counter, same as dollars. {fx_usdc} {fx_symbol_in}, {fx_eur} EUR and {fx_ils} ILS in the till.",
       "choices": [
-        { "text": "Euros — what's the rate?", "action": "fx_quote", "args": { "amount": "25", "pair": "EUR" }, "working": "Asking the exchange for a euro price…", "on_ok": "quoted", "on_error": "refused" },
-        { "text": "Shekels — what's the rate?", "action": "fx_quote", "args": { "amount": "25", "pair": "ILS" }, "working": "Asking the exchange for a shekel price…", "on_ok": "quoted", "on_error": "refused" },
+        { "text": "Euros", "next": "euros" },
+        { "text": "Shekels", "next": "shekels" },
         { "text": "Ask why", "next": "why_guard" },
         { "text": "Thanks.", "next": "end" }
       ]
     },
     "idle": {
-      "text": "Dollars for euros or shekels? Board's live: {fx_rate_eur} · {fx_rate_ils}. You've {fx_usdc} {fx_symbol_in}, {fx_eur} EUR and {fx_ils} ILS in the till; the exchange fee is {fx_pool_fee}.",
+      "text": "Dollars to euros or shekels — or back again. Board's live: {fx_rate_eur} · {fx_rate_ils}. You've {fx_usdc} {fx_symbol_in}, {fx_eur} EUR and {fx_ils} ILS in the till; the exchange fee is {fx_pool_fee} either way.",
       "choices": [
         { "text": "Euros", "next": "euros" },
         { "text": "Shekels", "next": "shekels" },
@@ -69,27 +69,65 @@
       ]
     },
     "euros": {
-      "text": "Euros. {fx_rate_eur} on the board — the price I quote includes the exchange fee. How many dollars?",
+      "text": "Euros. {fx_rate_eur} on the board, fee included whichever way. Buying euros with your dollars, or selling euros back for dollars?",
       "choices": [
-        { "text": "Price 25 {fx_symbol_in}", "action": "fx_quote", "args": { "amount": "25", "pair": "EUR" }, "working": "Asking the exchange for a euro price…", "on_ok": "quoted", "on_error": "refused" },
-        { "text": "Price 100 {fx_symbol_in}", "action": "fx_quote", "args": { "amount": "100", "pair": "EUR" }, "working": "Asking the exchange for a euro price…", "on_ok": "quoted", "on_error": "refused" },
-        { "text": "Price 250 {fx_symbol_in}", "action": "fx_quote", "args": { "amount": "250", "pair": "EUR" }, "working": "Asking the exchange for a euro price…", "on_ok": "quoted", "on_error": "refused" },
+        { "text": "Buy euros", "next": "buy_eur" },
+        { "text": "Sell euros", "next": "sell_eur" },
         { "text": "Shekels instead", "next": "shekels" },
         { "text": "Back", "next": "idle" }
       ]
     },
-    "shekels": {
-      "text": "Shekels. {fx_rate_ils} on the board — the price I quote includes the exchange fee. How many dollars?",
+    "buy_eur": {
+      "text": "Buying euros. How many dollars are you changing?",
       "choices": [
-        { "text": "Price 25 {fx_symbol_in}", "action": "fx_quote", "args": { "amount": "25", "pair": "ILS" }, "working": "Asking the exchange for a shekel price…", "on_ok": "quoted", "on_error": "refused" },
-        { "text": "Price 100 {fx_symbol_in}", "action": "fx_quote", "args": { "amount": "100", "pair": "ILS" }, "working": "Asking the exchange for a shekel price…", "on_ok": "quoted", "on_error": "refused" },
-        { "text": "Price 250 {fx_symbol_in}", "action": "fx_quote", "args": { "amount": "250", "pair": "ILS" }, "working": "Asking the exchange for a shekel price…", "on_ok": "quoted", "on_error": "refused" },
+        { "text": "Price 25 {fx_symbol_in}", "action": "fx_quote", "args": { "amount": "25", "pair": "EUR", "side": "buy" }, "working": "Asking the exchange for a euro price…", "on_ok": "quoted", "on_error": "refused" },
+        { "text": "Price 100 {fx_symbol_in}", "action": "fx_quote", "args": { "amount": "100", "pair": "EUR", "side": "buy" }, "working": "Asking the exchange for a euro price…", "on_ok": "quoted", "on_error": "refused" },
+        { "text": "Price 250 {fx_symbol_in}", "action": "fx_quote", "args": { "amount": "250", "pair": "EUR", "side": "buy" }, "working": "Asking the exchange for a euro price…", "on_ok": "quoted", "on_error": "refused" },
+        { "text": "Sell instead", "next": "sell_eur" },
+        { "text": "Back", "next": "euros" }
+      ]
+    },
+    "sell_eur": {
+      "text": "Selling euros. You hold {fx_eur} EUR — how many are you changing back?",
+      "choices": [
+        { "text": "Price 25 EUR", "action": "fx_quote", "args": { "amount": "25", "pair": "EUR", "side": "sell" }, "working": "Asking the exchange for a dollar price…", "on_ok": "quoted", "on_error": "refused" },
+        { "text": "Price 100 EUR", "action": "fx_quote", "args": { "amount": "100", "pair": "EUR", "side": "sell" }, "working": "Asking the exchange for a dollar price…", "on_ok": "quoted", "on_error": "refused" },
+        { "text": "Price 250 EUR", "action": "fx_quote", "args": { "amount": "250", "pair": "EUR", "side": "sell" }, "working": "Asking the exchange for a dollar price…", "on_ok": "quoted", "on_error": "refused" },
+        { "text": "Buy instead", "next": "buy_eur" },
+        { "text": "Back", "next": "euros" }
+      ]
+    },
+    "shekels": {
+      "text": "Shekels. {fx_rate_ils} on the board, fee included whichever way. Buying shekels with your dollars, or selling shekels back for dollars?",
+      "choices": [
+        { "text": "Buy shekels", "next": "buy_ils" },
+        { "text": "Sell shekels", "next": "sell_ils" },
         { "text": "Euros instead", "next": "euros" },
         { "text": "Back", "next": "idle" }
       ]
     },
+    "buy_ils": {
+      "text": "Buying shekels. How many dollars are you changing?",
+      "choices": [
+        { "text": "Price 25 {fx_symbol_in}", "action": "fx_quote", "args": { "amount": "25", "pair": "ILS", "side": "buy" }, "working": "Asking the exchange for a shekel price…", "on_ok": "quoted", "on_error": "refused" },
+        { "text": "Price 100 {fx_symbol_in}", "action": "fx_quote", "args": { "amount": "100", "pair": "ILS", "side": "buy" }, "working": "Asking the exchange for a shekel price…", "on_ok": "quoted", "on_error": "refused" },
+        { "text": "Price 250 {fx_symbol_in}", "action": "fx_quote", "args": { "amount": "250", "pair": "ILS", "side": "buy" }, "working": "Asking the exchange for a shekel price…", "on_ok": "quoted", "on_error": "refused" },
+        { "text": "Sell instead", "next": "sell_ils" },
+        { "text": "Back", "next": "shekels" }
+      ]
+    },
+    "sell_ils": {
+      "text": "Selling shekels. You hold {fx_ils} ILS — how many are you changing back?",
+      "choices": [
+        { "text": "Price 100 ILS", "action": "fx_quote", "args": { "amount": "100", "pair": "ILS", "side": "sell" }, "working": "Asking the exchange for a dollar price…", "on_ok": "quoted", "on_error": "refused" },
+        { "text": "Price 250 ILS", "action": "fx_quote", "args": { "amount": "250", "pair": "ILS", "side": "sell" }, "working": "Asking the exchange for a dollar price…", "on_ok": "quoted", "on_error": "refused" },
+        { "text": "Price 500 ILS", "action": "fx_quote", "args": { "amount": "500", "pair": "ILS", "side": "sell" }, "working": "Asking the exchange for a dollar price…", "on_ok": "quoted", "on_error": "refused" },
+        { "text": "Buy instead", "next": "buy_ils" },
+        { "text": "Back", "next": "shekels" }
+      ]
+    },
     "quoted": {
-      "text": "{fx_amount_in} {fx_symbol_in} buys {fx_amount_out} {fx_symbol_out} — {fx_rate}. I won't accept less than {fx_min_out}; that leaves a little room for the rate to move. Good for {fx_valid}.",
+      "text": "{fx_amount_in} {fx_quote_in} gets you {fx_amount_out} {fx_symbol_out} — {fx_rate}. I won't accept less than {fx_min_out} {fx_symbol_out}; that leaves a little room for the rate to move. Good for {fx_valid}.",
       "choices": [
         { "text": "Take it", "action": "fx_swap", "working": "Handing the order to the exchange…", "on_ok": "swapped", "on_error": "refused" },
         { "text": "Price something else", "next": "idle" },
@@ -98,7 +136,7 @@
       ]
     },
     "swapped": {
-      "text": "Filled. {fx_amount_in} {fx_symbol_in} went out, {fx_symbol_out} came back — the till holds {fx_usdc} {fx_symbol_in}, {fx_eur} EUR and {fx_ils} ILS now. Receipt's on the board.",
+      "text": "Filled. {fx_filled_in} {fx_filled_in_symbol} went out, {fx_filled_out} {fx_filled_out_symbol} came back — the till holds {fx_usdc} {fx_symbol_in}, {fx_eur} EUR and {fx_ils} ILS now. Receipt's on the board.",
       "choices": [
         { "text": "Ask why", "next": "why_swap" },
         { "text": "Another quote", "next": "idle" },
@@ -106,28 +144,28 @@
       ]
     },
     "whitelist": {
-      "text": "Three services, and only three: prepare the dollar payment, authorise the exchange, and place the trade. That list is on your account, not my desk — I couldn't send your money anywhere else if you asked me to. And it's one-way: I sell euros and shekels for dollars; I don't buy them back.",
+      "text": "Three services on the exchange side — prepare the currency you're selling, authorise the exchange, place the trade — in dollars, euros or shekels, either direction. Plus the counter: euros and shekels you hold here can be paid out by Eve, same as dollars. That list is on your account, not my desk — I couldn't send your money anywhere else if you asked me to. No euro-to-shekel, and no fiat through the vault.",
       "choices": [
         { "text": "Ask why", "next": "why_guard" },
         { "text": "Back", "next": "idle" }
       ]
     },
     "why_swap": {
-      "text": "Your account calls the exchange router directly, but only because that router is on your approved list for that exact function. Same guard as payments. Euros and shekels are two pools behind one door.",
+      "text": "Your account calls the exchange router directly, but only because that router is on your approved list for that exact function. Same guard as payments. Euros and shekels are two pools behind one door, and each pool trades both ways.",
       "choices": [
         { "text": "Tell me the technical bit", "next": "why_guard" },
         { "text": "Back", "next": "idle" }
       ]
     },
     "why_guard": {
-      "text": "GuardController holds a whitelist per function selector. Your till registered three schemas — approve(address,uint256), Permit2's approve, and execute(bytes,bytes[],uint256) — and whitelisted one address for each. You sign a meta-transaction, the FX teller submits it, and the account refuses any target that is not on that list. A swap is a treasury operation here, not a wallet pop-up.",
+      "text": "GuardController holds a whitelist per function selector. Your till registered three schemas — approve(address,uint256), Permit2's approve, and execute(bytes,bytes[],uint256) — and whitelisted the dollar, the euro and the shekel for the first, one address for each of the others. The counter's own transfer(address,uint256) gained the euro and the shekel as targets. You sign a meta-transaction, the FX teller submits it, and the account refuses any target that is not on that list. A swap is a treasury operation here, not a wallet pop-up.",
       "choices": [
         { "text": "And the trade itself?", "next": "why_quote" },
         { "text": "Back", "next": "idle" }
       ]
     },
     "why_quote": {
-      "text": "The board is the exchange's own quoter, asked off-chain — it costs nothing and signs nothing. Each currency has its own pool, a hundred million deep, so a desk-sized order barely moves the rate. I take one percent off the quote as your floor, stamp a five-minute deadline, and the router refuses the trade if the pool has moved past that floor by the time it lands.",
+      "text": "The board is the exchange's own quoter, asked off-chain — it costs nothing and signs nothing. Each currency has its own pool, a hundred million deep, so a desk-sized order barely moves the rate whichever way you trade. I take one percent off the quote as your floor, stamp a five-minute deadline, and the router refuses the trade if the pool has moved past that floor by the time it lands.",
       "choices": [
         { "text": "Back", "next": "idle" }
       ]

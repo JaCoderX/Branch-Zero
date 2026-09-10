@@ -1,27 +1,35 @@
 /**
  * S1 — the FX desk: a Uniswap v4 swap executed **by the player's AccountBlox** on Sepolia, through GuardController.
  *
- * **Fiat pairs (2026-09-09, docs/HANDOFF-fx-fiat-pairs.md):** Kenji sells practice dollars for **Practice EUR** or
- * **Practice ILS** — two deep v4 pools (≈ $100M TVL each, seeded at a pinned Frankfurter mid by
- * `infra/scripts/fx-pools-fiat.ts`), one-way USD → fiat. The old USDC/WETH pool stays on chain and is no longer
- * quoted. The guard list did **not** grow: one-way means the only token the account approves is still the practice
- * dollar, and Permit2 + the Universal Router are the same two addresses — so a till opened for the WETH desk trades
- * euros and shekels without a new config batch. `currency0`/`currency1` follow the address sort per pool
- * (`usdIsCurrency0`, re-derived from the addresses), never an assumption that USD is token0.
+ * **Fiat pairs (2026-09-09, docs/HANDOFF-fx-fiat-pairs.md):** Johnny trades practice dollars against **Practice EUR**
+ * and **Practice ILS** — two deep v4 pools (≈ $100M TVL each, seeded at a pinned Frankfurter mid by
+ * `infra/scripts/fx-pools-fiat.ts`). The old USDC/WETH pool stays on chain and is no longer quoted.
+ * `currency0`/`currency1` follow the address sort per pool (`usdIsCurrency0`, re-derived from the addresses), never an
+ * assumption that USD is token0.
+ *
+ * **Bidirectional (2026-09-10, docs/missions/HANDOFF-fx-bidirectional.md):** every pair trades **both ways** —
+ * `side: 'buy'` is USD → fiat (the player buys euros), `side: 'sell'` is fiat → USD (the player sells them back).
+ * The **amount is always in the sold currency**: buying euros quotes a dollar size, selling euros quotes a euro size.
+ * Reverse trades need the account to approve the fiat token for Permit2, so opening the till now whitelists
+ * **three** `approve` targets (USD, EUR, ILS) instead of one, and — because fiat held in the till should be spendable
+ * as account money — adds EUR + ILS as `transfer` targets on the built-in Lane A schema. Those grants belong to the
+ * exchange desk (`enableFx`, first Johnny visit, idempotent heal on revisit), **not** to Iris's Account Opening.
+ * There is still no EUR ↔ ILS cross (no pool) and no fiat Lane B / Priority / wire.
  *
  * What makes this a bank operation rather than a swap UI (docs/UNISWAP.md §3): the account, not the player's wallet,
  * is `msg.sender` to Permit2 and to the Universal Router, and it may only call the three functions the FX guard batch
  * registered and whitelisted —
  *
- *     practiceUSD.approve(address,uint256)                 → Permit2 may pull the account's practice dollars
- *     Permit2.approve(address,address,uint160,uint48)      → the Universal Router may spend them, once, with an expiry
+ *     {USD|EUR|ILS}.approve(address,uint256)               → Permit2 may pull the currency the account is selling
+ *     Permit2.approve(address,address,uint160,uint48)      → the Universal Router may spend it, once, with an expiry
  *     UniversalRouter.execute(bytes,bytes[],uint256)       → the V4_SWAP itself
  *
- * — each as a Lane A meta-transaction: the owner's session signer signs (silently, the same `SIGN_META_REQUEST_AND_APPROVE`
- * action the counter uses), the Sepolia broadcaster submits `requestAndApproveExecution`. Nothing Kenji says can make
+ * — plus the counter's own `transfer(address,uint256)` on EUR / ILS, so Lane A can pay out fiat. Each write is a
+ * Lane A meta-transaction: the owner's session signer signs (silently, the same `SIGN_META_REQUEST_AND_APPROVE`
+ * action the counter uses), the Sepolia broadcaster submits `requestAndApproveExecution`. Nothing Johnny says can make
  * the account talk to any other contract or function: a wrong router is `TargetNotWhitelisted`, a wrong selector has
- * no schema. The first swap is three meta-transactions; later ones are one, because the two approvals are read back
- * from the chain and skipped while they still cover the amount.
+ * no schema. The first swap in a currency is three meta-transactions; later ones are one, because the two approvals
+ * are read back from the chain (per input token) and skipped while they still cover the amount.
  *
  * Like `ens.ts`, this is a lazy Sepolia module inside the Main-wing Teller Desk: payments and the vault stay on Remote
  * EVM 1337; only the FX till lives on Sepolia. Everything Uniswap is hand-encoded with viem from the published
@@ -63,6 +71,7 @@ import {
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import {
+  EngineBlox,
   GuardController,
   GuardConfigActionType,
   GUARD_CONTROLLER_FUNCTION_SELECTORS as GC_SEL,
@@ -98,7 +107,7 @@ const ACT_SWAP_EXACT_IN_SINGLE = 0x06;
 const ACT_SETTLE_ALL = 0x0c;
 const ACT_TAKE_ALL = 0x0f;
 
-/** Slippage Kenji quotes with (docs/UNISWAP.md §3.3) and how long a quote stays on the board. */
+/** Slippage Johnny quotes with (docs/UNISWAP.md §3.3) and how long a quote stays on the board. */
 export const SLIPPAGE_BPS = 100n;
 export const QUOTE_TTL_SEC = 300;
 /** Permit2 allowance to the router is set once with a long expiry, so repeat swaps are one meta-transaction. */
@@ -183,6 +192,18 @@ export const FX_FUNCTIONS = [
 ] as const;
 export const FX_SELECTORS = Object.fromEntries(FX_FUNCTIONS.map((f) => [f.key, toFunctionSelector(`function ${f.signature}`)])) as Record<(typeof FX_FUNCTIONS)[number]['key'], Hex>;
 const FX_ACTIONS = [TxAction.SIGN_META_REQUEST_AND_APPROVE, TxAction.EXECUTE_META_REQUEST_AND_APPROVE];
+/**
+ * The counter's Lane A shape (docs/BLOXCHAIN-INTEGRATION.md §3.3). Not an FX call and not registered here — `initialize`
+ * installs the schema and Iris's provisioning whitelists the practice dollar + grants the roles. The exchange desk only
+ * adds the two fiat tokens as **targets**, so fiat bought at Johnny's can be paid out over Eve's counter (Lane A only).
+ */
+export const FX_TRANSFER = { key: 'transfer', signature: 'transfer(address,uint256)', selector: EngineBlox.ERC20_TRANSFER_SELECTOR as Hex } as const;
+
+/** Every target the exchange desk expects on the till, per selector. Read against the chain, never assumed. */
+function fxTargets(d: FxDeployment): { approve: Address[]; permit2: Address[]; execute: Address[]; transfer: Address[] } {
+  const fiat = FX_PAIRS.map((p) => d.pairs[p].token.address);
+  return { approve: [d.usdc.address, ...fiat], permit2: [d.uniswap.permit2], execute: [d.uniswap.universalRouter], transfer: fiat };
+}
 
 /**
  * Outer transaction gas limits (see `enableFx`). Refunded when unused; they only have to be *enough* and to fit
@@ -248,9 +269,16 @@ interface PoolKey {
   hooks: Address;
 }
 
-/** The two currencies Kenji sells. One-way: the desk buys neither back in v1. */
+/** The two currencies Johnny deals in, each against the practice dollar, both ways since 2026-09-10. */
 export type FxPair = 'EUR' | 'ILS';
 export const FX_PAIRS: readonly FxPair[] = ['EUR', 'ILS'];
+/**
+ * Direction of a trade, from the player's side of the counter: `buy` = pay dollars, receive the pair's fiat;
+ * `sell` = pay that fiat, receive dollars. The **amount is always in the currency being sold** — buy euros with a
+ * dollar size, sell euros with a euro size — because that is the number a customer has in hand at an FX desk.
+ */
+export type FxSide = 'buy' | 'sell';
+export const FX_SIDES: readonly FxSide[] = ['buy', 'sell'];
 
 export interface FxPairDeployment {
   pair: FxPair;
@@ -347,7 +375,24 @@ export function fxDeployment(): FxDeployment {
 export function pairOf(v: unknown): FxPair {
   const p = String(v ?? '').trim().toUpperCase();
   if (p === 'EUR' || p === 'ILS') return p;
-  throw fxError('FX_PAIR', `the FX desk sells EUR or ILS for practice dollars; "${String(v ?? '')}" is not a pair it deals in`, 400);
+  throw fxError('FX_PAIR', `the FX desk trades EUR or ILS against practice dollars; "${String(v ?? '')}" is not a pair it deals in`, 400);
+}
+
+/** `buy` | `sell` (case-insensitive; also `USD→EUR`-style words `to`/`from` are *not* accepted — keep the API to one vocabulary). Missing = `buy`, the historical one-way direction. */
+export function sideOf(v: unknown): FxSide {
+  const s = String(v ?? '').trim().toLowerCase();
+  if (s === '' || s === 'buy') return 'buy';
+  if (s === 'sell') return 'sell';
+  throw fxError('FX_SIDE', `the FX desk buys or sells — "${String(v)}" is not a direction it knows`, 400);
+}
+
+/** The two legs of a directed trade on one pool: which token leaves the till and which arrives. */
+function legsOf(d: FxDeployment, p: FxPairDeployment, side: FxSide) {
+  const usd = { address: d.usdc.address, symbol: d.usdc.symbol, decimals: d.usdc.decimals };
+  const fiat = { address: p.token.address, symbol: p.token.symbol, decimals: p.token.decimals };
+  return side === 'buy'
+    ? { tokenIn: usd, tokenOut: fiat, zeroForOne: p.usdIsCurrency0 }
+    : { tokenIn: fiat, tokenOut: usd, zeroForOne: !p.usdIsCurrency0 };
 }
 
 /** Mid price of a pool from `slot0`, as fiat per USD (both sides are 6 dp, so the raw ratio is the display ratio). */
@@ -462,7 +507,7 @@ async function assertSepoliaTill(till: Address, owner: Address): Promise<Address
   }
   /**
    * `getCode` just answered, so the RPC is demonstrably reachable — which means a failing `owner()` here is a
-   * fact about the *contract*, not the network, and must not be reported as `FX_RPC` ("Kenji can't reach the
+   * fact about the *contract*, not the network, and must not be reported as `FX_RPC` ("Johnny can't reach the
    * exchange floor"). A contract with no `owner()` is simply not an AccountBlox: that is the same refusal as
    * an account owned by someone else, and the player deserves the same honest line.
    */
@@ -487,7 +532,7 @@ async function assertSepoliaTill(till: Address, owner: Address): Promise<Address
 export async function tillFor(player: Player, open = false, jobId?: string): Promise<Address> {
   /**
    * Live: the till **is** the Main account. On the Live wing the player's AccountBlox is already a Sepolia
-   * contract, so Kenji trades out of the same account the counter pays from — one balance to fund, one guard
+   * contract, so Johnny trades out of the same account the counter pays from — one balance to fund, one guard
    * list to read, and the FX door is registered on the account the player can see in their passbook
    * (docs/SEPOLIA-LIVE.md §1). Dev cannot do this: a 1337 account and a Sepolia till are different contracts
    * on different chains, so Developer Mode keeps them apart.
@@ -623,13 +668,40 @@ async function guardedCall(player: Player, till: Address, fn: (typeof FX_FUNCTIO
 
 // ---------------------------------------------------------------- opening the till: guard schemas + whitelist + role grants
 
+/** One whitelist row as the desk reports it: which function, which target, and the bank word for the target. */
+export interface FxWhitelistRow {
+  function: string;
+  selector: Hex;
+  target: Address;
+  /** `USD` | `EUR` | `ILS` for a token target; `Permit2` / `UniversalRouter` otherwise. */
+  symbol: string;
+}
+
 export interface FxEnableResult {
   account: Address;
   chainId: number;
   guardHash?: Hex;
   roleHash?: Hex;
   actions: string[];
-  whitelist: Array<{ function: string; selector: Hex; target: Address }>;
+  whitelist: FxWhitelistRow[];
+}
+
+function symbolOfTarget(d: FxDeployment, target: Address): string {
+  const t = target.toLowerCase();
+  if (t === d.usdc.address.toLowerCase()) return d.usdc.symbol;
+  for (const pair of FX_PAIRS) if (t === d.pairs[pair].token.address.toLowerCase()) return d.pairs[pair].token.symbol;
+  if (t === d.uniswap.permit2.toLowerCase()) return 'Permit2';
+  if (t === d.uniswap.universalRouter.toLowerCase()) return 'UniversalRouter';
+  return target;
+}
+
+/** The full expected whitelist, in bank order: three FX call shapes (each target), then the counter's fiat transfer targets. */
+function whitelistOf(d: FxDeployment): FxWhitelistRow[] {
+  const targets = fxTargets(d);
+  const rows: FxWhitelistRow[] = [];
+  for (const fn of FX_FUNCTIONS) for (const target of targets[fn.key]) rows.push({ function: fn.signature, selector: FX_SELECTORS[fn.key], target, symbol: symbolOfTarget(d, target) });
+  for (const target of targets.transfer) rows.push({ function: FX_TRANSFER.signature, selector: FX_TRANSFER.selector, target, symbol: symbolOfTarget(d, target) });
+  return rows;
 }
 
 /**
@@ -678,7 +750,7 @@ export async function enableFx(player: Player, jobId: string, audit?: AuditSink)
   const till = await tillFor(player, true, jobId);
   let current = await ensureFxPolicy(player, till);
 
-  const targets: Record<(typeof FX_FUNCTIONS)[number]['key'], Address> = { approve: d.usdc.address, permit2: d.uniswap.permit2, execute: d.uniswap.universalRouter };
+  const targets = fxTargets(d);
   const gc = new GuardController(publicClient, broadcaster, till, chain);
   const rbac = new RuntimeRBAC(publicClient, broadcaster, till, chain);
   const actions: string[] = [];
@@ -686,16 +758,34 @@ export async function enableFx(player: Player, jobId: string, audit?: AuditSink)
   stage(current, jobId, 'configuring', 'Setting up the exchange desk…');
   const supported = new Set((await readFx(() => gc.getSupportedFunctions())).map((s) => s.toLowerCase()));
   const guardActions: Array<{ actionType: GuardConfigActionType; data: Hex }> = [];
+  const listedOn = async (selector: Hex): Promise<Address[]> => (supported.has(selector.toLowerCase()) ? readFx(() => gc.getFunctionWhitelistTargets(selector).catch(() => [] as Address[])) : []);
   for (const fn of FX_FUNCTIONS) {
     const selector = FX_SELECTORS[fn.key];
     if (!supported.has(selector.toLowerCase())) {
       guardActions.push({ actionType: GuardConfigActionType.REGISTER_FUNCTION, data: encodeRegisterFunction(publicClient, d.guardDefinitions, fn.signature, fn.operation, FX_ACTIONS) });
       actions.push(`REGISTER_FUNCTION ${fn.signature} as ${fn.operation}`);
     }
-    const listed = supported.has(selector.toLowerCase()) ? await readFx(() => gc.getFunctionWhitelistTargets(selector).catch(() => [] as Address[])) : [];
-    if (!listed.some((a) => a.toLowerCase() === targets[fn.key].toLowerCase())) {
-      guardActions.push({ actionType: GuardConfigActionType.ADD_TARGET_TO_WHITELIST, data: encodeAddTargetToWhitelist(publicClient, d.guardDefinitions, selector, targets[fn.key]) });
-      actions.push(`ADD_TARGET_TO_WHITELIST ${fn.key} → ${targets[fn.key]}`);
+    const listed = await listedOn(selector);
+    // Bidirectional (2026-09-10): `approve` carries three targets — USD, EUR, ILS — because a reverse trade has the
+    // account approve the *fiat* for Permit2. A till opened one-way lists only the dollar and heals here.
+    for (const target of targets[fn.key]) {
+      if (listed.some((a) => a.toLowerCase() === target.toLowerCase())) continue;
+      guardActions.push({ actionType: GuardConfigActionType.ADD_TARGET_TO_WHITELIST, data: encodeAddTargetToWhitelist(publicClient, d.guardDefinitions, selector, target) });
+      actions.push(`ADD_TARGET_TO_WHITELIST ${fn.key} → ${symbolOfTarget(d, target)} ${target}`);
+    }
+  }
+  /**
+   * The counter's `transfer` schema is built in (`initialize`) and Iris already whitelisted the practice dollar on it;
+   * the exchange desk adds Practice EUR / ILS as **targets** so fiat bought here can be paid out as account money.
+   * Deliberately here and not in `provision.whitelistToken`: the door to fiat is Johnny's, and Account Opening
+   * must not grow a currency the player has never asked for (HANDOFF-fx-bidirectional §B).
+   */
+  {
+    const listed = await listedOn(FX_TRANSFER.selector);
+    for (const target of targets.transfer) {
+      if (listed.some((a) => a.toLowerCase() === target.toLowerCase())) continue;
+      guardActions.push({ actionType: GuardConfigActionType.ADD_TARGET_TO_WHITELIST, data: encodeAddTargetToWhitelist(publicClient, d.guardDefinitions, FX_TRANSFER.selector, target) });
+      actions.push(`ADD_TARGET_TO_WHITELIST transfer → ${symbolOfTarget(d, target)} ${target}`);
     }
   }
   let guardHash: Hex | undefined;
@@ -712,15 +802,26 @@ export async function enableFx(player: Player, jobId: string, audit?: AuditSink)
     [BROADCASTER_ROLE, 'BROADCASTER', TxAction.EXECUTE_META_REQUEST_AND_APPROVE, 'EXECUTE_META_REQUEST_AND_APPROVE'],
   ] as const) {
     const existing = (await readFx(() => rbac.getActiveRolePermissions(role))) as Array<{ functionSelector: Hex; grantedActionsBitmap: number | bigint }>;
+    const want = toContractValue(createBitmapFromActions([action]));
     for (const fn of FX_FUNCTIONS) {
       const selector = FX_SELECTORS[fn.key];
-      const want = toContractValue(createBitmapFromActions([action]));
       const cur = existing.find((e) => e.functionSelector.toLowerCase() === selector.toLowerCase());
       if (cur && Number(cur.grantedActionsBitmap) === want) continue;
       if (cur) continue; // a different grant already exists on this selector; never REMOVE from a role here
       // `handlerForSelectors` is the **selector itself**, not `requestAndApproveExecution` — see the note below.
       roleActions.push({ actionType: RoleConfigActionType.ADD_FUNCTION_TO_ROLE, data: encodeAddFunctionToRole(publicClient, d.rbacDefinitions, role, { functionSelector: selector, grantedActionsBitmap: want, handlerForSelectors: [selector] }) });
       actions.push(`ADD ${fn.key} to ${roleName} (${actionName})`);
+    }
+    /**
+     * Role grants are selector-scoped, so adding fiat *targets* on `transfer` needs no new grant on a Main account
+     * Iris provisioned — the counter's grants already cover the selector. Only when the chain proves the grant is
+     * missing (a Developer-Mode till the provisioner never touched) is it added, and then in the built-in schema's
+     * own shape: flexible mode, handler = `requestAndApproveExecution`, exactly as `provision.desiredGrants` does.
+     */
+    const tr = existing.find((e) => e.functionSelector.toLowerCase() === FX_TRANSFER.selector.toLowerCase());
+    if (!tr) {
+      roleActions.push({ actionType: RoleConfigActionType.ADD_FUNCTION_TO_ROLE, data: encodeAddFunctionToRole(publicClient, d.rbacDefinitions, role, { functionSelector: FX_TRANSFER.selector, grantedActionsBitmap: want, handlerForSelectors: [GC_SEL.REQUEST_AND_APPROVE_EXECUTION_SELECTOR] }) });
+      actions.push(`ADD transfer to ${roleName} (${actionName}) — the chain showed no grant on the counter's selector`);
     }
   }
   let roleHash: Hex | undefined;
@@ -731,8 +832,8 @@ export async function enableFx(player: Player, jobId: string, audit?: AuditSink)
   }
 
   current = patchPlayer(current.privyUserId, { fxAccount: till, fxConfigured: true });
-  stage(current, jobId, 'mined', guardHash || roleHash ? 'Your FX till is open.' : 'Your FX till was already open.', { account: till, ...(roleHash ?? guardHash ? { hash: roleHash ?? guardHash } : {}) });
-  return { account: till, chainId: d.chainId, guardHash, roleHash, actions, whitelist: FX_FUNCTIONS.map((fn) => ({ function: fn.signature, selector: FX_SELECTORS[fn.key], target: targets[fn.key] })) };
+  stage(current, jobId, 'mined', guardHash || roleHash ? 'Your FX till is open — both ways, and your euros and shekels can go over the counter.' : 'Your FX till was already open.', { account: till, ...(roleHash ?? guardHash ? { hash: roleHash ?? guardHash } : {}) });
+  return { account: till, chainId: d.chainId, guardHash, roleHash, actions, whitelist: whitelistOf(d) };
 }
 
 /**
@@ -745,34 +846,60 @@ export async function enableFx(player: Player, jobId: string, audit?: AuditSink)
  * on a desk read — cheap next to being wrong.
  */
 export async function fxEnabled(till: Address): Promise<boolean> {
+  return (await readDoor(till)).open;
+}
+
+/** What the exchange door looks like on chain, in detail — `fxEnabled` is its one-bit summary, `/fx/status` shows the rest. */
+export interface FxDoor {
+  /** Every expected target is whitelisted and both roles hold their action on every selector — including the fiat transfer targets. */
+  open: boolean;
+  /** Whitelist rows that are **missing** on chain (empty when open). A one-way till shows the two fiat `approve` rows and the two `transfer` rows here. */
+  missing: FxWhitelistRow[];
+  /** Currencies Lane A may pay from this account today: the symbols whose token is a `transfer` target on chain. */
+  payable: string[];
+}
+
+/**
+ * Since 2026-09-10 "open" also demands the two fiat `approve` targets (reverse trades) and the two fiat `transfer`
+ * targets (Lane A fiat pay). Otherwise a till opened one-way would report open, `enableFx` would send nothing on a
+ * revisit, and the first sell would revert `TargetNotWhitelisted` three meta-transactions in. A probe that passes
+ * over a half-open door is not a probe (see the 2026-09-08 note above).
+ */
+export async function readDoor(till: Address): Promise<FxDoor> {
   const d = fxDeployment();
   const { publicClient, chain, broadcaster } = fxClients();
   const gc = new GuardController(publicClient, broadcaster, till, chain);
   const rbac = new RuntimeRBAC(publicClient, broadcaster, till, chain);
-  const targets: Record<(typeof FX_FUNCTIONS)[number]['key'], Address> = { approve: d.usdc.address, permit2: d.uniswap.permit2, execute: d.uniswap.universalRouter };
+  const want = whitelistOf(d);
 
-  // 1. the three schemas are registered
+  // 1. the three FX schemas are registered (the transfer schema is built in)
   const supported = new Set((await readFx(() => gc.getSupportedFunctions())).map((s) => s.toLowerCase()));
-  if (!Object.values(FX_SELECTORS).every((s) => supported.has(s.toLowerCase()))) return false;
+  const schemasOk = Object.values(FX_SELECTORS).every((s) => supported.has(s.toLowerCase()));
 
-  // 2. each selector's whitelist carries its one target — a schema with no target opens nothing
-  const listed = await readFx(() => Promise.all(FX_FUNCTIONS.map((fn) => gc.getFunctionWhitelistTargets(FX_SELECTORS[fn.key]).catch(() => [] as Address[]))));
-  if (!FX_FUNCTIONS.every((fn, i) => listed[i].some((a) => a.toLowerCase() === targets[fn.key].toLowerCase()))) return false;
+  // 2. each selector's whitelist carries every target we expect — a schema with no target opens nothing
+  const selectors = [...new Set(want.map((w) => w.selector))];
+  const listed = new Map<string, Address[]>();
+  await readFx(() => Promise.all(selectors.map(async (s) => listed.set(s.toLowerCase(), supported.has(s.toLowerCase()) ? await gc.getFunctionWhitelistTargets(s).catch(() => [] as Address[]) : []))));
+  const has = (row: FxWhitelistRow) => (listed.get(row.selector.toLowerCase()) ?? []).some((a) => a.toLowerCase() === row.target.toLowerCase());
+  const missing = want.filter((row) => !has(row));
+  const transferListed = listed.get(FX_TRANSFER.selector.toLowerCase()) ?? [];
+  const payable = [d.usdc, ...FX_PAIRS.map((p) => d.pairs[p].token)].filter((t) => transferListed.some((a) => a.toLowerCase() === t.address.toLowerCase())).map((t) => t.symbol);
 
-  // 3. and the roles can actually use them: OWNER signs, BROADCASTER executes, on all three (BLOXCHAIN-INTEGRATION V4)
+  // 3. and the roles can actually use them: OWNER signs, BROADCASTER executes, on all four selectors (BLOXCHAIN-INTEGRATION V4)
+  let rolesOk = true;
   for (const [role, action] of [
     [OWNER_ROLE, TxAction.SIGN_META_REQUEST_AND_APPROVE],
     [BROADCASTER_ROLE, TxAction.EXECUTE_META_REQUEST_AND_APPROVE],
   ] as const) {
-    const want = toContractValue(createBitmapFromActions([action]));
+    const wantBits = toContractValue(createBitmapFromActions([action]));
     const perms = (await readFx(() => rbac.getActiveRolePermissions(role))) as Array<{ functionSelector: Hex; grantedActionsBitmap: number | bigint }>;
     const holds = (selector: Hex) => {
       const cur = perms.find((p) => p.functionSelector.toLowerCase() === selector.toLowerCase());
-      return Boolean(cur) && (Number(cur!.grantedActionsBitmap) & want) === want;
+      return Boolean(cur) && (Number(cur!.grantedActionsBitmap) & wantBits) === wantBits;
     };
-    if (!FX_FUNCTIONS.every((fn) => holds(FX_SELECTORS[fn.key]))) return false;
+    if (!selectors.every(holds)) rolesOk = false;
   }
-  return true;
+  return { open: schemasOk && missing.length === 0 && rolesOk, missing, payable };
 }
 
 // ---------------------------------------------------------------- status, quote, swap
@@ -800,17 +927,19 @@ export interface FxStatus {
   eur: string;
   ils: string;
   symbolIn: string;
+  /** Both directions on every pair since 2026-09-10. */
+  sides: readonly FxSide[];
   pairs: FxPairStatus[];
   router: Address;
   quoter: Address;
-  whitelist: Array<{ function: string; selector: Hex; target: Address }>;
+  /** Every row the open door needs (three FX call shapes × their targets, plus EUR / ILS on the counter's `transfer`). */
+  whitelist: FxWhitelistRow[];
+  /** Rows the chain does **not** carry yet — a one-way till lists the fiat approve + transfer rows here until Johnny heals it. */
+  missing: FxWhitelistRow[];
+  /** Currencies Lane A can pay from this till today (`transfer` targets on chain). */
+  payable: string[];
   explorer: { account?: string; pools: Record<FxPair, string> };
   serverNow: string;
-}
-
-function whitelistOf(d: FxDeployment) {
-  const targets = { approve: d.usdc.address, permit2: d.uniswap.permit2, execute: d.uniswap.universalRouter } as const;
-  return FX_FUNCTIONS.map((fn) => ({ function: fn.signature, selector: FX_SELECTORS[fn.key], target: targets[fn.key] }));
 }
 
 async function pairStatuses(d: FxDeployment, till?: Address): Promise<FxPairStatus[]> {
@@ -851,17 +980,20 @@ export async function fxStatus(player: Player): Promise<FxStatus> {
   } catch (e) {
     if ((e as { code?: string }).code !== 'FX_TILL_CLOSED') throw e;
   }
-  const base = { chainId: d.chainId, configured: true, symbolIn: d.usdc.symbol, router: d.uniswap.universalRouter, quoter: d.uniswap.quoter, whitelist, serverNow };
+  const base = { chainId: d.chainId, configured: true, symbolIn: d.usdc.symbol, sides: FX_SIDES, router: d.uniswap.universalRouter, quoter: d.uniswap.quoter, whitelist, serverNow };
   if (!till) {
     const pairs = await pairStatuses(d);
-    return { ...base, account: null, enabled: false, usdc: '0', eur: '0', ils: '0', pairs, explorer: { pools: explorerPools } };
+    return { ...base, account: null, enabled: false, usdc: '0', eur: '0', ils: '0', pairs, missing: whitelist, payable: [], explorer: { pools: explorerPools } };
   }
-  const [usdc, enabled, pairs] = await Promise.all([readFx(() => publicClient.readContract({ address: d.usdc.address, abi: erc20, functionName: 'balanceOf', args: [till!] })), fxEnabled(till), pairStatuses(d, till)]);
+  const [usdc, door, pairs] = await Promise.all([readFx(() => publicClient.readContract({ address: d.usdc.address, abi: erc20, functionName: 'balanceOf', args: [till!] })), readDoor(till), pairStatuses(d, till)]);
+  const enabled = door.open;
   if (enabled !== Boolean(player.fxConfigured)) patchPlayer(player.privyUserId, { fxConfigured: enabled });
   return {
     ...base,
     account: till,
     enabled,
+    missing: door.missing,
+    payable: door.payable,
     usdc: formatUnits(usdc, d.usdc.decimals),
     eur: pairs.find((p) => p.pair === 'EUR')!.balance,
     ils: pairs.find((p) => p.pair === 'ILS')!.balance,
@@ -874,10 +1006,12 @@ export interface FxQuote {
   quoteId: string;
   chainId: number;
   pair: FxPair;
+  /** `buy` = USD → fiat, `sell` = fiat → USD. `amountIn` is in `symbolIn`, the currency being sold. */
+  side: FxSide;
   amountIn: string;
   amountOut: string;
   minOut: string;
-  /** "1 USD ≈ 0.8584 EUR" — the all-in rate of this size, fee included. */
+  /** "1 USD ≈ 0.8584 EUR" (buy) or "1 EUR ≈ 1.1579 USD" (sell) — the all-in rate of this size, fee included. */
   rate: string;
   rateOut: string;
   symbolIn: string;
@@ -892,46 +1026,53 @@ export interface FxQuote {
   poolId: Hex;
 }
 
-const quotes = new Map<string, { player: string; pair: FxPair; amountIn: bigint; minOut: bigint; deadline: number }>();
+const quotes = new Map<string, { player: string; pair: FxPair; side: FxSide; amountIn: bigint; minOut: bigint; deadline: number }>();
 
-/** Kenji's board: V4Quoter.quoteExactInputSingle by `eth_call` on the pair's pool, minus 1 % slippage, good for five minutes. */
-export async function quote(player: Player | undefined, amount: string, pair: unknown = 'EUR'): Promise<FxQuote> {
+/**
+ * Johnny's board: V4Quoter.quoteExactInputSingle by `eth_call` on the pair's pool, minus 1 % slippage, good for five
+ * minutes. `side` picks the direction on the same pool — `zeroForOne` is simply flipped for a sell — and the amount
+ * is read in the sold currency's decimals (both are 6 dp today, but the code does not lean on that).
+ */
+export async function quote(player: Player | undefined, amount: string, pair: unknown = 'EUR', side: unknown = 'buy'): Promise<FxQuote> {
   const d = fxDeployment();
   const { publicClient } = fxClients();
   const p = d.pairs[pairOf(pair)];
+  const s = sideOf(side);
+  const { tokenIn, tokenOut, zeroForOne } = legsOf(d, p, s);
   if (!/^\d+(\.\d+)?$/.test(amount) || Number(amount) <= 0) throw fxError('FX_AMOUNT', `amount must be a positive decimal string, got ${amount}`);
-  const amountIn = parseUnits(amount, d.usdc.decimals);
+  const amountIn = parseUnits(amount, tokenIn.decimals);
   if (amountIn > maxUint160) throw fxError('FX_AMOUNT', 'amount too large');
   const key = { currency0: p.pool.currency0, currency1: p.pool.currency1, fee: p.pool.fee, tickSpacing: p.pool.tickSpacing, hooks: p.pool.hooks };
   let amountOut: bigint;
   let gasEstimate: bigint;
   try {
-    const sim = await publicClient.simulateContract({ address: d.uniswap.quoter, abi: quoterAbi, functionName: 'quoteExactInputSingle', args: [{ poolKey: key, zeroForOne: p.usdIsCurrency0, exactAmount: amountIn, hookData: '0x' }] });
+    const sim = await publicClient.simulateContract({ address: d.uniswap.quoter, abi: quoterAbi, functionName: 'quoteExactInputSingle', args: [{ poolKey: key, zeroForOne, exactAmount: amountIn, hookData: '0x' }] });
     [amountOut, gasEstimate] = sim.result;
   } catch (e) {
     const msg = (e as Error).message.split('\n')[0];
-    throw fxError('FX_QUOTE_FAILED', `V4Quoter refused ${amount} ${d.usdc.symbol} → ${p.token.symbol}: ${msg}`, 400);
+    throw fxError('FX_QUOTE_FAILED', `V4Quoter refused ${amount} ${tokenIn.symbol} → ${tokenOut.symbol}: ${msg}`, 400);
   }
   if (amountOut === 0n) throw fxError('FX_QUOTE_FAILED', 'the pool returned nothing for that amount');
   const minOut = (amountOut * (10_000n - SLIPPAGE_BPS)) / 10_000n;
   const now = Math.floor(Date.now() / 1000);
   const deadline = now + QUOTE_TTL_SEC;
   const quoteId = randomUUID().slice(0, 8);
-  quotes.set(quoteId, { player: player?.privyUserId ?? 'anon', pair: p.pair, amountIn, minOut, deadline });
+  quotes.set(quoteId, { player: player?.privyUserId ?? 'anon', pair: p.pair, side: s, amountIn, minOut, deadline });
   for (const [id, q] of quotes) if (q.deadline + 60 < now) quotes.delete(id);
-  const out = formatUnits(amountOut, p.token.decimals);
+  const out = formatUnits(amountOut, tokenOut.decimals);
   const perOne = Number(out) / Number(amount);
   return {
     quoteId,
     chainId: d.chainId,
     pair: p.pair,
+    side: s,
     amountIn: amount,
     amountOut: trim(out),
-    minOut: trim(formatUnits(minOut, p.token.decimals)),
-    rate: `1 ${d.usdc.symbol} ≈ ${perOne.toFixed(4)} ${p.token.symbol}`,
-    rateOut: perOne > 0 ? `1 ${p.token.symbol} ≈ ${(1 / perOne).toFixed(4)} ${d.usdc.symbol}` : '—',
-    symbolIn: d.usdc.symbol,
-    symbolOut: p.token.symbol,
+    minOut: trim(formatUnits(minOut, tokenOut.decimals)),
+    rate: `1 ${tokenIn.symbol} ≈ ${perOne.toFixed(4)} ${tokenOut.symbol}`,
+    rateOut: perOne > 0 ? `1 ${tokenOut.symbol} ≈ ${(1 / perOne).toFixed(4)} ${tokenIn.symbol}` : '—',
+    symbolIn: tokenIn.symbol,
+    symbolOut: tokenOut.symbol,
     fee: `${(p.pool.fee / 10_000).toFixed(2)}%`,
     slippage: `${Number(SLIPPAGE_BPS) / 100}%`,
     deadline: String(deadline),
@@ -950,6 +1091,7 @@ export interface FxSwapResult {
   account: Address;
   chainId: number;
   pair: FxPair;
+  side: FxSide;
   amountIn: string;
   amountOut: string;
   minOut: string;
@@ -970,15 +1112,17 @@ export interface FxSwapResult {
 }
 
 /**
- * The swap. Three guarded calls the first time, one afterwards. Refuses a stale quote (`FX_QUOTE_EXPIRED`) rather than
- * re-pricing silently; refuses without spending when the till is short (`FX_TILL_SHORT`) or not open (`FX_NOT_ENABLED`).
- * The pair comes from the quote when there is one; a bare amount needs `pair` too.
+ * The swap. Three guarded calls the first time a currency is sold, one afterwards. Refuses a stale quote
+ * (`FX_QUOTE_EXPIRED`) rather than re-pricing silently; refuses without spending when the till is short of the **sold**
+ * currency (`FX_TILL_SHORT`) or not open (`FX_NOT_ENABLED`). Pair and side come from the quote when there is one; a
+ * bare amount needs `pair` (and `side`, default `buy`) beside it. A quote taken with the other pair or the other side
+ * is refused (`FX_PAIR` / `FX_SIDE`) — the player agreed to *that* trade, not its mirror.
  */
-export async function swap(player: Player, quoteId: string | undefined, amount: string | undefined, jobId: string, audit?: AuditSink, pair?: unknown): Promise<FxSwapResult> {
+export async function swap(player: Player, quoteId: string | undefined, amount: string | undefined, jobId: string, audit?: AuditSink, pair?: unknown, side?: unknown): Promise<FxSwapResult> {
   const d = fxDeployment();
   const { publicClient } = fxClients();
   const till = await tillFor(player);
-  if (!(await fxEnabled(till))) throw fxError('FX_NOT_ENABLED', `the exchange door is not registered on ${till} — Kenji opens the till first (/fx/enable)`, 409);
+  if (!(await fxEnabled(till))) throw fxError('FX_NOT_ENABLED', `the exchange door is not fully registered on ${till} — Johnny opens (or heals) the till first (/fx/enable)`, 409);
   let current = await ensureFxPolicy(player, till);
 
   const now = Math.floor(Date.now() / 1000);
@@ -986,51 +1130,55 @@ export async function swap(player: Player, quoteId: string | undefined, amount: 
   if (quoteId && !q) throw fxError('FX_QUOTE_EXPIRED', `quote ${quoteId} is not on the board any more`, 409);
   if (q && q.deadline <= now) throw fxError('FX_QUOTE_EXPIRED', `quote ${quoteId} expired at ${q.deadline}`, 409);
   if (q && pair !== undefined && pair !== '' && pairOf(pair) !== q.pair) throw fxError('FX_PAIR', `quote ${quoteId} is for ${q.pair}, not ${String(pair)}`, 409);
+  if (q && side !== undefined && side !== '' && sideOf(side) !== q.side) throw fxError('FX_SIDE', `quote ${quoteId} is a ${q.side}, not a ${String(side)}`, 409);
   if (!q) {
     if (!amount) throw fxError('FX_AMOUNT', 'a quoteId or an amount is required');
-    const fresh = await quote(current, amount, pairOf(pair));
+    const fresh = await quote(current, amount, pairOf(pair), sideOf(side));
     q = quotes.get(fresh.quoteId)!;
     quoteId = fresh.quoteId;
   }
   const p = d.pairs[q.pair];
+  const { tokenIn, tokenOut, zeroForOne } = legsOf(d, p, q.side);
   const { amountIn, minOut } = q;
   const deadline = BigInt(q.deadline);
-  const balance = await readFx(() => publicClient.readContract({ address: d.usdc.address, abi: erc20, functionName: 'balanceOf', args: [till] }));
+  const balance = await readFx(() => publicClient.readContract({ address: tokenIn.address, abi: erc20, functionName: 'balanceOf', args: [till] }));
   if (balance < amountIn) {
-    // Deliberately not the protocol's `InsufficientBalance`: that code's bank line sends the player to Ines, and
-    // Ines's faucet tops up the Main-wing account on 1337, not this till on Sepolia. Same refusal, honest signpost.
-    throw Object.assign(new Error(`the FX till holds ${formatUnits(balance, d.usdc.decimals)} ${d.usdc.symbol}; the order needs ${formatUnits(amountIn, d.usdc.decimals)}`), { statusCode: 400, code: 'FX_TILL_SHORT' });
+    // Deliberately not the protocol's `InsufficientBalance`: that code's bank line sends the player to Iris, and
+    // Iris's faucet tops up practice *dollars* — not euros, and not a Developer-Mode till. Same refusal, honest signpost.
+    throw Object.assign(new Error(`the FX till holds ${formatUnits(balance, tokenIn.decimals)} ${tokenIn.symbol}; the order needs ${formatUnits(amountIn, tokenIn.decimals)}`), { statusCode: 400, code: 'FX_TILL_SHORT' });
   }
-  const outBefore = await readFx(() => publicClient.readContract({ address: p.token.address, abi: erc20, functionName: 'balanceOf', args: [till] }));
+  const outBefore = await readFx(() => publicClient.readContract({ address: tokenOut.address, abi: erc20, functionName: 'balanceOf', args: [till] }));
   const steps: FxSwapResult['steps'] = [];
   const link = (h: Hex) => `${d.explorer}/tx/${h}`;
+  const inWord = tokenIn.symbol === d.usdc.symbol ? 'dollar' : tokenIn.symbol;
 
-  // 1. token → Permit2 (once) — the practice dollar is the only token the account ever approves (one-way desk)
-  const allowance = await readFx(() => publicClient.readContract({ address: d.usdc.address, abi: erc20, functionName: 'allowance', args: [till, d.uniswap.permit2] }));
+  // 1. sold token → Permit2 (once per currency). The `approve` whitelist carries USD, EUR and ILS, so a sell approves the fiat.
+  const allowance = await readFx(() => publicClient.readContract({ address: tokenIn.address, abi: erc20, functionName: 'allowance', args: [till, d.uniswap.permit2] }));
   if (allowance < amountIn) {
-    stage(current, jobId, 'signing', 'Preparing the dollar payment at the exchange…');
-    const h = await guardedCall(current, till, FX_FUNCTIONS[0], d.usdc.address, encodeFunctionData({ abi: erc20, functionName: 'approve', args: [d.uniswap.permit2, maxUint256] }), audit);
+    stage(current, jobId, 'signing', `Preparing the ${inWord} payment at the exchange…`);
+    const h = await guardedCall(current, till, FX_FUNCTIONS[0], tokenIn.address, encodeFunctionData({ abi: erc20, functionName: 'approve', args: [d.uniswap.permit2, maxUint256] }), audit);
     steps.push({ step: 'approve', hash: h, explorer: link(h) });
-    stage(current, jobId, 'broadcasting', 'The exchange has the dollar payment on file.', { hash: h });
+    stage(current, jobId, 'broadcasting', `The exchange has the ${inWord} payment on file.`, { hash: h });
   }
-  // 2. Permit2 → router (once, with an expiry)
-  const [p2Amount, p2Exp] = await readFx(() => publicClient.readContract({ address: d.uniswap.permit2, abi: permit2Abi, functionName: 'allowance', args: [till, d.usdc.address, d.uniswap.universalRouter] }));
+  // 2. Permit2 → router (once per currency, with an expiry) — Permit2 allowances are per (owner, token, spender)
+  const [p2Amount, p2Exp] = await readFx(() => publicClient.readContract({ address: d.uniswap.permit2, abi: permit2Abi, functionName: 'allowance', args: [till, tokenIn.address, d.uniswap.universalRouter] }));
   if (p2Amount < amountIn || BigInt(p2Exp) <= deadline) {
     stage(current, jobId, 'signing', "Setting the trade's spending limit…");
-    const h = await guardedCall(current, till, FX_FUNCTIONS[1], d.uniswap.permit2, encodeFunctionData({ abi: permit2Abi, functionName: 'approve', args: [d.usdc.address, d.uniswap.universalRouter, maxUint160, now + PERMIT2_EXPIRY_SEC] }), audit);
+    const h = await guardedCall(current, till, FX_FUNCTIONS[1], d.uniswap.permit2, encodeFunctionData({ abi: permit2Abi, functionName: 'approve', args: [tokenIn.address, d.uniswap.universalRouter, maxUint160, now + PERMIT2_EXPIRY_SEC] }), audit);
     steps.push({ step: 'permit2', hash: h, explorer: link(h) });
     stage(current, jobId, 'broadcasting', 'The exchange spending limit is on file.', { hash: h });
   }
   // 3. the swap: UniversalRouter.execute(V4_SWAP: SWAP_EXACT_IN_SINGLE → SETTLE_ALL → TAKE_ALL).
-  //    `zeroForOne` and the settle/take currencies follow the pool's address sort — USD is currency1 in both fiat pools.
+  //    `zeroForOne` and the settle/take currencies follow the pool's address sort *and* the side: a buy settles USD and
+  //    takes fiat; a sell settles fiat and takes USD. USD happens to be currency1 in both fiat pools — derived, not assumed.
   const key = { currency0: p.pool.currency0, currency1: p.pool.currency1, fee: p.pool.fee, tickSpacing: p.pool.tickSpacing, hooks: p.pool.hooks };
   const commands = encodePacked(['uint8'], [CMD_V4_SWAP]);
   const actions = encodePacked(['uint8', 'uint8', 'uint8'], [ACT_SWAP_EXACT_IN_SINGLE, ACT_SETTLE_ALL, ACT_TAKE_ALL]);
   const swapParams = encodeAbiParameters(parseAbiParameters(`(${POOL_KEY_TUPLE} poolKey, bool zeroForOne, uint128 amountIn, uint128 amountOutMinimum, bytes hookData)`), [
-    { poolKey: key, zeroForOne: p.usdIsCurrency0, amountIn, amountOutMinimum: minOut, hookData: '0x' },
+    { poolKey: key, zeroForOne, amountIn, amountOutMinimum: minOut, hookData: '0x' },
   ]);
-  const settleParams = encodeAbiParameters(parseAbiParameters('address, uint256'), [d.usdc.address, amountIn]);
-  const takeParams = encodeAbiParameters(parseAbiParameters('address, uint256'), [p.token.address, minOut]);
+  const settleParams = encodeAbiParameters(parseAbiParameters('address, uint256'), [tokenIn.address, amountIn]);
+  const takeParams = encodeAbiParameters(parseAbiParameters('address, uint256'), [tokenOut.address, minOut]);
   const inputs = [encodeAbiParameters(parseAbiParameters('bytes, bytes[]'), [actions, [swapParams, settleParams, takeParams]])];
   const calldata = encodeFunctionData({ abi: routerAbi, functionName: 'execute', args: [commands, inputs, deadline] });
   // Pre-flight the router call *as the till* so a bad quote or thin pool is refused before a meta-transaction is spent.
@@ -1042,7 +1190,7 @@ export async function swap(player: Player, quoteId: string | undefined, amount: 
     const code = /V4TooLittleReceived|TooLittleReceived/.test(text) ? 'FX_SLIPPAGE' : /DeadlinePassed|TransactionDeadlinePassed/.test(text) ? 'FX_QUOTE_EXPIRED' : 'FX_ROUTER';
     throw Object.assign(new Error(`router pre-flight refused: ${why.message}`), { statusCode: 400, code });
   }
-  stage(current, jobId, 'signing', `Placing the ${formatUnits(amountIn, d.usdc.decimals)} USD → ${p.token.symbol} trade through the exchange…`);
+  stage(current, jobId, 'signing', `Placing the ${formatUnits(amountIn, tokenIn.decimals)} ${tokenIn.symbol} → ${tokenOut.symbol} trade through the exchange…`);
   const hash = await guardedCall(current, till, FX_FUNCTIONS[2], d.uniswap.universalRouter, calldata, audit);
   steps.push({ step: 'execute', hash, explorer: link(hash) });
 
@@ -1053,7 +1201,7 @@ export async function swap(player: Player, quoteId: string | undefined, amount: 
       publicClient.readContract({ address: d.pairs.ILS.token.address, abi: erc20, functionName: 'balanceOf', args: [till] }),
     ]),
   );
-  const outAfter = p.pair === 'EUR' ? eurAfter : ilsAfter;
+  const outAfter = tokenOut.address === d.usdc.address ? usdcAfter : p.pair === 'EUR' ? eurAfter : ilsAfter;
   const received = outAfter - outBefore;
   let fee: string | undefined;
   try {
@@ -1063,23 +1211,24 @@ export async function swap(player: Player, quoteId: string | undefined, amount: 
     /* receipt fee is decoration */
   }
   current = patchPlayer(current.privyUserId, { fxConfigured: true });
-  const amountOutText = trim(formatUnits(received, p.token.decimals));
-  stage(current, jobId, 'mined', `Swapped ${formatUnits(amountIn, d.usdc.decimals)} ${d.usdc.symbol} for ${amountOutText} ${p.token.symbol}.`, { hash, account: till, fee });
+  const amountOutText = trim(formatUnits(received, tokenOut.decimals));
+  stage(current, jobId, 'mined', `Swapped ${formatUnits(amountIn, tokenIn.decimals)} ${tokenIn.symbol} for ${amountOutText} ${tokenOut.symbol}.`, { hash, account: till, fee });
   if (quoteId) quotes.delete(quoteId);
   return {
     account: till,
     chainId: d.chainId,
     pair: p.pair,
-    amountIn: formatUnits(amountIn, d.usdc.decimals),
+    side: q.side,
+    amountIn: formatUnits(amountIn, tokenIn.decimals),
     amountOut: amountOutText,
-    minOut: trim(formatUnits(minOut, p.token.decimals)),
-    symbolIn: d.usdc.symbol,
-    symbolOut: p.token.symbol,
+    minOut: trim(formatUnits(minOut, tokenOut.decimals)),
+    symbolIn: tokenIn.symbol,
+    symbolOut: tokenOut.symbol,
     steps,
     hash,
     explorer: link(hash),
     usdcAfter: formatUnits(usdcAfter, d.usdc.decimals),
-    outAfter: formatUnits(outAfter, p.token.decimals),
+    outAfter: formatUnits(outAfter, tokenOut.decimals),
     eurAfter: formatUnits(eurAfter, d.pairs.EUR.token.decimals),
     ilsAfter: formatUnits(ilsAfter, d.pairs.ILS.token.decimals),
     poolId: p.pool.id,

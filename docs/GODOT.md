@@ -142,9 +142,9 @@ JS side (`apps/web/src/bridge.ts`) exposes a **flat, JSON-only** API. All values
 | `getHistory` | `{ chainId, limit }` | `{ items }` | Teller watcher cache |
 | `ensAvailable` / `ensMint` / `ensSetText` | see [ENS.md](./ENS.md) | — | Teller `/ens/*` |
 | `fxStatus` (S1) | — | `{ chainId, account, enabled, usdc, weth, symbolIn, symbolOut, pool{id,fee,tick,liquidity,router,quoter}, whitelist[], explorer, serverNow }` | Teller `/fx/status` — the till on Sepolia, re-read from the chain each time |
-| `fxQuote` (S1) | `{ amount }` | `{ quoteId, amountIn, amountOut, minOut, rate, fee, slippage, deadline, serverNow, validSec, poolId }` | Teller `/fx/quote` — V4Quoter by `eth_call`; signs nothing and works signed-out |
-| `fxEnable` (S1) | — | `{ account, guardHash?, roleHash?, actions[], whitelist[] }` | Teller `/fx/enable` — registers the three schemas, whitelists their targets, grants OWNER / BROADCASTER. Silent (session signer) |
-| `fxSwap` (S1) | `{ quoteId?, amount? }` | `{ account, amountIn, amountOut, minOut, steps[{step,hash,explorer}], hash, explorer, usdcAfter, wethAfter, fee? }` | Teller `/fx/swap` — up to three guarded Lane A meta-transactions on Sepolia (token `approve` → Permit2 `approve` → UniversalRouter `execute`). **No second Privy surface** |
+| `fxQuote` (S1) | `{ amount, pair?, side? }` | `{ quoteId, pair, side, amountIn, amountOut, minOut, rate, symbolIn, symbolOut, fee, slippage, deadline, serverNow, validSec, poolId }` | Teller `/fx/quote` — V4Quoter by `eth_call`; signs nothing and works signed-out. `side` buy \| sell (2026-09-10); amount in the sold currency |
+| `fxEnable` (S1) | — | `{ account, guardHash?, roleHash?, actions[], whitelist[] }` | Teller `/fx/enable` — registers the three schemas, whitelists USD + EUR + ILS on `approve`, Permit2, the router, EUR + ILS on `transfer`; grants OWNER / BROADCASTER on the FX selectors. Idempotent heal. Silent (session signer) |
+| `fxSwap` (S1) | `{ quoteId?, amount?, pair?, side? }` | `{ account, pair, side, amountIn, amountOut, minOut, symbolIn, symbolOut, steps[{step,hash,explorer}], hash, explorer, usdcAfter, eurAfter, ilsAfter, outAfter, fee? }` | Teller `/fx/swap` — up to three guarded Lane A meta-transactions on Sepolia (input-token `approve` → Permit2 `approve` → UniversalRouter `execute`), either direction. **No second Privy surface** |
 | `switchWing` | `{ chainId }` | `{ ok }` | local state + Privy chain switch |
 | `openConsole` (stretch) | — | `{ opened, mode: "iframe" \| "tab", url, account }` | The bank computer's terminal overlay (`apps/web/src/overlay/Terminal.tsx`): an iframe of `bloxchain.app/accounts` plus the viewing-wallet form. Resolves when the **panel mounts**, not when it closes — the game unlocks movement on the `terminal.closed` event instead, because a player may read the Console for minutes and no bridge call should be held open that long. MockChain refuses it (`CONSOLE_UNAVAILABLE`): the panel is the shell's, and claiming to open one it cannot produce would be a lie the player can see |
 | `observerGrant` / `observerRevoke` / `observerList` (stretch) | `{ address }` (grant also takes an ENS `name`) | `{ role, roleName, exists, maxWallets, wallets, changed, address, hash? }` | Teller `/observer/*` — the `OBSERVER` runtime role: membership only, **zero** function permissions, so a wallet the player already holds can pass `_validateAnyRole()` on the permissioned registry views (V10) and nothing else. Idempotent; a name is resolved through the existing `/ens/resolve` first. See [TERMINAL-CONSOLE.md](./TERMINAL-CONSOLE.md) |
@@ -194,16 +194,16 @@ Rules that follow, all mirroring the Terminal Console pattern:
   prompt all read it, so Esc order (dialogue → slips → Console / iNPC panel → visitor's card) and `focusCanvas()` on
   close hold for both overlays. `run_action("open_inpc")` sets `inpc_open` + `ui_locked`; `inpc.closed` clears them.
 - **In-world.** `scripts/inpc.gd` (`InpcProp extends BankTerminal`, so `main.gd` ranks it with the terminals for the
-  [Space] prompt) stands at `(3.5, 0, 4.5)` facing south beside Mo as **Blox-47**; `dialogue/inpc.json` has two verbs, `open_inpc` and
+  [Space] prompt) stands at `(3.5, 0, 4.5)` facing south beside Ash as **Blox-47**; `dialogue/inpc.json` has two verbs, `open_inpc` and
   `sleep_inpc`. `tests/run_inpc_walk.gd` walks the Godot half headless; `tests/run_checks.gd` guards the verb list, the
   copy and staff-file silence.
 
 `s2.2` before it added `starGithub` (front-door GitHub stars); `s2.4` after it (a parallel unit) adds the player ops
 float. Everything below is unchanged.
 
-### 4c. Bridge version `s2.1` (as built; adds Ines's load slip)
+### 4c. Bridge version `s2.1` (as built; adds Iris's load slip)
 
-`apps/web/src/bridge/branchZero.ts`. `s2.1` adds one method, **`loadAccount`** — Ines adopting an AccountBlox the
+`apps/web/src/bridge/branchZero.ts`. `s2.1` adds one method, **`loadAccount`** — Iris adopting an AccountBlox the
 player already owns on the current wing (docs/LOAD-ACCOUNT.md). It opens **no** Privy surface: the desk re-pins the
 app-owned policy rules to the loaded address on its own side, so the one consent from Account Opening still covers
 it, and `priority` remains the only method allowed to show a wallet sheet. The bridge checks the shape only
@@ -217,7 +217,7 @@ canned numbers so the greybox can walk the adopt, the foreign-owner refusal and 
 `s2.0` before it added **`setMode`** (Live | Developer Mode) and the `mode` / `chainName` / `fxTillIsMain` fields on
 `getSession`. Everything below is unchanged.
 
-### 4b. Bridge version `s1.0` (as built; adds Kenji's FX desk)
+### 4b. Bridge version `s1.0` (as built; adds Johnny's FX desk)
 
 `apps/web/src/bridge/branchZero.ts`. `s1.0` adds four methods — `fxStatus`, `fxQuote`, `fxEnable`, `fxSwap` — and
 changes nothing else: ENS (`u5.0`), the Terminal Console (`u5.1`) and Priority (`u4.1`) are untouched. The FX desk
@@ -234,12 +234,23 @@ anything else is the desk's `FX_PAIR`). `fxStatus` returns `usdc` / `eur` / `ils
 `midRate`, `seedRate`, `pool`), and no longer carries `weth` / `pool`; `GameState.fx_pair("EUR")` reads one entry and
 the `fx_desk` fact is `fx.has("pairs")`. A swap result names its `pair`. MockChain mirrors both $100M books.
 
+**Bidirectional + fiat Lane A (2026-09-10, no version bump):** `fxQuote` and `fxSwap` also carry `side` = `buy`
+(USD → fiat, amount in USD; the default) | `sell` (fiat → USD, amount in that fiat); anything else is `FX_SIDE`, and so
+is a quote taken with the other side. Quote and swap results carry `side`, and `symbolIn` / `symbolOut` now follow
+the direction (a sell reads `EUR → USD`). `fxStatus` adds `sides`, `whitelist[]` rows with a `symbol` (seven rows
+when open: `approve` × USD / EUR / ILS, Permit2, router, `transfer` × EUR / ILS), `missing[]` (rows the chain lacks —
+a one-way till until Johnny heals it) and `payable[]` (currencies the counter can pay from the till). `pay` carries
+an optional `token` = `USD` | `EUR` | `ILS` (`PAY_TOKEN` otherwise; fiat before Johnny's grant is `FX_NOT_ENABLED`),
+and `getPassbook` / `/status` add `balances[]` (one row per currency the wing can hold — Live three, Dev one).
+`GameState` keeps `fx_last` (the last fill) so Johnny's receipt reads `{fx_filled_*}` after the board clears, and
+exposes `fx_quote_in` (the sold currency) beside the till's `fx_symbol_in`.
+
 ### 4a. Bridge version `u5.1` (as built)
 
 `apps/web/src/bridge/branchZero.ts`. `u5.1` (Terminal Console stretch) adds **`openConsole`** and the three
 **`observer*`** methods above, and the **`terminal.closed`** event; every overlay exit path calls `focusCanvas()` and
 the panel renders nothing while closed, so no hit target is ever left over `#canvas` (§5b). `u5.0` added the ENS Name
-Desk verbs. `u4.1` added one method, **`priority`** (Okafor's desk, U4+): the overlay
+Desk verbs. `u4.1` added one method, **`priority`** (Walker's desk, U4+): the overlay
 prepares the owner's `SIGN_META_APPROVE` payload at the Teller Desk, asks the player's *own* Privy signer to sign it
 with the wallet UI shown — preceded by a fresh Passkey (`useMfa().clear()` + `promptMfa()`) when the player has MFA
 enrolled — and hands the signature back for the Branch Manager to submit. It is the only bridge method allowed to open a
@@ -287,7 +298,7 @@ off it and WASD / `Space` go dead. Rules that follow:
   and the bridge's `login` / `addSessionSigner` once the Privy flow settles. It focuses now and again on two
   timers — not `requestAnimationFrame`, which a background tab never runs — because React unmounts the clicked button
   in the same commit and an unmounted focused element drops focus to `<body>`.
-- Verified 2026-09-07 in the shell: pill → `body`; click bank → `canvas`; *hide* → `canvas`; `F6` teleports, `E` opens Mo
+- Verified 2026-09-07 in the shell: pill → `body`; click bank → `canvas`; *hide* → `canvas`; `F6` teleports, `E` opens Ash
   (U7 polish since then: **Space** talks, **E** orbits the camera right, and `F6` needs `?debug=1`).
 - U4+: the Priority hand scan (Privy MFA sheet + sign sheet) is the second surface that moves focus; the bridge's
   `priority` handler calls `focusCanvas()` in a `finally`, success or refusal.
@@ -297,7 +308,7 @@ off it and WASD / `Space` go dead. Rules that follow:
 `autoload/mock_chain.gd` answers the whole bridge API from canned state (addresses start `0xM0CK…`, cooling period
 30 s, receipts local; U4+ `priority` is a 1.8 s timer labelled "MockChain: no Passkey, nothing signed" and
 `approve as: manager` answers `MANAGER_NO_STAMP`). `godot --headless --path apps/game -s tests/run_mock_walk.gd`
-boots the autoloads by hand and walks Bob's and Okafor's desks against it (U4+) — a `-s` script gets no project
+boots the autoloads by hand and walks Bob's and Walker's desks against it (U4+) — a `-s` script gets no project
 autoloads, so the test adds `Chain` / `GameState` / `Dialogue` to the root itself. It is used automatically on desktop, and on web when the shell URL carries `?mock` (`?mock=account`
 starts as a signed-in, delegated player with an open, funded account). The real bridge stays installed; only Godot's
 `Chain` routes calls to the mock. It exists to walk the greybox without an inbox and proves nothing about the chain —
@@ -306,7 +317,7 @@ Counter 1 / Vault / Lobby / Manager / Name Desk (F5 is the browser's reload and 
 
 **Walking demo reel (MockChain):** `godot --path apps/game -- --demo=walk` (or `BRANCH_ZERO_DEMO=walk`, or web
 `?mock=account&demo=walk`) runs `scripts/demo_walk.gd` — full desk circuit with pauses. Record with
-`powershell -File .\scripts\record-demo-walk.ps1` (default: ffmpeg **ddagrab** client-rect grab + go marker so Mo is
+`powershell -File .\scripts\record-demo-walk.ps1` (default: ffmpeg **ddagrab** client-rect grab + go marker so Ash is
 on film; `-Encoder x264` falls back to GameLab `runtimes/capture`). Keep the Godot window maximized on the primary
 monitor; leave the desktop alone for ~4 minutes. Output under `docs/progress/captures/` (gitignored). See local
 `docs/progress/2026-09-07-u7-ship-reel.md` for the accepted take.
