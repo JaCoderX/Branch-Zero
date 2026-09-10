@@ -74,7 +74,7 @@ func start(id: String) -> void:
 	_ctx = {}
 	GameState.ui_locked = true
 	opened.emit(id)
-	# Kenji's start node depends on `fx_desk` / `fx_open` from the last fxStatus. Login and Re-check used to skip
+	# Johnny's start node depends on `fx_desk` / `fx_open` from the last fxStatus. Login and Re-check used to skip
 	# that read, so the board stayed dark even when Sepolia was fine — refresh before picking the node.
 	if id == "dealer" and GameState.logged_in():
 		is_working = true
@@ -143,7 +143,7 @@ func submit_form(values: Dictionary) -> void:
 		_ctx["label"] = str(values.get("label", "")).strip_edges()
 		_goto(str(c.get("on_submit", "end")))
 		return
-	# Ines's load slip (docs/LOAD-ACCOUNT.md): one address, and the node it routes to runs `load_account`.
+	# Iris's load slip (docs/LOAD-ACCOUNT.md): one address, and the node it routes to runs `load_account`.
 	# Nothing is decided here — the desk is the only thing that may say whether that account is the player's.
 	if str(c.get("form", "")) == "load_account":
 		var wanted := str(values.get("account", "")).strip_edges()

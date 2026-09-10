@@ -1,6 +1,6 @@
 {
   "id": "greeter",
-  "name": "Mo",
+  "name": "Ash",
   "role": "Greeter",
   "start": [
     { "if": "!booted", "node": "booting" },
@@ -14,18 +14,18 @@
       "choices": [ { "text": "Sure.", "next": "end" } ]
     },
     "no_account": {
-      "text": "Welcome to Branch Zero. First time? Account Opening is the desk with the plant — Ines will sort you out.",
+      "text": "Welcome to Branch Zero. First time? Account Opening is the desk with the plant — Iris will sort you out.",
       "choices": [
         { "text": "Show me around.", "next": "hub" },
         { "text": "Where am I?", "next": "lore_bank" },
-        { "text": "Point me to Ines.", "next": "desk_ines" },
+        { "text": "Point me to Iris.", "next": "desk_iris" },
         { "text": "Thanks.", "next": "end" }
       ]
     },
     "has_account": {
       "text": [
-        "Morning, {name}. Counter is open and the vault's quiet; Dev can help with a small payment.",
-        { "if": "has_ens_name", "text": "Your bank name {bank_name} is on file — Petra keeps the name desk, and Dev can take it on a payment slip." }
+        "Morning, {name}. Counter is open and the vault's quiet; Eve can help with a small payment.",
+        { "if": "has_ens_name", "text": "Your bank name {bank_name} is on file — Petra keeps the name desk, and Eve can take it on a payment slip." }
       ],
       "choices": [
         { "text": "Show me around.", "next": "hub" },
@@ -35,7 +35,7 @@
       ]
     },
     "pending": {
-      "text": "You've got {pending} wire(s) cooling in the vault. Bob releases them when the clock runs down; Mr. Okafor handles a recall or the early hand-scan route.",
+      "text": "You've got {pending} wire(s) cooling in the vault. Bob releases them when the clock runs down; Mr. Walker handles a recall or the early hand-scan route.",
       "choices": [
         { "text": "Show me around.", "next": "hub" },
         { "text": "Go to the vault.", "next": "desk_vault" },
@@ -48,7 +48,7 @@
       "choices": [
         { "text": "How does this bank work?", "next": "lore_bank" },
         { "text": "What desks are open?", "next": "directory" },
-        { "text": "Open an account", "if": "!has_account", "next": "desk_ines" },
+        { "text": "Open an account", "if": "!has_account", "next": "desk_iris" },
         { "text": "Payments & the vault", "if": "has_account", "next": "payments_vault" },
         { "text": "Who powers the desks?", "next": "partners_strip" },
         { "text": "Thanks.", "next": "end" }
@@ -71,8 +71,8 @@
     "directory": {
       "text": "The desk map is simple: accounts, payments, and the vault are straight ahead. The other desks are through the side hall.",
       "choices": [
-        { "text": "Account Opening · Ines", "next": "desk_ines" },
-        { "text": "Counter · Dev", "next": "desk_counter" },
+        { "text": "Account Opening · Iris", "next": "desk_iris" },
+        { "text": "Counter · Eve", "next": "desk_counter" },
         { "text": "Vault · Bob", "next": "desk_vault" },
         { "text": "More desks", "next": "directory_more" },
         { "text": "Back to the lobby", "next": "hub" }
@@ -81,24 +81,24 @@
     "directory_more": {
       "text": "These desks keep names, exchange, and the unusual vault work in their own rooms. Blox-47 beside me can explain the branch too.",
       "choices": [
-        { "text": "Manager · Mr. Okafor", "next": "desk_manager" },
+        { "text": "Manager · Mr. Walker", "next": "desk_manager" },
         { "text": "Name Desk · Petra", "next": "desk_petra" },
-        { "text": "FX Desk · Kenji", "next": "desk_fx" },
+        { "text": "FX Desk · Johnny", "next": "desk_fx" },
         { "text": "Blox-47 (beside me)", "next": "service_assistant" },
         { "text": "Back to the desk map", "next": "directory" }
       ]
     },
     "payments_vault": {
-      "text": "Small payments go across Dev's counter. Larger wires cool at Bob's vault, while Mr. Okafor handles a recall or the early hand-scan route.",
+      "text": "Small payments go across Eve's counter. Larger wires cool at Bob's vault, while Mr. Walker handles a recall or the early hand-scan route.",
       "choices": [
-        { "text": "Counter · Dev", "next": "desk_counter" },
+        { "text": "Counter · Eve", "next": "desk_counter" },
         { "text": "Vault · Bob", "next": "desk_vault" },
-        { "text": "Manager · Mr. Okafor", "next": "desk_manager" },
+        { "text": "Manager · Mr. Walker", "next": "desk_manager" },
         { "text": "Back to the lobby", "next": "hub" }
       ]
     },
-    "desk_ines": {
-      "text": "Account Opening is the desk with the plant. Ines handles sign-in and the account paperwork; she owns the opening, I only point.",
+    "desk_iris": {
+      "text": "Account Opening is the desk with the plant. Iris handles sign-in and the account paperwork; she owns the opening, I only point.",
       "choices": [
         { "text": "Ask why", "next": "why_privy" },
         { "text": "Back to the desk map", "next": "directory" },
@@ -106,14 +106,14 @@
       ]
     },
     "why_privy": {
-      "text": "Ines uses Privy for an embedded wallet you control. With your consent, a scoped session signer is limited to this account's bank slips; she owns the opening, I only point.",
+      "text": "Iris uses Privy for an embedded wallet you control. With your consent, a scoped session signer is limited to this account's bank slips; she owns the opening, I only point.",
       "choices": [
-        { "text": "Back to Account Opening", "next": "desk_ines" },
+        { "text": "Back to Account Opening", "next": "desk_iris" },
         { "text": "Back to the lobby", "next": "hub" }
       ]
     },
     "desk_counter": {
-      "text": "Dev's Counter handles small payments to approved payees. For anything larger, the slip goes to Bob's vault.",
+      "text": "Eve's Counter handles small payments to approved payees. For anything larger, the slip goes to Bob's vault.",
       "choices": [
         { "text": "Ask why", "next": "why_counter" },
         { "text": "Back to the desk map", "next": "directory" },
@@ -121,14 +121,14 @@
       ]
     },
     "why_counter": {
-      "text": "Under the hood, the slip is a meta-transaction: you sign the instruction, the teller's broadcaster desk submits it and pays gas. Dev's desk owns the payment; I only point.",
+      "text": "Under the hood, the slip is a meta-transaction: you sign the instruction, the teller's broadcaster desk submits it and pays gas. Eve's desk owns the payment; I only point.",
       "choices": [
         { "text": "Back to the counter", "next": "desk_counter" },
         { "text": "Back to the lobby", "next": "hub" }
       ]
     },
     "desk_vault": {
-      "text": "Bob keeps larger wires in the vault for a cooling period. When the clock runs down he releases them; Mr. Okafor handles a recall or an early hand-scan route.",
+      "text": "Bob keeps larger wires in the vault for a cooling period. When the clock runs down he releases them; Mr. Walker handles a recall or an early hand-scan route.",
       "choices": [
         { "text": "Ask why", "next": "why_vault" },
         { "text": "Back to the desk map", "next": "directory" },
@@ -136,7 +136,7 @@
       ]
     },
     "why_vault": {
-      "text": "Big money doesn't move instantly here. It sits in the vault for {timelock}, then Bob releases it; if you change your mind, Mr. Okafor can recall it while it cools.",
+      "text": "Big money doesn't move instantly here. It sits in the vault for {timelock}, then Bob releases it; if you change your mind, Mr. Walker can recall it while it cools.",
       "choices": [
         { "text": "Ask why", "next": "why_vault_tech" },
         { "text": "Back to the vault", "next": "desk_vault" },
@@ -151,7 +151,7 @@
       ]
     },
     "desk_manager": {
-      "text": "Mr. Okafor's office handles the unusual vault choices. He can recall a cooling wire or take the hand-scan Priority route; Bob remains the release desk after the clock.",
+      "text": "Mr. Walker's office handles the unusual vault choices. He can recall a cooling wire or take the hand-scan Priority route; Bob remains the release desk after the clock.",
       "choices": [
         { "text": "Ask why", "next": "why_manager" },
         { "text": "Back to the desk map", "next": "directory" },
@@ -159,7 +159,7 @@
       ]
     },
     "why_manager": {
-      "text": "Priority needs your own hand-scan signature; Okafor only submits it. That skips the cooling clock — it does not replace Bob's timed release, and the silent teller stamp stays out of that path.",
+      "text": "Priority needs your own hand-scan signature; Walker only submits it. That skips the cooling clock — it does not replace Bob's timed release, and the silent teller stamp stays out of that path.",
       "choices": [
         { "text": "Back to the manager", "next": "desk_manager" },
         { "text": "Back to the lobby", "next": "hub" }
@@ -184,7 +184,7 @@
       ]
     },
     "desk_fx": {
-      "text": "Kenji's FX Desk shows practice-dollar prices for euros and shekels. The exchange lives on the Sepolia wing, and Kenji handles the quote and swap.",
+      "text": "Johnny's FX Desk shows practice-dollar prices for euros and shekels. The exchange lives on the Sepolia wing, and Johnny handles the quote and swap.",
       "choices": [
         { "text": "Ask why", "next": "why_fx" },
         { "text": "Back to the desk map", "next": "directory_more" },
@@ -192,7 +192,7 @@
       ]
     },
     "why_fx": {
-      "text": "Technically, the board uses guarded Uniswap v4 calls on Sepolia only, with three whitelisted services for the till. Kenji owns the quote and swap; I only point.",
+      "text": "Technically, the board uses guarded Uniswap v4 calls on Sepolia only, with three whitelisted services for the till. Johnny owns the quote and swap; I only point.",
       "choices": [
         { "text": "Back to the FX Desk", "next": "desk_fx" },
         { "text": "Back to the lobby", "next": "hub" }

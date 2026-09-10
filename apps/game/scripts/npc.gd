@@ -20,7 +20,7 @@ const SKINS := {
 	"vault_keeper": "vault_keeper",  # Knight — vault window
 	"manager": "manager",            # Barbarian — corner office
 	"registrar": "registrar",        # Mage — Petra, Name Desk
-	"dealer": "dealer",              # Rogue_Hooded — Kenji, FX desk (S1)
+	"dealer": "dealer",              # Rogue_Hooded — Johnny, FX desk (S1)
 	"default": "greeter",
 }
 
@@ -31,7 +31,7 @@ const _HEIGHTS := {
 }
 
 @export var npc_id: String = "greeter"
-@export var display_name: String = "Mo"
+@export var display_name: String = "Ash"
 @export var role: String = "Greeter"
 @export var tint: Color = Color(0.85, 0.55, 0.25)
 @export var escort_path: Array[Vector3] = []

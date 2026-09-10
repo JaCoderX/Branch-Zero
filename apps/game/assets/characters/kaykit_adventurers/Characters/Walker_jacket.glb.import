@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://b6pf6o2fmwag3"
-path="res://.godot/imported/Okafor_jacket.glb-c6f20f74c4b7b92600095c7d7d22ea5c.scn"
+path="res://.godot/imported/Walker_jacket.glb-9c2cdabbe68ef757a71bb66cc079e499.scn"
 
 [deps]
 
-source_file="res://assets/characters/kaykit_adventurers/Characters/Okafor_jacket.glb"
-dest_files=["res://.godot/imported/Okafor_jacket.glb-c6f20f74c4b7b92600095c7d7d22ea5c.scn"]
+source_file="res://assets/characters/kaykit_adventurers/Characters/Walker_jacket.glb"
+dest_files=["res://.godot/imported/Walker_jacket.glb-9c2cdabbe68ef757a71bb66cc079e499.scn"]
 
 [params]
 

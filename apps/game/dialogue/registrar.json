@@ -14,7 +14,7 @@
       "choices": [ { "text": "Sure.", "next": "end" } ]
     },
     "no_account": {
-      "text": "Names point to accounts, so I need an account before I can put one on your file. Ines at Account Opening can help.",
+      "text": "Names point to accounts, so I need an account before I can put one on your file. Iris at Account Opening can help.",
       "choices": [
         { "text": "Ask why", "next": "why_ens" },
         { "text": "OK.", "next": "end" }

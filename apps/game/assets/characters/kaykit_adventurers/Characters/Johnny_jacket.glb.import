@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://cj0sk5hvtgain"
-path="res://.godot/imported/Kenji_jacket.glb-112522773c7008e06dd8724d9667761c.scn"
+path="res://.godot/imported/Johnny_jacket.glb-ebed6624496274b6c4d47cdae913d55b.scn"
 
 [deps]
 
-source_file="res://assets/characters/kaykit_adventurers/Characters/Kenji_jacket.glb"
-dest_files=["res://.godot/imported/Kenji_jacket.glb-112522773c7008e06dd8724d9667761c.scn"]
+source_file="res://assets/characters/kaykit_adventurers/Characters/Johnny_jacket.glb"
+dest_files=["res://.godot/imported/Johnny_jacket.glb-ebed6624496274b6c4d47cdae913d55b.scn"]
 
 [params]
 

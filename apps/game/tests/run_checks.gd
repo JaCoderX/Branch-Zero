@@ -242,8 +242,12 @@ func _check_greeter_graph(Dlg) -> void:
 	var main_path := ""
 	for id in ["no_account", "has_account", "pending", "hub", "directory", "directory_more", "payments_vault", "desk_iris", "desk_counter", "desk_vault", "desk_manager", "desk_petra", "desk_fx", "service_assistant", "partners_strip", "lore_bank", "why_vault"]:
 		main_path += str(nodes.get(id, {}).get("text", "")).to_lower()
+	# Strip `{timelock}` / `{chain}` placeholders — the token name is not player-facing jargon leakage.
+	var rx_brace := RegEx.new()
+	rx_brace.compile("\\{[^}]+\\}")
+	var main_path_plain := rx_brace.sub(main_path, " ", true)
 	for jargon in ["privy", "uniswap", "ensv2", "meta-transaction", "broadcaster", "timelock", "releasetime", " gas"]:
-		if main_path.find(jargon) >= 0:
+		if main_path_plain.find(jargon) >= 0:
 			bad.append("main path leaks Ask-why term '%s'" % jargon.strip_edges())
 	var tech_expectations := {
 		"why_privy": ["privy", "session signer"],
@@ -434,9 +438,10 @@ func _check_counter_labels() -> void:
 		bad.append("_counter does not guard empty plaque labels")
 	if interior.find("plaque(\"NAME DESK SERVICES") < 0 or interior.find("Pay by name at Counter") < 0:
 		bad.append("Name Desk service menu is missing the Counter wording")
-	if interior.find("PropKit.kit(self, \"AOScreen\", \"computerScreen\", Vector3(-8.6, 0.78, 7.95), PI)") < 0:
+	# AO desk polish moved the screen/keyboard west to x=-9.5 (client approach still keyboard z=7.65 → screen 7.95).
+	if interior.find("PropKit.kit(self, \"AOScreen\", \"computerScreen\", Vector3(-9.5, 0.78, 7.95), PI)") < 0:
 		bad.append("AOScreen position or client-facing yaw changed")
-	if interior.find("PropKit.kit(self, \"AOKeyboard\", \"computerKeyboard\", Vector3(-8.6, 0.78, 7.65), PI)") < 0:
+	if interior.find("PropKit.kit(self, \"AOKeyboard\", \"computerKeyboard\", Vector3(-9.5, 0.78, 7.65), PI)") < 0:
 		bad.append("AOKeyboard is not between the client and the screen")
 	var player_copy := ["greeter", "teller", "vault_keeper", "dealer", "errors"]
 	for id in player_copy:
@@ -446,7 +451,7 @@ func _check_counter_labels() -> void:
 	var main_text := FileAccess.get_file_as_string("res://scripts/main.gd")
 	if main_text.find("[\"teller\", \"Eve\", \"Teller · Counter\"") < 0:
 		bad.append("main.gd Eve display role is not Teller · Counter")
-	if main_text.find("[\"opening\", Vector3(-8.6, 0.4, 7.95)") < 0:
+	if main_text.find("[\"opening\", Vector3(-9.5, 0.4, 7.95)") < 0:
 		bad.append("opening terminal does not follow AO screen z")
 	if bad.is_empty():
 		_ok("AO order is keyboard 7.65 → screen 7.95 on desk · Counter plaque + Name Desk only")

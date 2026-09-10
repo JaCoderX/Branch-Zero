@@ -15,7 +15,7 @@
       "choices": [ { "text": "Sure.", "next": "end" } ]
     },
     "no_account": {
-      "text": "Nothing in the vault under your name — you'd need an account first. Ines, by the plant.",
+      "text": "Nothing in the vault under your name — you'd need an account first. Iris, by the plant.",
       "choices": [ { "text": "OK.", "next": "end" } ]
     },
     "quiet": {
@@ -27,7 +27,7 @@
       ]
     },
     "cooling": {
-      "text": "{pending} wire(s) in the vault, the soonest releases in {release_in}. Have a seat — or see Mr. Okafor: he can shred it, or skip the cooling if you bring a hand scan. I wait the clock.",
+      "text": "{pending} wire(s) in the vault, the soonest releases in {release_in}. Have a seat — or see Mr. Walker: he can shred it, or skip the cooling if you bring a hand scan. I wait the clock.",
       "choices_from": "pending",
       "choice_template": { "text": "Try to release #{txId} — {amount} {symbol} to {payee} ({status}, {release_in})", "action": "approve", "working": "Taking it to the vault door…", "on_ok": "released_ok", "on_error": "refused" },
       "choices": [

@@ -68,20 +68,20 @@ const STAFF_WALK_MPS := 1.5
 const STAFF_SPRINT_MPS := 3.8
 
 ## KayKit Adventurers mesh per bank role (ENG-2026-0017 jacket cast; stock glbs kept beside for revert).
-## Mage / Ranger reuse one jacket body; Kenji / Okafor / Bob are CC0 derivative glbs (Rig_Medium unchanged).
+## Mage / Ranger reuse one jacket body; Johnny / Walker / Bob are CC0 derivative glbs (Rig_Medium unchanged).
 const KAYKIT_MESHES := {
 	"greeter": "Ranger_jacket_nocape",
 	"clerk": "Mage_jacket_nocape",
 	"teller": "Rogue_jacket_nocape",
 	"vault_keeper": "Bob_jacket_cape",
-	"manager": "Okafor_jacket",
+	"manager": "Walker_jacket",
 	"registrar": "Mage_jacket_nocape",
-	"dealer": "Kenji_jacket",
+	"dealer": "Johnny_jacket",
 	"player": "Ranger_jacket_nocape",
 }
 ## Mesh file stem → albedo PNG beside the .glb. The `*_bank_texture.png` sheets are the bank-variant derivatives that
 ## tools/kaykit_bank_variants.py paints from KayKit's CC0 `*_texture.png` (room neutrals + one accent per role;
-## Kenji shares the rogue sheet). Five sheets → five body materials.
+## Johnny shares the rogue sheet). Five sheets → five body materials.
 const KAYKIT_TEXTURE_FILES := {
 	"Barbarian": "barbarian_bank_texture.png",
 	"Knight": "knight_bank_texture.png",
@@ -92,31 +92,31 @@ const KAYKIT_TEXTURE_FILES := {
 	"Ranger_jacket_nocape": "ranger_bank_texture.png",
 	"Mage_jacket_nocape": "mage_bank_texture.png",
 	"Rogue_jacket_nocape": "rogue_bank_texture.png",
-	"Kenji_jacket": "rogue_bank_texture.png",
-	"Okafor_jacket": "barbarian_bank_texture.png",
+	"Johnny_jacket": "rogue_bank_texture.png",
+	"Walker_jacket": "barbarian_bank_texture.png",
 	"Bob_jacket_cape": "knight_bank_texture.png",
 }
 ## KayKit sheets are an 8 × 4 grid of 128 × 256 px palette cells and every triangle's UVs sit inside one cell. Where two
-## roles wear the same body (Ines / Petra on Mage, Mo / player on Ranger, Dev / Kenji on the rogue sheet) the second
+## roles wear the same body (Iris / Petra on Mage, Ash / player on Ranger, Eve / Johnny on the rogue sheet) the second
 ## role is told apart by tint alone without a sixth material: tools/kaykit_bank_variants.py paints its colours into the
 ## sheet's spare bottom-row cells and `_kaykit_role_mesh` moves that role's triangles from the base cell (key) to the
 ## spare (value) in a cached copy of the mesh's UVs. Cells are Vector2i(col, row).
 const KAYKIT_CELL_COLS := 8
 const KAYKIT_CELL_ROWS := 4
 const KAYKIT_ROLE_CELLS := {
-	# Petra: deep-green robe + hat (was Ines's slate), coral cape + trims (was mustard), copper hair (was black).
+	# Petra: deep-green robe + hat (was Iris's slate), coral cape + trims (was mustard), copper hair (was black).
 	"registrar": {
 		Vector2i(0, 1): Vector2i(0, 3), Vector2i(1, 1): Vector2i(0, 3),
 		Vector2i(2, 1): Vector2i(1, 3), Vector2i(5, 0): Vector2i(1, 3),
 		Vector2i(1, 0): Vector2i(2, 3),
 	},
-	# player: graphite tunic + sleeves (Mo's camel), navy cape / sash (Mo's emerald), dark hair (Mo's auburn).
+	# player: graphite tunic + sleeves (Ash's camel), navy cape / sash (Ash's emerald), dark hair (Ash's auburn).
 	"player": {
 		Vector2i(7, 0): Vector2i(0, 3), Vector2i(7, 2): Vector2i(0, 3),
 		Vector2i(0, 1): Vector2i(1, 3),
 		Vector2i(1, 0): Vector2i(2, 3),
 	},
-	# Kenji: graphite tunic spare + teal cape / mantle where Dev wears oxblood cape cloth.
+	# Johnny: graphite tunic spare + teal cape / mantle where Eve wears oxblood cape cloth.
 	"dealer": {
 		Vector2i(0, 1): Vector2i(0, 3), Vector2i(1, 1): Vector2i(1, 3),
 	},

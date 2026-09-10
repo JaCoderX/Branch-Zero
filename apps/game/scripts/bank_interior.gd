@@ -38,8 +38,8 @@ const PANEL_Y1 := 2.95
 const PILASTER_W := 0.36
 const BEAM_DROP := 0.28   # coffer beams hang this far under the ceiling slabs (pendant canopies sit at the slab)
 const FX_WEST_DELTA := -1.2  # S1 spacing pass: pull the desk assembly into the lobby, away from the east wall
-const FX_KENJI_STAFF_NUDGE := 0.55  # Kenji/stool east of the staff shelf so the capsule does not sit in the props
-## Extra west on the counter/shelf/tools only — Kenji stays pinned; clears the dealer capsule from the desk face.
+const FX_JOHNNY_STAFF_NUDGE := 0.55  # Johnny/stool east of the staff shelf so the capsule does not sit in the props
+## Extra west on the counter/shelf/tools only — Johnny stays pinned; clears the dealer capsule from the desk face.
 const FX_DESK_FORWARD := -0.35
 
 var theme: WingTheme
@@ -465,7 +465,7 @@ func _west_column() -> void:
 	box_m("ServiceMenuBoard", Vector3(-14.83, 2.4, -1.0), Vector3(0.03, 1.2, 3.2), PropKit.palette("Paper"), false)
 
 
-## S1 — Kenji's FX desk, in the east run between the vault partition (z = -5) and the compact SECURITY lore door
+## S1 — Johnny's FX desk, in the east run between the vault partition (z = -5) and the compact SECURITY lore door
 ## (z ∈ [1, 2]). The target counter/shelf run is z ∈ [-4.4, 0.4], centred at z = -2.0: materially longer than the
 ## old 3.4 m window, while the customer approach from the lobby still looks east. Nothing new is imported: every mesh
 ## here is a hero prop or a KayKit/Nature piece the interior already places elsewhere, so the pass costs no new material
@@ -477,18 +477,18 @@ func _west_column() -> void:
 func _fx_desk() -> void:
 	# Target z centres: counter/shelf [-4.4, 0.4] around -2.0; SECURITY [1, 2]; elevator shaft [4, 7].
 	var west := Vector3(FX_WEST_DELTA, 0, 0)
-	var desk := west + Vector3(FX_DESK_FORWARD, 0, 0)  # desk/shelf forward; Kenji/stool keep `west` only
+	var desk := west + Vector3(FX_DESK_FORWARD, 0, 0)  # desk/shelf forward; Johnny/stool keep `west` only
 	PropKit.hero(self, "FxCounter", "prop_counter", Vector3(13.5, 0, -2.0) + desk, -PI / 2, {}, Vector3(0.9, 1.1, 4.8), Vector3(0, 0.55, 0))
 	box_m("FxCounterShelf", Vector3(14.15, 1.02, -2.0) + desk, Vector3(0.3, 0.05, 4.8), PropKit.palette("Wood"), false)
 	PropKit.hero(self, "FxPrinter", "prop_printer", Vector3(14.15, 1.045, -3.55) + desk, -PI / 2)
 	PropKit.hero(self, "FxTool", "prop_engraver", Vector3(14.15, 1.045, -0.45) + desk, -PI / 2)
-	# Screen on the north half of the shelf — centre (z=-2) sat inside Kenji's standing spot.
+	# Screen on the north half of the shelf — centre (z=-2) sat inside Johnny's standing spot.
 	PropKit.kit(self, "FxScreen", "computerScreen", Vector3(14.15, 1.045, -3.15) + desk, -PI / 2)
-	# Stool rides with Kenji (unchanged absolute pin); do not apply FX_DESK_FORWARD.
-	PropKit.kaykit(self, "FxStool", "chair_stool", Vector3(14.35 + FX_KENJI_STAFF_NUDGE, 0, -2.0) + west, 0.0, {"fit": Vector3(0.45, 0.6, 0.45)})
+	# Stool rides with Johnny (unchanged absolute pin); do not apply FX_DESK_FORWARD.
+	PropKit.kaykit(self, "FxStool", "chair_stool", Vector3(14.35 + FX_JOHNNY_STAFF_NUDGE, 0, -2.0) + west, 0.0, {"fit": Vector3(0.45, 0.6, 0.45)})
 	_planter("FxDeskPlant", Vector3(13.6, 1.1, -4.05) + desk, 0.4, ["pot_small", Vector3(0.24, 0.2, 0.24)], [["plant_flatTall", Vector3(0.26, 0.34, 0.26)]], "Cream")
 
-	# The board goes on the vault partition's south face, not on the wall behind Kenji: a customer stands at the
+	# The board goes on the vault partition's south face, not on the wall behind Johnny: a customer stands at the
 	# counter looking east, so a panel behind the dealer is read through the counter's glass and over his shoulder.
 	# Stage 4 already framed that face (panel x ∈ [10.65, 14.2], y ∈ [1.25, 2.95]) and it faces the whole alcove,
 	# which is what a quote board is for. Its own node, out of the static batch, so fx_board.gd can swap the material.
@@ -525,14 +525,14 @@ func _counter(name: String, z: float, label: String, tool: String = "prop_stamp"
 
 # ---------------------------------------------------------------- account opening (the desk with the plant)
 
-## U7 polish finding 5: the desk faces the room. Ines stands on its south side (between the desk and the south wall,
+## U7 polish finding 5: the desk faces the room. Iris stands on its south side (between the desk and the south wall,
 ## main.gd NPCS) with the screen and keyboard on her side; the customer chairs sit on the north (lobby) side, so a
-## player walking in from the lobby meets the desk first and Ines behind it.
+## player walking in from the lobby meets the desk first and Iris behind it.
 func _account_opening() -> void:
 	PropKit.kit(self, "AODeskW", "desk", Vector3(-9.65, 0, 8.0), PI, {"fit": Vector3(1.3, 0.78, 1.1)})
 	PropKit.kit(self, "AODeskE", "desk", Vector3(-8.35, 0, 8.0), PI, {"fit": Vector3(1.3, 0.78, 1.1)})
 	solid_box("AODesk", Vector3(-9.0, 0.4, 8.0), Vector3(2.6, 0.8, 1.1))
-	# Client approach is north (-z): chairs → keyboard → screen → Ines. Desk top z ∈ [7.45, 8.55]; keep a small
+	# Client approach is north (-z): chairs → keyboard → screen → Iris. Desk top z ∈ [7.45, 8.55]; keep a small
 	# margin from the north edge so both props sit on the table (not hanging off). Screen faces the client (yaw PI).
 	# Terminal on the west half (AODeskW), clear of the desk plant at x ≈ -9.9.
 	PropKit.kit(self, "AOScreen", "computerScreen", Vector3(-9.5, 0.78, 7.95), PI)

@@ -7,7 +7,7 @@ with a top-to-bottom shading gradient, and the mesh UVs point into those cells. 
 recolour: the room owns the neutrals (cream / brass / deep green / graphite), each role owns one saturated accent,
 and the shading gradient of every cell is kept (target colour × the cell's own luminance profile).
 
-Two roles share each of the Mage, Ranger and Rogue sheets (Ines / Petra, Mo / player, Dev / Kenji), and the cast is
+Two roles share each of the Mage, Ranger and Rogue sheets (Iris / Petra, Ash / player, Eve / Johnny), and the cast is
 budgeted at five body materials, so the second role of a pair does not get a second PNG: this script paints its
 colours into the sheet's *spare* cells (bottom row, unused by any mesh) and `PropKit.KAYKIT_ROLE_CELLS` re-points
 that role's triangles at them when the mesh is instanced — same material, different tint.
@@ -41,30 +41,30 @@ CAMEL = "#b98a5c"
 TAN = "#c7a274"
 HAIR_DARK = "#3a2a22"
 
-EMERALD = "#1e8f5e"   # Mo — greeter
-MUSTARD = "#d8a627"   # Ines — clerk
-OXBLOOD = "#7a1f2b"   # Dev — teller · Mr. Okafor — manager
+EMERALD = "#1e8f5e"   # Ash — greeter
+MUSTARD = "#d8a627"   # Iris — clerk
+OXBLOOD = "#7a1f2b"   # Eve — teller · Mr. Walker — manager
 OXBLOOD_DARK = "#561520"
 CORAL = "#e46f52"     # Petra — registrar · Bob's cape
-TEAL = "#1f8f96"      # Kenji — dealer
+TEAL = "#1f8f96"      # Johnny — dealer
 TEAL_DARK = "#15656b"
 NAVY = "#27365f"      # player
 NAVY_GUARD = "#2f3d63"       # Bob — plate cells as guard tunic (ENG-2026-0015)
 NAVY_GUARD_DARK = "#1f2740"  # Bob — darker plate piping / arm bands
-COPPER = "#9a512f"    # Petra's hair (Ines keeps the black)
+COPPER = "#9a512f"    # Petra's hair (Iris keeps the black)
 
 # Per sheet: ("tint", cell, colour) recolours a cell in place, keeping its own gradient;
 # ("spare", cell, colour, profile_cell) paints an unused cell with `colour` shaded like `profile_cell`.
 # Cells are (col, row) in the 8 × 4 grid. Skin (0,0) and the eye cell (2,0) are never touched.
 WARDROBE = {
-    # Ines (base) — slate "desk mage" robe + hat, mustard cape / trims, brass clasps, charcoal hose.
+    # Iris (base) — slate "desk mage" robe + hat, mustard cape / trims, brass clasps, charcoal hose.
     # Petra — deep-green robe + hat, coral cape / trims, copper hair, via the spares (PropKit "registrar" remap).
     "mage": [
         ("tint", (0, 1), SLATE), ("tint", (1, 1), SLATE), ("tint", (2, 1), MUSTARD), ("tint", (5, 0), MUSTARD),
         ("tint", (7, 1), CHARCOAL), ("tint", (2, 2), BRASS), ("tint", (3, 0), BRASS), ("tint", (4, 0), BRASS),
         ("spare", (0, 3), DEEP_GREEN, (0, 1)), ("spare", (1, 3), CORAL, (2, 1)), ("spare", (2, 3), COPPER, (1, 0)),
     ],
-    # Mo (base) — camel concierge coat, paper shirt, brass, emerald sash, dark-brown boots / wrist straps
+    # Ash (base) — camel concierge coat, paper shirt, brass, emerald sash, dark-brown boots / wrist straps
     # (ENG-0016 wardrobe + ENG-0017 jacket glb). player — graphite coat, navy sash, dark hair via spares.
     "ranger": [
         ("tint", (7, 0), CAMEL), ("tint", (7, 2), CAMEL), ("tint", (3, 0), BRASS), ("tint", (0, 1), EMERALD),
@@ -72,8 +72,8 @@ WARDROBE = {
         ("tint", (3, 2), DARK_BROWN), ("tint", (1, 1), DARK_BROWN),
         ("spare", (0, 3), GRAPHITE, (7, 0)), ("spare", (1, 3), NAVY, (0, 1)), ("spare", (2, 3), HAIR_DARK, (1, 0)),
     ],
-    # Dev (base) — graphite teller tunic, oxblood cape cloth, dark-brown leather, brass, charcoal hose
-    # (ENG-0016 wardrobe + ENG-0017 jacket). Kenji — graphite tunic + teal cape / mantle via spares.
+    # Eve (base) — graphite teller tunic, oxblood cape cloth, dark-brown leather, brass, charcoal hose
+    # (ENG-0016 wardrobe + ENG-0017 jacket). Johnny — graphite tunic + teal cape / mantle via spares.
     "rogue": [
         ("tint", (0, 1), GRAPHITE), ("tint", (1, 1), OXBLOOD), ("tint", (3, 0), BRASS),
         ("tint", (5, 0), DARK_BROWN), ("tint", (6, 0), DARK_BROWN), ("tint", (7, 1), CHARCOAL),
@@ -87,7 +87,7 @@ WARDROBE = {
         ("tint", (7, 0), BRASS), ("tint", (2, 1), BRASS), ("tint", (0, 1), CORAL),
         ("tint", (1, 1), CREAM), ("tint", (7, 1), CHARCOAL),
     ],
-    # Mr. Okafor — oxblood waistcoat + paper sleeves in spare cells (baked UV remap on Okafor_jacket),
+    # Mr. Walker — oxblood waistcoat + paper sleeves in spare cells (baked UV remap on Walker_jacket),
     # graphite collar, brass buttons / rings, dark-brown belts / boots, charcoal trousers (ENG-0016 + 0017).
     "barbarian": [
         ("spare", (0, 3), OXBLOOD, (0, 0)), ("spare", (2, 3), PAPER, (0, 0)),

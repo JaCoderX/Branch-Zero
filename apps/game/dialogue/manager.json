@@ -1,6 +1,6 @@
 {
   "id": "manager",
-  "name": "Mr. Okafor",
+  "name": "Mr. Walker",
   "role": "Branch Manager",
   "start": [
     { "if": "!booted", "node": "booting" },
@@ -15,7 +15,7 @@
       "choices": [ { "text": "Sure.", "next": "end" } ]
     },
     "no_account": {
-      "text": "Come in. Nothing in the vault needs my decision until you have an account — Ines will open one.",
+      "text": "Come in. Nothing in the vault needs my decision until you have an account — Iris will open one.",
       "choices": [ { "text": "OK.", "next": "end" } ]
     },
     "lore": {
@@ -26,7 +26,7 @@
       ]
     },
     "vault_only": {
-      "text": "Come in. The priority desk isn't open for your account — either this branch runs vault-only, or Ines still has to re-check your file. I can still shred a wire.",
+      "text": "Come in. The priority desk isn't open for your account — either this branch runs vault-only, or Iris still has to re-check your file. I can still shred a wire.",
       "choices": [
         { "text": "Recall a wire", "if": "pending>0", "next": "cancel_list" },
         { "text": "Ask why", "next": "why_vault_only" },
@@ -34,7 +34,7 @@
       ]
     },
     "why_vault_only": {
-      "text": "A priority release needs META_APPROVE permissions on your account's transfer function — you sign, I submit. Vault-only accounts deliberately carry none, so the only way out of the vault is the path the contract time-checks. If your file is simply behind the current role set, Ines's re-check adds the split.",
+      "text": "A priority release needs META_APPROVE permissions on your account's transfer function — you sign, I submit. Vault-only accounts deliberately carry none, so the only way out of the vault is the path the contract time-checks. If your file is simply behind the current role set, Iris's re-check adds the split.",
       "choices": [ { "text": "OK.", "next": "end" } ]
     },
     "idle": {

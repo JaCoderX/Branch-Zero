@@ -4,25 +4,25 @@ extends Node3D
 ## through Dialogue → GameState.run_action → Chain.call_async.
 
 ## Yaw convention (player.gd / npc.gd): a body faces (-sin yaw, 0, -cos yaw) — yaw 0 looks north (-z), PI looks
-## south (+z), -PI/2 looks east (+x, the lobby side of the counters). U7 polish (principal playtest): Ines stands
+## south (+z), -PI/2 looks east (+x, the lobby side of the counters). U7 polish (principal playtest): Iris stands
 ## behind the Account Opening desk between it and the south wall, facing the room; Petra serves from the Name Desk
-## teller bay (never north of the manager glass); Okafor faces his door; the vault keeper is Bob.
-const FX_WEST_DELTA := -1.2  # Keep Kenji and the FX F9 aid on the same west pull as the desk assembly.
-## Extra east nudge so Kenji clears the staff shelf/screen (capsule was overlapping them after the west pull).
-const FX_KENJI_STAFF_NUDGE := 0.55
-## Desk-only further west (matches bank_interior); Kenji absolute pin stays 14.3 + WEST + NUDGE.
+## teller bay (never north of the manager glass); Walker faces his door; the vault keeper is Bob.
+const FX_WEST_DELTA := -1.2  # Keep Johnny and the FX F9 aid on the same west pull as the desk assembly.
+## Extra east nudge so Johnny clears the staff shelf/screen (capsule was overlapping them after the west pull).
+const FX_JOHNNY_STAFF_NUDGE := 0.55
+## Desk-only further west (matches bank_interior); Johnny absolute pin stays 14.3 + WEST + NUDGE.
 const FX_DESK_FORWARD := -0.35
 
 const NPCS := [
 	# id, name, role, colour, position, yaw (radians), escort path
-	["greeter", "Mo", "Greeter", Color(0.85, 0.55, 0.25), Vector3(2.0, 0, 4.5), PI, []],
-	["clerk", "Ines", "Account Clerk", Color(0.30, 0.60, 0.50), Vector3(-9.0, 0, 9.5), 0.0, []],
-	["teller", "Dev", "Teller · Counter", Color(0.55, 0.35, 0.70), Vector3(-11.6, 0, 3.0), -PI / 2, [Vector3(-11.6, 0, 5.6), Vector3(-8.5, 0, 5.6), Vector3(-2.0, 0, -1.0), Vector3(6.0, 0, -3.5), Vector3(8.0, 0, -6.8)]],
+	["greeter", "Ash", "Greeter", Color(0.85, 0.55, 0.25), Vector3(2.0, 0, 4.5), PI, []],
+	["clerk", "Iris", "Account Clerk", Color(0.30, 0.60, 0.50), Vector3(-9.0, 0, 9.5), 0.0, []],
+	["teller", "Eve", "Teller · Counter", Color(0.55, 0.35, 0.70), Vector3(-11.6, 0, 3.0), -PI / 2, [Vector3(-11.6, 0, 5.6), Vector3(-8.5, 0, 5.6), Vector3(-2.0, 0, -1.0), Vector3(6.0, 0, -3.5), Vector3(8.0, 0, -6.8)]],
 	["registrar", "Petra", "Registrar · Name Desk", Color(0.25, 0.60, 0.45), Vector3(-11.6, 0, -1.0), -PI / 2, []],
 	["vault_keeper", "Bob", "Vault Keeper", Color(0.75, 0.30, 0.30), Vector3(10.0, 0, -7.5), PI * 0.6, []],
-	["manager", "Mr. Okafor", "Branch Manager", Color(0.25, 0.30, 0.55), Vector3(-8.0, 0, -9.8), PI, []],
-	# S1: Kenji pin locked — desk/screen move around him (see FX_DESK_FORWARD / north screen in bank_interior).
-	["dealer", "Kenji", "Dealer · FX Desk", Color(0.90, 0.35, 0.62), Vector3(14.3 + FX_WEST_DELTA + FX_KENJI_STAFF_NUDGE, 0, -2.0), PI / 2, []],
+	["manager", "Mr. Walker", "Branch Manager", Color(0.25, 0.30, 0.55), Vector3(-8.0, 0, -9.8), PI, []],
+	# S1: Johnny pin locked — desk/screen move around him (see FX_DESK_FORWARD / north screen in bank_interior).
+	["dealer", "Johnny", "Dealer · FX Desk", Color(0.90, 0.35, 0.62), Vector3(14.3 + FX_WEST_DELTA + FX_JOHNNY_STAFF_NUDGE, 0, -2.0), PI / 2, []],
 ]
 
 ## The bank computers that are worth walking up to (docs/TERMINAL-CONSOLE.md §3). Both sit on `computerScreen`
@@ -34,8 +34,8 @@ const TERMINALS := [
 	["lobby", Vector3(11.35, 0.4, 9.15), "the lobby terminal"],
 ]
 
-## The optional service assistant Blox-47 (docs/INPC.md): stands beside Mo at the lobby greeter post, facing south
-## toward the entrance (same yaw as Mo). Capsule clearance ~1.5 m east of Mo; not a staff NPC — ranks with the
+## The optional service assistant Blox-47 (docs/INPC.md): stands beside Ash at the lobby greeter post, facing south
+## toward the entrance (same yaw as Ash). Capsule clearance ~1.5 m east of Ash; not a staff NPC — ranks with the
 ## terminals for the [Space] prompt.
 const INPC_SPOT := Vector3(3.5, 0.0, 4.5)
 const INPC_YAW := PI
@@ -271,7 +271,7 @@ func _process(_delta: float) -> void:
 	if near != _near_elevator:
 		_near_elevator = near
 		_update_prompt()
-	# Interact zones overlap (Petra at the Name Desk bay is four metres from Dev): re-pick the nearest talkable NPC every
+	# Interact zones overlap (Petra at the Name Desk bay is four metres from Eve): re-pick the nearest talkable NPC every
 	# frame so the prompt follows the player instead of sticking to whoever's zone was entered first.
 	else:
 		var pick := _pick()
@@ -307,7 +307,7 @@ func _nearest_terminal() -> BankTerminal:
 
 
 ## Who the [Space] prompt belongs to right now: `[npc, terminal]`, at most one of them non-null. A screen shares a
-## desk with its NPC (Okafor stands 1 m from his), so the closer of the two wins — lean over the keyboard and you
+## desk with its NPC (Walker stands 1 m from his), so the closer of the two wins — lean over the keyboard and you
 ## get the terminal, stand back and you get the clerk.
 func _pick() -> Array:
 	var n := _nearest()
@@ -352,13 +352,13 @@ func _update_prompt() -> void:
 ## F2–F4, F6–F8 jump the player to a desk — a tester aid, live only with the debug flag (debug_wanted()); the walk is
 ## the product path. [position, view yaw]. F5 is left alone: in a browser it reloads the page.
 const TELEPORTS := {
-	KEY_F2: [Vector3(-9.0, 0.1, 6.3), PI],         # Account Opening, looking south across the desk at Ines
-	KEY_F3: [Vector3(-9.5, 0.1, 3.0), PI / 2],     # Counter, looking west at Dev
+	KEY_F2: [Vector3(-9.0, 0.1, 6.3), PI],         # Account Opening, looking south across the desk at Iris
+	KEY_F3: [Vector3(-9.5, 0.1, 3.0), PI / 2],     # Counter, looking west at Eve
 	KEY_F4: [Vector3(8.0, 0.1, -6.5), 0.0],        # Vault antechamber, looking north at the door
-	KEY_F6: [Vector3(3.0, 0.1, 6.0), 0.0],         # Lobby, near Mo
+	KEY_F6: [Vector3(3.0, 0.1, 6.0), 0.0],         # Lobby, near Ash
 	KEY_F7: [Vector3(-8.0, 0.1, -7.3), 0.0],       # Manager's office, looking north at the desk
 	KEY_F8: [Vector3(-9.5, 0.1, -1.0), PI / 2],    # Name Desk bay, looking west at Petra
-	KEY_F9: [Vector3(12.0 + FX_WEST_DELTA + FX_DESK_FORWARD, 0.1, -2.0), -PI / 2],   # FX desk, looking east at Kenji and the quote board
+	KEY_F9: [Vector3(12.0 + FX_WEST_DELTA + FX_DESK_FORWARD, 0.1, -2.0), -PI / 2],   # FX desk, looking east at Johnny and the quote board
 }
 
 

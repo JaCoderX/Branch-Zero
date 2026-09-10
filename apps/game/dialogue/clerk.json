@@ -1,6 +1,6 @@
 {
   "id": "clerk",
-  "name": "Ines",
+  "name": "Iris",
   "role": "Account Clerk",
   "start": [
     { "if": "!booted", "node": "booting" },

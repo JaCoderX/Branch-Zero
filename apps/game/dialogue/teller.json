@@ -1,6 +1,6 @@
 {
   "id": "teller",
-  "name": "Dev",
+  "name": "Eve",
   "role": "Teller · Counter",
   "start": [
     { "if": "!booted", "node": "booting" },
@@ -13,7 +13,7 @@
       "choices": [ { "text": "Sure.", "next": "end" } ]
     },
     "no_account": {
-      "text": "Counter. I can only take a payment for a Branch Zero account — Ines at Account Opening can open one, by the plant.",
+      "text": "Counter. I can only take a payment for a Branch Zero account — Iris at Account Opening can open one, by the plant.",
       "choices": [
         { "text": "Ask why", "next": "why_no_account" },
         { "text": "OK.", "next": "end" }
@@ -88,7 +88,7 @@
       "choices": [ { "text": "Back", "next": "over_limit" } ]
     },
     "wired": {
-      "text": "Filed. Wire #{txId} is in the vault; it releases in {release_in}. Bob at the vault window releases it once the clock runs down — or Mr. Okafor can skip the cooling if you bring a hand scan, or recall it.",
+      "text": "Filed. Wire #{txId} is in the vault; it releases in {release_in}. Bob at the vault window releases it once the clock runs down — or Mr. Walker can skip the cooling if you bring a hand scan, or recall it.",
       "choices": [
         { "text": "Ask why", "next": "why_wired" },
         { "text": "Thanks.", "next": "end" }

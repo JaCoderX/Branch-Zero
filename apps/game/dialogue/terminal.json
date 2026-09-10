@@ -14,7 +14,7 @@
       "choices": [ { "text": "Wait.", "next": "end" } ]
     },
     "locked": {
-      "text": "BRANCH ZERO — BACK OFFICE\n\nNo account holder signed in at this workstation. See Ines at Account Opening first.",
+      "text": "BRANCH ZERO — BACK OFFICE\n\nNo account holder signed in at this workstation. See Iris at Account Opening first.",
       "choices": [
         { "text": "Ask why", "next": "why_locked" },
         { "text": "Step away.", "next": "end" }
@@ -25,7 +25,7 @@
       "choices": [ { "text": "OK.", "next": "end" } ]
     },
     "no_account": {
-      "text": "BRANCH ZERO — BACK OFFICE\n\nSigned in as {name}. No account on file yet, so there is nothing here to look at. Ines opens one at Account Opening.",
+      "text": "BRANCH ZERO — BACK OFFICE\n\nSigned in as {name}. No account on file yet, so there is nothing here to look at. Iris opens one at Account Opening.",
       "choices": [
         { "text": "Ask why", "next": "why_locked" },
         { "text": "Step away.", "next": "end" }
@@ -41,7 +41,7 @@
       ]
     },
     "console_open": {
-      "text": "The Console is up on the screen. Add a viewing wallet there, then import this account by its address and connect that wallet. Close the panel when you are done.\n\nIf you find another account of yours here, Ines can load it at Account Opening — hand her the number.",
+      "text": "The Console is up on the screen. Add a viewing wallet there, then import this account by its address and connect that wallet. Close the panel when you are done.\n\nIf you find another account of yours here, Iris can load it at Account Opening — hand her the number.",
       "choices": [ { "text": "OK.", "next": "end" } ]
     },
     "viewers": {
