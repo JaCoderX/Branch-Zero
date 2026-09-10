@@ -508,6 +508,8 @@ func _fx_desk() -> void:
 	plaque("Foreign exchange · Uniswap v4 on Sepolia\nYour account trades; the approved list keeps the door narrow.", Vector3(12.4, 1.30, -4.77), 0.0, 0.15, theme.graphite_color, "FxSponsor")
 	# the east-wall frame the board used to sit in becomes the desk's service menu, in the Name Desk's wording class
 	plaque("FX Desk\n• Ask for a rate — the exchange quotes it\n• Trade from your own till\n• Three approved services, nothing else", Vector3(wall_sign_x, 2.2, -2.0), -PI / 2, 0.15, theme.graphite_color, "FxServiceMenu")
+	# Water cooler against the FX desk's east wall, just south of the counter (was at the entrance).
+	PropKit.hero(self, "WaterCooler", "prop_water_cooler", Vector3(14.4, 0, 0.65), -PI / 2)
 
 
 ## Marble counter (hero mesh, 1.1 m, glass partition with a slot) under the greybox collider; printer + stamp (or
@@ -578,7 +580,6 @@ func _lobby_furniture() -> void:
 	for i in plant_x.size():
 		_planter("LobbyPlant%d" % i, Vector3(plant_x[i], 0, -3.2), i * 1.1, ["pot_large", Vector3(0.9, 0.42, 0.9)], lobby_planters[i])
 		solid_cylinder("LobbyPlant%dBody" % i, Vector3(plant_x[i], 1.0, -3.2), 0.5, 1.4)
-	PropKit.hero(self, "WaterCooler", "prop_water_cooler", Vector3(8.0, 0, 4.5))
 	# split-flap housing on the north partition; the rows are scripts/ledger_board.gd's SubViewport quad at z = -4.7
 	PropKit.hero(self, "LedgerFrame", "prop_board_frame", Vector3(0, 3.0, -4.72))
 	# rope queue in front of the counters (west of the escort line)
