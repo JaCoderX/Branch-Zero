@@ -141,7 +141,7 @@ export function Inpc({ snapshot, receivedAt, onClose }: InpcProps) {
     <div style={backdrop} onPointerDown={(e) => e.target === e.currentTarget && close('backdrop')}>
       <div style={panel} onPointerDown={(e) => e.stopPropagation()}>
         <div style={bar}>
-          <strong style={{ letterSpacing: 1 }}>BRANCH ZERO · SERVICE ASSISTANT</strong>
+          <strong style={{ letterSpacing: 1 }}>BRANCH ZERO · BLOX-47</strong>
           <span style={{ color: '#667', flex: 1 }}> — {awake ? 'awake · reads your board, moves nothing' : 'asleep · needs your OpenRouter key'}</span>
           {awake && (
             <button style={{ ...btn, borderColor: '#e3b341' }} onClick={sleep} title="Forget the key and this conversation">

@@ -206,7 +206,7 @@ func _check_greeter_graph(Dlg) -> void:
 		["hub", "Who powers the desks?", "partners_strip"],
 		["directory", "More desks", "directory_more"],
 		["directory_more", "FX Desk · Kenji", "desk_fx"],
-		["directory_more", "Service assistant kiosk", "service_assistant"],
+		["directory_more", "Blox-47 (beside me)", "service_assistant"],
 		["pending", "Go to the vault.", "desk_vault"],
 	]:
 		var found := false

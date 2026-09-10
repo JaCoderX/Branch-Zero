@@ -194,7 +194,7 @@ Rules that follow, all mirroring the Terminal Console pattern:
   prompt all read it, so Esc order (dialogue → slips → Console / iNPC panel → visitor's card) and `focusCanvas()` on
   close hold for both overlays. `run_action("open_inpc")` sets `inpc_open` + `ui_locked`; `inpc.closed` clears them.
 - **In-world.** `scripts/inpc.gd` (`InpcProp extends BankTerminal`, so `main.gd` ranks it with the terminals for the
-  [Space] prompt) stands at `(7.6, 0, 2.4)` facing west; `dialogue/inpc.json` has two verbs, `open_inpc` and
+  [Space] prompt) stands at `(3.5, 0, 4.5)` facing south beside Mo as **Blox-47**; `dialogue/inpc.json` has two verbs, `open_inpc` and
   `sleep_inpc`. `tests/run_inpc_walk.gd` walks the Godot half headless; `tests/run_checks.gd` guards the verb list, the
   copy and staff-file silence.
 

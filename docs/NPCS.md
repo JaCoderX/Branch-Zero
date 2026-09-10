@@ -211,7 +211,7 @@ Mo: Technically, the board uses guarded Uniswap v4 calls on Sepolia only, with t
   > Back to the lobby        → hub
 
 [service_assistant]
-Mo: The service assistant kiosk can explain the branch from a read-only passbook snapshot. It cannot pay, wire, release, recall, open accounts, or change anything.
+Mo: Blox-47 stands right here beside me. It can explain the branch from a read-only passbook snapshot. It cannot pay, wire, release, recall, open accounts, or change anything.
   > Back to the desk map     → directory_more
   > Back to the lobby        → hub
 

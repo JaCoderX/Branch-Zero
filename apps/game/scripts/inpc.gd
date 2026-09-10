@@ -35,7 +35,7 @@ var _state_plate: Label3D
 
 func _ready() -> void:
 	terminal_id = "inpc"
-	display_name = "the service assistant"
+	display_name = "Blox-47"
 	super()
 	name = "Inpc"
 	remove_from_group("terminal")   # a bank computer it is not; the group keeps meaning "Console screen"
@@ -58,8 +58,8 @@ func interact() -> void:
 func prompt_text() -> String:
 	var s: Dictionary = GameState.strings
 	if GameState.inpc_awake:
-		return str(s.get("prompt_inpc_awake", "[Space] Talk to the service assistant"))
-	return str(s.get("prompt_inpc_dormant", "[Space] Wake the service assistant"))
+		return str(s.get("prompt_inpc_awake", "[Space] Talk to Blox-47"))
+	return str(s.get("prompt_inpc_dormant", "[Space] Wake Blox-47"))
 
 
 # ---------------------------------------------------------------- look
@@ -121,7 +121,7 @@ func _dress() -> void:
 	frame.material_override = brass
 	add_child(frame)
 	var theme: WingTheme = PropKit.ensure_theme()
-	_plaque("SERVICE ASSISTANT", Vector3(0, BADGE_Y + 0.045, FACE_Z - 0.018), 0.10, theme.graphite_color, "InpcTitle")
+	_plaque("BLOX-47", Vector3(0, BADGE_Y + 0.045, FACE_Z - 0.018), 0.10, theme.graphite_color, "InpcTitle")
 	_state_plate = _plaque("", Vector3(0, BADGE_Y - 0.04, FACE_Z - 0.018), 0.08, theme.graphite_color, "InpcState")
 
 

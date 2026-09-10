@@ -79,12 +79,12 @@
       ]
     },
     "directory_more": {
-      "text": "These desks keep names, exchange, and the unusual vault work in their own rooms. The small service kiosk can explain the branch too.",
+      "text": "These desks keep names, exchange, and the unusual vault work in their own rooms. Blox-47 beside me can explain the branch too.",
       "choices": [
         { "text": "Manager · Mr. Okafor", "next": "desk_manager" },
         { "text": "Name Desk · Petra", "next": "desk_petra" },
         { "text": "FX Desk · Kenji", "next": "desk_fx" },
-        { "text": "Service assistant kiosk", "next": "service_assistant" },
+        { "text": "Blox-47 (beside me)", "next": "service_assistant" },
         { "text": "Back to the desk map", "next": "directory" }
       ]
     },
@@ -199,7 +199,7 @@
       ]
     },
     "service_assistant": {
-      "text": "The service assistant kiosk can explain the branch from a read-only passbook snapshot. It cannot pay, wire, release, recall, open accounts, or change anything.",
+      "text": "Blox-47 stands right here beside me. It can explain the branch from a read-only passbook snapshot. It cannot pay, wire, release, recall, open accounts, or change anything.",
       "choices": [
         { "text": "Back to the desk map", "next": "directory_more" },
         { "text": "Back to the lobby", "next": "hub" }

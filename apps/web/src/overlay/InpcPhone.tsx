@@ -62,23 +62,23 @@ export function InpcPhone() {
     <section
       style={phone}
       role="region"
-      aria-label="Service assistant radio"
+      aria-label="Blox-47 radio"
       onPointerDown={(event) => event.stopPropagation()}
     >
       <div style={header}>
         <span style={signal} aria-hidden="true">●</span>
-        <strong style={title}>SERVICE ASSISTANT</strong>
+        <strong style={title}>BLOX-47</strong>
         <span style={state}>awake · radio</span>
       </div>
 
-      <div style={log} role="log" aria-live="polite" aria-label="Service assistant messages">
+      <div style={log} role="log" aria-live="polite" aria-label="Blox-47 messages">
         {recent.length === 0 ? (
-          <div style={empty}>The assistant is listening. Talk to ask a question.</div>
+          <div style={empty}>Blox-47 is listening. Talk to ask a question.</div>
         ) : (
           recent.map((message, index) => (
             <div key={`${message.role}-${index}`} style={messageRow}>
               <span style={{ ...role, color: message.role === 'user' ? '#8ab4f8' : '#7ee787' }}>
-                {message.role === 'user' ? 'you' : 'assistant'}
+                {message.role === 'user' ? 'you' : 'blox-47'}
               </span>
               <div style={messageText}>{message.content}</div>
             </div>

@@ -4,7 +4,7 @@ extends CharacterBody3D
 ## IDLE → TALKING → WORKING → TALKING | REFUSING → TALKING → ESCORTING → IDLE.
 ## The body is either the Kenney bank-staff rig or the KayKit Adventurers feel-spike (`PropKit.USE_KAYKIT_CAST`):
 ## states play bank clip aliases (idle · work · refuse · walk · greet).
-## `tint` colours the nameplate.
+## `tint` is kept for wardrobe / role colouring hooks; floating nameplates were removed in polish.
 
 signal player_near(npc: Npc, near: bool)
 signal duty_changed
@@ -48,7 +48,6 @@ var _skeleton: Skeleton3D
 var _head_bone := -1
 var _head_base_pose := Quaternion.IDENTITY
 var _gaze_active := false
-var _plate: Label3D
 var _bubble: Label3D
 var _zone: Area3D
 var _player: Node3D
@@ -103,23 +102,12 @@ func _ready() -> void:
 		_anim.animation_finished.connect(_on_animation_finished)
 	_play("idle")
 
-	_plate = Label3D.new()
-	_plate.text = "%s\n%s" % [display_name, role]
-	_plate.modulate = tint.lightened(0.35)
-	_plate.position.y = 2.25
-	_plate.pixel_size = 0.006
-	_plate.font_size = 40
-	_plate.outline_size = 8
-	_plate.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	_plate.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_plate.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(_plate)
-
+	# No hovering nameplates — polish: the [Space] prompt and dialogue header carry the name.
 	_bubble = Label3D.new()
-	_bubble.position.y = 2.75
-	_bubble.pixel_size = 0.006
-	_bubble.font_size = 34
-	_bubble.outline_size = 8
+	_bubble.position.y = 2.35
+	_bubble.pixel_size = 0.004
+	_bubble.font_size = 28
+	_bubble.outline_size = 6
 	_bubble.modulate = Color(1.0, 0.92, 0.6)
 	_bubble.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_bubble.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

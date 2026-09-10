@@ -61,13 +61,13 @@ Not a staff NPC (`NPCS.md`). Separate species.
 13. **Diegetic copy:** world plate is bank words only (`asleep · needs your link`). OpenRouter stays in dialogue Ask-why / Wake panel — **met 2026-09-10** visual polish.
 14. **Fixed enamel plaque:** title + state on a paper/brass board on the lobby face of the column (not a billboard stack) — **met 2026-09-10**.
 15. ~~**Silhouette still temp-prop vs KayKit:** cylinder stack + sphere beside Stage 6a couches.~~ **Met 2026-09-10 — Gum Bot mesh land** (ENG-2026-0021): a CRT-headed biped in Graphite / Steel with a Brass bezel now stands at the spot; the awake cue is the screen sheet (eyes) and the plaque is a nameplate strip under the CRT. Lessons: Godot samples `emission_texture` from UV1 only, and emission is additive — keep `emission` black and swap the sheet; a textured hero mesh costs its own two materials (budget ceiling 40 → 42, documented in `run_viz_budget`).
-16. **Placement holds:** `(7.6, 0, 2.4)`, yaw `π/2` (eye west into lobby) — east of couch row (`x≈4.5`), west of east-column walk, off escort and entrance. Mo already points here.
+16. **Placement:** beside Mo at the lobby greeter post — `(3.5, 0, 4.5)`, yaw `π` (faces south toward the entrance, same as Mo).
 
 ## As built (2026-09-10)
 
 | Piece | Where | Notes |
 |-------|-------|-------|
-| Dormant prop | `apps/game/scripts/inpc.gd` (`InpcProp extends BankTerminal`), placed by `main.gd` at `(7.6, 0, 2.4)` facing west — east of the lobby couches, off the escort line and the entrance walk | Gum Bot bank glb (Graphite / Steel / Brass bezel); screen sheet dormant ↔ awake with `GameState.inpc_awake`; fixed paper/brass nameplate strip under the screen `SERVICE ASSISTANT` + bank-words state (`asleep · needs your link`); no billboards, no new lights |
+| Dormant prop | `apps/game/scripts/inpc.gd` (`InpcProp extends BankTerminal`), placed by `main.gd` at `(3.5, 0, 4.5)` facing south beside Mo | Gum Bot bank glb (Graphite / Steel / Brass bezel); screen sheet dormant ↔ awake with `GameState.inpc_awake`; fixed paper/brass nameplate strip under the screen `BLOX-47` + bank-words state (`asleep · needs your link`); no billboards, no new lights |
 | Dialogue | `apps/game/dialogue/inpc.json` | Verbs: `open_inpc`, `sleep_inpc` only. Dormant → *Wake it* / *Ask why* / *Leave it*; awake → *Talk* / *Put it to sleep* / *Ask why*. Not a staff row; no staff file mentions it |
 | Snapshot | `GameState.inpc_snapshot()` | 17 whitelisted fields (account yes/no, bank name, tier, wing, network, balance / limit / cooling displays, pending wires with `release_ready` · `board_word` · `cooling_left_display` · `release_at_unix` · `release_at_display`, viewing-wallet count, zone, who-can-help). No addresses (payee shortened as on the board), hashes, receipts, owner, Live/Dev or link flags |
 | Bridge | `branchZero.ts` `s2.3`: `openInpc` · `inpcSnapshot` · `inpcStatus` · `sleepInpc`; event `inpc.closed {reason, awake}` | `Chain.SHELL_METHODS` routes them to the real shell even under `?mock`; MockChain refuses `INPC_UNAVAILABLE` when there is no shell |
@@ -100,11 +100,11 @@ Provenance: ENG-0019 fixture → product-owned under `game-knowledge/` (counter 
 | Aspect | As built | Review |
 |--------|----------|--------|
 | Species | Prop, not staff mesh | Correct — separate from KayKit cast |
-| Mesh | **Gum Bot bank** glb (`assets/models/inpc/gum_bot_bank.glb`, lod03, 3,590 tris, one UV set, two surfaces) instanced by `inpc.gd`, yawed π so the imported +z screen faces the lobby (−z); 1.14 × 1.40 × 1.18 m, feet at y = 0 | **Landed 2026-09-10** (ENG-2026-0021) — reads as bank furniture beside the Stage 6a couches; brass bezel carries the silhouette from the couch |
+| Mesh | **Gum Bot bank** glb (`assets/models/inpc/gum_bot_bank.glb`, lod03, 3,590 tris, one UV set, two surfaces) instanced by `inpc.gd`, yawed π so the imported +z screen faces the lobby (−z); 1.14 × 1.40 × 1.18 m, feet at y = 0 | **Landed 2026-09-10** (ENG-2026-0021) — **Blox-47** beside Mo at the greeter post, facing south |
 | Materials | Body albedo (Graphite shell · Steel plates · Brass bezel, baked in the lab) + screen emissive override; plaque strip on PropKit Paper / Brass | Two textured materials (the building's only non-palette mesh materials → `run_viz_budget` ceiling 42); no new lights |
 | Awake cue | Screen `emission_texture` dormant sheet → `screen_awake.png` (Bulb eyes baked in), energy 1.0 → 2.0, `emission` kept black (additive), `albedo_color` black for a dark asleep screen; state plate text | Eyes read from the lobby; dormant screen dark under the sun |
-| Labels | Fixed paper/brass nameplate strip under the CRT (screen width, y 0.32–0.50): `SERVICE ASSISTANT` + bank-words state | **Polish 1–2 met 2026-09-10** — no OpenRouter on the prop; no billboard; re-fit to the biped |
-| Spot | `INPC_SPOT (7.6, 0, 2.4)` · `INPC_YAW π/2` | Good — east of couches, faces lobby |
+| Labels | Fixed paper/brass nameplate strip under the CRT (screen width, y 0.32–0.50): `BLOX-47` + bank-words state | **Polish 1–2 met 2026-09-10** — no OpenRouter on the prop; no billboard; re-fit to the biped; named **Blox-47** |
+| Spot | `INPC_SPOT (3.5, 0, 4.5)` · `INPC_YAW π` (south, beside Mo) | Lobby greeter pair |
 | Interact | Extends `BankTerminal` for near/Space only; not in `terminal` group; box collider 1.14 × 1.40 × 1.18 on layer 1 / mask 0 | Correct — zone radius 1.9 still clears the body |
 
 **Still optional:** blink / poweron polish, KayKit plinth. Companion follow still out of v1. Stills: `tests/inpc_shots.tscn` (windowed) → `docs/progress/captures/inpc-gum-bot/`.

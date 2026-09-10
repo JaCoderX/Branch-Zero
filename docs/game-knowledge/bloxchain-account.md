@@ -62,7 +62,7 @@ This is the deeper explanation behind the bank words. Use it when the player ask
 - Your bank name (yourname.branchzero.eth) is an ENS subname. It points at your account address, so people can pay you by name.
 - Your passbook tier (Silver, Gold) is a text record on that name. Staff have exactly the record rights the registry gives them: the teller may update your tier but cannot change which address your name points to. If they try, the registry refuses.
 
-## What the service assistant can and cannot see
+## What Blox-47 can and cannot see
 - It sees a read-only snapshot: whether you have an account, your bank name and tier, your wing, your balance and counter limit, the cooling period, and the pending wires with their board word and clock.
 - It cannot see transaction hashes, full addresses, keys, receipts, or anything behind the counter. If a player asks for those, name the desk or the receipt that shows them.
 - It cannot act. Every verb that changes state belongs to a desk and needs the player's signature.

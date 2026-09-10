@@ -1,5 +1,5 @@
 extends Node
-## Windowed stills of the service assistant beside the Stage 6a couches (a window is needed — headless does not render).
+## Windowed stills of Blox-47 beside Mo at the lobby greeter post (a window is needed — headless does not render).
 ## Dormant and awake, close and from the lobby; MockChain, no shell. Tester aid for the Gum Bot mesh land (docs/INPC.md Visual).
 ##
 ##   godot --path apps/game tests/inpc_shots.tscn -- <out_dir>
@@ -23,13 +23,13 @@ func _ready() -> void:
 	print("inpc at %s yaw %.2f children %s" % [str(inpc.global_position), inpc.rotation.y, str(inpc.get_children().map(func(c): return c.name))])
 	GameState.inpc_awake = false
 	GameState.changed.emit()
-	await _shot("inpc_01_dormant_close", Vector3(5.4, 0.1, 2.4), -PI / 2)
-	await _shot("inpc_02_dormant_lobby", Vector3(2.0, 0.1, 5.5), -0.9)
+	await _shot("inpc_01_dormant_close", Vector3(3.5, 0.1, 6.8), 0.0)
+	await _shot("inpc_02_dormant_lobby", Vector3(2.0, 0.1, 7.0), 0.0)
 	GameState.inpc_awake = true
 	GameState.changed.emit()
-	await _shot("inpc_03_awake_close", Vector3(5.4, 0.1, 2.4), -PI / 2)
-	await _shot("inpc_04_awake_lobby", Vector3(2.0, 0.1, 5.5), -0.9)
-	await _shot("inpc_05_awake_badge_close", Vector3(6.0, 0.1, 2.4), -PI / 2, -8.0)
+	await _shot("inpc_03_awake_close", Vector3(3.5, 0.1, 6.8), 0.0)
+	await _shot("inpc_04_awake_lobby", Vector3(2.0, 0.1, 7.0), 0.0)
+	await _shot("inpc_05_awake_badge_close", Vector3(3.5, 0.1, 5.8), 0.0, -8.0)
 	GameState.inpc_awake = false
 	GameState.changed.emit()
 	print("inpc_shots: done → %s" % out_dir)

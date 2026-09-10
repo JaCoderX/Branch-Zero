@@ -34,11 +34,11 @@ const TERMINALS := [
 	["lobby", Vector3(11.35, 0.4, 9.15), "the lobby terminal"],
 ]
 
-## The optional service assistant (docs/INPC.md): a dormant prop east of the lobby seating, facing west into the room.
-## Off the entrance walk (x ≈ 5 north from the door), the escort line ((-2, -1) → (6, -3.5)) and the elevator approach
-## (near-check at (11, 5.5) r 2.6). Not a staff NPC; it ranks with the terminals for the [Space] prompt.
-const INPC_SPOT := Vector3(7.6, 0.0, 2.4)
-const INPC_YAW := PI / 2
+## The optional service assistant Blox-47 (docs/INPC.md): stands beside Mo at the lobby greeter post, facing south
+## toward the entrance (same yaw as Mo). Capsule clearance ~1.5 m east of Mo; not a staff NPC — ranks with the
+## terminals for the [Space] prompt.
+const INPC_SPOT := Vector3(3.5, 0.0, 4.5)
+const INPC_YAW := PI
 
 const ARC_CHAIN_ID := 5042002
 const MAIN_CHAIN_ID := 1337
