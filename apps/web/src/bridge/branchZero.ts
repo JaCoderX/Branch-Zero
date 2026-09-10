@@ -502,7 +502,7 @@ const handlers: Record<string, Handler> = {
   /**
    * Front-door CTA: star a public GitHub repo without navigating the bank away.
    * Needs `VITE_GITHUB_CLIENT_ID` + desk `GITHUB_OAUTH_CLIENT_SECRET` for one-click API stars;
-   * otherwise opens the repo in a popup for a manual Star.
+   * otherwise opens the repo in a new tab for a manual Star.
    */
   async starGithub(args) {
     const repo = String(args.repo ?? args.full ?? '').trim();

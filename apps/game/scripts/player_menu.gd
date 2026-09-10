@@ -297,7 +297,7 @@ func _star_repo(repo: String) -> void:
 			else:
 				GameState.toast.emit(str(GameState.strings.get("menu_star_done", "Starred — thank you.")), "info")
 		else:
-			GameState.toast.emit(str(GameState.strings.get("menu_star_popup", "If you are signed into GitHub, tap Star, then close the window.")), "info")
+			GameState.toast.emit(str(GameState.strings.get("menu_star_popup", "Opened GitHub in a new tab — tap Star there, then come back to the bank.")), "info")
 		return
 	var err: Dictionary = r.get("error", {})
 	var line := str(err.get("bankLine", err.get("message", GameState.strings.get("menu_star_failed", "GitHub would not take the star just now."))))

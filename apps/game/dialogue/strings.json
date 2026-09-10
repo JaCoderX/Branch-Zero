@@ -111,7 +111,7 @@
   "menu_star_working": "Opening GitHub…",
   "menu_star_done": "Starred — thank you.",
   "menu_star_already": "Already starred — thank you.",
-  "menu_star_popup": "If you are signed into GitHub, tap Star, then close the window.",
+  "menu_star_popup": "Opened GitHub in a new tab — tap Star there, then come back to the bank.",
   "menu_star_failed": "GitHub would not take the star just now.",
   "menu_back": "Back",
   "pause_title": "Visitor's card",

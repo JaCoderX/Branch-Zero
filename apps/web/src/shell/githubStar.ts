@@ -4,7 +4,7 @@
  * GitHub will not let an anonymous page stamp a star. With `VITE_GITHUB_CLIENT_ID` + desk
  * `GITHUB_OAUTH_CLIENT_SECRET`, the first press opens a small OAuth popup; after that we
  * `PUT /user/starred/{owner}/{repo}` and return. Without those envs we open the repo in a
- * popup and ask the visitor to tap Star themselves (honest fallback — still not a full navigation).
+ * **new tab** and ask the visitor to tap Star themselves (honest fallback — the bank tab stays).
  */
 import { focusCanvas } from './focus';
 
@@ -14,8 +14,8 @@ const STATE_KEY = 'bz.github.oauth.state';
 export type StarResult = {
   starred: boolean;
   already?: boolean;
-  /** `api` = we stamped the star; `popup` = visitor must tap Star on GitHub's page. */
-  via: 'api' | 'popup';
+  /** `api` = we stamped the star; `tab` = opened the repo in a new tab for a manual Star. */
+  via: 'api' | 'tab';
   repo: string;
 };
 
@@ -197,19 +197,9 @@ async function apiStar(owner: string, repo: string, token: string): Promise<{ st
   });
 }
 
-function waitPopupClosed(popup: Window): Promise<void> {
-  return new Promise((resolve) => {
-    const timer = window.setInterval(() => {
-      if (popup.closed) {
-        window.clearInterval(timer);
-        resolve();
-      }
-    }, 400);
-  });
-}
-
 /**
- * Star `owner/repo`. Keeps the Godot canvas mounted; only a popup leaves the page briefly for GitHub.
+ * Star `owner/repo`. Keeps the Godot canvas mounted.
+ * With OAuth: small auth popup then API star. Without: repo opens in a **new tab** for a manual Star.
  */
 export async function starGithubRepo(raw: string): Promise<StarResult> {
   const { owner, repo, full } = parseRepo(raw);
@@ -219,15 +209,21 @@ export async function starGithubRepo(raw: string): Promise<StarResult> {
       const r = await apiStar(owner, repo, token);
       return { starred: true, already: r.already, via: 'api', repo: full };
     }
-    const popup = openCentered(`https://github.com/${full}`, 'bz-github-repo', 960, 780);
-    if (!popup) {
-      throw Object.assign(new Error('popup blocked'), {
+    // No OAuth app: open the repo in a normal tab (not a chrome-less popup) so the visitor can tap Star.
+    // Do not pass `noopener` in features — that makes `window.open` return null, so we cannot detect a blocker.
+    const tab = window.open(`https://github.com/${full}`, '_blank');
+    if (!tab) {
+      throw Object.assign(new Error('tab blocked'), {
         code: 'AUTH',
-        bankLine: 'Your browser blocked the GitHub window — allow popups, then try again.',
+        bankLine: 'Your browser blocked the new tab — allow popups for this branch, then try again.',
       });
     }
-    await waitPopupClosed(popup);
-    return { starred: false, via: 'popup', repo: full };
+    try {
+      tab.opener = null;
+    } catch {
+      /* ignore */
+    }
+    return { starred: false, via: 'tab', repo: full };
   } finally {
     focusCanvas();
   }
