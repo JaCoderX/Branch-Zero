@@ -6,7 +6,7 @@ created: 2026-09-11
 product: Branch-Zero
 mission: Replace rest-pose gum_bot_bank.glb with lab skinned walk glb; drive idle/walk from InpcProp._walking
 kickoff: docs/missions/KICKOFF-inpc-gum-bot-walk.md
-status: open — lab Yes ENG-2026-0022; awaiting land
+status: met — landed 2026-09-11; lab Yes ENG-2026-0022
 lab: GameLab ENG-2026-0022 Yes (handed-off proposal)
 parallel_to: U7 packaging · do not absorb OpenRouter / phone / FX / cast WIP
 ---
@@ -32,7 +32,7 @@ ship: `out/gum_bot_bank_walk.glb` + `out/SHA256SUMS.txt` · proof pattern: `godo
 
 ## Principal intent
 
-Companion follow Phase 1 **slides** a rig-stripped Gum Bot. Lab ENG-2026-0022 answered **Yes**: skinned lod03 with `GumBot_Idle` + `GumBot_Walk`, bank palette held, Godot 4.5.2 Compatibility proof. Land the asset and wire clips so Follow shows legs.
+Companion follow Phase 1 keeps the escort-lite mover as the sole translator. Lab ENG-2026-0022 answered **Yes**: skinned lod03 with `GumBot_Idle` + `GumBot_Walk`, bank palette held, Godot 4.5.2 Compatibility proof. The asset is landed and Follow now shows the baked leg cycle.
 
 ---
 
@@ -63,16 +63,18 @@ Companion follow Phase 1 **slides** a rig-stripped Gum Bot. Lab ENG-2026-0022 an
 
 ## Verification checklist
 
-- [ ] Follow shows alternating legs (not T-pose slide)
-- [ ] Resting / Unfollow / HOME play idle (or rest pose)
-- [ ] Sleep snaps home + dormant screen; follow cleared
-- [ ] Follow alone does not lock WASD / `inpc_open`
-- [ ] Talk / phone / screen swap still work
-- [ ] CREDITS + sha256; `run_inpc_walk` green; viz budget within documented ceiling
-- [ ] OWED + INPC + this handoff status updated
+- [x] Follow shows alternating legs (not T-pose slide)
+- [x] Resting / Unfollow / HOME play idle (or rest pose)
+- [x] Sleep snaps home + dormant screen; follow cleared
+- [x] Follow alone does not lock WASD / `inpc_open`
+- [x] Talk / phone / screen swap still work
+- [x] CREDITS + sha256; `run_inpc_walk` green; viz budget within documented ceiling
+- [x] OWED + INPC + this handoff status updated
 
 ---
 
 ## Outcome
 
-*(fill on met / blocked)*
+**Met 2026-09-11 (Codex Luna).** Replaced `apps/game/assets/models/inpc/gum_bot_bank.glb` with the ENG-2026-0022 ship GLB from `GameLab/out/`; product SHA-256 is `00a825f9286baf8653b1d40671a63eca998cf5bb07adb23de511d8dc4ab24f1b`, matching `out/SHA256SUMS.txt`. Enabled Godot animation import; Godot 4.5.2 imported `AnimationPlayer` clips `GumBot_Idle` and `GumBot_Walk`. `InpcProp` selects walk only while `_follow == FOLLOWING && _walking`, otherwise idle; mover seek, collision exceptions, Sleep home snap, yaw π, emission-sheet swap, and phone contract remain unchanged. No root motion, navmesh, OpenRouter, phone chrome, or staff changes.
+
+Verification: `run_inpc_walk` PASS (0 failures); `run_checks` `_check_inpc` PASS; `run_viz_budget` PASS at 42 mesh materials / 44 with particles / 112,407 triangles; `export:web` completed with Godot 4.5.2. Browser `?mock=account` smoke used the non-secret placeholder `sk-or-smoke-test-invalid` only to unlock the session UI (no chat sent): Wake → awake radio → Follow → player movement showed the leg cycle across frames → Unfollow parked → Sleep removed the radio and returned the assistant dormant/home. Browser console had no iNPC/Godot errors; one pre-existing Privy iframe warning remains.

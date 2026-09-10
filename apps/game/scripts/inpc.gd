@@ -13,11 +13,13 @@ extends BankTerminal
 ## for the [Space] prompt without a third pick rule. The body is the lab-proven CC0 **Gum Bot bank** glb (GameLab
 ## ENG-2026-0021: Graphite shell, Steel plates, Brass CRT bezel — one UV set, two surfaces) and no new lights (the lobby is
 ## at its eight-omni budget); the screen swaps its emission sheet dormant (dark) ↔ awake (eyes) — no new material either.
+## The imported bank walk glb keeps the same footprint and adds skinned `GumBot_Idle` / `GumBot_Walk` clips; the
+## mover below remains the only world-motion authority.
 ##
 ## Companion follow (HANDOFF-inpc-companion-follow): while awake the phone's Follow / Unfollow flips
 ## `GameState.inpc_following`; this prop then trails the player with the escort-lite seek the teller uses (npc.gd
-## `_escort`: seek, slide, ignore the player, give up when stuck) — no NavigationRegion, no walk clip (the glb is
-## rig-stripped, so it slides). The root stays a Node3D so main.gd's terminal ranking is untouched; a CharacterBody3D
+## `_escort`: seek, slide, ignore the player, give up when stuck) — no NavigationRegion; the skinned walk clip poses
+## the legs while the mover still slides. The root stays a Node3D so main.gd's terminal ranking is untouched; a CharacterBody3D
 ## child does the sliding and the root absorbs its displacement every tick, so the zone, mesh and plaque travel along.
 ## Follow is spatial chrome only: it never locks the floor (`inpc_open` / `overlay_open()` untouched) and adds no verb.
 ## Unfollow = stay put. Sleep = snap back to the lobby home spot, dormant.
@@ -60,6 +62,7 @@ var _screen_mat: StandardMaterial3D
 var _screen_dormant_tex: Texture2D
 var _state_plate: Label3D
 var _mover: CharacterBody3D
+var _anim: AnimationPlayer
 var _player: PhysicsBody3D
 var _follow: Follow = Follow.HOME
 var _walking := false
@@ -123,6 +126,19 @@ func _dress() -> void:
 	bot.name = "GumBot"
 	bot.rotation.y = PI   # glb screen faces +z; the lobby face of this prop is −z
 	add_child(bot)
+	_anim = bot.find_child("AnimationPlayer", true, false) as AnimationPlayer
+	if _anim == null:
+		for c in bot.find_children("*", "AnimationPlayer", true, false):
+			_anim = c as AnimationPlayer
+			break
+	if _anim == null:
+		push_warning("InpcProp: gum_bot_bank.glb has no AnimationPlayer — skinned leg clips unavailable")
+	else:
+		for clip_name in ["GumBot_Idle", "GumBot_Walk", "idle", "walk"]:
+			if _anim.has_animation(clip_name):
+				var clip := _anim.get_animation(clip_name)
+				if clip != null:
+					clip.loop_mode = Animation.LOOP_LINEAR
 	var mesh := bot.find_child("GumBotBank", true, false) as MeshInstance3D
 	if mesh == null:
 		for c in bot.find_children("*", "MeshInstance3D", true, false):
@@ -175,6 +191,7 @@ func _dress() -> void:
 	var theme: WingTheme = PropKit.ensure_theme()
 	_plaque("BLOX-47", Vector3(0, BADGE_Y + 0.045, FACE_Z - 0.018), 0.10, theme.graphite_color, "InpcTitle")
 	_state_plate = _plaque("", Vector3(0, BADGE_Y - 0.04, FACE_Z - 0.018), 0.08, theme.graphite_color, "InpcState")
+	_sync_animation()
 
 
 ## Fixed enamel (bank_interior.plaque style): faces local −z into the lobby; never billboarded.
@@ -197,6 +214,27 @@ func _plaque(text: String, pos: Vector3, size: float, color: Color, n: String = 
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(l)
 	return l
+
+
+func _desired_animation() -> String:
+	if _anim == null:
+		return ""
+	var walking := _follow == Follow.FOLLOWING and _walking
+	var names := ["GumBot_Walk", "walk"] if walking else ["GumBot_Idle", "idle"]
+	for clip_name in names:
+		if _anim.has_animation(clip_name):
+			return clip_name
+	return ""
+
+
+func _sync_animation() -> void:
+	if _anim == null:
+		return
+	var desired := _desired_animation()
+	if desired == "" or _anim.current_animation == desired:
+		return
+	_anim.speed_scale = 1.0
+	_anim.play(desired, 0.12)
 
 
 ## The screen and the state line follow the one bit the shell mirrors back: a key in this tab's session or not.
@@ -257,6 +295,7 @@ func _begin_follow() -> void:
 	for n in get_tree().get_nodes_in_group("npc"):
 		if n is PhysicsBody3D:
 			_ignore(_mover, n as PhysicsBody3D)
+	_sync_animation()
 
 
 ## Unfollow: freeze where it stands. It is a solid prop again (exceptions off) so the player can lean on it for Space.
@@ -266,6 +305,7 @@ func _stay() -> void:
 	_clear_ignored()
 	if _mover != null:
 		_mover.velocity = Vector3.ZERO
+	_sync_animation()
 
 
 ## Sleep (or the key vanishing): snap to the lobby home spot with the home yaw. A snap, not a walk — the eye is out.
@@ -278,6 +318,7 @@ func _go_home() -> void:
 		_mover.position = Vector3.ZERO
 	position = _home
 	rotation = Vector3(0.0, _home_yaw, 0.0)
+	_sync_animation()
 
 
 func _ignore(a: PhysicsBody3D, b: PhysicsBody3D) -> void:
@@ -308,6 +349,7 @@ func _physics_process(delta: float) -> void:
 		_:
 			_settle()
 	_absorb_motion()
+	_sync_animation()
 
 
 ## Stand still on the floor (gravity only), like the staff capsules.
