@@ -81,4 +81,4 @@ Stop when met / blocked.
 
 ## After
 
-Principal: accept slide locomotion or open a GameLab walk-rig ENG. Action tips stay parked.
+Principal: **walk-rig ENG opened** — [ENG-2026-0022](../../../GameLab/work/ENG-2026-0022-inpc-gum-bot-walk/) (`KICKOFF.md` for Codex Luna). Action tips stay parked.

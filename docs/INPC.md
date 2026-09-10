@@ -34,7 +34,7 @@ Not a staff NPC (`NPCS.md`). Separate species.
 | Context | Allowlisted [`docs/game-knowledge/`](./game-knowledge/) pack + **player-safe** `GameState` snapshot — not desk-debug; **not** root `AGENTS.md` or the rest of `docs/` |
 | Request | Bound `max_tokens` (2048); surface 401 / 402 / 403 plainly |
 | Ollama | **Deferred** (local install distribution; Cloud CORS blocked) — do not build in this mission |
-| Companion follow | **Phase 1 met 2026-09-10** — phone **Follow / Unfollow**, awake only; escort-lite seek on a `CharacterBody3D` (no `NavigationRegion3D` bake; slide, no walk clip); **never a lock** (`inpc_open` / `overlay_open()` untouched); Unfollow = Stay; Sleep = Unfollow + snap home. Skinned walk = optional later GameLab ENG — [HANDOFF-inpc-companion-follow.md](./missions/HANDOFF-inpc-companion-follow.md) |
+| Companion follow | **Phase 1 met 2026-09-10** — phone **Follow / Unfollow**, awake only; escort-lite seek on a `CharacterBody3D` (no `NavigationRegion3D` bake; **slide**, no walk clip); **never a lock** (`inpc_open` / `overlay_open()` untouched); Unfollow = Stay; Sleep = Unfollow + snap home — [HANDOFF-inpc-companion-follow.md](./missions/HANDOFF-inpc-companion-follow.md). **Skinned walk:** GameLab [ENG-2026-0022](../../GameLab/work/ENG-2026-0022-inpc-gum-bot-walk/) open (idle + walk on Gum Bot Rig); product land only after Yes |
 
 ## Learnings worth keeping
 
@@ -61,13 +61,13 @@ Not a staff NPC (`NPCS.md`). Separate species.
 13. **Diegetic copy:** world plate is bank words only (`asleep · needs your link`). OpenRouter stays in dialogue Ask-why / Wake panel — **met 2026-09-10** visual polish.
 14. **Fixed enamel plaque:** title + state on a paper/brass board on the lobby face of the column (not a billboard stack) — **met 2026-09-10**.
 15. ~~**Silhouette still temp-prop vs KayKit:** cylinder stack + sphere beside Stage 6a couches.~~ **Met 2026-09-10 — Gum Bot mesh land** (ENG-2026-0021): a CRT-headed biped in Graphite / Steel with a Brass bezel now stands at the spot; the awake cue is the screen sheet (eyes) and the plaque is a nameplate strip under the CRT. Lessons: Godot samples `emission_texture` from UV1 only, and emission is additive — keep `emission` black and swap the sheet; a textured hero mesh costs its own two materials (budget ceiling 40 → 42, documented in `run_viz_budget`).
-16. **Placement:** beside Mo at the lobby greeter post — `(3.5, 0, 4.5)`, yaw `π` (faces south toward the entrance, same as Mo).
+16. **Placement:** beside Ash at the lobby greeter post — `(3.5, 0, 4.5)`, yaw `π` (faces south toward the entrance, same as Ash).
 
 ## As built (2026-09-10)
 
 | Piece | Where | Notes |
 |-------|-------|-------|
-| Dormant prop | `apps/game/scripts/inpc.gd` (`InpcProp extends BankTerminal`), placed by `main.gd` at `(3.5, 0, 4.5)` facing south beside Mo | Gum Bot bank glb (Graphite / Steel / Brass bezel); screen sheet dormant ↔ awake with `GameState.inpc_awake`; fixed paper/brass nameplate strip under the screen `BLOX-47` + bank-words state (`asleep · needs your link`); no billboards, no new lights. Root stays `Node3D` / `BankTerminal`; the blocking body is a `CharacterBody3D` child (`InpcBody`) that walks for companion follow (below) |
+| Dormant prop | `apps/game/scripts/inpc.gd` (`InpcProp extends BankTerminal`), placed by `main.gd` at `(3.5, 0, 4.5)` facing south beside Ash | Gum Bot bank glb (Graphite / Steel / Brass bezel); screen sheet dormant ↔ awake with `GameState.inpc_awake`; fixed paper/brass nameplate strip under the screen `BLOX-47` + bank-words state (`asleep · needs your link`); no billboards, no new lights. Root stays `Node3D` / `BankTerminal`; the blocking body is a `CharacterBody3D` child (`InpcBody`) that walks for companion follow (below) |
 | Dialogue | `apps/game/dialogue/inpc.json` | Verbs: `open_inpc`, `sleep_inpc` only. Dormant → *Wake it* / *Ask why* / *Leave it*; awake → *Talk* / *Put it to sleep* / *Ask why*. Not a staff row; no staff file mentions it |
 | Snapshot | `GameState.inpc_snapshot()` | 17 whitelisted fields (account yes/no, bank name, tier, wing, network, balance / limit / cooling displays, pending wires with `release_ready` · `board_word` · `cooling_left_display` · `release_at_unix` · `release_at_display`, viewing-wallet count, zone, who-can-help). No addresses (payee shortened as on the board), hashes, receipts, owner, Live/Dev or link flags |
 | Bridge | `branchZero.ts` `s2.3`: `openInpc` · `inpcSnapshot` · `inpcStatus` · `sleepInpc`; event `inpc.closed {reason, awake}` | `Chain.SHELL_METHODS` routes them to the real shell even under `?mock`; MockChain refuses `INPC_UNAVAILABLE` when there is no shell |
@@ -107,21 +107,21 @@ Mission: [HANDOFF-inpc-companion-follow.md](./missions/HANDOFF-inpc-companion-fo
 | Coding / ops agents | Root [`AGENTS.md`](../AGENTS.md) → `docs/` + missions | Architecture, OWED, SECURITY, treasury, desk-debug |
 | In-game iNPC | [`game-knowledge/`](./game-knowledge/) allowlist + live snapshot | Bank words, staff who-does-what, Ask-why glossary; **no** keys, hashes, Live/Dev ops |
 
-Provenance: ENG-0019 fixture → product-owned under `game-knowledge/` (counter limit, Kenji, Sgt. Bale, Mo, viewing wallets, practice dollars). Technology primer distilled from the public Bloxchain account pattern + GAME-DESIGN §4 / NPCS Ask-why. Never read from GameLab or GitHub at runtime.
+Provenance: ENG-0019 fixture → product-owned under `game-knowledge/` (counter limit, Johnny, Sgt. Bale, Ash, viewing wallets, practice dollars). Technology primer distilled from the public Bloxchain account pattern + GAME-DESIGN §4 / NPCS Ask-why. Never read from GameLab or GitHub at runtime.
 
 ## Visual — as built + review (2026-09-10)
 
 | Aspect | As built | Review |
 |--------|----------|--------|
 | Species | Prop, not staff mesh | Correct — separate from KayKit cast |
-| Mesh | **Gum Bot bank** glb (`assets/models/inpc/gum_bot_bank.glb`, lod03, 3,590 tris, one UV set, two surfaces) instanced by `inpc.gd`, yawed π so the imported +z screen faces the lobby (−z); 1.14 × 1.40 × 1.18 m, feet at y = 0 | **Landed 2026-09-10** (ENG-2026-0021) — **Blox-47** beside Mo at the greeter post, facing south |
+| Mesh | **Gum Bot bank** glb (`assets/models/inpc/gum_bot_bank.glb`, lod03, 3,590 tris, one UV set, two surfaces) instanced by `inpc.gd`, yawed π so the imported +z screen faces the lobby (−z); 1.14 × 1.40 × 1.18 m, feet at y = 0 | **Landed 2026-09-10** (ENG-2026-0021) — **Blox-47** beside Ash at the greeter post, facing south |
 | Materials | Body albedo (Graphite shell · Steel plates · Brass bezel, baked in the lab) + screen emissive override; plaque strip on PropKit Paper / Brass | Two textured materials (the building's only non-palette mesh materials → `run_viz_budget` ceiling 42); no new lights |
 | Awake cue | Screen `emission_texture` dormant sheet → `screen_awake.png` (Bulb eyes baked in), energy 1.0 → 2.0, `emission` kept black (additive), `albedo_color` black for a dark asleep screen; state plate text | Eyes read from the lobby; dormant screen dark under the sun |
 | Labels | Fixed paper/brass nameplate strip under the CRT (screen width, y 0.32–0.50): `BLOX-47` + bank-words state | **Polish 1–2 met 2026-09-10** — no OpenRouter on the prop; no billboard; re-fit to the biped; named **Blox-47** |
-| Spot | `INPC_SPOT (3.5, 0, 4.5)` · `INPC_YAW π` (south, beside Mo) | Lobby greeter pair |
+| Spot | `INPC_SPOT (3.5, 0, 4.5)` · `INPC_YAW π` (south, beside Ash) | Lobby greeter pair |
 | Interact | Extends `BankTerminal` for near/Space only; not in `terminal` group; mover = `CharacterBody3D` cylinder r 0.58 × 1.40 on layer 1 / mask 1 (solid when parked; ignores player + staff while following) | Correct — zone radius 1.9 still clears the body and travels with it |
 
-**Still optional:** blink / poweron polish, KayKit plinth, a skinned walk cycle (slides for now). Companion follow Phase 1 met (above). Stills: `tests/inpc_shots.tscn` (windowed) → `docs/progress/captures/inpc-gum-bot/`.
+**Still optional:** blink / poweron polish, KayKit plinth. **Skinned walk** in lab: [ENG-2026-0022](../../GameLab/work/ENG-2026-0022-inpc-gum-bot-walk/) (slides in product until land). Companion follow Phase 1 met (above). Stills: `tests/inpc_shots.tscn` (windowed) → `docs/progress/captures/inpc-gum-bot/`.
 
 **Mesh land (met 2026-09-10):** lab Gum Bot bank remap Yes — [HANDOFF-inpc-gum-bot-mesh.md](./missions/HANDOFF-inpc-gum-bot-mesh.md) · [KICKOFF-inpc-gum-bot-mesh.md](./missions/KICKOFF-inpc-gum-bot-mesh.md) (ENG-2026-0021); ship set + CC0 licence in `assets/models/inpc/`, [CREDITS.md](../CREDITS.md) row.
 
