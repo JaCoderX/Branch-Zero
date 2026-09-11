@@ -21,7 +21,7 @@ You are a **cold agent**. Prefer this file + the kickoff over chat memory. Freed
 
 **Baseline (met, but Talk regressed):** phone HUD + mirror sync — [`HANDOFF-inpc-phone-hud.md`](./HANDOFF-inpc-phone-hud.md) · [`docs/INPC.md`](../INPC.md) § Live mirror sync.
 
-**Not this mission:** Companion follow · action tips · Ollama · teaching-pack / whitelist expansion · desk-debug → robot · new Godot mesh · U7 packaging · Mo rewrite · protocol Solidity · reopening OpenRouter locks.
+**Not this mission:** Companion follow · action tips · Ollama · teaching-pack / whitelist expansion · desk-debug → robot · new Godot mesh · U7 packaging · Ash rewrite · protocol Solidity · reopening OpenRouter locks.
 
 ---
 

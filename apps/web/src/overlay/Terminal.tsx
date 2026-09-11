@@ -168,7 +168,7 @@ export function Terminal({ url, account, mode, onMode, onClose, call, loggedIn }
                 <code style={{ color: '#7ee787', wordBreak: 'break-all' }}>{account}</code>
               </div>
             ) : (
-              <div style={{ color: '#e3b341' }}>Open an account with Ines first — there is nothing to grant viewing on yet.</div>
+              <div style={{ color: '#e3b341' }}>Open an account with Iris first — there is nothing to grant viewing on yet.</div>
             )}
 
             <div style={{ display: 'flex', gap: 6, margin: '8px 0', flexWrap: 'wrap' }}>

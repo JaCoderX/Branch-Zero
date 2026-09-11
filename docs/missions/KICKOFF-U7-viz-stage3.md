@@ -84,7 +84,7 @@ SEQUENCE:
 3. Verify clips for IDLE/WORKING/REFUSING/ESCORTING and player walk/sprint.
 4. Measure; if over gate → fewer materials, smaller textures, simpler meshes, or fewer skinned bones — not more lights.
 5. :5174 ?mock=account; F6/E/F4 focus drill.
-6. Progress note + captures (lobby with Mo, Counter 1 Dev, vault Ruth) + README index row. Stop — no Stage 4.
+6. Progress note + captures (lobby with Ash, Counter 1 Eve, vault Bob) + README index row. Stop — no Stage 4.
 
 DoD (Stage 3):
 - Five NPCs + player read as adult-ish low-poly bank staff (not Kenney Mini chibi) in lobby/counter/vault shots.

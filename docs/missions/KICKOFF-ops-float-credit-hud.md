@@ -61,7 +61,7 @@ HARD RULES:
 - Same popup path only. No second modal. No new bridge spend methods.
 - Live only: hide when not branch_float_available(); Dev/mock stay dark.
 - Preserve soft write-gate, Esc / focusCanvas, desk-debug treasury row, restore toast.
-- Do not start iNPC, Mo rewrite, U7 packaging, Arc, or walkable Treasury Desk.
+- Do not start iNPC, Ash rewrite, U7 packaging, Arc, or walkable Treasury Desk.
 - Never commit secrets. Local progress under docs/progress/ (gitignored).
 - If hud.gd changes: note export:web required; run it if Godot 4.5.x is available.
 

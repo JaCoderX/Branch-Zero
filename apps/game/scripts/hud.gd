@@ -148,7 +148,7 @@ func _refresh() -> void:
 	if not GameState.booted:
 		lines.append(str(s.get("passbook_booting", "Opening the branch…")))
 	elif not GameState.logged_in():
-		lines.append(str(s.get("passbook_anon", "No account yet — see Ines at Account Opening.")))
+		lines.append(str(s.get("passbook_anon", "No account yet — see Iris at Account Opening.")))
 	else:
 		lines.append(Dialogue.interpolate(str(s.get("passbook_owner", "Account holder {name}")), v))
 		if GameState.has_account():

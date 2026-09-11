@@ -1,8 +1,8 @@
-# Kickoff prompt — U7 practice faucet (Ines top-up)
+# Kickoff prompt — U7 practice faucet (Iris top-up)
 
 Paste into a **new** Claude Code / Cursor agent session. Prefer **Fable 5.1**.
 
-**What this is:** a **small playtest-continuity unit**. Ines’s passbook menu gets an explicit
+**What this is:** a **small playtest-continuity unit**. Iris’s passbook menu gets an explicit
 **“Top up practice dollars”** choice that restores the account’s demo-token balance **up to** the
 configured opening amount (`OPENING_BALANCE_USDC`, default **500**). It is **not** ship packaging,
 **not** Arc funding, **not** unlimited minting, **not** a change to Lane A/B routing.
@@ -43,7 +43,7 @@ EVM optional for DoD. U6 Arc **DEFERRED**. U4 freeze unchanged (no new Privy mod
 ```text
 You are a cold agent. No prior chat. Prefer docs over memory.
 
-MISSION: Branch Zero — practice faucet ONLY (Ines → top up demo balance to OPENING_BALANCE).
+MISSION: Branch Zero — practice faucet ONLY (Iris → top up demo balance to OPENING_BALANCE).
 Freedom on HOW. No freedom on constraints.
 This is NOT Arc, NOT packaging, NOT unlimited mint, NOT re-fund-on-re-check.
 
@@ -66,7 +66,7 @@ A. Desk — `POST /faucet` (name may match NPCS `faucet`):
    - Response shape: ok + balance (and hash if a tx ran). Clear error if treasury cannot cover.
 B. Bridge — `faucet()` → `/faucet`.
 C. Godot — `run_action("faucet")` → Chain.call_async("faucet", …); refresh_all after.
-D. Dialogue — under Ines `done` (has_account path):
+D. Dialogue — under Iris `done` (has_account path):
      { "text": "Top up practice dollars", "action": "faucet",
        "working": "Counting out practice dollars…", "on_ok": "done", "on_error": "refused" }
    Optional short success copy via existing `{balance}` on `done`. Optional "Ask why" note that
@@ -76,7 +76,7 @@ F. Overlay (optional, thin) — only if other desk verbs already have a debug bu
 G. Docs — thin HANDOFF / REFLECTION pointer when DoD met; keep NPCS §4.2 aligned if wording drifts.
 
 TESTS / DoD (all required):
-- [x] Mock: `?mock=account` → spend down balance (pay/wire) → Ines → Top up → balance reads opening again
+- [x] Mock: `?mock=account` → spend down balance (pay/wire) → Iris → Top up → balance reads opening again
 - [x] Mock: already at opening → choice succeeds with no invented second economy; balance unchanged
 - [x] Live (if Remote EVM up): same path; one deployer ERC-20 transfer of the delta; no Privy modal (`npm -w apps/teller-desk run smoke:faucet`, 2026-09-07)
 - [x] Re-check still does NOT top up a non-zero underfunded balance (opening fundAccount unchanged)

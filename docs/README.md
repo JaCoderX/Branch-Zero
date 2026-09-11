@@ -67,7 +67,7 @@ Then open the topic doc that matches the surface you are changing.
 | [SEPOLIA-LIVE.md](./SEPOLIA-LIVE.md) | Live Main = Sepolia; Remote EVM = Developer Mode |
 | [REMOTE-EVM.md](./REMOTE-EVM.md) | Lab chain `1337` |
 | [SEPOLIA-TREASURY.md](./SEPOLIA-TREASURY.md) | Ops treasury, staff top-ups |
-| [LOAD-ACCOUNT.md](./LOAD-ACCOUNT.md) | Ines loads an owned AccountBlox by address |
+| [LOAD-ACCOUNT.md](./LOAD-ACCOUNT.md) | Iris loads an owned AccountBlox by address |
 
 ---
 

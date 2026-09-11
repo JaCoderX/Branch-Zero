@@ -4,8 +4,8 @@ extends Node3D
 ## (docs/TERMINAL-CONSOLE.md §3). Talking to it opens `dialogue/terminal.json`, exactly like an NPC:
 ## Dialogue → GameState.run_action → Chain. Nothing here touches the bridge.
 ##
-## Why its zone is small. The two screens sit on desks their NPC also stands at (Okafor is 1 m from
-## MgrScreen, Ines 1.7 m from AOScreen), so main.gd picks whichever of {nearest NPC, nearest terminal} is
+## Why its zone is small. The two screens sit on desks their NPC also stands at (Walker is 1 m from
+## MgrScreen, Iris 1.7 m from AOScreen), so main.gd picks whichever of {nearest NPC, nearest terminal} is
 ## actually closer. A radius near the desk's own depth means "lean over the keyboard" reads as the terminal
 ## and "stand back" reads as the clerk.
 

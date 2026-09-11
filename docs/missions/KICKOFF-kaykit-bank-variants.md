@@ -38,7 +38,7 @@ not Mad Men suits on Kenney, not more charm-face work on the old cast.
 You are a cold agent. No prior chat. Prefer docs over memory.
 
 MISSION: Branch Zero — KayKit BANK VARIANTS only. Keep PropKit.USE_KAYKIT_CAST and the Adventurers
-Rig_Medium pipeline. Author cast-only derivatives so Mo / Ines / Dev / Bob / Okafor / Petra / Kenji / player
+Rig_Medium pipeline. Author cast-only derivatives so Ash / Iris / Eve / Bob / Walker / Petra / Johnny / player
 read as bank roles at ≈15 m while staying cute KayKit. Soft fantasy OK. Ladder: (1) texture/palette + one
 accent per role, (2) hide/remove loud weapons/accessories, (3) light mesh trim only if needed. Room,
 furniture, heroes, HUD, particles, lighting: untouched.
@@ -88,7 +88,7 @@ SEQUENCE:
 0. Baselines: run_checks + run_viz_budget + smoke_kaykit_cast green; note mats / draws; capture lobby stills "before".
 PASS A — texture / palette
 1. Recolour Adventurers textures (or export new sibling PNGs) per the handoff wardrobe sheet: room neutrals +
-   one accent per role; Ines vs Petra and Mo vs player must be tellable by tint alone.
+   one accent per role; Iris vs Petra and Ash vs player must be tellable by tint alone.
 2. Point PropKit.KAYKIT_TEXTURE_FILES / kaykit_body_material at the derivatives; keep ≤5 unique mats.
 3. Gates green; lobby 15 m stills "after A". Stop here if DoD met.
 PASS B — accessories (only if A fails role-read)
@@ -100,7 +100,7 @@ PASS C — light mesh trim (only if B fails)
 8. Gates green; CREDITS sha256; local progress note. Stop.
 
 DoD:
-- At lobby cam (≈15 m) Mo / Ines / Dev / Bob / Okafor / Petra / Kenji are tellable by silhouette + accent
+- At lobby cam (≈15 m) Ash / Iris / Eve / Bob / Walker / Petra / Johnny are tellable by silhouette + accent
   as bank roles (not an undifferentiated dungeon party). Soft fantasy OK.
 - Cute KayKit vibe preserved (principal liked Stage 3 stock feel — do not "adultify" into dull suits).
 - ≤ 5 character body materials via PropKit; mesh mats ≤ 40; with particles ≤ 42; draws ≤ 350; tris ≤ 400k;

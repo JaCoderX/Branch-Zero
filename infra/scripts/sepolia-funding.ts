@@ -285,7 +285,7 @@ async function main() {
 
   console.log('— practice dollars —');
   console.log(`  In-game USDC is the open-mint demo token ${practice?.address ?? '(missing from sepolia.json)'} (${practice?.decimals ?? '?'} decimals).`);
-  console.log(`  Minted by the deployer at provision / Ines' faucet. Circle's ${USDC_FAUCET_URL} USDC (${circle}) is a`);
+  console.log(`  Minted by the deployer at provision / Iris' faucet. Circle's ${USDC_FAUCET_URL} USDC (${circle}) is a`);
   console.log('  DIFFERENT token — operator/treasury float only, never the practice balance (docs/SEPOLIA-LIVE.md §4.2).');
   console.log('');
 

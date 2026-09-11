@@ -123,12 +123,12 @@ PASS B — faces + expressions + greet
    PropKit.character adds the face carrier + shared face material; uv1_offset (or frame uniform) per role/state.
 5. npc.gd / player.gd expression hooks; blink timer; `greet` clip authored + wired once per approach.
 6. run_viz_budget counts the face surface and the 39th material; viz_shots gets the two readability frames.
-7. :5174 ?mock=account drill: approach Mo (greet + smile + gaze), open dialogue (surprised → talk), trigger a
+7. :5174 ?mock=account drill: approach Ash (greet + smile + gaze), open dialogue (surprised → talk), trigger a
    refusal at a counter (concern), escort still walks. CREDITS + WORLD-3D §1 cast row + local progress note. Stop.
 
 DoD:
 - At the counter cam (≈5 m) every staff face reads: eyes, brows, mouth state. At the lobby cam (≈15 m) each of
-  Mo / Ines / Dev / Bob / Okafor / Petra / Kenji is tellable by silhouette + accent alone.
+  Ash / Iris / Eve / Bob / Walker / Petra / Johnny is tellable by silhouette + accent alone.
 - Five expression states visible in a capture set (neutral / smile / talk / concern / surprised) driven by NPC
   state; default staff face is a light smile; gaze follows a near player in IDLE; greet plays once on approach.
 - Mid-50s dress code reads in stills (narrow ties / sheath / cardigan / glasses) with one accent per person;

@@ -71,7 +71,7 @@ Thin first viewport:
 
 Do **not** put on title: network picker, Load Account, Sign in, achievements dump, Live/Dev, volume-only page as the whole screen.
 
-Sign-in remains at **Ines** after the player walks in (preserves “one wallet modal in the whole game”).
+Sign-in remains at **Iris** after the player walks in (preserves “one wallet modal in the whole game”).
 
 ### 2. Pause / visitor's card (Esc while inside)
 
@@ -86,11 +86,11 @@ Sign-in remains at **Ines** after the player walks in (preserves “one wallet m
 
 | Keep **out** of pause | Owner today |
 |----------------------|-------------|
-| Sign in / revoke / Load Account | Ines |
+| Sign in / revoke / Load Account | Iris |
 | Live / Dev / Mock | Desk-debug / URL |
 | Switch wing / Arc | Elevator |
 | Open Console | Lobby / desk terminals |
-| Achievements submenu | Mo / greeter (cosmetic) |
+| Achievements submenu | Ash / greeter (cosmetic) |
 | Full settings / save slots | Out of scope — state is chain + Privy |
 
 ---
@@ -145,7 +145,7 @@ Tone: warm, small, Wes-adjacent — not a SaaS settings page.
 
 - Godot 4.5 · web Compatibility · `@bloxchain/sdk` + `viem` only at runtime.
 - Godot never holds keys / never talks RPC.
-- Preserve: U4 freeze, U4+ Priority, Bob wait-only, Ines Load Account, FX Sepolia-only, Live Main / Dev 1337 (operator only), partners board, exterior easter separate.
+- Preserve: U4 freeze, U4+ Priority, Bob wait-only, Iris Load Account, FX Sepolia-only, Live Main / Eve 1337 (operator only), partners board, exterior easter separate.
 - Never commit secrets.
 - Prefer one Godot export when principal will hard-refresh `:5173`; note if pack rebuild is required.
 - Do not absorb copy/ENS refinement or ship packaging into this session.

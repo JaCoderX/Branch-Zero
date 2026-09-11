@@ -12,7 +12,7 @@ activated **#3** while Arc remains elevator “coming soon.” Prize: ETHOnline 
 (Start Fresh pool) — public repo + **`FEEDBACK.md`** + [hackathon feedback form](https://developers.uniswap.org/hackathon-feedback).
 
 **Baseline:** Main wing playable (`?mock=account`). U5 ENS on Sepolia met. Lane A/B + Priority on Remote EVM 1337.
-Practice faucet met. Freeze intact (one Account Opening modal; Priority Passkey only at Okafor).
+Practice faucet met. Freeze intact (one Account Opening modal; Priority Passkey only at Walker).
 
 **Reset (locked):**
 - **v4 only** (PoolManager + Universal Router + V4Quoter + Permit2). No v2/v3 primary path.
@@ -29,8 +29,8 @@ Practice faucet met. Freeze intact (one Account Opening modal; Priority Passkey 
 | Assets live in AccountBlox | Guard whitelist: token `approve`, Permit2 `approve`, UR `execute` |
 | `GuardController` = one call per request | 2–3 Lane A meta-txs first swap; later swaps often 1 |
 | Prize needs FEEDBACK.md + form | Shipping code without paperwork fails the bounty |
-| Judges hate “generic swap UI” | Lead with **guards + Dealer Kenji**; show whitelist / Ask why |
-| Viz must match Stage 1–5 / polish DoD | New FX desk + Kenji + quote board; stay under viz budget; no greybox redesign |
+| Judges hate “generic swap UI” | Lead with **guards + Dealer Johnny**; show whitelist / Ask why |
+| Viz must match Stage 1–5 / polish DoD | New FX desk + Johnny + quote board; stay under viz budget; no greybox redesign |
 
 ---
 
@@ -47,7 +47,7 @@ BEFORE CODE — read in order:
 3. docs/missions/KICKOFF-S1-uniswap-fx.md  (this file)
 4. docs/BLOXCHAIN-INTEGRATION.md  (§3 guard config batches)
 5. docs/DEV-LOOP.md            (Sepolia vs 1337)
-6. docs/NPCS.md                (§4.7 Kenji)
+6. docs/NPCS.md                (§4.7 Johnny)
 7. docs/GODOT.md               (bridge; canvas focus §5b)
 8. docs/ARCHITECTURE.md        (FX lane hints)
 9. docs/SECURITY-AND-KEYS.md
@@ -93,12 +93,12 @@ D. BRIDGE + SHARED
 E. GODOT — LOGIC
   14. game_state.run_action: "quote" / "fx_swap" (or match bridge); refresh balances after swap.
   15. MockChain: canned quote + fake swap for ?mock=account (never claim as K7).
-  16. Dialogue: dealer.json (Kenji) per NPCS §4.7; Ask why = guard story.
+  16. Dialogue: dealer.json (Johnny) per NPCS §4.7; Ask why = guard story.
   17. errors.json for new codes; run_checks (+ optional run_fx_walk.gd); commit .uid with any new script.
 
 F. GODOT — VISUALIZATION (required for “end-to-end”)
   18. FX Desk place in Main wing (not Arc floor). Prefer an existing counter / alcove; do not redesign the whole greybox.
-  19. Kenji NPC: home pose, interact Space, faces the desk; nameplate.
+  19. Johnny NPC: home pose, interact Space, faces the desk; nameplate.
   20. Quote board: diegetic LED/panel showing rate, min out, fee tier, “quote valid mm:ss” from deadline (desk clock pattern like vault — honest about chain vs wall time if needed).
   21. Uniswap / FX signage visible in a viz shot (sponsor plaque — same class as Privy/ENS signage).
   22. Receipt / toast: in/out + explorer link in fine print.
@@ -114,8 +114,8 @@ DoD (all required):
 - [ ] Sepolia addresses + pool documented in infra
 - [ ] Account can swap only via whitelisted selectors (wrong target refused with bank line)
 - [ ] Live K7: AccountBlox completes v4 swap on Sepolia; Etherscan hash in progress note
-- [ ] /quote + /swap (or equivalent) + bridge + Kenji dialogue work on mock and live paths
-- [ ] FX desk + Kenji + quote board visible in-world; viz budget not blown
+- [ ] /quote + /swap (or equivalent) + bridge + Johnny dialogue work on mock and live paths
+- [ ] FX desk + Johnny + quote board visible in-world; viz budget not blown
 - [ ] FEEDBACK.md committed; README points to integration lines
 - [ ] run_checks green; no freeze regression
 - [ ] Commit + push when the human asked
@@ -135,7 +135,7 @@ Stop when §5i DoD met or a named blocker with fallback (documented-only Uniswap
 
 1. Infra addresses + pool (or blocker if faucet/key missing).
 2. Guard batch + desk `/quote` `/swap` + K7 script.
-3. Bridge + GameState + MockChain + Kenji JSON.
+3. Bridge + GameState + MockChain + Johnny JSON.
 4. FX desk viz + quote board + signage + viz shot.
 5. FEEDBACK.md + HANDOFF/REFLECTION; push.
 

@@ -74,10 +74,10 @@ public MIT tree; Mad Men photoreal suits as a hard dress code; deleting Kenney r
 | Role | Base | Problem today | Target read |
 |------|------|---------------|-------------|
 | Bob vault | Knight | Full helm + plate | Guard / security, bank-appropriate |
-| Mo / player | Ranger | Quiver | Soft tunic / cape, no archery kit |
-| Ines / Petra | Mage | Wizard hat / orb energy | Desk-robe / soft hat optional |
-| Dev / Kenji | Rogue(+Hood) | Mask / dungeon hood | Counter cloth; hood optional for Kenji |
-| Okafor | Barbarian | Bare chest / bear hood | Boss presence without raider kit |
+| Ash / player | Ranger | Quiver | Soft tunic / cape, no archery kit |
+| Iris / Petra | Mage | Wizard hat / orb energy | Desk-robe / soft hat optional |
+| Eve / Johnny | Rogue(+Hood) | Mask / dungeon hood | Counter cloth; hood optional for Johnny |
+| Walker | Barbarian | Bare chest / bear hood | Boss presence without raider kit |
 
 Cute KayKit proportions and painted faces may stay — we are not requiring adult Mad Men meshes.
 

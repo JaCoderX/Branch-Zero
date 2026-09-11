@@ -19,7 +19,7 @@
  *   Y0   Re-check provisioning lands ROLE_SET 3: OWNER +SIGN_META_APPROVE, BRANCH_MANAGER +EXECUTE_META_APPROVE,
  *        BRANCH_MANAGER −EXECUTE_TIME_DELAY_APPROVE on `transfer`; no role holds both META_APPROVE halves.
  *   Y1   owner files a wire → PENDING with a future `releaseTime`.
- *   Y2   Ruth early (owner timed approve) → `BeforeReleaseTime`.   Y2b manager direct approve early → `NoPermission`.
+ *   Y2   Bob early (owner timed approve) → `BeforeReleaseTime`.   Y2b manager direct approve early → `NoPermission`.
  *   Y8b  a counter pay under the action-pinned rule → still signs silently (the silent lane is intact).
  *   Y8a  the session signer is asked to sign the Priority payload under the **product** policy → `policy_violation`.
  *   Y8c  after the rig's one relaxed signature the restored rule denies again.
@@ -28,7 +28,7 @@
  *   Y3   owner-signed meta-approve submitted by BRANCH_MANAGER **before** `releaseTime` → COMPLETED, payee paid.
  *   Y5   the manager cannot file (`executeWithTimeLock` → `NoPermission`).
  *   Y7   a second wire; after the clock: Y7b manager direct approve → `NoPermission` (no post-clock stamp);
- *        Ruth (owner) → COMPLETED.
+ *        Bob (owner) → COMPLETED.
  *   Y6   vault-only mode: `desiredGrants(false)` carries no META_APPROVE bit for any role (config-level).
  */
 import { createWalletClient, encodeAbiParameters, formatUnits, getAddress, http, keccak256, parseAbiParameters, parseUnits, toBytes, type Address, type Hex } from 'viem';
@@ -205,19 +205,19 @@ async function main() {
   const rec1 = await readWire(account, BigInt(w1.txId));
   record('Y1', rec1.status === 'PENDING' && Number(rec1.releaseTime) > now() ? 'PASS' : 'FAIL', `owner filed executeWithTimeLock via session signer → txId ${w1.txId} ${rec1.status}, releaseTime ${rec1.releaseTime} (wall ${now()}, ${Number(rec1.releaseTime) - now()} s of cooling)`);
 
-  // ---- Y2: Ruth early → BeforeReleaseTime; Y2b: manager direct approve → NoPermission
+  // ---- Y2: Bob early → BeforeReleaseTime; Y2b: manager direct approve → NoPermission
   try {
     await approve(player, BigInt(w1.txId), 'owner', 'kt-u4plus-ruth-early');
     record('Y2', 'FAIL', `owner approve before releaseTime succeeded on txId ${w1.txId}`);
   } catch (e) {
-    record('Y2', code(e) === 'BeforeReleaseTime' ? 'PASS' : 'PARTIAL', `Ruth early → ${code(e)}: ${(e as Error).message.slice(0, 140)}`);
+    record('Y2', code(e) === 'BeforeReleaseTime' ? 'PASS' : 'PARTIAL', `Bob early → ${code(e)}: ${(e as Error).message.slice(0, 140)}`);
   }
   try {
     await approve(player, BigInt(w1.txId), 'manager', 'kt-u4plus-manager-early');
     record('Y2b', 'FAIL', `manager direct approve succeeded before releaseTime on txId ${w1.txId} — the timed stamp is back`);
   } catch (e) {
     const c = code(e);
-    record('Y2b', c === 'NoPermission' ? 'PASS' : c === 'BeforeReleaseTime' ? 'FAIL' : 'PARTIAL', `manager direct approve early → ${c} (${c === 'NoPermission' ? 'grant removed: Okafor is not a second Ruth' : c === 'BeforeReleaseTime' ? 'the manager still holds the timed stamp' : 'unexpected'}): ${(e as Error).message.slice(0, 120)}`);
+    record('Y2b', c === 'NoPermission' ? 'PASS' : c === 'BeforeReleaseTime' ? 'FAIL' : 'PARTIAL', `manager direct approve early → ${c} (${c === 'NoPermission' ? 'grant removed: Walker is not a second Bob' : c === 'BeforeReleaseTime' ? 'the manager still holds the timed stamp' : 'unexpected'}): ${(e as Error).message.slice(0, 120)}`);
   }
 
   // ---- Y8b: Lane A under the action-pinned rule — still silent. Before the Priority payload is prepared: a meta-tx
@@ -320,7 +320,7 @@ async function main() {
     record('Y5', code(e) === 'NoPermission' ? 'PASS' : 'PARTIAL', `manager executeWithTimeLock → ${code(e)}`);
   }
 
-  // ---- Y7: Ruth after the clock (same account); Y7b: manager post-clock direct approve refused
+  // ---- Y7: Bob after the clock (same account); Y7b: manager post-clock direct approve refused
   const w2 = await wire(player, PAYEE, '150', 'kt-u4plus-wire-2');
   const release = Number(w2.releaseTime);
   console.log(`txId ${w2.txId} PENDING, releaseTime ${release}; waiting ${Math.max(0, release - now())}s (no evm_increaseTime on Remote EVM)…`);
@@ -335,9 +335,9 @@ async function main() {
     const payeeMid = await balanceOf(PAYEE);
     const a = await approve(player, BigInt(w2.txId), 'owner', 'kt-u4plus-ruth');
     const moved = (await balanceOf(PAYEE)) - payeeMid;
-    record('Y7', a.status === 'COMPLETED' && moved === parseUnits('150', token.decimals) ? 'PASS' : 'FAIL', `Ruth (owner timed approve, session signer) after releaseTime → txId ${w2.txId} ${a.status}; payee +${formatUnits(moved, token.decimals)}; ${a.hash}`);
+    record('Y7', a.status === 'COMPLETED' && moved === parseUnits('150', token.decimals) ? 'PASS' : 'FAIL', `Bob (owner timed approve, session signer) after releaseTime → txId ${w2.txId} ${a.status}; payee +${formatUnits(moved, token.decimals)}; ${a.hash}`);
   } catch (e) {
-    record('Y7', 'FAIL', `Ruth after the clock refused: ${code(e)}: ${(e as Error).message.slice(0, 160)}`);
+    record('Y7', 'FAIL', `Bob after the clock refused: ${code(e)}: ${(e as Error).message.slice(0, 160)}`);
   }
 
   // ---- Y6: vault-only grant set carries no META_APPROVE bits

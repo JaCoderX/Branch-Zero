@@ -1,7 +1,7 @@
 /**
  * S1 — seed the FX desk's original Uniswap v4 pool on Sepolia (docs/UNISWAP.md §5 step 2).
  *
- * **Deprecated for the product on 2026-09-09.** Kenji now sells practice USD for Practice EUR / ILS through the two
+ * **Deprecated for the product on 2026-09-09.** Johnny now sells practice USD for Practice EUR / ILS through the two
  * fiat pools `fx-pools-fiat.ts` seeds (`npm run fx:pools-fiat`); this WETH pool stays on chain as history and is no
  * longer quoted. The script is kept runnable and idempotent so the record stays honest.
  *
@@ -11,7 +11,7 @@
  * The pool is demo USDC (the U5 Sepolia mock, 6 decimals, open `mint`) against Sepolia WETH9, fee 0.30 %,
  * tick spacing 60, no hook — plain v4, exactly what the Universal Router's V4_SWAP command expects. One
  * full-range position is minted through the official PositionManager (MINT_POSITION + SETTLE_PAIR, paid
- * through Permit2), so the pool has depth on both sides for Kenji's quotes and swaps.
+ * through Permit2), so the pool has depth on both sides for Johnny's quotes and swaps.
  *
  * Paid by `SEPOLIA_LP_PK` if set, else `ENS_REGISTRAR_PK` (the only funded Sepolia key on the laptop; it is the
  * bank's key, holds no role on any player account, and the LP position is the bank's). Never a Ganache-parity key.

@@ -102,7 +102,7 @@ Optional (only if cheap and still non-interactive): muted secondary lines that m
 
 - Product repo only (`Branch-Zero`). No GameLab `ENG-*`. No protocol Solidity.
 - Runtime stays `@bloxchain/sdk` + `viem`. Godot never holds keys / never talks RPC.
-- Preserve: U4 freeze, player-menu Esc priority, Bob wait-only, Priority, FX Sepolia-only, Live Main / Dev 1337, iNPC / Terminal overlays.
+- Preserve: U4 freeze, player-menu Esc priority, Bob wait-only, Priority, FX Sepolia-only, Live Main / Eve 1337, iNPC / Terminal overlays.
 - Never commit secrets.
 - No forced `export:web` for a shell-only change — note if you touched anything under `apps/game`.
 

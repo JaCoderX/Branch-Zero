@@ -1,5 +1,5 @@
 extends Control
-## Ines's load slip (docs/LOAD-ACCOUNT.md). Same code-built Control family as `payment_slip.gd` and
+## Iris's load slip (docs/LOAD-ACCOUNT.md). Same code-built Control family as `payment_slip.gd` and
 ## `name_claim_form.gd`: one value, checked for shape only, then handed back over the
 ## Dialogue → GameState → Chain boundary.
 ##

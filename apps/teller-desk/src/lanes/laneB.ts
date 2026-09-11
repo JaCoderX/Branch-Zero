@@ -263,7 +263,7 @@ export function explainRevert(e: unknown): { code: string; message: string; bank
       message: denial.detail,
       bankLine:
         denial.code === 'PolicyDenied'
-          ? "The signing desk refused that slip — your account's signing rules need a re-check. Ask Ines, then try again."
+          ? "The signing desk refused that slip — your account's signing rules need a re-check. Ask Iris, then try again."
           : 'The signing desk did not answer clearly — try again in a moment.',
     };
   }
@@ -300,7 +300,7 @@ export function explainRevert(e: unknown): { code: string; message: string; bank
         : name === 'TransactionNotPending' || name === 'CanOnlyApprovePending' || name === 'CanOnlyCancelPending'
           ? 'That wire is no longer waiting in the vault.'
           : name === 'OwnerGasDry'
-            ? 'Your account needs a little more network credit — ask Ines to re-check your account.'
+            ? 'Your account needs a little more network credit — ask Iris to re-check your account.'
             : name === 'RpcError'
               ? 'The chain did not answer clearly — try Release again in a moment.'
               : 'The vault would not accept that.';
@@ -455,8 +455,8 @@ async function decide(player: Player, txId: bigint, actor: Actor, kind: 'approve
     const ownerWei = await publicClient.getBalance({ address: player.ownerAddress });
     if (ownerWei < targetWei / 2n) {
       const bal = formatEther(ownerWei);
-      const message = `Owner wallet holds ${bal} ETH; need ~${formatEther(targetWei / 2n)} for a vault call (target ${config.ownerGasEth}). Ask Ines to re-check.`;
-      stage('failed', 'Your account needs a little more network credit — ask Ines to re-check your account.', {
+      const message = `Owner wallet holds ${bal} ETH; need ~${formatEther(targetWei / 2n)} for a vault call (target ${config.ownerGasEth}). Ask Iris to re-check.`;
+      stage('failed', 'Your account needs a little more network credit — ask Iris to re-check your account.', {
         txId: String(txId),
         reason: `OwnerGasDry: ${message}`,
         releaseTime: before.releaseTime,

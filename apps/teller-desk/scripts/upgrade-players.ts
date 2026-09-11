@@ -1,6 +1,6 @@
 /**
  * Re-check every player on file whose role set is behind `ROLE_SET_VERSION` (U4+: 2 → 3, the Priority grant split),
- * exactly as Ines's "Re-check my account" would — reads the chain first, sends only what is missing, tightens the
+ * exactly as Iris's "Re-check my account" would — reads the chain first, sends only what is missing, tightens the
  * Privy typed-data rule. Needs the session signer (the players delegated at Account Opening), not the players.
  *
  *   npm -w apps/teller-desk run upgrade-players            # upgrade everyone below the current ROLE_SET

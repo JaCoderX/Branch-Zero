@@ -43,7 +43,7 @@ func _run() -> void:
 	if anon.get("has_account", true) or int(anon.get("pending_count", 1)) != 0 or str(anon.get("balance_display", "x")) != "":
 		_fail("anonymous snapshot claims an account / balance / wires: %s" % JSON.stringify(anon))
 	else:
-		_ok("no account → has_account false, no balance, no wires, help names Ines: %s" % str(anon.get("who_can_help", [])))
+		_ok("no account → has_account false, no balance, no wires, help names Iris: %s" % str(anon.get("who_can_help", [])))
 
 	chain._mock.preset_account()
 	await gs.refresh_all()
@@ -149,7 +149,7 @@ func _run() -> void:
 	var why := str(d["nodes"]["why_key"]["text"]).to_lower()
 	if why.find("openrouter") < 0 or why.find("session") < 0 or why.find("wipe") < 0:
 		_fail("why_key does not tell the player the key is session-only and wiped on Sleep")
-	# Staff may point the way to the kiosk (Mo does), but no staff file may run its verbs or carry its key copy.
+	# Staff may point the way to the kiosk (Ash does), but no staff file may run its verbs or carry its key copy.
 	for staff in ["greeter", "clerk", "teller", "vault_keeper", "manager", "registrar", "dealer"]:
 		var st := FileAccess.get_file_as_string("res://dialogue/%s.json" % staff).to_lower()
 		if st.find("open_inpc") >= 0 or st.find("sleep_inpc") >= 0 or st.find("openrouter") >= 0:

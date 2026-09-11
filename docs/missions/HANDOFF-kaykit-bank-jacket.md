@@ -8,7 +8,7 @@ objective: OBJ-2026-0004
 mission: Replace Adventurers robe/tunic/cape body silhouettes with art-deco bank daywear (jacket, shirt, waistcoat) while keeping Rig_Medium and ≤5 body mats — lab-first after ENG-0016 accessory strip
 plan: this file §Direction; work in ENG-2026-0017
 kickoff: docs/missions/KICKOFF-kaykit-bank-jacket.md
-baseline: ENG-2026-0016 Yes (hide accessories + Kenji/Okafor glb paths); principal — board good start but robes must go; Bob land 044f934 live; full 0016 wardrobe sheets not landed
+baseline: ENG-2026-0016 Yes (hide accessories + Johnny/Walker glb paths); principal — board good start but robes must go; Bob land 044f934 live; full 0016 wardrobe sheets not landed
 lab: ../GameLab/work/ENG-2026-0017-kaykit-bank-jacket/
 prior_lab: ../GameLab/work/ENG-2026-0016-kaykit-bank-wardrobe/
 parallel_to: Load Account / ship packaging
@@ -45,7 +45,7 @@ Principal accepted Mage/Ranger lobby boards + approved CC review (prefer `_nocap
 
 | Item | State |
 |------|--------|
-| ENG-0016 | Accessories hideable; Kenji head graft + Okafor UV cloth proven; anim 0 delta |
+| ENG-0016 | Accessories hideable; Johnny head graft + Walker UV cloth proven; anim 0 delta |
 | Product | Bob helm/navy only (`044f934`); 0016 hide/sheets **not** landed |
 | Hard fact | Mage_Body robe = body shells; Ranger tunic = body; cannot part-delete a "robe node" |
 | Mats | Still ≤5 body albedos; spare cells + remaps OK |
@@ -56,11 +56,11 @@ Principal accepted Mage/Ranger lobby boards + approved CC review (prefer `_nocap
 
 | Priority | Body | Target |
 |----------|------|--------|
-| 1 | Mage (Ines / Petra) | Biggest robe read → desk jacket + lower cloth or skirt length that reads office, not wizard |
-| 2 | Ranger (Mo / player) | Tunic length → short coat / shirt + sash; cape → scarf or drop |
-| 3 | Rogue / Kenji | Already closer; shorten tunic if still robe-like; keep teal/oxblood accents |
+| 1 | Mage (Iris / Petra) | Biggest robe read → desk jacket + lower cloth or skirt length that reads office, not wizard |
+| 2 | Ranger (Ash / player) | Tunic length → short coat / shirt + sash; cape → scarf or drop |
+| 3 | Rogue / Johnny | Already closer; shorten tunic if still robe-like; keep teal/oxblood accents |
 | 4 | Knight (Bob) | Navy guard already; optional softshoulder / less gauntlet flare |
-| 5 | Okafor | Waistcoat path from 0016 — refine if still “wrap/robe” |
+| 5 | Walker | Waistcoat path from 0016 — refine if still “wrap/robe” |
 
 Reuse: head grafts, per-bone UV remap, shell-delete (pouches), `build_variant.py` patterns from ENG-0016.
 
@@ -70,7 +70,7 @@ Reuse: head grafts, per-bone UV remap, shell-delete (pouches), `build_variant.py
 
 1. Board — current 0016 ward vs jacket trials (Mage first).
 2. Spike Mage jacket silhouette; export glb; anim proof Idle/Walk/Wave.
-3. Roll recipe to Ranger → Rogue → Bob refine → Okafor refine.
+3. Roll recipe to Ranger → Rogue → Bob refine → Walker refine.
 4. Findings + handoff; pause for principal before product land (may combine with 0016 hide list).
 
 ---

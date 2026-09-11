@@ -31,7 +31,7 @@ Paste into a **new** Cursor / Codex session. Prefer **Codex Luna**.
 | Faucet is human Google captcha | Popup = Copy + open link; never auto-claim |
 | Drop ≠ instant staff solvency | Tell players background top-up; retry shortly |
 | Hard undismissable modal + captcha | Soft write-gate; dismissible popup |
-| Ines faucet = practice USDC | Keep separate from ops ETH CTA |
+| Iris faucet = practice USDC | Keep separate from ops ETH CTA |
 
 ---
 
@@ -65,8 +65,8 @@ HARD RULES:
 - Publish address only — never SEPOLIA_TREASURY_PK or any key.
 - Popup never spends / never calls treasury:topup. Copy + faucet link only.
 - Soft-gate writes when treasuryShort; dismissible; do not ui_locked-trap during faucet captcha.
-- Do not put funding on Bob, Mo, or Terminal as the primary surface (optional shared popup from a plaque later — not required).
-- Do not change Ines practice faucet, need table, caps, or auto interval semantics.
+- Do not put funding on Bob, Ash, or Terminal as the primary surface (optional shared popup from a plaque later — not required).
+- Do not change Iris practice faucet, need table, caps, or auto interval semantics.
 - Preserve Esc priority: dialogue / slips / Terminal before this popup; focusCanvas on close.
 - Preserve U4 freeze, Load Account, Live/Dev, FX, partners board, player menu, desk-debug treasury row.
 - Never commit secrets. Local progress under docs/progress/ (gitignored).

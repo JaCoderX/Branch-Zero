@@ -9,7 +9,7 @@ ENSv2 parent `branchzero` owned by registrar `0xc4d7…9277`; Customers UserRegi
 (legacy proxy `0xeEeE…EeEe` returns **null** for native children — pin UR V2). Mainnet `branchzero.eth` is brand-only.
 
 **Do not re-run K6.** Rewrite lab behaviour into product. **Do not edit GameLab ENG-0010–0013.** Priority / Passkey are out of U5.
-Freeze intact: one Account Opening modal, Priority Passkey only on Okafor, canvas focus, `desk.link`, error lines, measured `.pck`/`.wasm`.
+Freeze intact: one Account Opening modal, Priority Passkey only on Walker, canvas focus, `desk.link`, error lines, measured `.pck`/`.wasm`.
 
 ```text
 You are a cold agent. No prior chat. Prefer docs over memory.

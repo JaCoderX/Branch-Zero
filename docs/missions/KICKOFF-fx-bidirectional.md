@@ -31,7 +31,7 @@ Do **not** use Codex Luna as the primary seat — this is Sepolia FX lane + guar
 | One-way blocked reverse via approve whitelist | `enableFx` must add EUR + ILS as `approve` targets |
 | Transfer schema already exists | Only whitelist EUR/ILS targets on first FX open |
 | Amount = sold currency | Buy euros quotes USD size; sell euros quotes EUR size |
-| Live vs Dev | Live: one account. Dev: fiat on Sepolia till — do not pretend 1337 Main holds EUR/ILS |
+| Live vs Eve | Live: one account. Eve: fiat on Sepolia till — do not pretend 1337 Main holds EUR/ILS |
 | Kill tests assert one-way | Update K7-b / `run_fx_walk` / dealer copy checks |
 
 Canonical plan: [`HANDOFF-fx-bidirectional.md`](./HANDOFF-fx-bidirectional.md).

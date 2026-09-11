@@ -9,7 +9,7 @@ mission: Replace USDC→WETH FX demo with bank-true fiat pairs USD↔EUR and USD
 plan: this file §Direction
 kickoff: docs/missions/KICKOFF-fx-fiat-pairs.md
 baseline: S1/S1b/S2 FX met (governed swap on Sepolia); Live OTP + FX walk 2026-09-09 on Main till; practice USDC open-mint; WETH pool exists but is metaphor-wrong for a bank FX desk
-status: met 2026-09-09 — Practice EUR/ILS pools ~$100M; Kenji USD→fiat on Live; WETH off product path (c138952)
+status: met 2026-09-09 — Practice EUR/ILS pools ~$100M; Johnny USD→fiat on Live; WETH off product path (c138952)
 parallel_to: U7 packaging / polish re-playtest — do not steal those gates
 ---
 
@@ -18,9 +18,9 @@ parallel_to: U7 packaging / polish re-playtest — do not steal those gates
 You are a **cold agent**. Prefer this file + the kickoff + [`UNISWAP.md`](../UNISWAP.md) over chat memory.
 Freedom on **how**. No freedom on constraints, scope, or protocol semantics.
 
-**Status (2026-09-09):** **Met** (`c138952`). Practice EUR `0xB6a3…` + ILS `0x5Bca…`; two v4 pools ≈ $100M TVL at Frankfurter 2026-09-08 mids; Kenji quotes/swaps USD→EUR and USD→ILS on Live; WETH refused `FX_PAIR`. Desk spacing is the separate Luna unit (met). Owed: principal Live eye-check + Uniswap feedback form.
+**Status (2026-09-09):** **Met** (`c138952`). Practice EUR `0xB6a3…` + ILS `0x5Bca…`; two v4 pools ≈ $100M TVL at Frankfurter 2026-09-08 mids; Johnny quotes/swaps USD→EUR and USD→ILS on Live; WETH refused `FX_PAIR`. Desk spacing is the separate Luna unit (met). Owed: principal Live eye-check + Uniswap feedback form.
 
-**Authorized construction (historical):** Kenji's FX desk trades **practice fiat** against practice USD through **two** Uniswap v4 pools on Sepolia — not WETH.
+**Authorized construction (historical):** Johnny's FX desk trades **practice fiat** against practice USD through **two** Uniswap v4 pools on Sepolia — not WETH.
 
 **Desk spacing:** owned by a separate Codex Luna unit — [`HANDOFF-fx-desk-spacing.md`](./HANDOFF-fx-desk-spacing.md). **Do not** pull the desk in this Fable session (avoid double-moves).
 
@@ -38,7 +38,7 @@ Freedom on **how**. No freedom on constraints, scope, or protocol semantics.
 2. New open-mint tokens: **Practice EURO** and **Practice ILS**.
 3. Two pools: **USD ↔ EUR** and **USD ↔ ILS**.
 4. Each pool ≈ **$100M total value** at seed mid-market rates (both sides, ~50/50 by value).
-5. Optional: move FX desk **away from the east wall** for space behind Kenji — **not in this unit**; see [`HANDOFF-fx-desk-spacing.md`](./HANDOFF-fx-desk-spacing.md) (Codex Luna).
+5. Optional: move FX desk **away from the east wall** for space behind Johnny — **not in this unit**; see [`HANDOFF-fx-desk-spacing.md`](./HANDOFF-fx-desk-spacing.md) (Codex Luna).
 
 ---
 
@@ -55,7 +55,7 @@ Re-check Frankfurter (or Wise mid) on the day you seed; freeze `seedRate` + `see
 
 **Across both pools:** mint **100M** practice USD into LP (open-mint — no real capital). Fee tier **0.30%** (fee in pair tokens; gas = Sepolia ETH).
 
-**Demo effect:** $100M depth → tiny Kenji swaps barely move price. That is **desired** for bank FX. The old tiny WETH pool taught impact; do not shrink these fiat books to recreate that lesson.
+**Demo effect:** $100M depth → tiny Johnny swaps barely move price. That is **desired** for bank FX. The old tiny WETH pool taught impact; do not shrink these fiat books to recreate that lesson.
 
 ---
 
@@ -73,14 +73,14 @@ Re-check Frankfurter (or Wise mid) on the day you seed; freeze `seedRate` + `see
 5. `lanes/fx.ts`: pair argument (`EUR` | `ILS`); quote + swap **USD → fiat** one-hop; balances for USD + both fiats on status.
 6. Respect address sort (`currency0` / `currency1`) — do **not** assume USD is always token0.
 7. Guard enable: same three call shapes; whitelist targets include new token contracts where approve is needed (USD out is enough for one-way).
-8. Kenji dialogue + quote board: euros / shekels, not ether; board shows pair, rate, min out, fee, countdown.
+8. Johnny dialogue + quote board: euros / shekels, not ether; board shows pair, rate, min out, fee, countdown.
 9. MockChain + `run_fx_walk` / killtests updated for pairs.
 10. Optional desk pull-west — **skip here**; Luna owns [`HANDOFF-fx-desk-spacing.md`](./HANDOFF-fx-desk-spacing.md).
 
 ### C. Proof + docs
 
 11. Live Sepolia: enable → quote EUR → swap → quote ILS → swap; balances reconcile on Main till (`fxTillIsMain`).
-12. Update `UNISWAP.md`, `NPCS.md` §Kenji, `FEEDBACK.md` angle (governed **fiat** FX via v4), `REFLECTION` decision row, progress note (local).
+12. Update `UNISWAP.md`, `NPCS.md` §Johnny, `FEEDBACK.md` angle (governed **fiat** FX via v4), `REFLECTION` decision row, progress note (local).
 
 ---
 
@@ -94,4 +94,4 @@ Re-check Frankfurter (or Wise mid) on the day you seed; freeze `seedRate` + `see
 
 ## After Yes
 
-Principal Live walk at Kenji (both pairs). Human still owes Uniswap feedback form ([OWED.md](../OWED.md) §2).
+Principal Live walk at Johnny (both pairs). Human still owes Uniswap feedback form ([OWED.md](../OWED.md) §2).

@@ -12,7 +12,7 @@ Paste into a **new** Cursor / Claude Code session. Prefer a strong reasoning mod
 
 **What this is:** Live Sepolia timed vault Release (`approveTimeLockExecution`) fails on the Teller Desk send path while on-chain `eth_call` as owner succeeds. Wire **#14** on account `0xD70B…09eD` is the living repro.
 
-**Why:** Principal Live walk is blocked on Ruth’s path; desk shows `ReadableText` / “vault would not accept that”; Bob’s Ask-why wrongly cites Remote EVM meta-tx.
+**Why:** Principal Live walk is blocked on Bob’s path; desk shows `ReadableText` / “vault would not accept that”; Bob’s Ask-why wrongly cites Remote EVM meta-tx.
 
 **Not GameLab.** Product desk + Privy signing only.
 
@@ -52,7 +52,7 @@ Local root: D:\My Git Projects\D9-Studio\Branch-Zero
 HARD RULES:
 - Runtime: @bloxchain/sdk + viem + existing Privy session signer. No new wallets. No protocol Solidity unless eth_call-as-owner starts failing.
 - Godot never holds keys / never talks RPC. No GameLab ENG-*. No Godot re-export for this bug.
-- Do not weaken timelock / RBAC. Direct timed approve must remain the Ruth path (meta-approve is Priority only).
+- Do not weaken timelock / RBAC. Direct timed approve must remain the Bob path (meta-approve is Priority only).
 - Never commit secrets (.env, Privy keys). Redact RPC URLs in logs.
 - Restart Teller Desk after server changes; do not tell the principal to re-export Godot for this.
 

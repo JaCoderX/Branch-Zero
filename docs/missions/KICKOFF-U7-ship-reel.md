@@ -50,7 +50,7 @@ BEFORE CODE — read in order:
 Local root: D:\My Git Projects\D9-Studio\Branch-Zero
 
 HARD RULES:
-- Deliver a continuous screen recording (≥30 s, prefer 60–180 s) of: lobby → talk Mo → Counter wire path → vault
+- Deliver a continuous screen recording (≥30 s, prefer 60–180 s) of: lobby → talk Ash → Counter wire path → vault
   door read (PENDING and/or OPEN). MockChain on :5174 is enough unless principal requires live.
 - Prefer completing existing demo_walk / record-demo-walk.ps1 over a new framework.
 - Do NOT rewrite hud.gd, feel particles, fonts, shell, characters, or heroes. Camera hunks in player.gd only if the

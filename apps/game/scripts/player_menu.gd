@@ -12,7 +12,7 @@ class_name PlayerMenu
 ##
 ## While either surface is up `GameState.ui_locked` is true — the player, the interact key and the debug teleports
 ## already honour it — and nothing is paused: bridge events, the desk clock and any in-flight desk action carry on.
-## Everything the bank already owns stays at its desk: no Sign in / Load Account (Ines), no Live / Dev / Mock
+## Everything the bank already owns stays at its desk: no Sign in / Load Account (Iris), no Live / Dev / Mock
 ## (desk-debug), no wing switch (elevator), no Console (terminals). Every string comes from dialogue/strings.json.
 
 signal entered()     # the player walked in through the front door

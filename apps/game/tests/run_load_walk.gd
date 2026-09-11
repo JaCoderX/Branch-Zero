@@ -50,14 +50,14 @@ func _run() -> void:
 		if str(c.get("form", "")) == "load_account":
 			slip = c
 	if slip.is_empty():
-		_fail("Ines's passbook node offers no load slip: %s" % str(dlg.choice_labels()))
+		_fail("Iris's passbook node offers no load slip: %s" % str(dlg.choice_labels()))
 		return _finish()
-	_ok("Ines offers \"%s\" from the passbook node → %s" % [str(slip["text"]), str(slip["on_submit"])])
+	_ok("Iris offers \"%s\" from the passbook node → %s" % [str(slip["text"]), str(slip["on_submit"])])
 
 	dlg.start("clerk")
 	var idx: int = dlg.find_choice("load an existing account")
 	if idx < 0:
-		_fail("the load slip is not on screen at Ines's desk: %s" % str(dlg.choice_labels()))
+		_fail("the load slip is not on screen at Iris's desk: %s" % str(dlg.choice_labels()))
 		return _finish()
 	# GDScript lambdas capture locals by value, so the signal writes into a shared container, not a local.
 	var asked: Array = []
@@ -136,7 +136,7 @@ func _run() -> void:
 	else:
 		_ok("an empty account number → BAD_ARGS before the bridge is called")
 
-	# --- and the account Ines opened can be loaded back: a load is a switch, not a one-way door
+	# --- and the account Iris opened can be loaded back: a load is a switch, not a one-way door
 	var back: Dictionary = await gs.run_action("load_account", {"account": opened})
 	if not back.get("ok", false) or gs.account().to_lower() != opened.to_lower() or not bool(back["result"].get("changed", false)):
 		_fail("could not load the originally opened account back: %s" % str(back))

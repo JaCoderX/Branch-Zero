@@ -73,7 +73,7 @@ HARD RULES:
       coffers read in wide lobby shots; keep spring-arm collision; do not break F6/F4 focus drill.
   (3) Particles — few Compatibility-safe systems (e.g. skylight dust, stamp ink puff). Count toward draw budget.
   (4) Fonts — OFL / already-approved faces only; update CREDITS. Prefer one UI face + one plaque face max.
-  (5) Demo — ≥30 s MockChain walk on :5174 with captures (lobby → Mo → Counter → vault door read); optional short
+  (5) Demo — ≥30 s MockChain walk on :5174 with captures (lobby → Ash → Counter → vault door read); optional short
       screen recording path documented. Full ETHOnline submission packaging is principal-owned if still open.
 - Do NOT touch dialogue content, bridge, MockChain semantics, teller-desk, ens*, Name Desk forms, Arc elevator logic.
 - Lights: still 1 shadowed directional; still ≤ 8 omnis on the merged interior — no ninth.
@@ -94,7 +94,7 @@ teller, web bridge, MockChain behaviour, Arc wing scripts.
 SEQUENCE:
 0. Record Stage 4 baselines; run_checks + mock_walk + run_viz_budget green. Stage only Stage 5 paths.
 1. HUD layout pass — lobby default cam must show ledger strip + vault repeater without passbook burial.
-2. Camera OTS — lateral offset; verify Mo/Dev/Ruth talk prompts; spring-arm clearance on new shots.
+2. Camera OTS — lateral offset; verify Ash/Eve/Bob talk prompts; spring-arm clearance on new shots.
 3. Particles — one or two systems; cut if draws spike.
 4. Fonts — swap UI / plaque faces; keep legibility at web scale.
 5. :5174 ?mock=account; hide debug → F6 → E → Esc → F4 focus drill; 30 s walk captures.

@@ -27,7 +27,7 @@ wants the **robes / long tunics removed** — Rung B body silhouette toward art-
 
 | Fact | Implication |
 |------|-------------|
-| ENG-0016 answered Yes | Quiver/hat/mask/bear hide; Kenji_bank + Okafor_bank proven; do not re-census from zero |
+| ENG-0016 answered Yes | Quiver/hat/mask/bear hide; Johnny_bank + Walker_bank proven; do not re-census from zero |
 | Principal | "look good for start" + "remove the robes" |
 | Product | Bob only on main; 0016 not landed — jacket ENG may land together with hide list later |
 | Caps/captures | Laptop-local under ENG-0016 `captures/` (gitignored) — still on disk for comparison |
@@ -71,7 +71,7 @@ HARD RULES:
 - Kill: jacket read impossible without breaking skinning / 6th albedo / losing KayKit cheer → stop, write findings.
 - Time box: Mage spike first; do not remesh all eight before principal sees Mage board.
 - Append GameLab log.md; update work/index.md on open/close.
-- Prefer shell-delete + UV remap + light vertex edit over full remesh; reuse Kenji head-graft / Okafor UV lessons.
+- Prefer shell-delete + UV remap + light vertex edit over full remesh; reuse Johnny head-graft / Walker UV lessons.
 
 OWN: ENG-0017 tree (board stills, jacket glbs, findings, optional handoff).
 AVOID: Branch-Zero apps/game land; room; dialogue; Load Account; redoing 0016 accessory census from scratch.
@@ -81,7 +81,7 @@ SEQUENCE:
 1. BOARD — ENG-0016 ward row vs first Mage jacket trials (front / 3q / side / back).
 2. MAGE SPIKE — shorten/rebuild robe shells into jacket+lower; export; joint/weight check; Idle/Walk/Wave proof.
 3. PAUSE — principal look at Mage board (robe vs jacket). If kill → findings No/It depends.
-4. ROLL — same recipe to Ranger (Mo/player), then Rogue/Kenji, Bob refine, Okafor refine.
+4. ROLL — same recipe to Ranger (Ash/player), then Rogue/Johnny, Bob refine, Walker refine.
 5. FINDINGS — per-role table; proposed land (glbs + sheets + hide list from 0016).
 6. STOP — principal accept → separate Branch-Zero land kickoff (may combine 0016 hide + 0017 jackets).
 
@@ -98,4 +98,4 @@ OUT OF SCOPE: Shipping robes-as-coats from 0016 as final dress; Mad Men photorea
 
 ## After a Yes
 
-Land kickoff combining ENG-0016 `KAYKIT_HIDE_PARTS` (+ Kenji/Okafor glbs if still needed) with ENG-0017 jacket derivatives and sheet updates. Until then product stays Bob-only (`044f934`).
+Land kickoff combining ENG-0016 `KAYKIT_HIDE_PARTS` (+ Johnny/Walker glbs if still needed) with ENG-0017 jacket derivatives and sheet updates. Until then product stays Bob-only (`044f934`).

@@ -13,7 +13,7 @@ Paste into a **new** Cursor / Codex session. Prefer **Codex Luna**. Escalate onl
 
 **What this is:** a **small set-dressing + interactable pass** — fill the empty southeast corner with (1) a diegetic partners / event notice board and (2) a **standalone** bank terminal (no NPC) that opens the existing Terminal Console. Not ship packaging, not Arc revive, not new chain work, not a logo collage.
 
-**Why:** Principal — SE is unused; add ETH Online / partners / Bloxchain / Particle board, **and** a public console so players are not forced to fight Ines or Okafor for the computer prompt.
+**Why:** Principal — SE is unused; add ETH Online / partners / Bloxchain / Particle board, **and** a public console so players are not forced to fight Iris or Walker for the computer prompt.
 
 **Baseline:** Main wing on `http://localhost:5173`. `TERMINALS` today = manager + opening only. Desk-local sponsor plaques stay. U6 Arc **DEFERRED**. [OWED.md](../OWED.md) polish/packaging gates unchanged.
 
@@ -63,23 +63,23 @@ HARD RULES:
 - Godot 4.5 GDScript, web, threads OFF. Bridge JSON only; no JavaScriptBridge.eval.
 - Board: diegetic bank signs — not a logo wall. Label3D + existing palette. Particle CS ≠ Bloxchain panels. Do not claim Branch Zero is the official Particle/Bloxchain product.
 - Terminal: reuse BankTerminal + dialogue/terminal.json + open_console / observer_*. Do NOT invent a console NPC. Do NOT weaken _check_terminal write-verb ban or canvas focus on close.
-- Keep manager + opening terminals and Ines "Use the desk terminal" working. Do not remove/weaken desk plaques or elevator Arc notice.
+- Keep manager + opening terminals and Iris "Use the desk terminal" working. Do not remove/weaken desk plaques or elevator Arc notice.
 - Do not revive Arc / touch FX logic / ship packaging / character-style climb / AO desk polish files unless a shared helper must move (prefer not).
-- Do not block entrance gap, elevator doors/panel, or teller escort waypoints. Place so greeter Mo does not steal the terminal prompt. No ninth OmniLight. WORLD-3D §6 budget.
+- Do not block entrance gap, elevator doors/panel, or teller escort waypoints. Place so greeter Ash does not steal the terminal prompt. No ninth OmniLight. WORLD-3D §6 budget.
 - No secrets in git. Player-facing strings stay bank words.
 
 SEQUENCE:
 1. Board geometry: in apps/game/scripts/bank_interior.gd, add `_partners_board()` (or equivalent) from `_ready` after east column / lobby furniture. Anchor ~ (12.5–13.5, 1.6–2.4, 8.5–9.5), face west. Framed hierarchy: ETH Online 2026 · Branch Zero · Sep 4–16 → Privy · ENS · Uniswap · Arc → Bloxchain | Particle one-liners. Match plaque helper style; optional paper quads like ArcNoticeBoard.
 2. Lobby terminal prop: place a computerScreen (name e.g. LobbyScreen) on a small desk/kiosk in the same SE pocket (~10.5–12.0, desk height, 8.5–10.0), facing the lobby walk-up. Optional "BRANCH CONSOLE" plaque. Honest collider; nudge coat rack if needed.
 3. Wire interactable: in apps/game/scripts/main.gd, append TERMINALS entry e.g. ["lobby", <screen pos>, "the lobby terminal"]. Reuse existing terminal spawn path — do not fork dialogue. Confirm Space → terminal.json → openConsole; Esc/close → focusCanvas + movement.
-4. Proximity: walk-test that standing at the lobby terminal prompts the computer, not Mo / elevator; AO and manager desks still prefer NPC vs terminal by distance as today.
+4. Proximity: walk-test that standing at the lobby terminal prompts the computer, not Ash / elevator; AO and manager desks still prefer NPC vs terminal by distance as today.
 5. Docs: short WORLD-3D §2.1 note (Partners board + lobby terminal) and/or one REFLECTION decision row. Mention in TERMINAL-CONSOLE §3/§6a that a third screen exists in the lobby if you touch that doc. CREDITS only if new assets.
 6. Evidence: :5173 from entrance; optional viz_shots; local docs/progress/ note. Light run_checks if useful (third TERMINALS id / LobbyScreen present). Export/refresh web .pck if needed for :5173.
 
 DoD:
 - [ ] SE corner: composed notice board with Event → Partners → Bloxchain | Particle hierarchy, legible from entrance
 - [ ] Standalone lobby terminal (no NPC): lean/Space opens terminal.json / Console; close restores movement + focusCanvas
-- [ ] Manager + opening terminals and Ines desk-terminal choice still work; OBSERVER write-verb ban unchanged
+- [ ] Manager + opening terminals and Iris desk-terminal choice still work; OBSERVER write-verb ban unchanged
 - [ ] Desk-local sponsor plaques + elevator Arc notice unchanged in meaning
 - [ ] No trademark logo collage; bank wording; no new bridge methods; no ninth omni; paths unblocked
 - [ ] Progress note filed; optional viz shots

@@ -5,7 +5,7 @@
 .DESCRIPTION
   1. Launches Godot 4.5.2 maximized with --demo=walk (MockChain, funded account).
   2. Reads the game window's client rectangle and records exactly that region (ffmpeg gdigrab).
-  3. Writes a go marker once ffmpeg is rolling; the autopilot (demo_walk.gd) waits for it, so the walk to Mo is on film.
+  3. Writes a go marker once ffmpeg is rolling; the autopilot (demo_walk.gd) waits for it, so the walk to Ash is on film.
   4. Stops when this run's autopilot writes a unique completion marker (or -MaxSeconds), plus a short tail.
   5. Direct ddagrab grabs end on 'q' (clean mp4); wrapper grabs are remuxed + trimmed. Godot's --log-file sits beside it.
   Output: docs/progress/captures/demo-walk-<stamp>.mp4 + .log (gitignored). Keep the game window unobstructed.
@@ -191,7 +191,7 @@ else {
     Write-Host "[record] region=$region"
 }
 # The autopilot holds at the spawn until BRANCH_ZERO_DEMO_GO exists (up to 40 s), so start the grab now and
-# write the go marker once ffmpeg is actually rolling — the first steps toward Mo are then on film.
+# write the go marker once ffmpeg is actually rolling — the first steps toward Ash are then on film.
 $ffmpeg = Resolve-Ffmpeg
 $direct = ($Encoder -eq 'auto') -and $ffmpeg -and (Test-Ddagrab -FfmpegPath $ffmpeg)
 

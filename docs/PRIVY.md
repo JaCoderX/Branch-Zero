@@ -108,7 +108,7 @@ await privy.policies().create({
 > signer is refused the Priority payload with `policy_violation` and still signs a counter pay right after.
 
 > **S2 (2026-09-08) — one policy, one rule per wing.** A player has a *different* Main account in each mode
-> (Live on Sepolia, Dev on `1337`: different chains, different contracts), so the rule that pins
+> (Live on Sepolia, Eve on `1337`: different chains, different contracts), so the rule that pins
 > `chainId` + `verifyingContract` has to exist once per wing. Rules are named per chain
 > (`chainRuleName(name, chainId)`), so both live inside the **same** app-owned policy object on the player's
 > wallet: `/session` on a desk recovers that policy (`recoverPolicy`) and adds its own chain's rule if it is
@@ -164,7 +164,7 @@ Lane B option 1 adds a second rule: `eth_sendTransaction` allowed only when `to 
 
 ### 5a. Priority release — the one step-up (U4+)
 
-The only Privy surface after Account Opening, and the deliberate exception to "no pop-ups": at Mr. Okafor's desk the
+The only Privy surface after Account Opening, and the deliberate exception to "no pop-ups": at Mr. Walker's desk the
 player can skip the vault's cooling period, and that costs a **hand scan**. Built from ENG-2026-0011 (two signers on
 one wallet) and ENG-2026-0013 (Passkey step-up), in `apps/web/src/overlay/useBranchZeroWallet.ts` `priority()`:
 
@@ -299,7 +299,7 @@ signer and can demonstrate nothing about pinning. Only the browser consent binds
 
 ---
 
-## 7. UX rules for the Clerk (Ines)
+## 7. UX rules for the Clerk (Iris)
 
 - One consent, plainly worded, with a **Revoke** option always visible at the desk.
 - Show the policy summary in the leaflet prop: "Signer may: sign bank slips for your account. Signer may not: anything else."

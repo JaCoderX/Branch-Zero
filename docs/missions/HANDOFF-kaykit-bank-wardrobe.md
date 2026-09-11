@@ -63,11 +63,11 @@ retint / lightly soften remaining geometry into **art-deco lobby livery** (KayKi
 | Role | Base | Drop / soften | Target cloth read |
 |------|------|---------------|-------------------|
 | Bob vault | Knight | Helm done; plate→tunic paint done; optional softshoulder later | Security / porter — navy + brass |
-| Mo / player | Ranger | **Quiver**; adventure leather if it screams kit | Lobby tunic + sash/cape (emerald / navy) |
-| Ines / Petra | Mage | **Hat**; mage-orb energy → brass/clasp | Desk coat-dress (slate / deep green) |
-| Dev | Rogue | **Mask**, dungeon straps if separate | Teller waistcoat / sleeves — oxblood accent |
-| Kenji | Rogue_Hooded | **Hood** (+ mask if any); prove hair under hood | Dealer vest/blazer — teal accent |
-| Okafor | Barbarian | **Bear hood / bare chest / raider straps** | Manager presence without raider kit — hardest body |
+| Ash / player | Ranger | **Quiver**; adventure leather if it screams kit | Lobby tunic + sash/cape (emerald / navy) |
+| Iris / Petra | Mage | **Hat**; mage-orb energy → brass/clasp | Desk coat-dress (slate / deep green) |
+| Eve | Rogue | **Mask**, dungeon straps if separate | Teller waistcoat / sleeves — oxblood accent |
+| Johnny | Rogue_Hooded | **Hood** (+ mask if any); prove hair under hood | Dealer vest/blazer — teal accent |
+| Walker | Barbarian | **Bear hood / bare chest / raider straps** | Manager presence without raider kit — hardest body |
 
 ### Rung ladder
 

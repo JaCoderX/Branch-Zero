@@ -1,5 +1,5 @@
 ---
-title: Load Account — Ines adopts a custom AccountBlox address
+title: Load Account — Iris adopts a custom AccountBlox address
 created: 2026-09-08
 updated: 2026-09-08
 status: met
@@ -8,11 +8,11 @@ handoff: docs/missions/HANDOFF-load-account.md
 kickoff: docs/missions/KICKOFF-load-account.md
 ---
 
-# Load Account (Ines)
+# Load Account (Iris)
 
-> Let the player **point Ines at a specific AccountBlox address** they already own on the current wing.
+> Let the player **point Iris at a specific AccountBlox address** they already own on the current wing.
 > Covers stranded / non-latest CopyBlox clones and deliberate multi-account use. The terminal stays for
-> **discovery**; Ines is the clean **load** path.
+> **discovery**; Iris is the clean **load** path.
 
 Related: [NPCS.md](./NPCS.md) §4.2 · [PRIVY.md](./PRIVY.md) · [TERMINAL-CONSOLE.md](./TERMINAL-CONSOLE.md) ·
 [HANDOFF-load-account.md](./missions/HANDOFF-load-account.md)
@@ -23,9 +23,9 @@ Related: [NPCS.md](./NPCS.md) §4.2 · [PRIVY.md](./PRIVY.md) · [TERMINAL-CONSO
 
 | Decision | Why |
 |----------|-----|
-| Ines offers **Load an existing account** (chat + address form) | Account Opening owns identity ↔ vault linkage |
+| Iris offers **Load an existing account** (chat + address form) | Account Opening owns identity ↔ vault linkage |
 | Accept a pasted `0x` AccountBlox on the **current wing** | Player may have several clones; auto-recovery only keeps the **last** `BloxCloned` |
-| Terminal discovers; Ines loads | Console / Import already helps find addresses; the desk must adopt them into the session |
+| Terminal discovers; Iris loads | Console / Import already helps find addresses; the desk must adopt them into the session |
 | Hard gate: on-chain `owner()` == Privy owner | Never load someone else's vault into your passbook |
 | After load, run the same sync as Re-check | Policies pin, role set, whitelist — without `cloneBlox` |
 
@@ -55,7 +55,7 @@ Privy owner ──BloxCloned logs──► [clone₀, clone₁, … cloneₙ]
 ## 3. Player flow (diegetic)
 
 1. Sign in + (optional) teller consent as today.
-2. At Ines — from **open** (no account yet) **and** **done** (already have one):
+2. At Iris — from **open** (no account yet) **and** **done** (already have one):
    - **Open my account** — existing provision / recover / clone path.
    - **Load an existing account** — opens a slip (same family as Petra's name claim / Bob's payment slip).
 3. Player pastes `0x…` (hint: "from the desk terminal or your passbook").
@@ -82,7 +82,7 @@ you can hand me an older address if that's the vault you want to use today."
 | Bridge / GameState | Action `load_account` `{ account }` → Teller |
 | Teller Desk | `POST /account/load` (or equivalent) — validate + `patchPlayer` + policy pin + sync |
 | MockChain | Accept a fake owned address for greybox / `run_checks` |
-| Terminal | Unchanged discovery; optional one-line hint in `terminal.json` / Console copy pointing at Ines |
+| Terminal | Unchanged discovery; optional one-line hint in `terminal.json` / Console copy pointing at Iris |
 
 Optional stretch (same unit if cheap): after load failure for "not owner", or from Ask why, list
 `BloxCloned` for this owner as **dialogue choices** (short addresses) — still no factory mapping required.
@@ -95,7 +95,7 @@ Optional stretch (same unit if cheap): after load failure for "not owner", or fr
 - **Owner match is mandatory** — refuse `ACCOUNT_NOT_OWNED` (or existing code family).
 - Do not grant OBSERVER / Priority / FX by loading; those stay their own desks.
 - Re-pin Privy policies to the **new** `verifyingContract` / `to` — silent lane must not keep signing the old vault.
-- Live and Dev: load only on that desk's chain; no cross-wing paste of a 1337 address into Live.
+- Live and Eve: load only on that desk's chain; no cross-wing paste of a 1337 address into Live.
 - Refuse zero address, EOAs, contracts that do not answer `owner()`.
 
 ---
@@ -104,7 +104,7 @@ Optional stretch (same unit if cheap): after load failure for "not owner", or fr
 
 - CopyBlox Solidity changes / `getClonesForOwner`
 - Loading accounts the player does **not** own (viewing stays OBSERVER + Console)
-- Auto-switching FX till on Dev (Live `fxTillIsMain` already shares Main)
+- Auto-switching FX till on Eve (Live `fxTillIsMain` already shares Main)
 - Arc wing
 - Merging with Sepolia treasury ops
 - Walking a new NPC desk
@@ -115,7 +115,7 @@ Optional stretch (same unit if cheap): after load failure for "not owner", or fr
 
 Evidence: [`progress/2026-09-08-load-account.md`](./progress/2026-09-08-load-account.md).
 
-- [x] Ines dialogue exposes Load path (no account + has account) — `open`, `done` **and** `start_over` all offer
+- [x] Iris dialogue exposes Load path (no account + has account) — `open`, `done` **and** `start_over` all offer
   "Load an existing account"; `run_checks.gd` asserts all three and that Open my account still recovers the last clone
 - [x] Address form → desk validates `owner()` == Privy owner on current wing — `lanes/loadAccount.ts`
   `assertOwnedAccount`: `getAddress` → `getCode` → `owner()` → `initialized()` → ERC-165 `ISecureOwnable` → owner match
@@ -128,7 +128,7 @@ Evidence: [`progress/2026-09-08-load-account.md`](./progress/2026-09-08-load-acc
   refused `policy_violation` on the account it was loaded away from
 - [x] Refusals have bank lines + Ask why; MockChain + Godot check and/or kill/smoke evidence —
   `ACCOUNT_NOT_OWNED` / `ACCOUNT_NOT_A_VAULT` / `LOAD_POLICY` in `errors.json`; `tests/run_load_walk.gd` walks the
-  slip under MockChain; `npm -w apps/teller-desk run killtests:load` is the live Dev-wing proof
+  slip under MockChain; `npm -w apps/teller-desk run killtests:load` is the live Eve-wing proof
 - [x] NPCS / PRIVY / ARCHITECTURE note updated; REFLECTION row; HANDOFF-CC when met
 
 ---

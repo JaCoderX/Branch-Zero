@@ -21,7 +21,7 @@ You are a **cold agent**. Prefer this file + the kickoff over chat memory. Freed
 
 **Baseline (met):** [`HANDOFF-inpc-openrouter.md`](./HANDOFF-inpc-openrouter.md) · [`docs/INPC.md`](../INPC.md) — Wake (session OpenRouter key) → full-panel chat → Sleep; player-safe snapshot; `game-knowledge/` pack.
 
-**Not this mission:** Companion follow / Stay / NavigationAgent · action-triggered tips from desk-debug or bridge traffic · unsolicited OpenRouter calls · Ollama · changing teaching pack / snapshot whitelist · new Godot mesh / KayKit pedestal · U7 packaging · shell splash · Mo rewrite · protocol Solidity.
+**Not this mission:** Companion follow / Stay / NavigationAgent · action-triggered tips from desk-debug or bridge traffic · unsolicited OpenRouter calls · Ollama · changing teaching pack / snapshot whitelist · new Godot mesh / KayKit pedestal · U7 packaging · shell splash · Ash rewrite · protocol Solidity.
 
 ---
 

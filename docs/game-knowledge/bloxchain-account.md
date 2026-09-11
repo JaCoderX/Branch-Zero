@@ -10,14 +10,14 @@ This is the deeper explanation behind the bank words. Use it when the player ask
 - The account accepts plain deposits (money sent to its address). Anything else must arrive through a registered service, or the account refuses it.
 
 ## Three protected roles (fixed at opening)
-- Owner: you, the account holder. Your signature is what moves money. Held by the wallet Ines opened for you.
+- Owner: you, the account holder. Your signature is what moves money. Held by the wallet Iris opened for you.
 - Broadcaster: the teller's desk. It submits the slips you signed and pays the network fee. It cannot forge your signature, cannot start a payment alone and cannot approve anything alone.
 - Recovery: the Security Officer at the side door. A separate key that can request an ownership transfer if you lose yours. That request is time-locked like everything else, so the real holder can see it coming and cancel it.
 - These three roles are protected: staff cannot add themselves to them, and they cannot be removed.
 
 ## Runtime roles (added by the branch, with your signature)
 - The account can also carry extra, non-protected roles created for a purpose. In this branch:
-  - BRANCH_MANAGER — Mr. Okafor. He can recall a pending wire and can submit your Priority release. He cannot start a payment and cannot release a wire after the clock on his own.
+  - BRANCH_MANAGER — Mr. Walker. He can recall a pending wire and can submit your Priority release. He cannot start a payment and cannot release a wire after the clock on his own.
   - OBSERVER — a viewing wallet you name at the branch terminal. It can read your account on the public Console and hold no other power. Zero actions, read only.
 - A role only ever has the exact actions the account's service list allows. There is no role inheritance; a role is a flat list of wallets and permitted actions.
 
@@ -32,7 +32,7 @@ This is the deeper explanation behind the bank words. Use it when the player ask
 - Over-the-counter (Lane A): request and approve in one step. The teller stamps it, the money moves, the record completes immediately. The counter limit is a branch policy, not a chain rule: above it, the teller sends you to the vault.
 - Scheduled wire (Lane B): a time-locked request. The account records the wire as PENDING and stamps it with a release time equal to now plus the cooling period. It cannot be released by the timed path before that time — the chain refuses, not the clerk.
 - Release (Bob's window): the owner's timed approval after the release time. Bob is the desk; the account checks the clock.
-- Priority (Mr. Okafor): a different approval path that is not time-checked. It needs the owner's own signature made in the browser behind a passkey (the hand scan); Okafor only submits it. Without your signature there is no Priority.
+- Priority (Mr. Walker): a different approval path that is not time-checked. It needs the owner's own signature made in the browser behind a passkey (the hand scan); Walker only submits it. Without your signature there is no Priority.
 - Recall (the shredder): cancel while PENDING. Owner or manager. Once cancelled, a wire cannot be revived.
 
 ## Wire record states (what the board reads)

@@ -1,5 +1,5 @@
 /**
- * Load Account (Ines) — adopt an AccountBlox the player already owns on this wing (docs/LOAD-ACCOUNT.md).
+ * Load Account (Iris) — adopt an AccountBlox the player already owns on this wing (docs/LOAD-ACCOUNT.md).
  *
  * Why this lane exists. CopyBlox keeps a **flat** `_clones` set and emits `BloxCloned(indexed initialOwner)`;
  * there is no `owner → clones` mapping, so `recoverAccount` takes the **last** matching log (then a deployment
@@ -72,7 +72,7 @@ export interface LoadedAccount {
 
 /**
  * What the player typed. Everything here is a typo, not a chain fact, so it never costs a read: the terminal
- * hands out checksummed addresses and Ines only ever asks for one of those.
+ * hands out checksummed addresses and Iris only ever asks for one of those.
  */
 function parseAccount(input: unknown): Address {
   const raw = String(input ?? '').trim();
@@ -197,7 +197,7 @@ export async function loadAccount(player: Player, input: unknown, jobId?: string
   /**
    * `configured` / `roleSet` described the *previous* contract, so they are cleared rather than carried across.
    * If the sync below fails half-way the player is left pointed at an account whose desk permissions are
-   * unconfirmed — which is precisely what `NOT_CONFIGURED` ("ask Ines to re-check your account") is for, and a
+   * unconfirmed — which is precisely what `NOT_CONFIGURED` ("ask Iris to re-check your account") is for, and a
    * far better state than a passbook that claims permissions nobody verified.
    */
   let current = patchPlayer(player.privyUserId, {
@@ -220,7 +220,7 @@ export async function loadAccount(player: Player, input: unknown, jobId?: string
 
   /**
    * Zero-only, exactly like Account Opening: an older vault the player is coming back to usually has its own
-   * balance, and the branch does not top it up here. Ines's faucet is the explicit way to ask for more.
+   * balance, and the branch does not top it up here. Iris's faucet is the explicit way to ask for more.
    */
   stage('funding', 'Checking the balance on it…');
   const funded = await fundAccount(account);

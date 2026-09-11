@@ -48,7 +48,7 @@ HARD RULES:
 - Do NOT change lane semantics, roles, ROLE_SET_VERSION, Privy policy, or dialogue/action graphs
   (Dialogue → GameState.run_action → Chain.call_async stays as-is).
 - Do NOT redesign zone footprints or navigation. Replace CSG/box greybox with kit / Blender meshes **in place**.
-- Protect the freeze: one Account Opening modal; Priority Passkey only on Okafor’s bypass; canvas re-focus after
+- Protect the freeze: one Account Opening modal; Priority Passkey only on Walker’s bypass; canvas re-focus after
   overlays; collider lesson — props that block must collide (layer 1) but not listen (mask 0); keep plants/props
   off door gaps and escort waypoints.
 - Licence everything: Kenney / Quaternius / Freesound / OFL fonts only unless the principal approves otherwise.

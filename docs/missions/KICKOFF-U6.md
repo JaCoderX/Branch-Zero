@@ -41,7 +41,7 @@ HARD RULES:
 - Arc Testnet chainId 5042002 only for Arc work. Native gas is USDC (18 dec native / 6 display). Never Ganache-parity or Remote EVM keys on Arc. No secrets in git.
 - Pin ENG-0006 library fixtures into infra/deployments/arc-testnet.json first; prefer attach + CopyBlox-style clone over redeploying foundations every player. K3 did not prove CopyBlox on Arc — that is U6 work.
 - ENS still resolves on Sepolia with UR V2 0x85edf8b6b7d4211e2b07aa687506b746357b92cf. Main-wing Lane A/B stay on 1337. Do not wipe Remote EVM.
-- Preserve bridge u5.0, Petra, names board, one-modal Account Opening, Priority Passkey only on Okafor. Do not regress ROLE_SET 3.
+- Preserve bridge u5.0, Petra, names board, one-modal Account Opening, Priority Passkey only on Walker. Do not regress ROLE_SET 3.
 - Godot 4.5 GDScript, web, threads OFF. Dialogue → GameState.run_action → Chain.call_async. MockChain = greybox only.
 - Manager-role beat only if §5g / ARC / principal scope requires it this unit; otherwise ship Arc provision + one live kill and name the manager cut explicitly.
 - Simulate with Arc state overrides before spending faucet USDC when possible (ENG-0006). Faucet is reCAPTCHA-gated — agents cannot self-fund.

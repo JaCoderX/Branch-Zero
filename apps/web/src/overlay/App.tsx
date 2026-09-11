@@ -478,7 +478,7 @@ export function App({ engineState }: { engineState: string }) {
               <button
                 style={{ ...btn, padding: '1px 8px', marginLeft: 8, opacity: 0.5, cursor: 'not-allowed' }}
                 disabled
-                title="ARC floor — coming soon. U6 is deferred (docs/ARC.md §5b); Dev/Live is not the Arc elevator."
+                title="ARC floor — coming soon. U6 is deferred (docs/ARC.md §5b); Eve/Live is not the Arc elevator."
                 onClick={() => run('Taking the elevator to Arc…', () => w.switchWing(ARC_TESTNET_CHAIN_ID))}
               >
                 Arc wing — coming soon
@@ -501,7 +501,7 @@ export function App({ engineState }: { engineState: string }) {
             <div style={row}>
               <span style={label}>vault</span>
               <span style={{ color: s.priority ? '#e3b341' : '#9aa4b2' }}>
-                {s.priority ? 'priority desk open — Okafor bypasses the clock with your Passkey' : 'vault-only — the clock is the only way out'}
+                {s.priority ? 'priority desk open — Walker bypasses the clock with your Passkey' : 'vault-only — the clock is the only way out'}
                 {` · roleSet ${s.roleSet ?? '?'}/${s.roleSetWanted ?? '?'}`}
                 {w.mfaEnrolled ? ' · MFA enrolled' : ' · no MFA enrolled (sign sheet only)'}
               </span>
@@ -626,7 +626,7 @@ export function App({ engineState }: { engineState: string }) {
                     {s?.priority && !clockReady && pending && (
                       <button
                         style={{ ...btn, borderColor: '#e3b341' }}
-                        title="Okafor — skip the cooling period, hand scan required (Passkey + your own signature; the manager submits)"
+                        title="Walker — skip the cooling period, hand scan required (Passkey + your own signature; the manager submits)"
                         onClick={() => run('Priority release — hand scan…', () => w.priority(x.txId))}
                       >
                         Priority (hand scan)

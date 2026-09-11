@@ -131,7 +131,7 @@ const tellerFor = (chainId: number) =>
   chainId === ARC_TESTNET_CHAIN_ID ? ARC_TELLER : chainId === REMOTE_EVM_CHAIN_ID ? DEV_TELLER : LIVE_TELLER;
 
 /**
- * Live unless the operator asked for Dev. Only an explicit `?mode=dev` opts out, so an omitted, empty or
+ * Live unless the operator asked for Eve. Only an explicit `?mode=dev` opts out, so an omitted, empty or
  * misspelled value is Live — the default has to be the safe, public one (docs/SEPOLIA-LIVE.md §6).
  */
 function initialMode(): DeskMode {
@@ -298,7 +298,7 @@ export function useBranchZeroWallet() {
   /** Switch only the payment wing. ENS stays on Sepolia and the user's single Privy consent is reused. */
   const switchWing = useCallback(
     async (chainId: number): Promise<Session> => {
-      // U6 Arc stays DEFERRED; "Main" is whichever chain the active mode runs on (Live Sepolia / Dev 1337).
+      // U6 Arc stays DEFERRED; "Main" is whichever chain the active mode runs on (Live Sepolia / Eve 1337).
       if (chainId !== REMOTE_EVM_CHAIN_ID && chainId !== SEPOLIA_CHAIN_ID && chainId !== ARC_TESTNET_CHAIN_ID) throw new Error(`unsupported wing chain ${chainId}`);
       const owner = session?.owner ?? embedded?.address ?? (await ensureWallet());
       setBusy(chainId === ARC_TESTNET_CHAIN_ID ? 'Taking the elevator to Arc…' : 'Taking the elevator to Main…');
@@ -360,7 +360,7 @@ export function useBranchZeroWallet() {
    *      then `signTypedData` with the wallet UI **shown**: the player sees what they authorise.
    *   3. `/priority/submit` → recover == owner is checked by the SDK, the Branch Manager submits, COMPLETED.
    * Errors keep their Teller Desk code (`NOT_COOLING`, `PRIORITY_OFF`, `NOT_PENDING`, …); a dismissed sheet or a
-   * failed second factor becomes `PRIORITY_CANCELLED` / `MFA_FAILED` so Okafor has a line for each.
+   * failed second factor becomes `PRIORITY_CANCELLED` / `MFA_FAILED` so Walker has a line for each.
    */
   const priority = useCallback(
     async (txId: string): Promise<PriorityResult> => {

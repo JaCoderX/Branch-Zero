@@ -19,14 +19,14 @@
 - RECALLED / CANCELLED: the wire was cancelled while it was pending.
 
 ## Who does what (staff)
-- Teller (Dev, Ama at the counters): takes your slip and stamps it. Ask why: the teller is the broadcaster — a courier who submits what you signed and pays gas; the teller cannot start or approve anything alone.
+- Teller (Eve at the counter): takes your slip and stamps it. Ask why: the teller is the broadcaster — a courier who submits what you signed and pays gas; the teller cannot start or approve anything alone.
 - Vault Keeper (Bob): releases a scheduled wire after the clock runs out. Not before.
-- Branch Manager (Mr. Okafor): Priority (skip the cooling period with a hand scan — your own signature behind a passkey) or Recall (shred a pending wire).
-- Account Clerk (Ines): opens accounts, and can load an account you already hold.
+- Branch Manager (Mr. Walker): Priority (skip the cooling period with a hand scan — your own signature behind a passkey) or Recall (shred a pending wire).
+- Account Clerk (Iris): opens accounts, and can load an account you already hold.
 - Registrar (Petra): your bank name, e.g. yourname.branchzero.eth, and your passbook tier (Silver, Gold).
-- Dealer (Kenji, FX desk): exchanges practice dollars for practice euros or shekels at the board rate.
+- Dealer (Johnny, FX desk): exchanges practice dollars for practice euros or shekels at the board rate.
 - Security Officer (Sgt. Bale): recovery, at the side door.
-- Greeter (Mo): points the way.
+- Greeter (Ash): points the way.
 
 ## Bank words and what they mean underneath (Ask why)
 - Broadcaster: the teller's desk computer that submits your signed slip to the chain and pays the fee. It is a courier; it cannot move money without your signature.

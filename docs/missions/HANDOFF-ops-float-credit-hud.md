@@ -8,7 +8,7 @@ mission: Replace the long bottom "Help keep the branch open" button with a compa
 kickoff: docs/missions/KICKOFF-ops-float-credit-hud.md
 status: met 2026-09-10
 baseline: Help keep the branch open MET 2026-09-10 (docs/missions/HANDOFF-help-keep-branch-open.md)
-parallel_to: U7 packaging (gated) · do not absorb iNPC / Mo / packaging
+parallel_to: U7 packaging (gated) · do not absorb iNPC / Ash / packaging
 ---
 
 # Handoff — Ops float credit meter
@@ -21,7 +21,7 @@ You are a **cold agent**. Prefer this file + the kickoff over chat memory. Freed
 
 **Prior unit (met):** [`HANDOFF-help-keep-branch-open.md`](./HANDOFF-help-keep-branch-open.md) — Live player-safe `/healthz` slice, React `BranchFloat` popup, soft write-gate on `treasuryShort`.
 
-**Not this mission:** New funding system · changing `/healthz` / top-up writers · Bob / Terminal / Mo copy as fund path · walkable Treasury Desk · hard lobby lock · Ines practice faucet · iNPC · U7 packaging · Arc · protocol Solidity · putting persistent chrome in the **top third** of the HUD.
+**Not this mission:** New funding system · changing `/healthz` / top-up writers · Bob / Terminal / Ash copy as fund path · walkable Treasury Desk · hard lobby lock · Iris practice faucet · iNPC · U7 packaging · Arc · protocol Solidity · putting persistent chrome in the **top third** of the HUD.
 
 ---
 
@@ -94,7 +94,7 @@ Keep all bridge / soft-gate / popup behaviour from the prior unit.
 - Redesigning passbook content or zone chip  
 - Changing soft-gate action lists or `/healthz` shape  
 - New icons pack hunt if a Unicode / simple drawn Control is enough — prefer cheap over art pipeline  
-- Mo / Bob dialogue funding beats  
+- Ash / Bob dialogue funding beats  
 
 ---
 

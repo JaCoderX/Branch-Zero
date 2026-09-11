@@ -89,7 +89,7 @@ func _run() -> void:
 	# --- Esc goes to a dialogue first ---------------------------------------------------------------------------
 	dlg.start("greeter")
 	await process_frame
-	_check(dlg.active and gs.ui_locked, "Mo's dialogue open (floor locked by the dialogue)")
+	_check(dlg.active and gs.ui_locked, "Ash's dialogue open (floor locked by the dialogue)")
 	_esc(menu)
 	await process_frame
 	_check(not menu.is_open() and dlg.active, "Esc with a dialogue open: the card stays shut (the dialogue box owns Esc)")

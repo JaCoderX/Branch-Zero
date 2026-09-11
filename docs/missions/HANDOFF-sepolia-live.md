@@ -49,9 +49,9 @@ remains **Developer Mode** via desk debug. Prefer **Claude Code · Opus 5 high**
 
 | Fact | Implication |
 |------|-------------|
-| Teller `CHAIN_ID` is boot-time (`config.ts` today only allows 1337 \| Arc) | Extend to `11155111` / target `sepolia`; **two processes** for Dev+Live (Arc dual-desk pattern) |
+| Teller `CHAIN_ID` is boot-time (`config.ts` today only allows 1337 \| Arc) | Extend to `11155111` / target `sepolia`; **two processes** for Eve+Live (Arc dual-desk pattern) |
 | Web already has `/api` + `/arc-api` | Add `/dev-api` (or swap naming: `/api`=Live Sepolia, `/dev-api`=1337) |
-| `switchWing` is Main↔Arc only | Dev/Live is a **new** session mode — do not overload Arc elevator |
+| `switchWing` is Main↔Arc only | Eve/Live is a **new** session mode — do not overload Arc elevator |
 | FX module already lazy-loads Sepolia | Keep; Live should prefer Main account == FX till |
 | ENS module already Sepolia | Keep; Live pay-by-name pays on Sepolia; Dev keeps resolve→1337 pay |
 | Player index is per desk process | Same Privy user may have different Main accounts per mode — isolate cleanly |
@@ -67,7 +67,7 @@ See [`SEPOLIA-LIVE.md`](../SEPOLIA-LIVE.md) §6 (ticked) and §6.1 for the hashe
   Priority 84 s early `0xb2a202ca…`, faucet `0x1d9bee7f…`, OBSERVER grant `0x36aea1e3…`.
 - **Desk debug Live | Dev** is the panel's primary control and works before sign-in; `/dev-api` → 1337 Main
   verified with Remote EVM up (`killtests:s2 -- --dev` 6/6, and the toggle driven in the browser).
-- **Kenji is honest**: the FX till must be a live Sepolia AccountBlox owned by the player
+- **Johnny is honest**: the FX till must be a live Sepolia AccountBlox owned by the player
   (`FX_TILL_NOT_SEPOLIA`, checked before anything is signed), and `FX_SEPOLIA_ONLY` /
   `{fx_chain_note}` say "Sepolia only" in bank words on both wings. On Live the till **is** the Main account.
 - **Funding runbook followed**: `npm -w infra run funding:sepolia` (new) is the checklist; no Ganache-parity
@@ -81,7 +81,7 @@ Open, and named rather than hidden:
   roughly one more `cloneBlox`; a public demo needs a real top-up first (SEPOLIA-LIVE §4).
 - No human has driven the Live wing through the **browser** end to end (Privy OTP → consent → pay). The desk
   paths are proven headlessly and the toggle is proven in the browser; the OTP walk stays owed, as it was on 1337.
-- `?mode=dev` is honoured, and the Dev-desk-down banner is written but was not exercised with the desk stopped.
+- `?mode=dev` is honoured, and the Eve-desk-down banner is written but was not exercised with the desk stopped.
 
 ---
 

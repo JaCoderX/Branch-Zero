@@ -19,11 +19,11 @@ day-to-day: `http://localhost:5173/?mock=account` (or `:5174` if another stack o
 |---|---------|-----|
 | 1 | F* teleports fired without principal pressing them | Not DemoWalk (`?demo=walk` only). F2–F8 are greybox teleports in `main.gd`. **Gate behind `?debug=1` (or equivalent)** so normal playtests never teleport. Document. |
 | 2 | Manager entrance shows glass/rail sill | Split/shorten `MgrRail` (and any mullion) so door gap `x ∈ [-9, -7]` at `z = -5` is empty |
-| 3 | Petra on wrong side of wall | Move Petra to **Counter 2** teller bay (`Counter2` at `z = -1`, teller `x ≈ -11.6`, face lobby like Dev). Move Name Desk interactables / names board with her (or onto C2 wall). She must not sit north of manager glass |
-| 4 | Manager faces away from entrance | Okafor yaw `+= PI` (face entrance / `+Z`) |
-| 5 | Ines after the desk | Place Ines **between north wall and AO desk** (`z` north of desk ≈ 9.x), facing the room (yaw `PI`) |
+| 3 | Petra on wrong side of wall | Move Petra to **Counter 2** teller bay (`Counter2` at `z = -1`, teller `x ≈ -11.6`, face lobby like Eve). Move Name Desk interactables / names board with her (or onto C2 wall). She must not sit north of manager glass |
+| 4 | Manager faces away from entrance | Walker yaw `+= PI` (face entrance / `+Z`) |
+| 5 | Iris after the desk | Place Iris **between north wall and AO desk** (`z` north of desk ≈ 9.x), facing the room (yaw `PI`) |
 | 6 | RMB move | Hold RMB → walk toward mouse ground aim; single RMB → `walk_to` pointed location. Reuse `steer_target` / `walk_to`. Cancel on WASD / UI lock. Keep LMB orbit |
-| 7 | Vault keeper name | Rename **Ruth → Bob** everywhere product-facing (NPC table, dialogue JSON, strings, escort line, tests). Role unchanged |
+| 7 | Vault keeper name | Rename **Bob → Bob** everywhere product-facing (NPC table, dialogue JSON, strings, escort line, tests). Role unchanged |
 | 8 | Keys | Interact = **Space only** (drop E). Cam right = **E** (replace R). Update HUD legend + all `[E]` prompts (talk + elevator) → `[Space]` |
 | 9 | Vault OPEN empty | Add shallow vault **interior** behind the door: shelves + money/stack props readable when OPEN. Budget via `run_viz_budget` |
 | 10 | Elevator → Arc = black canvas | Arc is deferred. Elevator to Arc must **not** rebuild/tear the interior. Diegetic refuse: toast / plaque / line **"ARC floor — coming soon / under construction"**. Stay on Main |
@@ -40,7 +40,7 @@ This is NOT Stage 6 art, NOT Arc revive/funding, NOT U7 ship packaging, NOT Unis
 BEFORE CODE — read in order:
 1. docs/missions/HANDOFF-CC.md
 2. docs/missions/KICKOFF-U7-polish.md
-3. docs/NPCS.md                    (homes / roles; Ruth→Bob; Petra station moves to Counter 2)
+3. docs/NPCS.md                    (homes / roles; Bob; Petra station moves to Counter 2)
 4. docs/GODOT.md                   (§5b canvas focus; web pitfalls)
 5. docs/WORLD-3D-ENVIRONMENT.md    (budgets; vault legibility)
 6. docs/ARC.md                     (§5b deferred — do not revive funding)
@@ -51,10 +51,10 @@ Local root: D:\My Git Projects\D9-Studio\Branch-Zero
 
 HARD RULES:
 - Godot 4.5 GDScript, web export, threads OFF, Compatibility. No SDFGI / SSR / volumetric fog / lightmaps.
-- Preserve U4 freeze, U4+ Priority (Okafor hand-scan / Bob wait path), U5 ENS verbs. Do not change bridge,
+- Preserve U4 freeze, U4+ Priority (Walker hand-scan / Bob wait path), U5 ENS verbs. Do not change bridge,
   MockChain payment semantics, ROLE_SET, Privy policy, or teller-desk routes.
 - Do NOT redesign zone footprints or navigation beyond: manager door clearance, NPC home/yaw edits, optional
-  zone volume tweaks so chips/prompts match desks after Petra/Ines moves.
+  zone volume tweaks so chips/prompts match desks after Petra/Iris moves.
 - Do NOT start Arc funding, deploy Arc contracts, or call switch_wing rebuild for 5042002 as a real wing swap.
   Elevator Arc = deferred message only.
 - F-key teleports: gate behind debug query/flag so `?mock=account` never teleports. DemoWalk stays `?demo=walk` only.
@@ -81,19 +81,19 @@ AVOID:
 
 SEQUENCE:
 0. Confirm `?mock=account` does NOT start DemoWalk. Note current F-key behaviour; plan debug gate.
-1. P0 layout: MgrRail door gap; Ines / Petra / Okafor homes+yaw; Petra at Counter 2 + board/interactables.
+1. P0 layout: MgrRail door gap; Iris / Petra / Walker homes+yaw; Petra at Counter 2 + board/interactables.
 2. P0 Arc elevator: refuse with coming-soon; no interior teardown.
-3. P0 Ruth→Bob rename (product-facing + tests).
+3. P0 Bob rename (product-facing + tests).
 4. P1 controls: Space interact, E cam-right; update all prompts/legend.
 5. P1 RMB hold + click-to-move on floor raycast; cancel on WASD / ui_locked.
 6. P2 vault interior + money readable on OPEN; budget check.
 7. Soft: zone volumes / _nearest if prompts still lie.
-8. Verify: run_checks + run_viz_budget; MockChain walk Ines→Dev→vault→Bob→Okafor→Petra@C2; elevator Arc message;
+8. Verify: run_checks + run_viz_budget; MockChain walk Iris→Eve→vault→Bob→Walker→Petra@C2; elevator Arc message;
    no F-teleport without debug. Progress note. Stop.
 
 DoD:
 - Cold walk without F-keys: desks correct; manager doorway empty of rail/sill.
-- Petra at Counter 2 (lobby/teller side); Ines between wall and AO desk facing room; Okafor faces entrance.
+- Petra at Counter 2 (lobby/teller side); Iris between wall and AO desk facing room; Walker faces entrance.
 - Space talks; E orbits right; RMB click/hold moves; LMB orbit intact.
 - Vault OPEN shows money/interior.
 - Elevator to Arc never blacks the canvas — coming soon only; Main wing stays.

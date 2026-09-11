@@ -21,7 +21,7 @@ You are a **cold agent**. Prefer this file + the kickoff over chat memory. Freed
 
 **Plan / prior unit:** [`docs/SEPOLIA-TREASURY.md`](../SEPOLIA-TREASURY.md) (S3 met — desk-debug + CLI + auto top-up already exist)
 
-**Not this mission:** Bob / staff dialogue funding beats · Terminal Console funding tab · walkable Treasury Desk quest · collapsing role keys into treasury · auto-claiming Google/Circle faucets · practice-USDC / Ines faucet changes · iNPC · U7 ship packaging · Arc · protocol Solidity · exposing private keys.
+**Not this mission:** Bob / staff dialogue funding beats · Terminal Console funding tab · walkable Treasury Desk quest · collapsing role keys into treasury · auto-claiming Google/Circle faucets · practice-USDC / Iris faucet changes · iNPC · U7 ship packaging · Arc · protocol Solidity · exposing private keys.
 
 ---
 
@@ -42,9 +42,9 @@ Ship a thin player-facing CTA:
 | Lock | Implication |
 |------|-------------|
 | **HUD + popup, not Bob / Terminal** | Terminal stays Console/OBSERVER. Bob stays Vault Keeper (wire releases). No "fund the vault" copy — that means Lane B. |
-| **Ops gas ≠ practice dollars** | Ines faucet stays practice USDC. This surface is **Sepolia ETH** for staff gas only. |
+| **Ops gas ≠ practice dollars** | Iris faucet stays practice USDC. This surface is **Sepolia ETH** for staff gas only. |
 | **Reuse `/healthz` treasury** | Single source of truth: `address`, `eth`, `treasuryShort`, `requiredEth`. Do not invent a second balance oracle. |
-| **Live only** | Hide entirely on Dev (`1337`) / mock when no Live treasury block. Lab genesis funds staff. |
+| **Live only** | Hide entirely on Eve (`1337`) / mock when no Live treasury block. Lab genesis funds staff. |
 | **Soft write-gate, not hard lobby lock** | When `treasuryShort`: write lanes (open / pay / wire / release / ENS / FX / priority / load) open or re-open the funding popup. Player may dismiss and walk / look. Do **not** trap them in undismissable `ui_locked` while they complete a captcha faucet. |
 | **Funding ≠ instant solvency** | Copy must say: after send, the branch tops staff in the background — try again shortly. Auto watch interval / pre-`cloneBlox` already exist. |
 | **Read-only for players** | Popup never calls `treasury:topup` or any spend path. Copy address + open faucet only. |
@@ -123,7 +123,7 @@ Gate on **`treasuryShort`**, not "treasury below an arbitrary pretty number whil
 ## Out of scope (keep parked)
 
 - Walkable Treasury Desk NPC / quest
-- Bob or Mo dialogue trees as the primary fund path (optional later plaque that opens the *same* popup is fine if cheap — not required)
+- Bob or Ash dialogue trees as the primary fund path (optional later plaque that opens the *same* popup is fine if cheap — not required)
 - Putting funding inside Terminal iframe
 - Forcing undismissable modal until on-chain balance changes
 - Circle USDC player CTA (ETH only for v1 of this surface)
@@ -141,7 +141,7 @@ Gate on **`treasuryShort`**, not "treasury below an arbitrary pretty number whil
 - [x] Popup never triggers top-up spend; no key material in UI
 - [x] Esc / focusCanvas intact; dialogue priority unchanged
 - [x] Desk-debug treasury row still works for operators
-- [x] Copy distinguishes ops ETH from Ines practice dollars
+- [x] Copy distinguishes ops ETH from Iris practice dollars
 - [x] OWED + SEPOLIA-TREASURY pointer updated; handoff status → met
 
 **Verification note (2026-09-10):** Player-safe bridge/App wiring, direct TypeScript checks, production web build, JSON parsing, and whitespace checks pass. `export:web` is required because `hud.gd`, `game_state.gd`, and `mock_chain.gd` changed; it was not run here because Godot 4.5.x is unavailable. The full Live/Dev/mock engine walk is therefore the post-export principal check.

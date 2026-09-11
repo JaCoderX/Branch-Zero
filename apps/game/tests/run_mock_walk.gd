@@ -5,8 +5,8 @@ extends SceneTree
 ##
 ## Boots the autoloads by hand (a `-s` script does not get project autoloads), opens a funded mock account, files a
 ## wire, then checks what each desk offers: Bob lists the cooling wire under `approve` and is refused
-## `BeforeReleaseTime`; Okafor lists it under `priority` and the mock Priority release completes it; a released
-## wire is `NOT_COOLING` at Okafor's desk. Exits non-zero on the first wrong answer.
+## `BeforeReleaseTime`; Walker lists it under `priority` and the mock Priority release completes it; a released
+## wire is `NOT_COOLING` at Walker's desk. Exits non-zero on the first wrong answer.
 
 var failures := 0
 
@@ -57,7 +57,7 @@ func _run() -> void:
 		_fail("has_ens_name fact is false for a named customer (Petra would greet a first visit)")
 	var mo_named: String = dlg.resolve_text(greeter["nodes"]["has_account"], gs.facts())
 	if mo_named.find("{bank_name}") < 0:
-		_fail("Mo does not mention the bank name for a named customer: %s" % mo_named)
+		_fail("Ash does not mention the bank name for a named customer: %s" % mo_named)
 	var saved_name: String = chain._mock.ens_name
 	var saved_rows: Array = chain._mock.ens_names
 	chain._mock.ens_name = ""
@@ -70,9 +70,9 @@ func _run() -> void:
 	if gs.has_ens_name() or str(v1.get("bank_name", "")) != "" or str(v1.get("bank_tier", "")) != "" or dlg.pick_start(registrar, gs.facts()) != "first_visit":
 		_fail("unnamed customer still carries a name/tier: has=%s bank_name=%s bank_tier=%s" % [str(gs.has_ens_name()), str(v1.get("bank_name")), str(v1.get("bank_tier"))])
 	elif mo_quiet.to_lower().find("bank name") >= 0 or ines_quiet.to_lower().find("bank name") >= 0 or (mo_quiet + ines_quiet).find("not chosen") >= 0:
-		_fail("Mo/Ines name the bank name for an unnamed customer: %s | %s" % [mo_quiet, ines_quiet])
+		_fail("Ash/Iris name the bank name for an unnamed customer: %s | %s" % [mo_quiet, ines_quiet])
 	else:
-		_ok("unnamed customer: no name row, no tier, Mo and Ines say nothing about a bank name; Petra starts at first_visit")
+		_ok("unnamed customer: no name row, no tier, Ash and Iris say nothing about a bank name; Petra starts at first_visit")
 	chain._mock.ens_name = saved_name
 	chain._mock.ens_names = saved_rows
 	chain._mock.ens_tier = "Silver"
@@ -99,7 +99,7 @@ func _run() -> void:
 	else:
 		_ok("over-balance wire → InsufficientBalance: \"%s\"; no pending record filed" % over_line)
 
-	# file a wire (Dev's over-limit path) — 250 > instant limit 100
+	# file a wire (Eve's over-limit path) — 250 > instant limit 100
 	var r: Dictionary = await gs.run_action("wire", {"to": "0x95cED938F7991cd0dFcb48F0a06a40FA1aF46EBC", "amount": "250", "memo": "flat"})
 	if not r.get("ok", false):
 		_fail("mock wire refused: %s" % str(r.get("error")))
@@ -121,18 +121,18 @@ func _run() -> void:
 		if c.has("action"):
 			r_actions.append("%s#%s" % [c["action"], c.get("args", {}).get("txId", "")])
 	if m_actions.has("priority#" + tx_id):
-		_ok("Okafor's priority list offers priority#%s (%s)" % [tx_id, str(m_actions)])
+		_ok("Walker's priority list offers priority#%s (%s)" % [tx_id, str(m_actions)])
 	else:
-		_fail("Okafor's priority list does not offer the cooling wire: %s" % str(m_actions))
+		_fail("Walker's priority list does not offer the cooling wire: %s" % str(m_actions))
 	if r_actions.has("approve#" + tx_id):
 		_ok("Bob's cooling list offers approve#%s" % tx_id)
 	else:
 		_fail("Bob does not list the wire: %s" % str(r_actions))
 	var start: String = dlg.pick_start(manager, gs.facts())
 	if start != "idle":
-		_fail("Okafor start node is %s, want idle (facts %s)" % [start, str(gs.facts())])
+		_fail("Walker start node is %s, want idle (facts %s)" % [start, str(gs.facts())])
 	else:
-		_ok("Okafor starts at idle; facts cooling=%d priority=%s" % [gs.facts()["cooling"], str(gs.facts()["priority"])])
+		_ok("Walker starts at idle; facts cooling=%d priority=%s" % [gs.facts()["cooling"], str(gs.facts()["priority"])])
 
 	# Bob early → BeforeReleaseTime
 	var early: Dictionary = await gs.run_action("approve", {"txId": tx_id})
@@ -148,7 +148,7 @@ func _run() -> void:
 	else:
 		_ok("manager_approve → MANAGER_NO_STAMP: \"%s\"" % gs.error_line(stamp["error"]))
 
-	# Passkey / sign-sheet dismiss → Okafor's PRIORITY_CANCELLED line (no chain write)
+	# Passkey / sign-sheet dismiss → Walker's PRIORITY_CANCELLED line (no chain write)
 	var dismiss: Dictionary = await gs.run_action("priority", {"txId": "dismiss", "dismiss": true})
 	var dcode := str(dismiss.get("error", {}).get("code", ""))
 	if dismiss.get("ok", false) or dcode != "PRIORITY_CANCELLED":
@@ -160,7 +160,7 @@ func _run() -> void:
 		else:
 			_ok("priority dismiss → PRIORITY_CANCELLED: \"%s\"" % dline)
 
-	# Okafor Priority (mock) → COMPLETED before the clock
+	# Walker Priority (mock) → COMPLETED before the clock
 	var before: int = gs.remaining(gs.wire_by_id(tx_id))
 	var pr: Dictionary = await gs.run_action("priority", {"txId": tx_id})
 	if not pr.get("ok", false):
@@ -168,9 +168,9 @@ func _run() -> void:
 	elif str(pr["result"].get("status", "")) != "COMPLETED" or str(pr["result"].get("actor", "")) != "priority":
 		_fail("mock priority result: %s" % str(pr["result"]))
 	else:
-		_ok("Okafor priority → COMPLETED with %d s still on the clock; balance %s; pending now %d" % [before, gs.balance, gs.pending_count()])
+		_ok("Walker priority → COMPLETED with %d s still on the clock; balance %s; pending now %d" % [before, gs.balance, gs.pending_count()])
 
-	# a released wire is Bob's, not Okafor's
+	# a released wire is Bob's, not Walker's
 	var r2: Dictionary = await gs.run_action("wire", {"to": "0x95cED938F7991cd0dFcb48F0a06a40FA1aF46EBC", "amount": "150", "memo": "x"})
 	var tx2 := str(r2["result"]["txId"])
 	var rec: Dictionary = chain._mock.wires[chain._mock._find(tx2)]
@@ -187,9 +187,9 @@ func _run() -> void:
 	for c in idle_choices:
 		texts.append(str(c.get("text", "")) + "→" + str(c.get("next", c.get("action", ""))))
 	if okafor_start != "idle" or not str(texts).contains("not_cooling"):
-		_fail("released wire: Okafor idle should route Priority to not_cooling: %s" % str(texts))
+		_fail("released wire: Walker idle should route Priority to not_cooling: %s" % str(texts))
 	else:
-		_ok("released wire: Okafor's Priority choice routes to not_cooling")
+		_ok("released wire: Walker's Priority choice routes to not_cooling")
 	var ruth_start: String = dlg.pick_start(bob, gs.facts())
 	if ruth_start != "ready":
 		_fail("Bob start for a released wire is %s, want ready" % ruth_start)
@@ -210,7 +210,7 @@ func _run() -> void:
 		else:
 			_ok("underfunded Bob release → RECORD_FAILED: \"%s\"" % failed_line)
 
-	# The same spend-down race is surfaced at Okafor's Priority desk, with the stage carrying its fake hash/txId.
+	# The same spend-down race is surfaced at Walker's Priority desk, with the stage carrying its fake hash/txId.
 	var r3: Dictionary = await gs.run_action("wire", {"to": "0x95cED938F7991cd0dFcb48F0a06a40FA1aF46EBC", "amount": "100", "memo": "priority race"})
 	if not r3.get("ok", false):
 		_fail("mock Priority race wire refused unexpectedly: %s" % str(r3))

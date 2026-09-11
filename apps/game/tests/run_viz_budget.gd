@@ -547,7 +547,7 @@ func _run() -> void:
 		["escort wp4", Vector3(6.0, 1.0, -3.5), 0.5], ["escort wp5", Vector3(8.0, 1.0, -6.8), 0.5],
 		["F2", Vector3(-9.0, 1.0, 6.3), 0.4], ["F3", Vector3(-9.5, 1.0, 3.0), 0.4], ["F4", Vector3(8.0, 1.0, -6.5), 0.4], ["F6", Vector3(3.0, 1.0, 6.0), 0.4], ["F7", Vector3(-8.0, 1.0, -7.3), 0.4], ["F8", Vector3(-9.5, 1.0, -1.0), 0.4],
 		["spawn", Vector3(5.0, 1.0, 7.0), 0.4],
-		["Mo", Vector3(2.0, 1.0, 4.5), 0.4], ["Ines", Vector3(-9.0, 1.0, 9.5), 0.4], ["Dev", Vector3(-11.6, 1.0, 3.0), 0.4], ["Petra", Vector3(-11.6, 1.0, -1.0), 0.4], ["Bob", Vector3(10.0, 1.0, -7.5), 0.4], ["Okafor", Vector3(-8.0, 1.0, -9.8), 0.4],
+		["Ash", Vector3(2.0, 1.0, 4.5), 0.4], ["Iris", Vector3(-9.0, 1.0, 9.5), 0.4], ["Eve", Vector3(-11.6, 1.0, 3.0), 0.4], ["Petra", Vector3(-11.6, 1.0, -1.0), 0.4], ["Bob", Vector3(10.0, 1.0, -7.5), 0.4], ["Walker", Vector3(-8.0, 1.0, -9.8), 0.4],
 	]
 	var space := root.get_world_3d().direct_space_state
 	var blocked: PackedStringArray = []
@@ -603,7 +603,7 @@ func _run() -> void:
 	if bob != null and bob.display_name != "Bob":
 		home_bad.append("vault keeper is named %s, not Bob" % bob.display_name)
 	if home_bad.is_empty():
-		_ok("Ines behind the AO desk facing the room · Petra at Counter 2 facing the lobby · Okafor facing his door · Bob at the window")
+		_ok("Iris behind the AO desk facing the room · Petra at Counter 2 facing the lobby · Walker facing his door · Bob at the window")
 	else:
 		_fail("NPC homes: %s" % "; ".join(home_bad))
 	var vault_pieces := int(interior.get_meta("vault_pieces", 0))

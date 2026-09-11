@@ -2,7 +2,7 @@
 
 Paste into a **new** Claude Code / Cursor agent session. Prefer **Fable 5.1**.
 
-**What this is:** continuation of **S1** after the build commit (`1d2f558`). Infra, desk, bridge, Kenji, board, and
+**What this is:** continuation of **S1** after the build commit (`1d2f558`). Infra, desk, bridge, Johnny, board, and
 `FEEDBACK.md` already exist. The live Sepolia **guard / role config and the guarded swap did not land** — gas-blocked.
 The principal has **funded** the FX teller. This unit proves and hardens FX on chain; it is **not** a rebuild, **not**
 Arc, **not** packaging, **not** Terminal.

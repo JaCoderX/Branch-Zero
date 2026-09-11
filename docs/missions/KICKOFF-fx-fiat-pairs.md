@@ -11,7 +11,7 @@ handoff: docs/missions/HANDOFF-fx-fiat-pairs.md
 Paste into a **new** Claude Code / Cursor agent session. Prefer **Fable** (Claude Code).  
 Do **not** use Codex Luna for this unit — it is Sepolia infra + FX lane + guards, not set-dressing explore.
 
-**What this is:** replace the USDC→WETH FX demo with **bank fiat pairs** — open-mint Practice EURO + Practice ILS, two Uniswap v4 pools (USD/EUR, USD/ILS), each seeded to ≈ **$100M** TVL at a pinned mid-market rate. Optional: pull Kenji's desk west for staff space.
+**What this is:** replace the USDC→WETH FX demo with **bank fiat pairs** — open-mint Practice EURO + Practice ILS, two Uniswap v4 pools (USD/EUR, USD/ILS), each seeded to ≈ **$100M** TVL at a pinned mid-market rate. Optional: pull Johnny's desk west for staff space.
 
 **Why:** Live walk proved governed Uniswap works; the metaphor is wrong for an FX desk. Principal wants dollars→euros / shekels.
 
@@ -39,7 +39,7 @@ Canonical plan: [`docs/missions/HANDOFF-fx-fiat-pairs.md`](./HANDOFF-fx-fiat-pai
 ```text
 You are a cold agent. No prior chat. Prefer docs over memory.
 
-MISSION: Branch Zero — FX fiat pairs ONLY (Practice EUR + Practice ILS; two v4 pools; Kenji USD→fiat).
+MISSION: Branch Zero — FX fiat pairs ONLY (Practice EUR + Practice ILS; two v4 pools; Johnny USD→fiat).
 Prefer Claude Code · Fable. Freedom on HOW. No freedom on constraints.
 This is NOT Arc, NOT packaging, NOT OBSERVER, NOT KayKit, NOT Codex Luna set-dressing, NOT a live FX oracle, NOT Circle USDC.
 
@@ -50,7 +50,7 @@ BEFORE CODE — read in order:
 4. docs/missions/HANDOFF-CC.md              (freeze; FX met; do not regress)
 5. docs/BLOXCHAIN-INTEGRATION.md   (§3 guard batches)
 6. docs/SECURITY-AND-KEYS.md       (Sepolia keys; never Ganache-parity)
-7. docs/NPCS.md                    (Kenji)
+7. docs/NPCS.md                    (Johnny)
 8. docs/GODOT.md                   (bridge)
 9. docs/OWED.md                    (parallel to packaging — do not steal the polish gate)
 10. infra/scripts/uniswap-pool.ts
@@ -93,7 +93,7 @@ D. PROOF + DOCS
 
 DONE WHEN:
 - sepolia.json pins both tokens + both pools with seedRate/date/TVL
-- Kenji can quote and complete USD→EUR and USD→ILS on Live
+- Johnny can quote and complete USD→EUR and USD→ILS on Live
 - WETH is off the product FX path
 - checks/walks green; docs updated
 
@@ -104,4 +104,4 @@ STOP AND ASK if: seed would spend real scarce ETH beyond gas; Circle USDC would 
 
 ## After the agent finishes
 
-Principal: Live walk both pairs at Kenji. Still owe [Uniswap feedback form](https://developers.uniswap.org/hackathon-feedback) on [OWED.md](../OWED.md).
+Principal: Live walk both pairs at Johnny. Still owe [Uniswap feedback form](https://developers.uniswap.org/hackathon-feedback) on [OWED.md](../OWED.md).

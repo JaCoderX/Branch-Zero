@@ -20,16 +20,16 @@ You are a cold agent. No prior chat. Prefer docs over memory.
 MISSION: Branch Zero construction unit U4+ — Priority release (gate G5b) ONLY.
 Freedom on HOW. No freedom on constraints.
 
-This is a THIRD workflow, not a rename of Ruth’s vault release:
+This is a THIRD workflow, not a rename of Bob’s vault release:
 
-  Wait     = Ruth (vault keeper). After releaseTime. Silent session signer.
+  Wait     = Bob (vault keeper). After releaseTime. Silent session signer.
              Today's owner approveTimeLockExecution. Unchanged clock.
-  Priority = Mr. Okafor. BEFORE releaseTime. Owner Passkey / in-game "hand scan"
+  Priority = Mr. Walker. BEFORE releaseTime. Owner Passkey / in-game "hand scan"
              then manager submits meta-approve (SIGN_META_APPROVE owner,
              EXECUTE_META_APPROVE manager).
   Recall   = owner and/or manager while PENDING. Unchanged.
 
-Okafor must STOP being a second Ruth. He must NOT stamp post-clock vault releases.
+Walker must STOP being a second Bob. He must NOT stamp post-clock vault releases.
 He only bypasses cooling when the player brings extra credentials.
 
 Teaching: cooling is real unless a second desk stamps a priority release, and that
@@ -41,7 +41,7 @@ BEFORE CODE — read in order:
 1. https://github.com/JaCoderX/Branch-Zero/blob/main/docs/missions/HANDOFF-CC.md   (§5e is the mission)
 2. https://github.com/JaCoderX/Branch-Zero/blob/main/docs/progress/2026-09-07-u4-mvp-freeze.md
 3. https://github.com/JaCoderX/Branch-Zero/blob/main/docs/DEV-LOOP.md
-4. https://github.com/JaCoderX/Branch-Zero/blob/main/docs/NPCS.md   (§4.4 Ruth, §4.5 Okafor)
+4. https://github.com/JaCoderX/Branch-Zero/blob/main/docs/NPCS.md   (§4.4 Bob, §4.5 Walker)
 5. https://github.com/JaCoderX/Branch-Zero/blob/main/docs/GAME-DESIGN.md
 6. https://github.com/JaCoderX/Branch-Zero/blob/main/docs/PRIVY.md
 7. https://github.com/JaCoderX/Branch-Zero/blob/main/docs/BLOXCHAIN-INTEGRATION.md
@@ -60,7 +60,7 @@ HARD RULES:
   Desk actions: Dialogue → GameState.run_action → Chain.call_async.
 - One Account Opening modal for login+delegate. Priority Passkey is the ALLOWED second
   surface (hand scan). Do not put Passkey on Lane A Pay.
-- Do NOT implement ENG-0010 short-clock dual-control. Do NOT restore Okafor timed stamp.
+- Do NOT implement ENG-0010 short-clock dual-control. Do NOT restore Walker timed stamp.
 - Vault-only accounts (if you keep a mode): NO SIGN_META_APPROVE / EXECUTE_META_APPROVE
   on transfer. Once META bits exist on an account, ANY PENDING wire can be bypassed —
   say so in NPC "Ask why" / fine print.
@@ -69,9 +69,9 @@ HARD RULES:
 - Product grant split is NOT a copy of the 0012 throwaway clone. 0012 withheld owner
   timed-approve so the lab could isolate the meta path. THIS bank needs BOTH:
     OWNER: Lane A SIGN_META_REQUEST_AND_APPROVE + REQUEST + CANCEL + timed APPROVE
-           (Ruth) + SIGN_META_APPROVE (Priority payload)
+           (Bob) + SIGN_META_APPROVE (Priority payload)
     BRANCH_MANAGER: CANCEL (recall) + EXECUTE_META_APPROVE (Priority submit)
-                    REMOVE EXECUTE_TIME_DELAY_APPROVE (Okafor is not the vault stamp)
+                    REMOVE EXECUTE_TIME_DELAY_APPROVE (Walker is not the vault stamp)
 - Bump ROLE_SET_VERSION (today 2). Provision REMOVE+ADD; never leave half-provisioned
   players (U4 NOT_CONFIGURED / Re-check).
 - Privy: Priority uses the USER signer + showWalletUIs + promptMfa (0011+0013).
@@ -90,7 +90,7 @@ SEQUENCE:
 1. Grants: desiredGrants() as above; ROLE_SET bump; Re-check provision on an existing player.
 2. Teller: Priority route (e.g. POST /priority or /approve as: "priority") — owner user-sign
    meta-approve, manager EXECUTE_META_APPROVE, before releaseTime. Overlay step-up ONLY there.
-3. Godot: Ruth wait-only (owner timed approve after clock). Okafor Priority + recall, no
+3. Godot: Bob wait-only (owner timed approve after clock). Walker Priority + recall, no
    post-clock stamp. Copy: skip cooling / hand scan. NPCS.md + errors.json lines for new codes.
 4. Kill tests Y1–Y7 + freeze regress (HANDOFF-CC §5e).
 5. Progress note + REFLECTION; HANDOFF → U5 + docs/missions/KICKOFF-U5.md (already queued; do not start U5).
@@ -98,7 +98,7 @@ SEQUENCE:
 DoD = HANDOFF-CC §5e (G5b).
 
 OUT OF SCOPE: ENS (U5), Arc (U6), art/audio, Lane A semantics, merging GameLab ENG trees,
-restoring Okafor post-clock stamp, 0010 short-clock desk, wiping Remote EVM, claiming MFA cache.
+restoring Walker post-clock stamp, 0010 short-clock desk, wiping Remote EVM, claiming MFA cache.
 
 Stop when G5b met or a named blocker with fallback chosen.
 ```

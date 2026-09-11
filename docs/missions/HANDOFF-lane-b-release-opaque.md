@@ -80,7 +80,7 @@ Suspect order:
 
 - Godot re-export / GameLab ENG
 - Protocol Solidity changes (unless eth_call as owner starts failing)
-- Priority (Okafor) as the only fix — may be a **workaround** to unblock the principal, not the Ruth path fix
+- Priority (Walker) as the only fix — may be a **workaround** to unblock the principal, not the Bob path fix
 
 **Done when**
 

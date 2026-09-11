@@ -195,7 +195,7 @@ async function main() {
   );
 
   // ---- LaneB-4: manager path. U2 expected the Branch Manager's timed stamp after the clock; U4+ (ROLE_SET 3) removed
-  //      it — Okafor is not a second Ruth. The manager must be refused before AND after releaseTime (NoPermission), and
+  //      it — Walker is not a second Bob. The manager must be refused before AND after releaseTime (NoPermission), and
   //      the wire is then recalled by the manager (his shredder still works) so the rig account keeps its balance.
   if (!managerAddress) {
     record('LaneB-4', 'SKIP', 'MANAGER_PK not set — manager path not exercised');

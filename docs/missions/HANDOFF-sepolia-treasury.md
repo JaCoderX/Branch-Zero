@@ -28,7 +28,7 @@ and **USDC**, with **background rebalancing** to bank staff role wallets at **ne
 
 ## Learnings to carry (do not re-litigate)
 
-1. **Identity ≠ gas float.** `SEPOLIA_MANAGER_PK` is Okafor’s Priority stamp; deployer/broadcaster/registrar stay
+1. **Identity ≠ gas float.** `SEPOLIA_MANAGER_PK` is Walker’s Priority stamp; deployer/broadcaster/registrar stay
    separate. S2 rebalanced from the ENS registrar only because faucet drops are scarce — that must not become the
    steady-state design.
 2. **Live is Sepolia; Dev is 1337.** Treasury is Live-only. Do not invent a Remote EVM treasury.

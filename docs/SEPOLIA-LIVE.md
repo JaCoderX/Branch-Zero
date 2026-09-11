@@ -19,14 +19,14 @@ Related: [PLAN.md](./PLAN.md) · [REMOTE-EVM.md](./REMOTE-EVM.md) · [SECURITY-A
 
 ## 1. Decision (locked)
 
-| Mode | Payment wing (Ines / Dev / Bob / Okafor / faucet / OBSERVER) | ENS | FX |
+| Mode | Payment wing (Iris / Eve / Bob / Walker / faucet / OBSERVER) | ENS | FX |
 |------|---------------------------------------------------------------|-----|-----|
 | **Live** (product default) | Sepolia `11155111` | Sepolia | Sepolia — prefer **same** AccountBlox as Main |
-| **Dev** (Developer Mode) | Remote EVM `1337` (private lab) | Sepolia (unchanged) | Sepolia — separate till; must refuse without a real Sepolia account |
+| **Eve** (Developer Mode) | Remote EVM `1337` (private lab) | Sepolia (unchanged) | Sepolia — separate till; must refuse without a real Sepolia account |
 
 - Remote EVM is **never** public infra. No Tailscale share for judges.
-- Dev/Live is a **session profile** in desk debug — not a lobby elevator, not Arc.
-- Arc remains **DEFERRED**; do not conflate Dev/Live with `switchWing` Arc.
+- Eve/Live is a **session profile** in desk debug — not a lobby elevator, not Arc.
+- Arc remains **DEFERRED**; do not conflate Eve/Live with `switchWing` Arc.
 - MockChain (`?mock=`) stays offline canned data — distinct from Dev mode.
 
 ---
@@ -38,7 +38,7 @@ Reuse the Arc dual-desk pattern (`/api` vs `/arc-api`):
 | Profile | Chain | Suggested proxy | Process |
 |---------|-------|-----------------|---------|
 | Live | Sepolia | `/api` → Live Teller (`CHAIN_ID=11155111`) | Public / default |
-| Dev | Remote EVM | `/dev-api` → Dev Teller (`CHAIN_ID=1337`) | Local only when Remote EVM is up |
+| Eve | Remote EVM | `/dev-api` → Dev Teller (`CHAIN_ID=1337`) | Local only when Remote EVM is up |
 
 Desk debug toggle: **Live | Dev**. On switch: `/session` on the target desk, rebind passbook, update board
 chain label, never reuse a 1337 account address on Sepolia.
@@ -52,9 +52,9 @@ active Main account. FX always needs a Sepolia typed-data rule for the till (or 
 
 1. **Sepolia payment bootstrap** — CopyBlox + demo/practice token + deployment record; Teller accepts
    `CHAIN_ID=11155111` / target `sepolia`; provision + Lane A smoke on Etherscan.
-2. **Dual desk + Dev/Live toggle** — second Vite proxy; desk-debug mode control; session rebind; board/passbook
+2. **Dual desk + Eve/Live toggle** — second Vite proxy; desk-debug mode control; session rebind; board/passbook
    show active payment chain.
-3. **Unify Live Main ↔ FX** — one Sepolia AccountBlox for Counter and Kenji when Live; Dev keeps Main≠till.
+3. **Unify Live Main ↔ FX** — one Sepolia AccountBlox for Counter and Johnny when Live; Dev keeps Main≠till.
 4. **FX honesty** — require real Sepolia account; bank lines: FX only works on Sepolia.
 5. **ENS Live path** — resolve → pay on Sepolia; Dev path keep resolve Sepolia → pay 1337.
 6. **Defaults + docs** — Live default; funding runbook (§4); SECURITY env table; progress note + REFLECTION row.
@@ -86,11 +86,11 @@ ordinary EOAs → **Google Cloud for ETH**.
 
 | Token | Address (Sepolia) | How to fund | Used for |
 |-------|-------------------|-------------|----------|
-| **Branch Zero practice / demo USDC** | `0xD3322B29a7BdEe707D1684676f149bf41Aa3422f` (open mint; see `infra/deployments/sepolia.json`) | Deployer (or mint script) after it has **ETH** | Ines faucet, Counter pays, FX pool currency0 / Kenji swaps |
+| **Branch Zero practice / demo USDC** | `0xD3322B29a7BdEe707D1684676f149bf41Aa3422f` (open mint; see `infra/deployments/sepolia.json`) | Deployer (or mint script) after it has **ETH** | Iris faucet, Counter pays, FX pool currency0 / Johnny swaps |
 | **Circle test USDC** | `0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238` (pinned in `sepolia.json` as `tokens.circleUsdc`; [Circle docs](https://developers.circle.com/stablecoins/usdc-contract-addresses)) | [faucet.circle.com](https://faucet.circle.com/) → Ethereum Sepolia → 20 USDC → **treasury** | Ops float on the treasury, optional operator checks, CCTP/Arc experiments — **not** the in-game practice token unless a future unit migrates. The treasury **holds** it and never auto-sends it |
 
 **Live Main practice dollars** stay the open-mint demo token unless the principal explicitly migrates. Fund
-**ETH** on the deployer first; then mint/transfer practice USDC in-process (Ines `/faucet` / provision).
+**ETH** on the deployer first; then mint/transfer practice USDC in-process (Iris `/faucet` / provision).
 
 ### 4.3 Who needs what
 
@@ -106,14 +106,14 @@ Fund **each address separately** (Google Cloud = 0.05 ETH/day/address). Prefer d
 | **ENS registrar** | `ENS_REGISTRAR_PK` | **Yes** — claim / setText / setAddr | No | No | Already Sepolia-only |
 | **FX broadcaster** | `SEPOLIA_BROADCASTER_PK` | **Yes** — enableFx batches + swaps (~0.01+ ETH headroom) | No | No | May be **same key** as Live Main broadcaster if Live unifies desks — still one funded EOA |
 | **FX deployer** | `SEPOLIA_DEPLOYER_PK` | **Yes** if cloning tills | No | Optional seed | May share Live Main deployer when Live unifies |
-| **Player embedded wallet** | Privy (per user) | **Yes** for Lane B owner txs | No | Via Ines faucet (practice) | Desk tops native gas from deployer (`OWNER_GAS_ETH`) at provision — deployer must hold ETH |
+| **Player embedded wallet** | Privy (per user) | **Yes** for Lane B owner txs | No | Via Iris faucet (practice) | Desk tops native gas from deployer (`OWNER_GAS_ETH`) at provision — deployer must hold ETH |
 | **Operator laptop (you)** | — | Optional | Optional via Circle | Optional | Useful for manual Etherscan checks |
 
 ### 4.4 Suggested funding order (operator)
 
 1. Create / confirm **Sepolia throwaway** keys for the **ops treasury**, Live deployer, broadcaster, manager and ENS registrar (and FX if not shared). Record **addresses** in a local note; never commit keys. Keep them distinct — the treasury refuses to share a key with a staff role unless you opt in (`SEPOLIA_TREASURY_ALLOW_ROLE_REUSE=on`).
 2. Run `npm -w infra run funding:sepolia`. It prints the treasury address, its ETH / Circle USDC / practice balances, and each staff wallet against `need` and `need × 1.25`.
-3. Claim to the **treasury address**: [Google Cloud Sepolia faucet](https://cloud.google.com/application/web3/faucet/ethereum/sepolia) **0.05 ETH** (daily) and, if you want the ops float, [Circle faucet](https://faucet.circle.com/) → Ethereum Sepolia → **20 USDC** (every 2 h). Then `npm run treasury:topup` (dry run) and `-- --execute` to rebalance. Circle's USDC never becomes Ines' practice dollars — different token.
+3. Claim to the **treasury address**: [Google Cloud Sepolia faucet](https://cloud.google.com/application/web3/faucet/ethereum/sepolia) **0.05 ETH** (daily) and, if you want the ops float, [Circle faucet](https://faucet.circle.com/) → Ethereum Sepolia → **20 USDC** (every 2 h). Then `npm run treasury:topup` (dry run) and `-- --execute` to rebalance. Circle's USDC never becomes Iris' practice dollars — different token.
 4. Set `SEPOLIA_RPC_URL` + keys in `.env`. Start Live desk (`CHAIN_ID=11155111`).
 5. Bootstrap CopyBlox + practice token on Sepolia if missing (`npm run chain:bootstrap -- --chain sepolia` or documented equivalent). Confirm addresses in `infra/deployments/sepolia.json`.
 6. Smoke: provision → Lane A pay → Etherscan. Then ENS claim. Then FX enable/swap (or unified account path).
@@ -168,7 +168,7 @@ Bootstrap: **CopyBlox `0x443ECf1678963D2E49B4B3Ed4f77Af5182DE824b`** (2,480,829 
 | K5 — policy denies another account | `policy_violation` (HTTP 400) for `verifyingContract 0xB5e8ab92…` |
 | Lane A pay | [`0x9e77e5b8…`](https://sepolia.etherscan.io/tx/0x9e77e5b8ddf8b04f6db41bc1bbf95294ceccd17cc1ab502c6e086ee7faf724ff) |
 | Lane B wire → timed release | [`0xf729d387…`](https://sepolia.etherscan.io/tx/0xf729d3874008482d5b06d6fdd2512741ce7cbee267c55119c3f449e29e08ab9b) (COMPLETED after the clock); early approve reverted `BeforeReleaseTime`; recall [`0x1399fdb4…`](https://sepolia.etherscan.io/tx/0x1399fdb47ab2ac4b7642832da80d81de2d79f66b8abdb0f3458fc40757184939) |
-| Priority release (Okafor, 84 s early) | [`0xb2a202ca…`](https://sepolia.etherscan.io/tx/0xb2a202ca094691cb9e3f518c810dc5b64c995b17655f2f7aa03a9988d38203bb) — manager `0x1a4Dc6ea…9139` submits the owner-signed meta-approve |
+| Priority release (Walker, 84 s early) | [`0xb2a202ca…`](https://sepolia.etherscan.io/tx/0xb2a202ca094691cb9e3f518c810dc5b64c995b17655f2f7aa03a9988d38203bb) — manager `0x1a4Dc6ea…9139` submits the owner-signed meta-approve |
 | Manager has no timed stamp (U4+) | `NoPermission` before **and** after `releaseTime` (Y2b / Y7b) |
 | Practice faucet | [`0x1d9bee7f…`](https://sepolia.etherscan.io/tx/0x1d9bee7fd3ee5841daef7c6a2c77fa1c110df193726141f1a3c053d7aed1c553) restore + already-full no-op |
 | OBSERVER grant / revoke | [`0x36aea1e3…`](https://sepolia.etherscan.io/tx/0x36aea1e3f0fcab41b1a8161e1d5e19fab7ca8ffd91acedb01420ed75b33ca245) / [`0xdd6b0c8c…`](https://sepolia.etherscan.io/tx/0xdd6b0c8c0045b4011c5808a79fb153d7c7eace9d7729d5ddfdc28431a5e38847) — zero function permissions, 9/9 |
@@ -206,6 +206,6 @@ npm -w apps/teller-desk run killtests:s2 -- --dev    # ...the same, against the 
    the owner already had from S1. It now also adopts a deployment fixture whose recorded owner matches —
    which is what makes Live's Main account and FX till the *same* contract for that player.
 4. **A refusal must not masquerade as an outage.** The new "is this really a Sepolia AccountBlox of yours"
-   gate first reported `FX_RPC` ("Kenji can't reach the exchange floor") for a contract with no `owner()`,
+   gate first reported `FX_RPC` ("Johnny can't reach the exchange floor") for a contract with no `owner()`,
    because the read was wrapped in the generic RPC guard. `getCode` had already answered, so a failing
    `owner()` is a fact about the contract: it is now `FX_TILL_NOT_SEPOLIA`. Caught by S2-4.

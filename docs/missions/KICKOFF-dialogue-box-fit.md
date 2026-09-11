@@ -52,7 +52,7 @@ HARD RULES:
 - If content exceeds max height: ScrollContainer on the choices (or equivalent) so every choice is reachable.
 
 SEQUENCE:
-1. Reproduce: open an NPC with many choices (e.g. Kenji FX pair → amount list + extras) on a short viewport / default 1280×720; confirm overflow.
+1. Reproduce: open an NPC with many choices (e.g. Johnny FX pair → amount list + extras) on a short viewport / default 1280×720; confirm overflow.
 2. Fix slot/max-height: derive max panel height from viewport (leave HUD margin); grow upward from bottom; scroll choices if needed.
 3. Verify keys 1–9 still choose the correct index; Esc closes; working state still hides/disables choices.
 4. Optional: one viz or local progress note; light run_checks / mock walk; export:web if reviewing on :5173.
@@ -71,4 +71,4 @@ STOP AND ASK if: fix seems to require rewriting every form UI; mobile/tall phone
 
 ## After
 
-Principal: hard-refresh `:5173`, open Kenji (or any dense menu), confirm the box stays framed.
+Principal: hard-refresh `:5173`, open Johnny (or any dense menu), confirm the box stays framed.

@@ -11,7 +11,7 @@
  *         the "no hard-coded 1337 when Live" invariant, checked at the source the board reads from.
  *   S2-2  the player index is isolated per wing: the same Privy user's Main account on this wing is not the
  *         account the *other* wing has on file for them. Two chains, two contracts, no bleed.
- *   S2-3  Live unifies Main and the FX till — Kenji trades out of the account Ines opened. Dev must not:
+ *   S2-3  Live unifies Main and the FX till — Johnny trades out of the account Iris opened. Dev must not:
  *         a 1337 account cannot be a Sepolia till.
  *   S2-4  FX refuses an account that is not really a Sepolia AccountBlox of this player's
  *         (`FX_TILL_NOT_SEPOLIA`), and the refusal happens *before* anything is signed.
@@ -141,7 +141,7 @@ async function main() {
           'S2-3',
           ok ? 'PASS' : 'FAIL',
           live
-            ? `Live: FX till ${till} is the Main account ${main} — Kenji trades out of the account Ines opened (fxTillIsMain ${config.fxTillIsMain})`
+            ? `Live: FX till ${till} is the Main account ${main} — Johnny trades out of the account Iris opened (fxTillIsMain ${config.fxTillIsMain})`
             : `Dev: FX till ${till} is on Sepolia while Main is ${main ?? 'not opened on this wing yet'} on ${chain.name} ${chain.id} — FX is always Sepolia, and a 1337 account can never be the till (fxTillIsMain ${config.fxTillIsMain})`,
         );
       }

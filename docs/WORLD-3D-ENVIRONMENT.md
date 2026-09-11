@@ -11,7 +11,7 @@ Related: [GAME-DESIGN.md](./GAME-DESIGN.md) · [NPCS.md](./NPCS.md) · [GODOT.md
 | Aspect | Decision | Rationale |
 |--------|----------|-----------|
 | Style | Stylised low-poly, flat-shaded with subtle AO; strong silhouettes; no PBR micro-detail | Reads at small canvas sizes; cheap on integrated GPUs; fast to author |
-| Cast | KayKit Adventurers — cute low-poly fantasy roles as bank staff (Ranger / Mage / Rogue / Knight / Barbarian), painted faces, soft toy cheer, dressed as bank staff by recoloured palette sheets — room neutrals (cream / brass / graphite) plus one accent per role: Mo emerald, Ines mustard, Dev oxblood, Bob coral cape on dark steel, Okafor oxblood sash, Petra coral on deep green, Kenji teal, player navy (`tools/kaykit_bank_variants.py`); room stays low-poly flat-shaded cream / brass / deep green | Principal lock 2026-09-09: fun interaction vibe over Mad Men dress; same KayKit language as lobby furniture; bank variants 2026-09-09 keep the five body materials |
+| Cast | KayKit Adventurers — cute low-poly fantasy roles as bank staff (Ranger / Mage / Rogue / Knight / Barbarian), painted faces, soft toy cheer, dressed as bank staff by recoloured palette sheets — room neutrals (cream / brass / graphite) plus one accent per role: Ash emerald, Iris mustard, Eve oxblood, Bob coral cape on dark steel, Walker oxblood sash, Petra coral on deep green, Johnny teal, player navy (`tools/kaykit_bank_variants.py`); room stays low-poly flat-shaded cream / brass / deep green | Principal lock 2026-09-09: fun interaction vibe over Mad Men dress; same KayKit language as lobby furniture; bank variants 2026-09-09 keep the five body materials |
 | Palette | Warm marble cream, brass, deep green (main wing); cool graphite, white, USDC blue accents (Arc wing) | Wings must be distinguishable in a glance in the demo video |
 | Lighting | One `DirectionalLight3D` through skylights + baked-look ambient via `Environment` (no real-time GI on web); a handful of `OmniLight3D` with shadows off | Web single-thread cannot afford SDFGI/VoxelGI |
 | Camera | Third-person over-the-shoulder, 55° FOV, spring arm 3.2 m; snaps to fixed "counter cam" during dialogue | Dialogue framing like a film two-shot |
@@ -79,8 +79,8 @@ FX folklore prop (2026-09-11, `scripts/fx_unicorn.gd`, lab ENG-2026-0023): a shy
 East-column placement pins (north → south): vault partition z = −5.0; expanded FX counter/shelf z ∈ [−4.4, 0.4],
 centre −2.0; SECURITY door z ∈ [1.0, 2.0], centre 1.5; elevator centre z = 5.5, shaft z ∈ [4.0, 7.0].
 The FX assembly is pulled west by 1.2 m, then the counter/shelf/tools another 0.35 m (`FX_DESK_FORWARD`) so the
-desk face clears Kenji; Kenji/stool stay at x ≈ 13.65 / 13.7. The PC screen sits on the **north** half of the staff
-shelf (z ≈ −3.15), not on Kenji's standing centre. East-wall FX signs remain at x ≈ 14.8. The elevator door face
+desk face clears Johnny; Johnny/stool stay at x ≈ 13.65 / 13.7. The PC screen sits on the **north** half of the staff
+shelf (z ≈ −3.15), not on Johnny's standing centre. East-wall FX signs remain at x ≈ 14.8. The elevator door face
 remains at x ≈ 11.46, and the south-wall entrance gap x ∈ [3, 7] is unchanged.
 
 ### 2.2 Navigation

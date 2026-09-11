@@ -125,7 +125,7 @@ async function main() {
   let paymentToken: Address;
   if (target === 'sepolia') {
     // The Live wing's practice dollars are the open-mint demo USDC already pinned in sepolia.json (U5 / S1:
-    // Kenji quotes it against WETH and the FX pool's currency0 is this token). Deploying a second "demo USDC"
+    // Johnny quotes it against WETH and the FX pool's currency0 is this token). Deploying a second "demo USDC"
     // here would silently fork the practice balance away from the FX pool, so this branch only verifies.
     // Circle's faucet USDC is a *different* token and is never the in-game balance (docs/SEPOLIA-LIVE.md §4.2).
     const recorded = file.tokens.demoUsdc?.address as string | undefined;

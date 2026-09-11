@@ -1,8 +1,8 @@
-# Kickoff — Desk screen ↔ keyboard swap (Ines + Okafor)
+# Kickoff — Desk screen ↔ keyboard swap (Iris + Walker)
 
 Paste into a **new** Codex / Cursor session. Prefer **Codex Luna**.
 
-**What this is:** one geometry fix, twice. At Account Opening (Ines) and at the manager desk (Okafor), **swap the world positions** of the computer screen and the keyboard. Keep the same yaw on each prop. Not dialogue, not Counter labels, not FX, not packaging.
+**What this is:** one geometry fix, twice. At Account Opening (Iris) and at the manager desk (Walker), **swap the world positions** of the computer screen and the keyboard. Keep the same yaw on each prop. Not dialogue, not Counter labels, not FX, not packaging.
 
 **Why:** Principal playtest — at both desks the screen and keyboard still read in the wrong depth order. Same bug, two desks.
 
@@ -10,8 +10,8 @@ Paste into a **new** Codex / Cursor session. Prefer **Codex Luna**.
 
 | Desk | Screen today | Keyboard today | Yaw |
 |------|--------------|----------------|-----|
-| AO (Ines) | `(-8.6, 0.78, 7.85)` | `(-8.6, 0.78, 7.55)` | both `PI` |
-| Mgr (Okafor) | `(-8.6, 0.78, -8.95)` | `(-8.6, 0.78, -8.5)` | both `PI` |
+| AO (Iris) | `(-8.6, 0.78, 7.85)` | `(-8.6, 0.78, 7.55)` | both `PI` |
+| Mgr (Walker) | `(-8.6, 0.78, -8.95)` | `(-8.6, 0.78, -8.5)` | both `PI` |
 
 After the swap, each screen occupies the keyboard’s old vector and each keyboard occupies the screen’s old vector. **Yaw stays `PI` on all four.** Do not rotate to “fix” depth.
 
@@ -20,7 +20,7 @@ After the swap, each screen occupies the keyboard’s old vector and each keyboa
 ```text
 You are a cold agent. No prior chat. Prefer docs over memory. Model: Codex Luna.
 
-MISSION: Branch Zero — swap computerScreen ↔ computerKeyboard world positions at Account Opening (Ines) and the manager desk (Okafor). Same orientation (yaw PI). Nothing else.
+MISSION: Branch Zero — swap computerScreen ↔ computerKeyboard world positions at Account Opening (Iris) and the manager desk (Walker). Same orientation (yaw PI). Nothing else.
 Freedom on HOW. No freedom on constraints.
 
 BEFORE CODE — read:
@@ -53,7 +53,7 @@ DoD:
 - [ ] run_checks updated and green
 - [ ] :5173 playtest confirms both desks
 
-OUT OF SCOPE: Ines dialogue, Counter plaques, FX desk, Arc, packaging, OBSERVER, Privy, moving chairs/NPCs.
+OUT OF SCOPE: Iris dialogue, Counter plaques, FX desk, Arc, packaging, OBSERVER, Privy, moving chairs/NPCs.
 
 Stop when DoD met or a named blocker (e.g. mesh pivot still lies after the swap — report with a screenshot path, do not invent a second rotation without asking).
 ```

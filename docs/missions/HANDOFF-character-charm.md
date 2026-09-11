@@ -94,7 +94,7 @@ separates the cast from the set without touching the set.
 
 `bank_staff_rig.py` exaggerates by skin weight (shoulders +20 %, hands +26 %, shoes +20 %). Head scale is the same
 mechanism on the `Head` / `Neck` joints. Target **~5.5 heads** (from ~7): head ×~1.35, torso/legs −5 %, hands and shoes
-keep their bump. Per-role bone scale (stocky Okafor, slight Petra, tall Bob, round Mo) is a cheap **silhouette
+keep their bump. Per-role bone scale (stocky Walker, slight Petra, tall Bob, round Ash) is a cheap **silhouette
 identity** knob the one-mesh cast currently lacks.
 
 ### Kits (do not re-litigate)
@@ -150,13 +150,13 @@ greeting. Each pass ends with all gates green and the face-readability shots.
 
 | Role | Name | Cut | Base | Accent | Face / hair note |
 |---|---|---|---|---|---|
-| greeter | Mo | Grey two-piece, narrow tie, pocket square | mid-grey | **emerald tie** | Round friendly face, big smile default, dark short hair |
-| clerk | Ines | Sheath dress, cardigan, cat-eye glasses | deep green dress | **mustard cardigan** | Warm eyes, auburn hair up |
-| teller | Dev / Ama | Grey waistcoat over white shirt, sleeves rolled, tie bar | graphite | **oxblood tie** | Alert, brows up; short black hair |
+| greeter | Ash | Grey two-piece, narrow tie, pocket square | mid-grey | **emerald tie** | Round friendly face, big smile default, dark short hair |
+| clerk | Iris | Sheath dress, cardigan, cat-eye glasses | deep green dress | **mustard cardigan** | Warm eyes, auburn hair up |
+| teller | Eve | Grey waistcoat over white shirt, sleeves rolled, tie bar | graphite | **oxblood tie** | Alert, brows up; short black hair |
 | vault_keeper | Bob | Charcoal uniform jacket, brass buttons, cap optional | charcoal | **brass buttons + coral tie** | Calm, heavy brows, moustache |
-| manager | Mr. Okafor | Darkest three-piece, white pocket square | near-black | **oxblood tie** | Grey temples, glasses, measured half-smile |
+| manager | Mr. Walker | Darkest three-piece, white pocket square | near-black | **oxblood tie** | Grey temples, glasses, measured half-smile |
 | registrar | Petra | Skirt suit, blouse bow | navy | **coral blouse** | Precise, small smile, hair in a bun |
-| dealer | Kenji | Brown suit, sleeves rolled, braces showing | brown | **teal tie / braces** | Quick grin, slick hair |
+| dealer | Johnny | Brown suit, sleeves rolled, braces showing | brown | **teal tie / braces** | Quick grin, slick hair |
 | player | — | Camel overcoat over navy | camel | **navy scarf** | Neutral open face (the customer) |
 
 ---
@@ -187,7 +187,7 @@ Codex built the cast offline; Godot 4.5.2 gates were run on a host with the offi
 | Materials | 37 mesh / **39 with particles** ≤ 40 (face sheet is the +1) |
 | Cast accounting | 8 face carriers, 1 shared face material, outline intact; ≈ 56 honest character draws with 2 shadow splits |
 | Worst viz view | **206** draws / 205k prims (entrance) |
-| Readability | `40_face_read_5m_close` (Ines) · `41_face_read_lobby_15m` (Mo) |
+| Readability | `40_face_read_5m_close` (Iris) · `41_face_read_lobby_15m` (Ash) |
 | `.pck` | **2,919,012 B** |
 | Follow-up fixes | greet interrupt on non-IDLE; face alpha scissor; CREDITS one hash set |
 

@@ -24,11 +24,11 @@ export function redact(v: string): string {
  * One Teller Desk process serves one payment wing, pinned at boot. Two processes run side by side:
  *
  *   Live (product default)  CHAIN_ID=11155111  PORT=8787   → Vite `/api`      → Sepolia
- *   Dev  (Developer Mode)   CHAIN_ID=1337      PORT=8788   → Vite `/dev-api`  → Remote EVM
+ *   Eve  (Developer Mode)   CHAIN_ID=1337      PORT=8788   → Vite `/dev-api`  → Remote EVM
  *
  * `CHAIN_ID` is deliberately *not* switchable at runtime: the broadcaster nonce queue, the player index and
  * the deployment pins are all per chain, and a process that flipped chains mid-flight would sign a
- * meta-transaction for one chain against the other's account map. Dev/Live is therefore a **session** choice
+ * meta-transaction for one chain against the other's account map. Eve/Live is therefore a **session** choice
  * in the browser (which desk it talks to), never a chain swap inside one desk — and it is not Arc's
  * `switchWing`, which is a different wing of the same product (docs/SEPOLIA-LIVE.md §1).
  *
@@ -131,11 +131,11 @@ export const config = {
   ownerGasEth: opt(key('OWNER_GAS_ETH'), opt('OWNER_GAS_ETH', DEFAULT_OWNER_GAS_ETH[target])),
   /**
    * U4+ Priority release. `on` (default when a manager key is present): accounts are provisioned with the
-   * owner-signs / manager-submits META_APPROVE split on the transfer selector, so Mr. Okafor can release a
+   * owner-signs / manager-submits META_APPROVE split on the transfer selector, so Mr. Walker can release a
    * cooling wire early once the player brings a Passkey (hand scan). `off` = vault-only accounts (the U2
    * invariant: no META_APPROVE bits on `transfer`; the clock is the only way out). Changing this changes
    * `desiredGrants()`; the next Re-check re-syncs every player. META bits are account-wide: once granted, any
-   * PENDING wire on that account can be bypassed — Okafor says so in his "Ask why".
+   * PENDING wire on that account can be bypassed — Walker says so in his "Ask why".
    */
   priorityRelease: opt('PRIORITY_RELEASE', managerPk ? 'on' : 'off').toLowerCase() === 'on' && Boolean(managerPk),
 
@@ -153,7 +153,7 @@ export const config = {
     recoveryAddress: (opt('SEPOLIA_RECOVERY_ADDRESS') || undefined) as Address | undefined,
   },
   /**
-   * On the Live wing the player's Main AccountBlox already lives on Sepolia, so Kenji trades out of the very
+   * On the Live wing the player's Main AccountBlox already lives on Sepolia, so Johnny trades out of the very
    * account the counter pays from — one balance, one guard list, no second till to fund or explain
    * (docs/SEPOLIA-LIVE.md §1). Dev keeps Main (1337) and till (Sepolia) apart because they cannot be the same
    * contract on two chains.

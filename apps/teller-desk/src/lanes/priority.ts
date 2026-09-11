@@ -1,8 +1,8 @@
 /**
- * Priority release (U4+, G5b) — Mr. Okafor's desk. The third way out of the vault.
+ * Priority release (U4+, G5b) — Mr. Walker's desk. The third way out of the vault.
  *
  *   Wait      Bob: owner `approveTimeLockExecution` after `releaseTime`, silent session signer (laneB.ts).
- *   Priority  Okafor: the owner signs a `SIGN_META_APPROVE` meta-transaction **in the browser with a Passkey**,
+ *   Priority  Walker: the owner signs a `SIGN_META_APPROVE` meta-transaction **in the browser with a Passkey**,
  *             the Branch Manager submits `approveTimeLockExecutionWithMetaTx` **before** `releaseTime`.
  *   Recall    owner or manager `cancelTimeLockExecution` while PENDING (laneB.ts).
  *
@@ -16,7 +16,7 @@
  *   POST /priority/prepare {txId}               → unsigned meta-tx built by the contract, typed data for the wallet
  *   POST /priority/submit  {priorityId, signature} → signature verified (recover == owner), manager submits, COMPLETED
  *
- * Okafor is not a second Bob: a wire whose clock has already run down is refused here (`NOT_COOLING`) — Bob
+ * Walker is not a second Bob: a wire whose clock has already run down is refused here (`NOT_COOLING`) — Bob
  * releases it silently. A vault-only branch (`PRIORITY_RELEASE=off`) refuses everything (`PRIORITY_OFF`).
  */
 import { randomUUID } from 'node:crypto';
@@ -150,7 +150,7 @@ function assertShape(td: TypedDataDefinition): void {
   }
 }
 
-/** Step 1 — build the bypass payload for the player's Passkey. Refuses anything Okafor must not touch. */
+/** Step 1 — build the bypass payload for the player's Passkey. Refuses anything Walker must not touch. */
 export async function preparePriority(player: Player, txId: bigint, jobId: string): Promise<PriorityPrepared> {
   const account = player.account;
   if (!account) throw err('No account opened for this player', 'NO_ACCOUNT');

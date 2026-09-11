@@ -1,5 +1,5 @@
 /**
- * Load Account kill tests — Ines adopting a player-owned AccountBlox by number (docs/LOAD-ACCOUNT.md).
+ * Load Account kill tests — Iris adopting a player-owned AccountBlox by number (docs/LOAD-ACCOUNT.md).
  *
  *   npm -w apps/teller-desk run killtests:load             # Developer Mode (Remote EVM 1337), reuse the rig player
  *   npm -w apps/teller-desk run killtests:load -- --fresh  # mint a new Privy user + wallet
@@ -28,7 +28,7 @@
  *   L5  contracts that are not accounts: the demo ERC-20 (code, but `owner()` reverts) and **CopyBlox itself**
  *       (code, `IBaseStateMachine` true, but `initialized()` false and `ISecureOwnable` false) → both
  *       `ACCOUNT_NOT_A_VAULT`. CopyBlox is the case a lazier check would have adopted.
- *   L6  the Live wing's own AccountBlox address, pasted into the Dev desk → `ACCOUNT_NOT_A_VAULT`. Live and Dev
+ *   L6  the Live wing's own AccountBlox address, pasted into the Dev desk → `ACCOUNT_NOT_A_VAULT`. Live and Eve
  *       are different chains; an address does not travel between them.
  *   L7  malformed input (empty, not hex, the zero address) → `BAD_ARGS`, no reads spent on it.
  *   L8  re-loading the account already on file is a Re-check, not a switch: `changed:false`, and because the

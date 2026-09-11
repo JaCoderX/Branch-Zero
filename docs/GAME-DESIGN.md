@@ -11,7 +11,7 @@ Related: [PLAN.md](./PLAN.md) · [NPCS.md](./NPCS.md) · [WORLD-3D-ENVIRONMENT.m
 | Pillar | Meaning | Test |
 |--------|---------|------|
 | **Process is the puzzle** | The bank's procedure *is* the on-chain workflow. There are no fake mini-games; every friction the player feels is a real security property. | If a step could be skipped without changing chain state, cut it. |
-| **No pop-ups, ever** | After the one-time delegation at Account Opening, routine pays and Ruth’s timed release never show a wallet modal. **U4+ exception:** Priority at Okafor’s desk is a Passkey / “hand scan” — that is the teaching cost of skipping the clock. | Count modals in the demo video. Target: 1 (delegation) + 0 or 1 Passkey only if the player chooses Priority. |
+| **No pop-ups, ever** | After the one-time delegation at Account Opening, routine pays and Bob’s timed release never show a wallet modal. **U4+ exception:** Priority at Walker’s desk is a Passkey / “hand scan” — that is the teaching cost of skipping the clock. | Count modals in the demo video. Target: 1 (delegation) + 0 or 1 Passkey only if the player chooses Priority. |
 | **Honest theatre** | Everything the player sees is read from chain (statuses, countdowns, balances, names). If chain says PENDING the board says PENDING. | No local timers for release time; poll `getTransaction`. |
 | **Everyday bank language first** | NPCs speak like bank staff. Protocol terms only appear in the optional "Ask why" dialogue branch and in the receipt's fine print. | On-screen copy uses bank words; technical terms stay in "Ask why" / fine print. |
 | **Small, warm, legible** | One building, ~8 NPCs, 3D but stylised low-poly. Readability over fidelity; web single-thread budget. | 60 fps on an integrated GPU in Chrome. |
@@ -20,7 +20,7 @@ Related: [PLAN.md](./PLAN.md) · [NPCS.md](./NPCS.md) · [WORLD-3D-ENVIRONMENT.m
 
 ## 2. Player fantasy and framing
 
-You are a new customer at **Branch Zero**, the first branch of a bank that runs on public rails. The bank is staffed by people who take rules seriously and explain them cheerfully. You open an account, make a payment, get bounced to the vault for a big wire, watch the vault timer, release it at Ruth’s window when the clock is done — or skip cooling at Mr. Okafor’s desk with a hand scan — and leave with a receipt whose fine print is a block explorer link.
+You are a new customer at **Branch Zero**, the first branch of a bank that runs on public rails. The bank is staffed by people who take rules seriously and explain them cheerfully. You open an account, make a payment, get bounced to the vault for a big wire, watch the vault timer, release it at Bob’s window when the clock is done — or skip cooling at Mr. Walker’s desk with a hand scan — and leave with a receipt whose fine print is a block explorer link.
 
 Tone reference: *Papers, Please* procedural satisfaction + *Animal Crossing* warmth + a hint of *Wes Anderson* symmetry in the set design.
 
@@ -64,8 +64,8 @@ The loop is errand-driven, not level-driven. The tutorial is simply the first er
 | `requestAndApproveExecution` (instant) | **Counter lane** | "Over-the-counter payment" | Lane A |
 | `executeWithTimeLock` (PENDING) | **Vault request**: the wire goes into the vault | "Scheduled wire" | Lane B step 1 |
 | `releaseTime` / timelock | **Vault door countdown** (big analog clock + LED) | "Cooling period" | Read from `getTransaction(txId)` |
-| `approveTimeLockExecution` | **Ruth’s release** after the clock | "Release the wire" | Lane B wait path |
-| Owner-signed meta-approve + manager submit | **Okafor’s Priority** (bypass cooling; hand scan) | "Skip the cooling period" | U4+ / G5b |
+| `approveTimeLockExecution` | **Bob’s release** after the clock | "Release the wire" | Lane B wait path |
+| Owner-signed meta-approve + manager submit | **Walker’s Priority** (bypass cooling; hand scan) | "Skip the cooling period" | U4+ / G5b |
 | `cancelTimeLockExecution` | **Shredder** at the manager's desk | "Recall the wire" | Lane B alt |
 | Target whitelist per selector | **Approved payee list** on the teller's wall | "This branch only pays approved counterparties" | Guard config batch; `getFunctionWhitelistTargets` |
 | Function schema / operation type | **Service menu** on the counter sign | "Services offered at this counter" | `getSupportedFunctions`, `getFunctionSchema` |
@@ -109,7 +109,7 @@ Failure UX: if delegation is refused, the clerk says "No problem — tellers wil
 3. Waiting is a design moment: the antechamber has a bench, a magazine ("Why do banks wait?" → optional lore about timelocks), and the Ledger board is visible.
 4. Two ways to finish, plus recall:
    - **Wait:** when the door light turns green, Bob at the vault window — owner timed `approveTimeLockExecution` after `releaseTime` (silent).
-   - **Priority:** Mr. Okafor while still cooling — Passkey / hand scan, then meta-approve bypass. He is not a second timed stamp.
+   - **Priority:** Mr. Walker while still cooling — Passkey / hand scan, then meta-approve bypass. He is not a second timed stamp.
    - **Recall:** shredder while PENDING (owner or manager).
 
 ### 5.4 Errand 3 — Claim your name (ENS, T1)

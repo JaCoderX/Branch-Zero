@@ -44,12 +44,12 @@ import { emitStage, patchPlayer, type Player } from '../store.ts';
 const d = () => deployments();
 
 /**
- * Bump when `desiredGrants` changes; players below it get their grants re-synced at the next provision (Ines's
+ * Bump when `desiredGrants` changes; players below it get their grants re-synced at the next provision (Iris's
  * "Re-check my account"), and `/pay` `/wire` refuse `NOT_CONFIGURED` until that has happened.
  *   1  U1  Lane A (owner signs, broadcaster executes on `transfer`)
  *   2  U2  Lane B (owner request / timed approve / cancel; manager timed approve + cancel)
  *   3  U4+ Priority release: owner `SIGN_META_APPROVE`, manager `EXECUTE_META_APPROVE`; the manager's timed
- *          approve is REMOVED (Okafor is not the vault stamp — Bob is). Vault-only mode (`PRIORITY_RELEASE=off`)
+ *          approve is REMOVED (Walker is not the vault stamp — Bob is). Vault-only mode (`PRIORITY_RELEASE=off`)
  *          shares the version: it removes the manager's stamp and grants no META bits.
  */
 export const ROLE_SET_VERSION = 3;
@@ -224,7 +224,7 @@ export async function whitelistToken(player: Player, account: Address, audit?: A
  *   BRANCH_MANAGER (runtime role; needs MANAGER_PK)
  *                EXECUTE_TIME_DELAY_CANCEL              the shredder (recall)
  *                EXECUTE_META_APPROVE                   Priority: submit the owner-signed meta-approve BEFORE the clock
- *                — and **no** EXECUTE_TIME_DELAY_APPROVE any more: Mr. Okafor is not a second Bob. His grant on the
+ *                — and **no** EXECUTE_TIME_DELAY_APPROVE any more: Mr. Walker is not a second Bob. His grant on the
  *                `approveTimeLockExecution` handler selector is removed too where the schema allows it (see
  *                `syncRolePermissions`); without the transfer half it is inert either way.
  *   plus BRANCH_MANAGER on the handler selectors `cancelTimeLockExecution` and `approveTimeLockExecutionWithMetaTx`,
@@ -293,7 +293,7 @@ export function desiredGrants(priority: boolean = config.priorityRelease): Grant
 
 /** Selectors a role may hold from an earlier ROLE_SET but must not hold now. Removed where the schema is revocable. */
 function retiredSelectors(role: Hex): Hex[] {
-  // U2 gave the manager the timed stamp on the handler selector; U4+ takes it back (Okafor is not the vault stamp).
+  // U2 gave the manager the timed stamp on the handler selector; U4+ takes it back (Walker is not the vault stamp).
   return role === BRANCH_MANAGER_ROLE ? [GC_SEL.APPROVE_TIMELOCK_EXECUTION_SELECTOR] : [];
 }
 
@@ -423,12 +423,12 @@ export async function fundAccount(account: Address): Promise<Hex | undefined> {
 /**
  * U7 practice faucet — explicitly restore a provisioned Main-wing account up to the opening balance.
  * This is deliberately separate from `fundAccount`: Account Opening / Re-check remains zero-only, while
- * Ines's faucet action transfers only the missing delta from the deployer treasury.
+ * Iris's faucet action transfers only the missing delta from the deployer treasury.
  */
 export async function faucetAccount(account: Address): Promise<{ balance: string; symbol: string; targetBalance: string; toppedUp: boolean; amount?: string; hash?: Hex }> {
   // Live (Sepolia) and Dev (Remote EVM) both have a mintable practice token whose treasury is the deployer, so
-  // Ines can top up on either. Arc's payment token is *native USDC* — real faucet money with no treasury of
-  // ours to draw on — so the faucet stays closed there and Ines says so (`FAUCET_OFF`).
+  // Iris can top up on either. Arc's payment token is *native USDC* — real faucet money with no treasury of
+  // ours to draw on — so the faucet stays closed there and Iris says so (`FAUCET_OFF`).
   if (config.target === 'arc') {
     throw Object.assign(new Error('the practice faucet is only available on the Main wing'), { statusCode: 400, code: 'FAUCET_OFF' });
   }
@@ -559,7 +559,7 @@ export async function provision(player: Player, jobId: string, audit?: AuditSink
     /**
      * S3 — the most expensive thing this branch does is about to happen (~16.65 M gas, ~0.0425 ETH on Live),
      * so give the ops treasury a chance to top the deployer up first (docs/SEPOLIA-TREASURY.md §5). Silent,
-     * best-effort and rate-limited: on Dev there is no treasury, on Live there may be an empty one, and
+     * best-effort and rate-limited: on Eve there is no treasury, on Live there may be an empty one, and
      * neither is a reason to refuse to open an account. If the deployer really is too poor, `cloneAccount`
      * still fails loudly on its own gas floor rather than mining a half-made account.
      */

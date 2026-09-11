@@ -24,7 +24,7 @@ You are a **cold agent**. Prefer this file + kickoff over chat memory.
 
 **Status:** Stage 0A **met** (commits `639ffd2` / handoff `f31a1bd`). Cast art + idle wiring parked. Product focus → OWED walks / U7 packaging.
 
-**Product today:** `PropKit.USE_KAYKIT_CAST` + jacket meshes (`Ranger_jacket_nocape`, `Mage_jacket_nocape`, `Rogue_jacket_nocape`, `Kenji_jacket`, `Okafor_jacket`, `Bob_jacket_cape`) + wardrobe `*_bank_texture.png`. Clips: idle←`Idle_A`, walk←`Walking_A`, sprint←`Running_A`, greet←`Waving`, work←`Interact`, refuse←`Hit_A`. AnimationPlayer `root_node` = `..` (Stage 0A).
+**Product today:** `PropKit.USE_KAYKIT_CAST` + jacket meshes (`Ranger_jacket_nocape`, `Mage_jacket_nocape`, `Rogue_jacket_nocape`, `Johnny_jacket`, `Walker_jacket`, `Bob_jacket_cape`) + wardrobe `*_bank_texture.png`. Clips: idle←`Idle_A`, walk←`Walking_A`, sprint←`Running_A`, greet←`Waving`, work←`Interact`, refuse←`Hit_A`. AnimationPlayer `root_node` = `..` (Stage 0A).
 
 **Kickoff (paste):** [`docs/missions/KICKOFF-kaykit-bank-performance.md`](./KICKOFF-kaykit-bank-performance.md)
 
@@ -34,7 +34,7 @@ You are a **cold agent**. Prefer this file + kickoff over chat memory.
 
 ## Stage 0 outcome (2026-09-09) — verdict **A: wiring**, landed (Stage 0A, commit 639ffd2)
 
-**Evidence (headless probe, Godot 4.5.2, jacket bodies Ranger / Bob / Mage / Kenji):**
+**Evidence (headless probe, Godot 4.5.2, jacket bodies Ranger / Bob / Mage / Johnny):**
 
 | Check | Before | After |
 |-------|--------|-------|

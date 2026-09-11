@@ -71,14 +71,14 @@ export type BridgeMethod =
   // U3 — bank shell reads
   | 'getSession'
   | 'getHistory'
-  // U4+ — Priority release (Okafor): owner Passkey signature in the browser, manager submits before the clock
+  // U4+ — Priority release (Walker): owner Passkey signature in the browser, manager submits before the clock
   | 'priority'
   // U5 — ENS Name Desk (Sepolia identity; payments still use 1337)
   | 'ensAvailable'
   | 'ensMint'
   | 'ensSetText'
   | 'resolveName'
-  // S1 — Kenji's FX desk (Uniswap v4 on Sepolia). Reads are silent; `fxSwap` is Lane A on the FX till, no new modal.
+  // S1 — Johnny's FX desk (Uniswap v4 on Sepolia). Reads are silent; `fxSwap` is Lane A on the FX till, no new modal.
   | 'fxStatus'
   | 'fxEnable'
   | 'fxQuote'
@@ -93,7 +93,7 @@ export type BridgeMethod =
   | 'observerRevoke'
   | 'observerList'
   /**
-   * Load Account (docs/LOAD-ACCOUNT.md): Ines adopts an AccountBlox the player already owns on the current
+   * Load Account (docs/LOAD-ACCOUNT.md): Iris adopts an AccountBlox the player already owns on the current
    * wing — the escape hatch from `recoverAccount`, which can only return the last `BloxCloned` for an owner.
    * Ordinary Teller Desk call (`POST /account/load`), no new Privy surface: the desk re-pins the existing
    * app-owned policy rules to the loaded address itself.
@@ -195,7 +195,7 @@ export interface DeskSession {
   mode?: 'live' | 'dev' | 'arc';
   /** Display name of the active payment chain, straight from the desk (`Sepolia`, `Remote EVM`, …). */
   chainName?: string;
-  /** Live: Kenji trades out of the Main account itself. Dev: the FX till is a separate Sepolia account. */
+  /** Live: Johnny trades out of the Main account itself. Eve: the FX till is a separate Sepolia account. */
   fxTillIsMain?: boolean;
   timeLockSec?: number;
   instantLimit?: string;

@@ -25,7 +25,7 @@ Paste into a **new** Cursor / Codex session. Prefer **Codex Luna**.
 | Fact | Implication |
 |------|-------------|
 | Pillar: no pop-ups after the one Privy modal | Pause = bank blotter / visitor's card, not a settings wall |
-| Pillar: process is the puzzle | Open / Load / Sign in stay at Ines — never on the menu |
+| Pillar: process is the puzzle | Open / Load / Sign in stay at Iris — never on the menu |
 | Live/Dev is desk-debug / `?mode=dev` | Do **not** put network mode on title or pause |
 | DEMO-SCRIPT opens with title card → doors | Title CTA: **Enter the branch** + brand + one line |
 | Esc already closes dialogue / slips | Esc opens pause only when UI is free |
@@ -62,7 +62,7 @@ HARD RULES:
 - While pause open: ignore move/orbit; do not cancel in-flight desk actions.
 - Prefer Godot CanvasLayer; if any HTML overlay is used, preserve focusCanvas() / no dead keyboard (U4 freeze).
 - Runtime deps stay @bloxchain/sdk + viem. Godot never holds keys / never talks RPC.
-- Preserve U4 freeze, U4+ Priority, Bob wait-only, Ines Load Account, FX Sepolia-only, partners board, exterior easter.
+- Preserve U4 freeze, U4+ Priority, Bob wait-only, Iris Load Account, FX Sepolia-only, partners board, exterior easter.
 - Mock honesty: if mock/offline, keep the honest banner rule — never silent fake chain.
 - Never commit secrets. Local progress notes under docs/progress/ (gitignored).
 - Do not start copy/ENS refinement, U7 ship packaging, Arc revive, or KayKit art in this mission.
@@ -72,7 +72,7 @@ SEQUENCE:
 2. Title — gate play behind Enter the branch; thin layout; bank chrome consistent with HUD/dialogue.
 3. Pause — Esc when free; Resume / Controls / Sound / Leave→title; confirm Esc still closes talk/slips first.
 4. Wire Leave ↔ title without breaking session/bridge; soft exit only (no window.close required).
-5. Verify — mock walk: title→enter→Esc→Resume→Esc→Leave→Enter; talk to Mo, Esc closes dialogue not pause; F1 help still works; keyboard after close.
+5. Verify — mock walk: title→enter→Esc→Resume→Esc→Leave→Enter; talk to Ash, Esc closes dialogue not pause; F1 help still works; keyboard after close.
 6. Close — mark HANDOFF met/blocked; tick OWED; one REFLECTION line if a design call was made; note if export:web is required for :5173.
 
 DoD:
@@ -91,4 +91,4 @@ STOP AND ASK if: you want Live/Dev on the menu; Sign in on title; HTML overlay s
 
 ## After
 
-Principal: hard-refresh `:5173` if the web pack was rebuilt. Confirm title → enter → walk → Esc card → Leave → title. Confirm talking to Mo still uses Esc to close dialogue. Confirm desk-debug still owns Live/Dev.
+Principal: hard-refresh `:5173` if the web pack was rebuilt. Confirm title → enter → walk → Esc card → Leave → title. Confirm talking to Ash still uses Esc to close dialogue. Confirm desk-debug still owns Live/Dev.

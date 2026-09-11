@@ -13,7 +13,7 @@ Paste into a **new** Claude Code / Cursor session. Prefer **Opus 5 high** (Claud
 
 **What this is:** Live-wing **ops treasury** — `SEPOLIA_TREASURY_PK` collects Sepolia **ETH** and **USDC**, then
 tops up bank staff role wallets in the **background** (or via CLI) at **need × 1.25**. Not Arc, not packaging,
-not a walkable Treasury Desk, not collapsing Okafor into the piggy bank.
+not a walkable Treasury Desk, not collapsing Walker into the piggy bank.
 
 **Why:** S2 funded Live by rebalancing the ENS registrar and minting a manager throwaway. That worked once;
 steady-state should be faucet → treasury → staff, with role keys remaining separate identities.

@@ -10,7 +10,7 @@
  * Two pools only for the product: USD/EUR and USD/ILS — fee 0.30 %, tick spacing 60, no hooks, one full-range
  * position each through the official PositionManager (MINT_POSITION + SETTLE_PAIR, paid through Permit2). Each pool is
  * seeded ≈ $100M TVL, 50/50 by value at the pinned mid-market rate: 50M USD + 50M×rate fiat. Every token is open-mint
- * practice money, so the depth is free; what the depth buys is a bank FX desk where Kenji's orders barely move the
+ * practice money, so the depth is free; what the depth buys is a bank FX desk where Johnny's orders barely move the
  * price — the opposite of the old thin WETH pool, on purpose.
  *
  * Rates: Frankfurter (ECB reference, https://api.frankfurter.app/latest?from=USD&to=EUR,ILS) is read at run time and
@@ -251,7 +251,7 @@ async function main() {
       deployedAtBlock: Number(r.blockNumber),
       deployer: account.address,
       source: 'infra/contracts/PracticeFiat.sol (OpenZeppelin ERC20 + open mint, 6 decimals)',
-      note: `Practice ${p.pair}: open-mint, same family as tokens.demoUsdc. Kenji sells these for practice USD through uniswap.pools.${p.key}. Never real money.`,
+      note: `Practice ${p.pair}: open-mint, same family as tokens.demoUsdc. Johnny sells these for practice USD through uniswap.pools.${p.key}. Never real money.`,
     };
     fs.writeFileSync(file, JSON.stringify(dep, null, 2) + '\n');
   }
@@ -363,7 +363,7 @@ async function main() {
   dep.uniswap.productPath = 'USD → EUR | USD → ILS, one-way (uniswap.pools.usdEur / usdIls). The demo USDC/WETH pool below is deprecated for the product: left on chain, no longer quoted (2026-09-09, docs/HANDOFF-fx-fiat-pairs.md).';
   if (dep.uniswap.pool) dep.uniswap.pool.deprecated = 'product stopped quoting WETH on 2026-09-09 — fiat pairs live in uniswap.pools';
   if (dep.tokens.weth) dep.tokens.weth.note = 'Sepolia WETH9 used by the Uniswap deployments — deprecated for the product on 2026-09-09 (fiat pairs replaced the WETH demo); left pinned for the on-chain history';
-  dep.tokens.demoUsdc = { ...(dep.tokens.demoUsdc ?? {}), address: usd, symbol: 'USDC', decimals: 6, note: 'U5 Sepolia mock USDC (open mint) — the practice dollar. Kenji sells it for Practice EUR / ILS through uniswap.pools' };
+  dep.tokens.demoUsdc = { ...(dep.tokens.demoUsdc ?? {}), address: usd, symbol: 'USDC', decimals: 6, note: 'U5 Sepolia mock USDC (open mint) — the practice dollar. Johnny sells it for Practice EUR / ILS through uniswap.pools' };
   dep.updatedAt = new Date().toISOString();
   fs.writeFileSync(file, JSON.stringify(dep, null, 2) + '\n');
   console.log(`\nwrote     ${path.relative(process.cwd(), file)} (tokens.practiceEur/practiceIls, uniswap.pools, productPath)`);

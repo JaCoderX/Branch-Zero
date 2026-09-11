@@ -31,16 +31,16 @@ USDC is the open-mint demo token in `sepolia.json`, not Circle’s USDC, unless 
 | Fact | Implication |
 |------|-------------|
 | Today Main pays on 1337; ENS/FX are Sepolia sidebands | Live must make Main = Sepolia; Dev keeps Main = 1337 |
-| Teller boot pins one `CHAIN_ID` | Two desks (Live + Dev), Arc-style proxies — not one process flipping chain |
-| Desk debug already has Main/Arc buttons | Add **Live \| Dev** mode; do not use Arc elevator for Sepolia |
-| FX till is already a Sepolia AccountBlox | Live: unify with Main account when possible; Dev: till ≠ Main is OK |
-| Circle faucet ≠ practice token | Document both; Ines faucet mints demo USDC after deployer has ETH |
+| Teller boot pins one `CHAIN_ID` | Two desks (Live + Eve), Arc-style proxies — not one process flipping chain |
+| Desk debug already has Main/Arc buttons | Add **Live \| Eve** mode; do not use Arc elevator for Sepolia |
+| FX till is already a Sepolia AccountBlox | Live: unify with Main account when possible; Eve: till ≠ Main is OK |
+| Circle faucet ≠ practice token | Document both; Iris faucet mints demo USDC after deployer has ETH |
 | Google Cloud ETH is 0.05/day | Fund each role address; don’t soft-send undersized gas limits |
 
 **Semantics (locked):**
 
-1. **Live** = default = Sepolia payment wing for Ines/Dev/Bob/Okafor/faucet/OBSERVER.
-2. **Dev** = Developer Mode = Remote EVM payment wing; operator-only.
+1. **Live** = default = Sepolia payment wing for Iris/Eve/Bob/Walker/faucet/OBSERVER.
+2. **Eve** = Developer Mode = Remote EVM payment wing; operator-only.
 3. ENS always Sepolia.
 4. FX always Sepolia; refuse without a real Sepolia account; say so in bank words.
 5. Never publish Remote EVM; never put lab keys on Sepolia.
@@ -75,10 +75,10 @@ Funding: SEPOLIA-LIVE.md §4 — Google Cloud ETH https://cloud.google.com/appli
 HARD RULES:
 - Runtime deps: @bloxchain/sdk + viem ONLY. No custom Solidity. No sharing Remote EVM as public infra.
 - Live default for normal play / hosted demo. Dev mode is operator (desk debug ± optional ?mode=dev).
-- Two Teller processes for Live+Dev (extend CHAIN_ID to allow 11155111; target sepolia; deployments from sepolia.json). Mirror Arc /api + /arc-api with /api (Live) + /dev-api (1337) or equivalent clear naming.
-- Dev/Live is NOT Arc switchWing and NOT MockChain. Do not revive Arc elevator.
-- ENS stays Sepolia side-module. Live: resolve → pay on Sepolia. Dev: keep resolve Sepolia → pay 1337 if that path remains.
-- FX always Sepolia. Require a real Sepolia AccountBlox before enable/swap. Bank lines + errors.json: FX only works on Sepolia. Prefer Live Main account == FX till; Dev may keep separate till.
+- Two Teller processes for Live+Eve (extend CHAIN_ID to allow 11155111; target sepolia; deployments from sepolia.json). Mirror Arc /api + /arc-api with /api (Live) + /dev-api (1337) or equivalent clear naming.
+- Eve/Live is NOT Arc switchWing and NOT MockChain. Do not revive Arc elevator.
+- ENS stays Sepolia side-module. Live: resolve → pay on Sepolia. Eve: keep resolve Sepolia → pay 1337 if that path remains.
+- FX always Sepolia. Require a real Sepolia AccountBlox before enable/swap. Bank lines + errors.json: FX only works on Sepolia. Prefer Live Main account == FX till; Eve may keep separate till.
 - Practice dollars = open-mint demo USDC in sepolia.json (deployer mint/faucet), NOT Circle faucet USDC, unless principal migrates.
 - Privy: supportedChains include Sepolia + Remote EVM; policies pin chainId + verifyingContract per active Main account; FX Sepolia rule retained.
 - Do not regress U4/U4+/U5/faucet/OBSERVER/S1 K7 invariants. Do not wipe Remote EVM. No secrets in git.
@@ -91,7 +91,7 @@ SEQUENCE:
 3. Teller: support CHAIN_ID=11155111 / target sepolia; provision, pay, wire, Priority, faucet, OBSERVER against Sepolia deployment. Smoke on Etherscan.
 4. Dual desk + Vite proxies: Live desk + Dev desk (1337). Web session mode Live|Dev; callOnChain / tellerFor routes correctly; /session rebind on toggle.
 5. Desk debug UI: primary Live | Dev toggle; show mode, chainId, Main account, FX till, ENS status. Keep Arc controls deferred/disabled as today.
-6. FX: enforce real Sepolia account; update dealer.json / errors.json copy; Live unify till with Main when safe; Dev documents Sepolia-only.
+6. FX: enforce real Sepolia account; update dealer.json / errors.json copy; Live unify till with Main when safe; Eve documents Sepolia-only.
 7. ENS: verify Live pay-by-name on Sepolia; Dev path still honest.
 8. Defaults: Live when mode unset; document .env.example (SEPOLIA_* / dual PORT / proxies); update SECURITY-AND-KEYS env table; NPCS/GODOT board strings as needed.
 9. Evidence: local docs/progress/ note + REFLECTION row; tick SEPOLIA-LIVE §6 DoD; update HANDOFF-CC mission pointer when met.

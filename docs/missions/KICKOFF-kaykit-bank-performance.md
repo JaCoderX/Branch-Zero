@@ -78,7 +78,7 @@ SEQUENCE:
 0. DIAGNOSE — run desktop or web lobby; confirm current_animation; compare stock vs jacket; inspect AnimationPlayer.root_node on character_kaykit path; note verdict A (wiring) / B (authoring) / both.
 1. If A — fix _kaykit_ensure_anim_player so every player (product-created or embedded) has root_node ".."; reinstall bank clips; smoke + export:web; stop for principal feel check. [DONE 2026-09-09 — Stage 0A landed]
 2. If B — mint ENG-2026-0018 from template; census clips in vendored Rig_Medium_* (+ Tools only if intake approved); board Idle_A vs Idle_B vs candidates on jacket bodies.
-3. SPIKE — remap KAYKIT_CLIP_SRC in lab harness (or bake minimal bank idle in Blender, same bones); Godot proof idle/walk/greet on Mo + Ines + Bob.
+3. SPIKE — remap KAYKIT_CLIP_SRC in lab harness (or bake minimal bank idle in Blender, same bones); Godot proof idle/walk/greet on Ash + Iris + Bob.
 4. FINDINGS — clip table; wiring notes; proposed product KAYKIT_CLIP_SRC; CREDITS if new files.
 5. STOP — principal accept idle board → land kickoff (or land Stage 0A alone if that fixed the feel).
 

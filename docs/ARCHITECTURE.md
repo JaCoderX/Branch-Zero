@@ -240,7 +240,7 @@ desk is the authority for which account, balance and `roleSet` apply, because a 
 Main account in each mode (different chains, different contracts; the player index is per chain).
 
 ENS is Sepolia in both modes, and FX writes are Sepolia in both modes. On Live the FX till *is* the Main
-account; in Dev it is a separate Sepolia account, because a 1337 account cannot be a Sepolia till. This is
+account; in Eve it is a separate Sepolia account, because a 1337 account cannot be a Sepolia till. This is
 distinct from § 3.5's Arc wing switch (DEFERRED) and from MockChain (`?mock=`, canned offline data).
 See [SEPOLIA-LIVE.md](./SEPOLIA-LIVE.md) § 1–2.
 
@@ -344,7 +344,7 @@ Godot only consumes `bankLine` on the main path and `technical` under "Ask why".
 | POST | `/account/load` | `{ account }` | session | Load Account (docs/LOAD-ACCOUNT.md): adopt an AccountBlox the player already owns on this wing. Refuses unless `getCode` + `owner()` + `initialized()` + ERC-165 `ISecureOwnable` pass and `owner()` == the session owner (`ACCOUNT_NOT_OWNED` / `ACCOUNT_NOT_A_VAULT`); re-pins the Privy rules **before** switching `player.account`, then runs the Re-check sync with **no** `cloneBlox`. Not behind `requireConfigured` — a stranded account's problem *is* unconfirmed permissions |
 | POST | `/pay` | `{ chainId, to, amount, memo }` | session | Lane A job |
 | POST | `/wire` | `{ chainId, to, amount, memo }` | session | Lane B request job |
-| POST | `/approve` | `{ txId }` | session | Ruth's wait path — owner timed approve after `releaseTime` (U4+: `as: 'manager'` → 400 `MANAGER_NO_STAMP`) |
+| POST | `/approve` | `{ txId }` | session | Bob's wait path — owner timed approve after `releaseTime` (U4+: `as: 'manager'` → 400 `MANAGER_NO_STAMP`) |
 | POST | `/cancel` | `{ txId, as: 'owner'|'manager' }` | session | recall job |
 | POST | `/priority/prepare` | `{ txId }` | session | U4+: owner `SIGN_META_APPROVE` payload as EIP-712 typed data + `priorityId`; refuses released (`NOT_COOLING`), vault-only (`PRIORITY_OFF`) |
 | POST | `/priority/submit` | `{ priorityId, signature }` | session | U4+: verifies recover == owner, Branch Manager submits `approveTimeLockExecutionWithMetaTx` before the clock |

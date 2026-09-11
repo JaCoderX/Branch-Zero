@@ -1,5 +1,5 @@
 extends Node
-## Windowed stills of Blox-47 beside Mo at the lobby greeter post (a window is needed — headless does not render).
+## Windowed stills of Blox-47 beside Ash at the lobby greeter post (a window is needed — headless does not render).
 ## Dormant and awake, close and from the lobby; MockChain, no shell. Tester aid for the Gum Bot mesh land (docs/INPC.md Visual).
 ##
 ##   godot --path apps/game tests/inpc_shots.tscn -- <out_dir>

@@ -49,11 +49,11 @@ Reference links (for copy accuracy — board itself stays static text; no URL cl
 
 ### B. Standalone lobby terminal
 
-Place a **new** bank computer in the same SE area so the player has an easy, obvious place to open the Terminal Console **without** leaning on Ines’s or Okafor’s desk (those compete with NPC proximity — see `terminal.gd` / `main.gd`).
+Place a **new** bank computer in the same SE area so the player has an easy, obvious place to open the Terminal Console **without** leaning on Iris’s or Walker’s desk (those compete with NPC proximity — see `terminal.gd` / `main.gd`).
 
 - Reuse existing `BankTerminal` + `dialogue/terminal.json` + `open_console` / OBSERVER verbs — **no new bridge methods**, no new dialogue file unless a one-line display-name tweak is cleaner.
 - Register it in `main.gd` `TERMINALS` (today only `manager` + `opening`). Suggested id: `lobby` / display name e.g. `"the lobby terminal"` or `"the branch console"`.
-- Place screen + optional small table/kiosk so the interact zone (`ZONE_RADIUS` 1.9) does **not** steal prompts from Mo (greeter) or the elevator panel. Prefer slightly south/east of the partners board, facing into the lobby.
+- Place screen + optional small table/kiosk so the interact zone (`ZONE_RADIUS` 1.9) does **not** steal prompts from Ash (greeter) or the elevator panel. Prefer slightly south/east of the partners board, facing into the lobby.
 - Prompt / lean behaviour must match existing terminals: Space talks to the computer → `terminal.json`; close overlay → `focusCanvas()` unchanged.
 - **No NPC** stands at this terminal. Do not invent a “console clerk.”
 
@@ -116,7 +116,7 @@ Prop pattern: same kit as `AOScreen` / `MgrScreen` (`PropKit.kit(..., "computerS
 ## Baseline (do not regress)
 
 - U4 freeze, U4+ Priority, U5 ENS, practice faucet, U7 polish DoD, Terminal Console + OBSERVER invariants (`_check_terminal` write-verb ban), S1 FX, Live/Dev, Load Account, treasury.
-- Existing `manager` + `opening` terminals keep working; Ines “Use the desk terminal” unchanged.
+- Existing `manager` + `opening` terminals keep working; Iris “Use the desk terminal” unchanged.
 - U6 Arc **DEFERRED**. Runtime: `@bloxchain/sdk` + `viem` only.
 - Do not wipe Remote EVM. No secrets in git.
 - WORLD-3D §6 — no new shadow lights; **no ninth OmniLight**.

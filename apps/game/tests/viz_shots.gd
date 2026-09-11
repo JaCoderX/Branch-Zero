@@ -37,14 +37,14 @@ const VIEWS := [
 	["25_bob_talk", Vector3(8.0, 0.1, -6.5), 0.0, {"talk": Vector3(10.0, 0.0, -7.5)}],
 	["26_lobby_ceiling", Vector3(3.0, 0.1, 6.0), 0.0, {"pitch": -2.0}],
 	["27_lobby_west_ceiling", Vector3(5.5, 0.1, -2.5), PI / 2, {"pitch": -6.0}],
-	# U7 polish views: the manager doorway from the lobby (no rail / sill), Petra's Counter 2 window, Ines behind the
-	# AO desk, Okafor facing his door, and the elevator's coming-soon notice. The vault OPEN interior is 13_vault_open.
+	# U7 polish views: the manager doorway from the lobby (no rail / sill), Petra's Counter 2 window, Iris behind the
+	# AO desk, Walker facing his door, and the elevator's coming-soon notice. The vault OPEN interior is 13_vault_open.
 	["28_manager_door", Vector3(-8.0, 0.1, -1.6), 0.0],
 	["29_petra_talk", Vector3(-9.5, 0.1, -1.0), PI / 2, {"talk": Vector3(-11.6, 0.0, -1.0)}],
 	["30_ines_talk", Vector3(-9.0, 0.1, 6.3), PI, {"talk": Vector3(-9.0, 0.0, 9.5)}],
 	["31_okafor_talk", Vector3(-8.0, 0.1, -7.3), 0.0, {"talk": Vector3(-8.0, 0.0, -9.8)}],
 	["32_elevator_notice", Vector3(8.6, 0.1, 4.9), -PI / 2],
-	# S1: Kenji's expanded FX desk in the east run — the longer counter, the quote board in its Stage 4 brass frame, and the
+	# S1: Johnny's expanded FX desk in the east run — the longer counter, the quote board in its Stage 4 brass frame, and the
 	# sponsor plaque under it. `_close` hides the player body, which the spring arm otherwise centres over the desk;
 	# the talk frame is the two-shot the dialogue camera actually gives the player. The board carries a live mock
 	# quote by then (see `_run`), because a board photographed dark proves nothing about the board.
@@ -59,8 +59,8 @@ const VIEWS := [
 	["38_mo_walk_close", Vector3(2.0, 0.1, 7.0), 0.0, {"clip": ["greeter", "walk"]}],
 	["39_ines_work_close", Vector3(-9.0, 0.1, 7.0), PI, {"pose": ["clerk", Npc.State.WORKING]}],
 	# Charm DoD readability pair: counter framing is the ~5 m gameplay read, lobby framing is the ~15 m silhouette read.
-	# Charm face-readability: ~5 m at Ines (AO desk — teller glass occludes Dev); name ends `_close` so the
-	# player body is hidden. ~15 m lobby must tell Mo by silhouette + accent.
+	# Charm face-readability: ~5 m at Iris (AO desk — teller glass occludes Eve); name ends `_close` so the
+	# player body is hidden. ~15 m lobby must tell Ash by silhouette + accent.
 	["40_face_read_5m_close", Vector3(-9.0, 0.1, 7.2), PI, {"pose": ["clerk", Npc.State.TALKING]}],
 	["41_face_read_lobby_15m", Vector3(3.0, 0.1, 6.0), 0.0, {"pose": ["greeter", Npc.State.IDLE]}],
 ]
@@ -82,7 +82,7 @@ func _ready() -> void:
 		await get_tree().process_frame
 	Chain._mock.preset_account()
 	await GameState.refresh_all()
-	# S1: read the FX till and put a quote on Kenji's board, so views 33-35 photograph the panel doing its job.
+	# S1: read the FX till and put a quote on Johnny's board, so views 33-35 photograph the panel doing its job.
 	await GameState.refresh_fx()
 	await GameState.run_action("fx_enable", {})
 	await GameState.run_action("fx_quote", {"amount": "25"})

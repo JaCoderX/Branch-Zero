@@ -84,14 +84,14 @@ Cheapest first. Stop at the lowest rung that meets DoD.
 
 | Role | Name | Keep silhouette of | Bank read | Accent (suggested) |
 |------|------|--------------------|-----------|---------------------|
-| greeter | Mo | Ranger | Open / friendly lobby face | emerald |
-| clerk | Ines | Mage | Account Opening — “desk mage”, softer robe | mustard |
-| teller | Dev | Rogue | Counter hustle | oxblood |
+| greeter | Ash | Ranger | Open / friendly lobby face | emerald |
+| clerk | Iris | Mage | Account Opening — “desk mage”, softer robe | mustard |
+| teller | Eve | Rogue | Counter hustle | oxblood |
 | vault_keeper | Bob | Knight | Security / vault guard (armor OK if it reads guard) | brass / coral |
-| manager | Mr. Okafor | Barbarian | Presence / boss | oxblood |
-| registrar | Petra | Mage (alt tint of Ines’s body) | Name Desk — distinct from Ines | coral |
-| dealer | Kenji | Rogue_Hooded | FX desk | teal |
-| player | — | Ranger (alt tint of Mo’s body) | Customer “you” | navy / camel |
+| manager | Mr. Walker | Barbarian | Presence / boss | oxblood |
+| registrar | Petra | Mage (alt tint of Iris’s body) | Name Desk — distinct from Iris | coral |
+| dealer | Johnny | Rogue_Hooded | FX desk | teal |
+| player | — | Ranger (alt tint of Ash’s body) | Customer “you” | navy / camel |
 
 Taste may move accents; do not break “one accent + room owns the neutrals.”
 
@@ -141,13 +141,13 @@ See [`KICKOFF-kaykit-bank-variants.md`](./KICKOFF-kaykit-bank-variants.md) DoD b
 | Item | Result |
 |------|--------|
 | Derivatives | `Characters/*_bank_texture.png` × 5 from `tools/kaykit_bank_variants.py` (cell recolour, gradients kept; skin / eyes untouched); originals kept beside them as the tool's input |
-| Shared bodies | Petra / player / Kenji tinted by **UV cell remap** into spare bottom-row cells (`PropKit.KAYKIT_ROLE_CELLS`, `_kaykit_role_mesh`, cached per mesh × role) — no sixth material |
-| Accents | Mo emerald · Ines mustard (slate robe) · Dev oxblood · Bob coral cape on dark steel + brass · Okafor oxblood sash + brass straps · Petra coral on deep green, copper hair · Kenji teal hood / mask · player navy on graphite, dark hair |
+| Shared bodies | Petra / player / Johnny tinted by **UV cell remap** into spare bottom-row cells (`PropKit.KAYKIT_ROLE_CELLS`, `_kaykit_role_mesh`, cached per mesh × role) — no sixth material |
+| Accents | Ash emerald · Iris mustard (slate robe) · Eve oxblood · Bob coral cape on dark steel + brass · Walker oxblood sash + brass straps · Petra coral on deep green, copper hair · Johnny teal hood / mask · player navy on graphite, dark hair |
 | Gates | `run_checks` PASS · `run_viz_budget` PASS — 39 mesh mats (41 with particles), 5 body materials, 118k tris whole building; `smoke_kaykit_cast` PASS · worst `viz_shots` view 308 draws (21_vault_west, unchanged class) |
 | Stills | laptop-local `docs/progress/captures/2026-09-09-kaykit-bank-variants/` (before / after lobby 15 m, role frames) |
 | Untouched | Room, furniture, heroes, HUD, particles, lighting, dialogue, colliders, clip names, Kenney revert path |
 
-**Accessory debt (Pass B, not taken at Pass A):** the Ranger quiver stays on Mo and the player (recoloured leather + accent).
+**Accessory debt (Pass B, not taken at Pass A):** the Ranger quiver stays on Ash and the player (recoloured leather + accent).
 Bob's Knight helmet + visor are now **hidden at load** and plate cells are navy (ENG-2026-0015 land into product —
 see [`HANDOFF-kaykit-artdeco-cast.md`](./HANDOFF-kaykit-artdeco-cast.md)). Quiver / Mage hat still optional.
 

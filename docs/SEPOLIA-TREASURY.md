@@ -22,7 +22,7 @@ Related: [SEPOLIA-LIVE.md](./SEPOLIA-LIVE.md) · [SECURITY-AND-KEYS.md](./SECURI
 
 | Decision | Why |
 |----------|-----|
-| Add `SEPOLIA_TREASURY_PK` | Single faucet destination; stop ad-hoc “drain Petra to fund Ines” |
+| Add `SEPOLIA_TREASURY_PK` | Single faucet destination; stop ad-hoc “drain Petra to fund Iris” |
 | Treasury holds **ETH + USDC** | Google Cloud ETH + Circle Sepolia USDC land in one place |
 | Role keys stay distinct | Deployer / broadcaster / manager / registrar keep separation of duties |
 | Rebalance in background | Ops logistics, not lobby gameplay; optional desk-debug visibility |
@@ -39,12 +39,12 @@ accounts. It only moves assets to wallets that already have those jobs.
 |------|-----|--------------|---------------------|
 | Deployer | `SEPOLIA_DEPLOYER_PK` | `cloneBlox`, practice mint, owner-gas top-up | **ETH** (large); optional practice USDC float |
 | Broadcaster | `SEPOLIA_BROADCASTER_PK` | Submit meta-txs (Main + FX when unified) | **ETH** |
-| Manager | `SEPOLIA_MANAGER_PK` | Priority submit / recall (Okafor) | **ETH** (small) |
+| Manager | `SEPOLIA_MANAGER_PK` | Priority submit / recall (Walker) | **ETH** (small) |
 | ENS registrar | `ENS_REGISTRAR_PK` | Claim / setText / setAddr | **ETH** (small) |
 | Recovery | `SEPOLIA_RECOVERY_ADDRESS` | Cold | **No** hot ETH from treasury by default |
 | Treasury | `SEPOLIA_TREASURY_PK` | **None** on player accounts | Receives faucets; sends top-ups |
 
-`SEPOLIA_MANAGER_PK` remains Okafor’s **stamp**, not the piggy bank. Treasury only keeps that stamp solvent.
+`SEPOLIA_MANAGER_PK` remains Walker’s **stamp**, not the piggy bank. Treasury only keeps that stamp solvent.
 
 ---
 
@@ -53,8 +53,8 @@ accounts. It only moves assets to wallets that already have those jobs.
 | Asset | Address (Sepolia) | How treasury gets it | What treasury does with it |
 |-------|-------------------|----------------------|----------------------------|
 | **ETH** | native | [Google Cloud Sepolia faucet](https://cloud.google.com/application/web3/faucet/ethereum/sepolia) — 0.05 ETH/day → **treasury address** | Rebalance to staff EOAs (gas) |
-| **Circle USDC** | `0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238` ([Circle docs](https://developers.circle.com/stablecoins/usdc-contract-addresses)) | [faucet.circle.com](https://faucet.circle.com/) Ethereum Sepolia — 20 USDC / 2 h → **treasury** | Hold as ops float; do **not** treat as Ines practice dollars unless principal migrates |
-| **Practice / demo USDC** | `0xD3322B29…422f` (`sepolia.json`) | Mint (open) into treasury or deployer when ETH allows | Optional float so Ines faucet / provision can draw without minting mid-desk; still not Circle USDC |
+| **Circle USDC** | `0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238` ([Circle docs](https://developers.circle.com/stablecoins/usdc-contract-addresses)) | [faucet.circle.com](https://faucet.circle.com/) Ethereum Sepolia — 20 USDC / 2 h → **treasury** | Hold as ops float; do **not** treat as Iris practice dollars unless principal migrates |
+| **Practice / demo USDC** | `0xD3322B29…422f` (`sepolia.json`) | Mint (open) into treasury or deployer when ETH allows | Optional float so Iris faucet / provision can draw without minting mid-desk; still not Circle USDC |
 
 Gameplay passbook balances stay the **practice** token unless a later unit migrates.
 
@@ -108,7 +108,7 @@ Faucets ──► SEPOLIA_TREASURY_PK
 | `npm -w infra run funding:sepolia` | Show treasury + staff; shortfalls; suggested top-ups with ×1.25 | **yes** — treasury section first (ETH / Circle USDC / practice), then each role vs `need` / `target`. Privy-free, read-only |
 | `npm run treasury:topup` | Read-only plan + optional `--execute` send from treasury | **yes** — dry run by default; `--execute`, `--partial`, `--json`, `--practice`. Exit 2 on a named blocker |
 | Live Teller Desk (background) | Before expensive ops / periodic: if staff below need, top up | **yes** — `maybeTopUp('pre-cloneBlox')` before a clone, plus an unref'd interval watcher (`SEPOLIA_TREASURY_INTERVAL_SEC`, default 900 s). Both Live-only, key-only, rate-limited, and non-fatal |
-| Desk debug | Balances: treasury ETH/USDC + each staff role; never expose private keys | **yes** — a `treasury` block on `/healthz` (cached 15 s) rendered as an operator row in the desk-debug panel. Absent on Dev |
+| Desk debug | Balances: treasury ETH/USDC + each staff role; never expose private keys | **yes** — a `treasury` block on `/healthz` (cached 15 s) rendered as an operator row in the desk-debug panel. Absent on Eve |
 | `npm run killtests:treasury` | — | **added** — T1–T7 read-only invariants (margin, role separation, lab-key refusal, two USDCs, caps, Live-only, no key leakage) |
 
 **Nothing writes from `/healthz`.** It is unauthenticated, so an endpoint that moved money would be a
@@ -152,7 +152,7 @@ hook and the interval watcher.
       Live practice token is open-mint (§4.2)
 - [x] Desk-debug operator row shows till health — no lobby NPC, no quest, no player surface
 - [x] No role collapse in code (refused by derived address; demo opt-in is loud); Ganache refusal on the
-      treasury slot; `killtests:treasury` 7/7 Live and 6/7 + 1 SKIP Dev; dry-run evidence in §9
+      treasury slot; `killtests:treasury` 7/7 Live and 6/7 + 1 SKIP Eve; dry-run evidence in §9
 - [x] Progress note + REFLECTION rows; HANDOFF-CC §5k updated
 
 ---
