@@ -120,9 +120,12 @@ Fiat pairs (USD→EUR|ILS) **met 2026-09-09**. **Bidirectional USD↔EUR|ILS + E
 [HANDOFF-hosting-private-desk.md](./HANDOFF-hosting-private-desk.md). Desk image, `?desk=`, HOSTING.md, R2 path
 documented. Public Pages deploy remains human.
 
-**Open 2026-09-12 (Claude Code Fable — delegated):** **Hackathon all-in-one compose + `branchzero.app`.** One
-Docker Compose stack: Live teller + Vite/Godot shell + **Caddy** + **Cloudflare Tunnel** — clears the 36.29 MiB
-wasm without Pages. Same-origin `/api`; reuse `Dockerfile.teller`; no `1337` on the tunnel. Pages/R2 and lab
+**Met 2026-09-12 (Claude Code · Opus 5):** **Hackathon all-in-one compose + `branchzero.app`.** One standalone
+Docker Compose stack — `docker-compose.hackathon.yml`: unpublished Live teller + `apps/web/dist` (shell **and**
+the 36.29 MiB export) behind **Caddy** on one origin, **Cloudflare Tunnel** in a `tunnel` profile. Same-origin
+`/api` (`npm run build:web:hackathon`); prefix strip, wasm MIME, no COOP/COEP, SSE proven unbuffered for 65 s;
+no `1337` service at all. Tunnel + Privy origins + treasury + public smoke are the principal’s (OWED §1,
+[HOSTING.md §4](../HOSTING.md)). Pages/R2 and lab
 [ENG-2026-0025](../../../GameLab/work/ENG-2026-0025-godot-web-wasm-under-25mib/) stay parallel.
 [HANDOFF-hosting-hackathon-compose.md](./HANDOFF-hosting-hackathon-compose.md) ·
 [KICKOFF-hosting-hackathon-compose.md](./KICKOFF-hosting-hackathon-compose.md).

@@ -25,6 +25,7 @@ docs/missions
 
 # not the desk's business
 apps/game
+deploy
 apps/web/**
 !apps/web/package.json
 infra/**

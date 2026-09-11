@@ -1,0 +1,78 @@
+# Branch Zero — hackathon all-in-one front (docs/HOSTING.md §4).
+#
+# One origin holds both halves of the bank:
+#
+#   /         -> the Vite shell + the Godot export, straight off /srv (a read-only bind mount of apps/web/dist)
+#   /api/*    -> the Live Teller Desk on the compose network, with the /api prefix stripped
+#
+# The prefix strip has to match `apps/web/vite.config.ts` exactly (`p.replace(/^\/api/, '')`), because the shell
+# builds desk paths as `<base>/healthz`, `<base>/events`, … and the hackathon build's base is `/api`.
+#
+# TLS is Cloudflare's: cloudflared dials this listener over the compose network in plain HTTP, so this site
+# address is a bare port and auto_https stays off. Nothing here is published to the internet by Caddy itself.
+{
+	admin off
+	auto_https off
+}
+
+:8080 {
+	log {
+		output stdout
+		format console
+	}
+
+	# The desk. `flush_interval -1` disables response buffering outright, which is what keeps /api/events
+	# (SSE, `: ping` every 20 s) arriving as it is written instead of in a proxy-sized lump. `encode` is
+	# deliberately NOT in this block: a compressed event stream is a buffered event stream.
+	handle /api/* {
+		uri strip_prefix /api
+		reverse_proxy teller-live:8787 {
+			flush_interval -1
+		}
+	}
+
+	# The shell. Header parity with apps/web/public/_headers (which Vite copies into dist/ for Cloudflare
+	# Pages and which is inert here) — and, as there, deliberately NO Cross-Origin-Opener-Policy /
+	# Cross-Origin-Embedder-Policy: the Godot export is single-threaded and COEP would break the Privy
+	# iframe (docs/GODOT.md). Do not add them.
+	handle {
+		root * /srv
+
+		encode {
+			zstd
+			gzip
+			# Explicit list, so nothing decides on our behalf that a stream is compressible. index.wasm is
+			# 36.3 MiB raw and ~7 MB brotli/gzip — worth the CPU on every cold load through the tunnel.
+			match {
+				header Content-Type text/html*
+				header Content-Type text/css*
+				header Content-Type text/plain*
+				header Content-Type text/javascript*
+				header Content-Type application/javascript*
+				header Content-Type application/json*
+				header Content-Type application/wasm*
+				header Content-Type image/svg+xml*
+			}
+		}
+
+		header {
+			X-Content-Type-Options nosniff
+			Referrer-Policy strict-origin-when-cross-origin
+			Permissions-Policy "camera=(), microphone=(), geolocation=()"
+			-Server
+		}
+
+		# `nosniff` + WebAssembly.instantiateStreaming means the wasm MIME is load-bearing, not cosmetic.
+		header /game/*.wasm Content-Type application/wasm
+		header /game/*.wasm Cache-Control "public, max-age=31536000, immutable"
+		header /game/*.pck Content-Type application/octet-stream
+		header /game/*.pck Cache-Control "public, max-age=31536000, immutable"
+		header /game/*.js Cache-Control "public, max-age=31536000, immutable"
+		header /assets/* Cache-Control "public, max-age=31536000, immutable"
+		header /index.html Cache-Control "no-cache"
+
+		# No SPA fallback on purpose: the shell is a single index.html with no client-side routes
+		# (docs/HOSTING.md §3.2), so an unknown path is honestly a 404 rather than a silent title screen.
+		file_server
+	}
+}

@@ -19,6 +19,7 @@
     "dev:teller": "npm -w apps/teller-desk run dev",
     "killtests": "npm -w apps/teller-desk run killtests --",
     "build:web": "npm -w apps/web run build",
+    "build:web:hackathon": "node scripts/build-web-hackathon.mjs",
     "export:web": "node scripts/export-web.mjs",
     "publish:game": "node scripts/publish-game.mjs",
     "chain:probe": "npm -w infra run probe",

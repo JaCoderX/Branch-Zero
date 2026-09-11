@@ -1,9 +1,19 @@
 # Hosting — the common front and the private desk
 
-**Status 2026-09-12:** packaging + shell override **built and verified locally** (Docker image, compose, `?desk=`
-override, alternate-origin game loader). The public deploy itself is a **human step** (Cloudflare account, DNS,
-Privy dashboard, hosted secrets) — §5 is the runbook, §6 the checklist. Mission:
-[`missions/HANDOFF-hosting-private-desk.md`](./missions/HANDOFF-hosting-private-desk.md).
+**Status 2026-09-12:** two paths, both **built and verified locally**, and in both the public deploy itself is a
+**human step** (Cloudflare account, DNS, Privy dashboard, secrets):
+
+- **§4 — hackathon all-in-one (use this for the event).** One Docker Compose stack: shell + Godot export + Live
+  desk behind Caddy, on `https://branchzero.app` through a Cloudflare Tunnel. One origin, one URL, and no 25 MiB
+  per-file gate on the 36.3 MiB `index.wasm`. Runbook §4.5, checklist §7. Mission:
+  [`missions/HANDOFF-hosting-hackathon-compose.md`](./missions/HANDOFF-hosting-hackathon-compose.md).
+- **§2–§3 — Pages shell + R2 export + a separately hosted desk.** The scalable CDN twin: split hosting, a
+  per-export publish step, absolute desk URL + CORS. **Parallel / later** — not needed for the event, not deleted.
+  Runbook §6. Mission:
+  [`missions/HANDOFF-hosting-private-desk.md`](./missions/HANDOFF-hosting-private-desk.md).
+
+§2 (run a desk in Docker) and §2.3 (`?desk=`) apply to both, and are how an operator keeps their own drawer
+under their own desk whichever way the front is served.
 
 Cross-refs: [ARCHITECTURE.md §9](./ARCHITECTURE.md) · [SECURITY-AND-KEYS.md §4.1](./SECURITY-AND-KEYS.md) (per-wing
 key names) · [SEPOLIA-LIVE.md §4.6](./SEPOLIA-LIVE.md) (never expose `1337`) · [PRIVY.md §3](./PRIVY.md) (Allowed
@@ -22,6 +32,11 @@ origins, signer) · [GODOT.md](./GODOT.md) (single-thread export, no COOP/COEP) 
 The front is common. The desk is private. If the hosted desk goes away (cost, privacy, end of event), an operator
 runs the same image on their own machine and points the public shell at it with `?desk=` (§2.3). The branch front
 stays open; the drawer moves under their own desk.
+
+That table is the **§3 split-hosting** shape. In the **§4 hackathon** shape the three rows collapse onto one origin:
+Caddy serves the shell *and* the export from `apps/web/dist`, and the desk answers on the same origin under `/api`,
+reached only across the compose network. Who holds what is unchanged — shell no keys, desk all of them — and so is
+`?desk=`: the hackathon build's default is simply same-origin `/api` instead of an absolute desk URL.
 
 ### 1.1 Honest privacy statement
 
@@ -175,6 +190,10 @@ Same image, `--dev` → chain `1337`, reads the **unprefixed** lab keys, talks t
 
 ## 3. Cloudflare Pages (the shell)
 
+> **Parallel / later.** This is the scalable CDN twin, kept whole and still true — but for the hackathon use
+> §4 instead: it needs no Cloudflare Pages project, no R2 bucket and no per-export publish, because the 36.3 MiB
+> `index.wasm` never leaves the operator's own origin. Nothing here blocks §4 and §4 does not replace it.
+
 ### 3.1 Project configuration
 
 | Setting | Value |
@@ -288,13 +307,194 @@ build's default desk` and the treasury block (proves CORS) → Privy OTP → one
 
 ---
 
-## 4. Files
+## 4. Hackathon all-in-one — one compose, one URL (recommended for the event)
+
+The path in §3 splits the product across three hosts (Pages, R2, a desk platform) and needs a Cloudflare account,
+a bucket and a per-export publish step before a judge can click anything. This one does not: **one Docker Compose
+stack** holds the shell, the 36.3 MiB Godot export and the Live Teller Desk behind **Caddy**, and **Cloudflare
+Tunnel** puts it on `https://branchzero.app`. No 25 MiB per-file cap, because nothing is uploaded to Pages — the
+export is served from the same origin as the shell.
+
+```text
+Internet ──> Cloudflare (TLS, DNS) ──> Tunnel ──> cloudflared ──┐  (compose network; nothing published)
+                                                                v
+                                                        caddy :8080 ┬─ /       -> /srv = apps/web/dist (incl. /game)
+                                                                    └─ /api/*  -> teller-live:8787, prefix stripped
+                                                                                   ^
+                                              teller-live (Dockerfile.teller, .data volume, env-only secrets)
+```
+
+Everything §1 says still holds: the browser holds no keys, the desk holds the keys and the player index, and the
+operator who runs this compose is the custodian of both. What changes is only *where the front is served from* —
+the desk is reached same-origin at `/api` instead of by absolute URL, so `?desk=` (§2.3) is still there for
+pointing this front at somebody else's desk, and still never falls back on its own.
+
+### 4.1 The stack
+
+| Path | Role |
+|------|------|
+| `docker-compose.hackathon.yml` | **standalone** compose file: `teller-live` (no published port), `caddy`, `cloudflared` (`--profile tunnel`) |
+| `deploy/caddy/Caddyfile` | `file_server` for `dist`, `reverse_proxy` for `/api` with the prefix stripped, wasm MIME, no COOP/COEP |
+| `scripts/build-web-hackathon.mjs` | `npm run build:web:hackathon` — the shell build with `VITE_TELLER_DESK_URL=/api` and no `VITE_GAME_BASE_URL` |
+
+Three things about that compose file are deliberate:
+
+- **It is standalone — do not run it as `-f docker-compose.yml -f docker-compose.hackathon.yml`.** Compose *merges*
+  `ports` across files instead of replacing them, so an override could never take the desk's published `8787` away
+  again. This file redefines `teller-live` from scratch with `expose:` and no `ports:`: Caddy is the only way in,
+  and neither the host nor the LAN can reach the desk.
+- **Same project, same volume.** It keeps the `branch-zero` project name and the `teller-live-data` volume of
+  `docker-compose.yml`, so the desk carries the same `players-11155111.json` / receipts / treasury ledger whichever
+  way you start it. One desk, two shapes.
+- **There is no Developer Mode service in it at all.** Remote EVM `1337` is private lab infrastructure
+  ([SEPOLIA-LIVE.md §4.6](./SEPOLIA-LIVE.md)); the `dev` profile lives only in `docker-compose.yml`, bound to
+  loopback, and this file cannot be talked into publishing it because it does not mention it.
+
+Caddy publishes `127.0.0.1:8080` by default — enough for the operator to smoke the exact origin the public will
+see, and not enough for anyone else. The public path is `cloudflared -> caddy:8080` **over the compose network**,
+so the tunnel does not depend on that host port at all. `CADDY_BIND=0.0.0.0` exists for a deliberate LAN demo;
+`CADDY_PORT` moves it.
+
+### 4.2 Build the shell
+
+The Godot export is a **host** step: this stack cannot build Godot, and the 36 MiB `index.wasm` is git-ignored on
+purpose. `apps/web/dist` is bind-mounted into Caddy read-only — the operator builds, Caddy serves.
+
+```bash
+npm run export:web
+```
+
+```bash
+npm run build:web:hackathon
+```
+
+The second command is `vite build` with the two values that make this stack same-origin pinned in a script rather
+than in a shell one-liner (PowerShell, bash and Compose each spell env prefixes differently, and a missed one
+silently ships a build pointing at last week's desk):
+
+| Baked | Value | Why |
+|-------|-------|-----|
+| `VITE_TELLER_DESK_URL` | `/api` | the desk is on this origin, behind Caddy |
+| `VITE_GAME_BASE_URL` | *(empty → `/game`)* | the export is on this origin too — no R2 twin |
+
+`process.env` wins over the repo-root `.env` in Vite's env loading, so whatever that file holds for the §3 path
+does not leak in. Everything else still comes from `.env`, and **only `VITE_*` is ever baked**: the Privy app id
+and signer id, optionally `VITE_GITHUB_CLIENT_ID`. No desk secret, no Privy app secret, no tunnel token — none of
+those are `VITE_*`, and none of them are build args. The script refuses to build when `public/game/index.wasm` is
+missing and re-checks `dist/game/{index.wasm,index.pck,index.js}` afterwards: here a missing export is a splash
+screen that never becomes a bank.
+
+Building on one machine and running on another is fine — copy `apps/web/dist` across (`rsync`, `scp -r`) and keep
+the bind mount. The stack wants a directory, not an image.
+
+### 4.3 Run it and check it (local, no tunnel)
+
+```bash
+TELLER_ENV_FILE=.env.teller-live docker compose -f docker-compose.hackathon.yml up -d --build
+```
+
+Secrets come from the operator's git-ignored env file exactly as in §2.2 (`.env` is the default; a desk-only file
+keeps browser / iNPC / lab variables out of the container). `ALLOWED_ORIGINS` defaults to
+`https://branchzero.app,http://127.0.0.1:8080,http://localhost:8080` — same-origin GETs carry no `Origin` at all,
+so CORS is mostly moot in this shape, but the list is still exact-match and still never `*`.
+
+```bash
+curl -s http://127.0.0.1:8080/api/healthz
+```
+
+What "working" looks like (all verified 2026-09-12 — §8):
+
+| Check | Expected |
+|-------|----------|
+| `GET /` | 200, the shell's `index.html`, `X-Content-Type-Options: nosniff` |
+| `GET /game/index.wasm` | 200, `Content-Type: application/wasm`, immutable cache, and **no** `cross-origin-opener-policy` / `cross-origin-embedder-policy` anywhere |
+| `GET /api/healthz` | `"ok":true,"mode":"live","wing":"sepolia"`, `Via: 1.1 Caddy` |
+| `GET /api/events` with no token | 401 `missing Privy access token` — i.e. the `/api` prefix really was stripped before the desk saw the path |
+| `docker compose … ps` | `bz-caddy` on `127.0.0.1:8080` only; `bz-teller-live` with **no** host port |
+| `curl http://127.0.0.1:8787/healthz` | connection refused — the desk is not on the host at all |
+
+Then open `http://localhost:8080/?debug`: splash → Godot title screen → the desk-debug panel reads
+`desk /api · this build's default desk` with the treasury block filled in. (Privy's sign-in iframe stays blocked at
+`localhost:8080` until that origin — or `https://branchzero.app` — is in the Privy dashboard's allowed origins,
+§7; the bank itself loads regardless.)
+
+Taking it down keeps the volume:
+
+```bash
+docker compose -f docker-compose.hackathon.yml down
+```
+
+### 4.4 Cloudflare Tunnel
+
+`cloudflared` sits behind `--profile tunnel`, so nothing dials out until you ask for it:
+
+```bash
+docker compose -f docker-compose.hackathon.yml --profile tunnel up -d
+```
+
+**Token mode** is what this file ships. In the Cloudflare dashboard: Zero Trust → Networks → Tunnels → *Create a
+tunnel* → **Cloudflared**; copy the connector token; then add a **public hostname**:
+
+| Field | Value |
+|-------|-------|
+| Subdomain / domain | *(empty)* / `branchzero.app` |
+| Service | `HTTP` → `caddy:8080` |
+| optional second hostname | `www` / `branchzero.app` → same service |
+
+Adding the hostname writes the `CNAME` into the zone for you, so there is no separate DNS step and no origin
+certificate to manage: the tunnel is outbound-only and TLS terminates at Cloudflare. The ingress lives in the
+dashboard, which is why no hostname appears anywhere in this repo.
+
+The token is a **secret** — it is a credential for that tunnel. Keep it in the shell environment or in the
+git-ignored repo-root `.env` that Compose interpolates; never in a commit, a build arg or an image layer
+([SECURITY-AND-KEYS.md §4.1](./SECURITY-AND-KEYS.md)):
+
+```bash
+TUNNEL_TOKEN=eyJhIjoi…
+```
+
+It reaches the container as the `TUNNEL_TOKEN` environment variable that `cloudflared tunnel run` reads by itself,
+which keeps it out of `command:` and out of `docker ps`. With the variable empty the container exits saying
+*"cloudflared tunnel run requires the ID or name of the tunnel"* — a missing token fails loudly rather than quietly
+serving nothing.
+
+Pinned images: `caddy:2.11-alpine` and `cloudflare/cloudflared:2026.9.1`, overridable with `CADDY_IMAGE` /
+`CLOUDFLARED_IMAGE`.
+
+### 4.5 Runbook (principal)
+
+1. **Fund** — treasury faucet drop → `npm run treasury:topup -- --execute` → `npm run funding:sepolia` shows
+   deployer, broadcaster, manager and registrar at or above need (OWED §1). A public bank with an unfunded
+   broadcaster is a lobby with a closed counter.
+2. **Privy dashboard** → Allowed origins += `https://branchzero.app` (and `https://www.branchzero.app` if you route
+   it). That is per *shell* origin; the desk needs no dashboard change ([PRIVY.md §3](./PRIVY.md)).
+3. **Export + build** — `npm run export:web`, then `npm run build:web:hackathon` (§4.2).
+4. **Fill the env file** — desk secrets per §2.2, plus `ALLOWED_ORIGINS=https://branchzero.app`; `TUNNEL_TOKEN` in
+   `.env` (§4.4).
+5. **Up** — `TELLER_ENV_FILE=.env.teller-live docker compose -f docker-compose.hackathon.yml --profile tunnel up -d --build`.
+6. **Smoke** — `https://branchzero.app/api/healthz` → `ok:true`, `treasury.shortfalls: 0`; then the walk: splash →
+   Godot title → `?debug` panel shows `/api` and the treasury block → Privy OTP → one Lane A pay. In DevTools:
+   `index.wasm` `content-type: application/wasm` with a `content-encoding`, and **no** COOP/COEP header. `/events`
+   stays open ≥ 60 s (a `: ping` comment every 20 s) and reconnects after
+   `docker compose -f docker-compose.hackathon.yml restart teller-live`.
+7. **Down / backup** — `down` keeps the volume; back it up exactly as in §2.2. Taking this stack down closes both
+   the front and the default drawer; an operator running their own desk is unaffected (`?desk=`, §2.3).
+
+Never add the `dev` profile, Remote EVM or port `1337` to this host. Rotate the throwaway keys after the event
+(SECURITY §4).
+
+---
+
+## 5. Files
 
 | Path | Role |
 |------|------|
 | `Dockerfile.teller` | desk image (repo-root context) |
 | `.dockerignore` | keeps `.env*`, `.data/`, `docs/progress`, game, shell out of every layer |
 | `docker-compose.yml` | `teller-live` (default) · `teller-dev` (`--profile dev`, loopback) · two named volumes |
+| `docker-compose.hackathon.yml` | **§4** standalone stack: unpublished `teller-live` · `caddy` · `cloudflared` (`--profile tunnel`) |
+| `deploy/caddy/Caddyfile` | **§4** `dist` file server + `/api` reverse proxy (prefix stripped, `flush_interval -1`), wasm MIME, no COOP/COEP |
+| `scripts/build-web-hackathon.mjs` | **§4** `npm run build:web:hackathon` — same-origin `/api` + `/game`, export presence checked |
 | `apps/web/src/shell/desk.ts` | runtime desk resolver (`?desk=` → saved → env → `/api`), validation, Reset |
 | `apps/web/src/overlay/App.tsx` | desk-debug row + unreachable copy (no fallback) |
 | `apps/web/src/main.ts` | `VITE_GAME_BASE_URL` alternate-origin loader |
@@ -305,7 +505,7 @@ build's default desk` and the treasury block (proves CORS) → Privy OTP → one
 
 ---
 
-## 5. Hosted default desk — runbook (principal)
+## 6. Hosted default desk — runbook (principal)
 
 Where: any Docker host that keeps a volume and gives you TLS — Fly.io (`fly launch --dockerfile Dockerfile.teller`,
 a 1 GB volume at `/app/apps/teller-desk/.data`, `fly secrets set …`), Railway (Dockerfile deploy + volume), or a
@@ -336,19 +536,67 @@ Never run the `dev` profile on that host. Rotate the throwaway keys after the ev
 
 ---
 
-## 6. OWED — human steps (mirrored in OWED §1)
+## 7. OWED — human steps (mirrored in OWED §1)
 
 - [ ] Privy dashboard → **Allowed origins** += `https://branchzero.app` (and `https://www.branchzero.app` if used)
+
+**Hackathon path (§4) — the event list:**
+
+- [ ] Cloudflare Tunnel created + public hostname `branchzero.app` → `HTTP caddy:8080` (§4.4); `TUNNEL_TOKEN` in the
+      git-ignored `.env`
+- [ ] `npm run export:web` → `npm run build:web:hackathon` on the host that has Godot 4.5.x (§4.2)
+- [ ] Desk env file filled (§2.2) with `ALLOWED_ORIGINS=https://branchzero.app`; volume in place
+- [ ] First public smoke through the tunnel (§4.5 step 6): `/api/healthz`, splash → Godot → Privy OTP → Lane A,
+      `/events` open ≥ 60 s from the public origin
+
+**Pages/R2 twin (§3) — parallel, after the event if wanted:**
+
 - [ ] Cloudflare Pages project (§3.1) with the build env; custom domain `branchzero.app` (+ `www` redirect); DNS
 - [ ] R2 bucket `branch-zero-game` + custom domain `game.branchzero.app` + CORS policy (§3.3); run
       `node scripts/publish-game.mjs --execute`; set `VITE_GAME_BASE_URL`
-- [ ] Hosted desk: platform, secrets, volume, `ALLOWED_ORIGINS`, `desk.branchzero.app` TLS (§5)
+- [ ] Hosted desk: platform, secrets, volume, `ALLOWED_ORIGINS`, `desk.branchzero.app` TLS (§6)
 - [ ] Treasury funded and staff wallets at need (OWED §1)
 - [ ] First Pages preview walk (§3.5), including the ≥ 60 s `/events` stream and Firefox mixed-content note (§2.3)
 
 ---
 
-## 7. Evidence (2026-09-12, build laptop)
+## 8. Evidence (2026-09-12, build laptop)
+
+### 8.1 Hackathon all-in-one (§4)
+
+`docker compose -f docker-compose.hackathon.yml up -d --build` → `bz-caddy` (caddy 2.11.4) on `127.0.0.1:8080`,
+`bz-teller-live` **healthy with no host port**. Through Caddy on that one origin:
+
+- `GET /` → 200 `text/html`, `nosniff` / `Referrer-Policy` / `Permissions-Policy` present, **no**
+  `cross-origin-opener-policy` or `cross-origin-embedder-policy` on any response.
+- `GET /game/index.wasm` → 200 `Content-Type: application/wasm`, `Cache-Control: public, max-age=31536000,
+  immutable`; `Accept-Encoding: gzip` → 9,789,909 B and `zstd` → 9,208,216 B for the 38,047,590 B (36.29 MiB) file,
+  served in ~1.5 s locally. Range requests work (`206`, `Content-Range: bytes 0-0/38047590`).
+- `GET /api/healthz` → `"ok":true,"mode":"live","wing":"sepolia"`, `Via: 1.1 Caddy`, `treasury.shortfalls: 0`.
+- `GET /api/events` with no token → 401 `missing Privy access token`, and the desk's own log line reads
+  `GET /events?token=&owner=` — the `/api` prefix is stripped exactly as `vite.config.ts` does it.
+- `curl http://127.0.0.1:8787/healthz` from the host → connection refused. `docker compose ps` shows the desk with
+  `8787-8788/tcp` and no mapping. No Dev / `1337` service exists in the file.
+- **SSE, 65 s open stream** through the shipped `bz-caddy` container and the shipped Caddyfile: 13 `data:` frames
+  5 s apart plus three `: ping` keep-alives at the desk's own 20 s cadence, each arriving on the wall-clock second
+  it was written (`Transfer-Encoding: chunked`, `Cache-Control: no-cache, no-transform`, no `Content-Encoding`).
+  The desk's `/events` needs a Privy OTP, so for this probe a stand-in process with the desk's exact SSE headers
+  answered on the network alias `teller-live`; the proxy path under test was the real one. An authenticated ≥ 60 s
+  stream from the public origin stays a **principal walk** (§7).
+- Restart drill: file seeded into `branch-zero_teller-live-data`, `docker kill` + `docker rm` the desk,
+  `up -d` → file intact, `/api/healthz` 200 again. Caddy kept serving the front throughout.
+- Browser (Chrome, `http://localhost:8080/?debug`): splash → `Godot Engine v4.5.2.stable` → *front door up*;
+  `/game/index.js`, `index.wasm`, `index.pck` all fetched same-origin; desk-debug panel reads
+  `desk /api · this build's default desk` with the live treasury block. `?desk=http://localhost:9999` → named,
+  saved, *"not answering — the branch will NOT fall back to the hosted desk"*; `?desk=reset` → back to `/api`,
+  `localStorage['bz.desk']` cleared. Privy's iframe is refused at `localhost:8080` by its own
+  `frame-ancestors` list — the allowed-origins step in §7, not a stack fault.
+- Image scrub on the rebuilt desk image: `find /app -name ".env*" -o -name "*.pem" -o -name "*.key"` → nothing.
+  `caddy validate` clean; `cloudflared:2026.9.1` with an empty `TUNNEL_TOKEN` exits with *"requires the ID or name
+  of the tunnel"* (fails loudly). **Not run here:** a real tunnel — no Cloudflare token on this machine (§7).
+- `npm run typecheck` clean; `killtests:s2` 6/6 PASS on Live **and** 6/6 PASS on Dev (`--dev`).
+
+### 8.2 Pages / private desk (§2–§3)
 
 - `docker build -f Dockerfile.teller .` → 324 MB image; `find /app -name ".env*"` → none; grep for a real key
   fragment / PEM header outside `node_modules` → 0 files; runs as uid 1000.

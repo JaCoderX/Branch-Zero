@@ -15,7 +15,7 @@ Related: [ARCHITECTURE.md](./ARCHITECTURE.md) § 2 and § 5 · [WORLD-3D-ENVIRON
 | Threads | **Disabled** (single-threaded export) | Threaded export requires COOP/COEP headers which break Privy's iframe and most third-party embeds |
 | Export template | Official 4.5.x web template | — |
 | Shell | Vite + React (`apps/web`) hosting the exported `.html/.js/.wasm/.pck` under `/game/` | Custom HTML gives us control of the overlay and headers |
-| Hosting | Shell on Cloudflare Pages; the export itself on an **alternate origin** (R2 `game.branchzero.app`, `VITE_GAME_BASE_URL`) because `index.wasm` is 36.3 MiB raw and Pages caps files at 25 MiB — measured 2026-09-12, see [HOSTING.md §3.3](./HOSTING.md). `.wasm` served `application/wasm`, brotli at the edge | Judges load it from a link; the loader in `apps/web/src/main.ts` takes an absolute `executable`, so the export template is untouched |
+| Hosting | Shell on Cloudflare Pages; the export itself on an **alternate origin** (R2 `game.branchzero.app`, `VITE_GAME_BASE_URL`) because `index.wasm` is 36.3 MiB raw and Pages caps files at 25 MiB — measured 2026-09-12, see [HOSTING.md §3.3](./HOSTING.md). For the hackathon the export is served **same-origin** from the all-in-one compose stack instead — Caddy, no per-file cap, [HOSTING.md §4](./HOSTING.md). `.wasm` served `application/wasm`, brotli/gzip at the edge | Judges load it from a link; the loader in `apps/web/src/main.ts` takes an absolute `executable`, so the export template is untouched |
 | Node | 20 LTS for the shell and Teller Desk | — |
 
 ---

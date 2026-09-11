@@ -8,7 +8,7 @@ objective: OBJ-2026-0004
 mission: Ship a Docker Compose stack that serves the Vite+Godot shell and the Live Teller Desk behind Caddy, with Cloudflare Tunnel to https://branchzero.app — hackathon-first path that clears the 36 MiB wasm without Pages/R2
 kickoff: docs/missions/KICKOFF-hosting-hackathon-compose.md
 prior: docs/missions/HANDOFF-hosting-private-desk.md (met 2026-09-12 — desk image, ?desk=, Pages/R2 runbook)
-status: open
+status: met (2026-09-12) — stack built + locally verified; Cloudflare Tunnel, Privy origins, treasury and the public smoke are the principal’s human steps (OWED §1)
 parallel_to: GameLab ENG-2026-0025 (wasm under 25 MiB) · Pages+R2 path in HOSTING.md remains the scalable twin — do not absorb or block on either · U7 ship packaging stays separate
 ---
 
@@ -143,19 +143,28 @@ localhost or `http://127.0.0.1`) and mark tunnel DNS attach **VERIFY / human**.
 
 ## Verification checklist (DoD)
 
-- [ ] `docker compose` (documented invocation) brings up Live desk + static shell + Caddy; `/` serves the shell;
-      `/game/index.wasm` returns `application/wasm` (or correct type); **no** COOP/COEP response headers
-- [ ] `/api/healthz` (same origin through Caddy) → `ok:true`, `mode:live`, `wing:sepolia` with env-only secrets
-- [ ] SSE: `/api/events` (or equivalent rewritten path) is not buffered; reconnect wrapper still works; record a
-      ≥ 60 s open stream **or** mark authenticated 60 s as VERIFY if Privy OTP from the public origin is unavailable
-- [ ] `teller-dev` / `1337` is **not** on the tunnel or public ports
-- [ ] Restart drill: kill teller container, recreate with same volume → `players*.json` intact
-- [ ] Image / context scrub: no `.env*` / key material in layers (reuse existing proof pattern)
-- [ ] Local path without tunnel documented and verified (splash → engine running against `/game` + `/api`)
-- [ ] Cloudflare Tunnel path documented; if token present, `https://branchzero.app` smoke (or dry-run + VERIFY)
-- [ ] HOSTING.md + ARCHITECTURE §9 + OWED updated; this handoff Outcome + status
-- [ ] `npm run typecheck` clean; `killtests:s2` green on Live (and Dev if still runnable locally) — no lane edits
-- [ ] Prior `?desk=` behaviour preserved; default hackathon build uses `/api`
+- [x] `docker compose -f docker-compose.hackathon.yml up -d --build` brings up Live desk + static shell + Caddy;
+      `/` serves the shell; `/game/index.wasm` returns `application/wasm`; **no** COOP/COEP on any response
+- [x] `/api/healthz` (same origin through Caddy) → `ok:true`, `mode:live`, `wing:sepolia` with env-only secrets
+- [x] SSE: **65 s open stream** through the shipped Caddy container — 13 `data:` frames + three `: ping`
+      keep-alives, each arriving the second it was written, `chunked`, no `Content-Encoding`. The desk's own
+      `/events` needs a Privy OTP, so a stand-in with the desk's exact SSE headers answered on the `teller-live`
+      network alias; the proxy path under test was the real one. Reconnect wrapper untouched. An **authenticated**
+      ≥ 60 s stream from the public origin is **VERIFY / principal** (OWED §1)
+- [x] `teller-dev` / `1337` is not on the tunnel or public ports — the hackathon compose has no such service, and
+      `teller-live` itself has no host port (`curl 127.0.0.1:8787` refused)
+- [x] Restart drill: seeded file, `docker kill` + `rm` the desk, `up -d` → `players-11155111.json` intact, front
+      never stopped answering
+- [x] Image / context scrub: `find /app -name ".env*" -o -name "*.pem" -o -name "*.key"` → nothing; `deploy/`
+      added to `.dockerignore`
+- [x] Local path without tunnel documented (HOSTING §4.3) and verified: splash → Godot 4.5.2 *front door up*,
+      `/game/*` and `/api/*` both same-origin
+- [x] Cloudflare Tunnel path documented (HOSTING §4.4, runbook §4.5). **No token on this machine** → not run;
+      image pinned and its empty-token failure mode recorded. `https://branchzero.app` smoke = **VERIFY / human**
+- [x] HOSTING.md §4 + §8.1 · ARCHITECTURE §9 amendment · OWED §1 human list + §4 tick · this Outcome
+- [x] `npm run typecheck` clean; `killtests:s2` 6/6 PASS on Live **and** 6/6 PASS on Dev — no lane edits
+- [x] Prior `?desk=` behaviour preserved (chosen → saved → *"will NOT fall back"* → Reset); default hackathon
+      build resolves `/api`
 
 ---
 
@@ -170,6 +179,44 @@ localhost or `http://127.0.0.1`) and mark tunnel DNS attach **VERIFY / human**.
 
 ---
 
-## Outcome
+## Outcome (2026-09-12, Claude Code · Opus 5) — **met**, public tunnel is the principal's step
 
-*(agent fills when met / blocked)*
+**Built**
+
+| Path | What |
+|------|------|
+| `docker-compose.hackathon.yml` | **standalone** stack (not an override): `teller-live` with `expose:` and **no `ports:`**, `caddy` on `127.0.0.1:8080`, `cloudflared` behind `--profile tunnel`. Same `branch-zero` project and same `teller-live-data` volume as `docker-compose.yml`, so the player index follows the desk either way. No Dev / `1337` service exists in it |
+| `deploy/caddy/Caddyfile` | `/api/*` → `uri strip_prefix /api` + `reverse_proxy teller-live:8787 { flush_interval -1 }`; `/` → `file_server` over `/srv` (a read-only bind mount of `apps/web/dist`) with `_headers` parity, explicit wasm MIME, `encode` (zstd/gzip, explicit type list) only on the static half, and **no COOP/COEP** |
+| `scripts/build-web-hackathon.mjs` + `npm run build:web:hackathon` | `vite build` with `VITE_TELLER_DESK_URL=/api` and `VITE_GAME_BASE_URL` cleared, refusing to build without `public/game/index.wasm` and re-checking `dist/game/*` after |
+| Docs | HOSTING.md new **§4** (+ §8.1 evidence, hackathon-first header, §3 marked parallel twin, old §4–§7 renumbered §5–§8) · ARCHITECTURE §9 amendment · GODOT.md hosting row · `.env.example` tunnel block · `.dockerignore` `deploy` · OWED §1 human list + §4 tick |
+
+**Chosen, and why**
+
+- **Standalone file, not `-f a -f b`.** Compose *merges* `ports` across files, so an override could never remove
+  the base desk's published `8787`. The constraint "teller reachable only on the compose network" is only
+  enforceable by redefining the service — which is what this file does.
+- **`dist` bind-mounted, not baked.** The Godot export is a host step (this image cannot build Godot) and the
+  36.29 MiB `index.wasm` is git-ignored; a bind mount keeps both true and lets an operator rebuild without a
+  `docker build`. Copying `dist` to a remote host is documented for that case.
+- **Same-origin `/api` for this build only.** `?desk=` and the no-fallback rule are untouched; the hackathon build
+  simply resolves to `/api` instead of an absolute URL. `_headers` stays for the §3 Pages twin.
+- **Tunnel in token mode.** Ingress (`branchzero.app` → `HTTP caddy:8080`) lives in the Cloudflare dashboard, so
+  no hostname and no credential is in the repo; `TUNNEL_TOKEN` arrives as an env var `cloudflared` reads itself,
+  keeping it out of `command:` and `docker ps`.
+
+**Verified locally** (full evidence HOSTING §8.1): wasm `application/wasm` + immutable cache, 38,047,590 B →
+9,789,909 B gzip / 9,208,216 B zstd; no COOP/COEP anywhere; `/api/healthz` `ok:true mode:live wing:sepolia` with
+`treasury.shortfalls: 0`; `/api/events` reaching the desk as `/events?…` (prefix strip proven by the desk's own
+log); a **65 s** unbuffered SSE stream through the shipped Caddy; desk unreachable from the host; restart drill
+green; the browser walk (splash → Godot *front door up* → desk-debug `/api` + treasury block) and the full `?desk=`
+round trip; image scrub clean; `typecheck` clean; `killtests:s2` 6/6 Live and 6/6 Dev.
+
+**VERIFY / human (OWED §1, HOSTING §7):** Cloudflare Tunnel create + public hostname (no token on this machine —
+the tunnel itself was never run, only the image pinned and its empty-token failure mode recorded); Privy Allowed
+origins += `https://branchzero.app` (its `frame-ancestors` list blocked the sign-in iframe at `localhost:8080`,
+exactly as expected); treasury top-up; the first public smoke including an **authenticated ≥ 60 s `/events`**
+stream, which needs an OTP sign-in from the public origin.
+
+**Not touched:** lanes, Privy policy shapes, ROLE_SET, whitelists, session-signer flow, the one-modal rule,
+`apps/game`, `docker-compose.yml`, `Dockerfile.teller`. Pages/R2 (§3) and GameLab ENG-2026-0025 are unchanged and
+still marked parallel — neither was a blocker and neither was deleted.

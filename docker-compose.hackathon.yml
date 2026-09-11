@@ -1,0 +1,89 @@
+# Branch Zero — hackathon all-in-one stack (docs/HOSTING.md §4).
+#
+# One origin, both halves of the bank, no Cloudflare Pages 25 MiB per-file gate on the 36.3 MiB index.wasm:
+#
+#   Internet -> Cloudflare Tunnel -> caddy:8080 ┬─ /       -> apps/web/dist (bind mount, incl. /game)
+#                                               └─ /api/*  -> teller-live:8787 (prefix stripped)
+#
+# This file is STANDALONE — do not combine it with docker-compose.yml. It reuses that file's project name
+# (`branch-zero`) and volume, so the desk keeps the same players/receipts/treasury index either way, but it
+# redefines `teller-live` WITHOUT a published host port: in this stack Caddy is the only way in. (Compose
+# merges `ports` across -f files rather than replacing them, which is exactly why this is not an override.)
+#
+#   npm run build:web:hackathon                                      # dist with /api + same-origin /game
+#   TELLER_ENV_FILE=.env.teller-live docker compose -f docker-compose.hackathon.yml up -d --build
+#   curl -s http://127.0.0.1:8080/api/healthz                        # local smoke, no tunnel
+#   docker compose -f docker-compose.hackathon.yml --profile tunnel up -d   # + cloudflared (TUNNEL_TOKEN)
+#   docker compose -f docker-compose.hackathon.yml down              # keeps the volume
+#
+# Secrets are environment only, and never build args or image layers: desk keys come from the operator's
+# git-ignored env file (docs/SECURITY-AND-KEYS.md §4.1), TUNNEL_TOKEN from the shell or the git-ignored
+# repo-root .env that Compose interpolates. Developer Mode / Remote EVM `1337` has no service here at all
+# (docs/SEPOLIA-LIVE.md §4.6) — it is not something this file can be talked into publishing.
+
+services:
+  # The Live desk (Sepolia). Same image and same volume as docker-compose.yml, but reachable only on the
+  # compose network: no `ports:`, so nothing on the host or the LAN can reach :8787 directly, and the tunnel
+  # can only ever see what Caddy routes.
+  teller-live:
+    build:
+      context: .
+      dockerfile: Dockerfile.teller
+    image: branch-zero/teller-desk:local
+    container_name: bz-teller-live
+    env_file:
+      - ${TELLER_ENV_FILE:-.env}
+    environment:
+      HOST: 0.0.0.0
+      CHAIN_ID: "11155111"
+      PORT: "8787"
+      # Same-origin /api means the browser sends no Origin on GETs and needs no CORS header on the reply;
+      # this list still names the shell origins for the POSTs that do carry one. Never `*`.
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://branchzero.app,http://127.0.0.1:8080,http://localhost:8080}
+    expose:
+      - "8787"
+    volumes:
+      # players-11155111.json, receipts-11155111.json, treasury-11155111.json. Losing this strands accounts.
+      - teller-live-data:/app/apps/teller-desk/.data
+    restart: unless-stopped
+
+  # The front. Serves dist as-is and proxies /api to the desk (deploy/caddy/Caddyfile).
+  #
+  # `dist` is a READ-ONLY BIND MOUNT, not an image layer: the Godot export is produced on a host that has
+  # Godot 4.5.x (`npm run export:web`) and `index.wasm` is git-ignored, so baking it would mean either a
+  # 36 MiB blob in git or a Godot toolchain in the build. The operator builds, Caddy serves.
+  caddy:
+    image: ${CADDY_IMAGE:-caddy:2.11-alpine}
+    container_name: bz-caddy
+    depends_on:
+      - teller-live
+    volumes:
+      - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./apps/web/dist:/srv:ro
+    ports:
+      # Loopback by default: with the tunnel up, the public path is cloudflared -> caddy over the compose
+      # network, and this publish exists so the operator can smoke the exact same origin locally.
+      # CADDY_BIND=0.0.0.0 only if you deliberately want it on your LAN.
+      - "${CADDY_BIND:-127.0.0.1}:${CADDY_PORT:-8080}:8080"
+    restart: unless-stopped
+
+  # The public door. Token mode: the tunnel's ingress (branchzero.app -> http://caddy:8080) is configured in
+  # the Cloudflare dashboard, so nothing about the hostname lives in this repo. The token is a SECRET —
+  # shell env or the git-ignored .env, never a commit, never a build arg (docs/HOSTING.md §4.4).
+  # Left out of the default `up`: `--profile tunnel` opts in.
+  cloudflared:
+    profiles: ["tunnel"]
+    image: ${CLOUDFLARED_IMAGE:-cloudflare/cloudflared:2026.9.1}
+    container_name: bz-cloudflared
+    depends_on:
+      - caddy
+    environment:
+      # cloudflared reads TUNNEL_TOKEN itself; keeping it out of `command:` keeps it out of `docker ps`.
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
+    command: ["tunnel", "--no-autoupdate", "run"]
+    restart: unless-stopped
+
+volumes:
+  # Same name, same project (`branch-zero`) -> the same `branch-zero_teller-live-data` volume as the
+  # docker-compose.yml desk. One desk, one player index, two ways to run it.
+  teller-live-data:
