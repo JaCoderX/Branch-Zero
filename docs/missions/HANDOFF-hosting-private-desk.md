@@ -119,8 +119,11 @@ Constraints:
 - `_headers`: wasm MIME if needed; **no** COOP/COEP.
 - Domain: `branchzero.app` (+ `www` → apex) attached to the Pages project. Privy dashboard **Allowed origins** must
   include `https://branchzero.app` — this is a **human** step; list it in OWED §1.
-- Size probe: run `export:web`, list `public/game/*` sizes, compare against the Pages cap; if over, implement the
-  alternate-origin path for the large binaries and note it in GODOT.md hosting section.
+- Size probe: **done 2026-09-12** — `index.wasm` **36.29 MiB**, `index.pck` **6.94 MiB**. Pages per-file cap
+  fails on wasm. Default product path: **R2 / alternate origin** for `index.wasm` (and rewrite the loader). Parallel
+  lab [GameLab ENG-2026-0025](../../../GameLab/work/ENG-2026-0025-godot-web-wasm-under-25mib/) asks whether a custom
+  4.5.2 web template (3D kept, threads OFF) can get under 25 MiB — **do not** block Pages wiring on that ENG; do not
+  invent a custom template inside this hosting mission.
 
 ### 4. Hosted default desk (ops handoff, not code)
 
