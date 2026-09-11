@@ -10,6 +10,7 @@ kickoff: docs/missions/KICKOFF-hosting-private-desk.md
 prior: docs/missions/HANDOFF-lane-b-release-opaque.md (met 2026-09-09) · packaging review 2026-09-11 (chat)
 status: met (2026-09-12) — public deploy is the principal's human step, HOSTING.md §6
 parallel_to: U7 ship packaging (submission media) stays a separate unit — do not absorb it; polish re-playtest gate unchanged
+next: docs/missions/HANDOFF-hosting-hackathon-compose.md — hackathon-first all-in-one compose (Caddy + CF Tunnel); Pages/R2 remains parallel
 ---
 
 # Handoff — Hosting: Pages shell + Dockerised Teller Desk

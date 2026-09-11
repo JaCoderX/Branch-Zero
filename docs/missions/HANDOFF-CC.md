@@ -116,16 +116,16 @@ Fiat pairs (USD→EUR|ILS) **met 2026-09-09**. **Bidirectional USD↔EUR|ILS + E
 
 **Met 2026-09-11 (Codex Luna / land):** iNPC walk feel Stage C — ENG-2026-0024 Yes glb (`cfa10162…0f5c`) replaced product walk; Stage A already in tree — [HANDOFF-inpc-gum-bot-walk-feel.md](./HANDOFF-inpc-gum-bot-walk-feel.md). Principal browser Follow smoke still owed.
 
-**Open 2026-09-12 (Claude Code Fable — delegated):** **Hosting — Pages shell + Dockerised Teller Desk.** Front on
-Cloudflare Pages at `branchzero.app` (no keys); the Live Teller Desk as one Docker image that runs as the hosted
-default **and** as an operator's private desk; shell gains a runtime `?desk=` / `localStorage` override shown in
-desk-debug (https or localhost only, no silent fallback). Honest limits stay stated: a private desk must share the
-shell's Privy app/signer, and can only stamp accounts it opened or loaded (broadcaster is pinned per account).
-[HANDOFF-hosting-private-desk.md](./HANDOFF-hosting-private-desk.md) · [KICKOFF-hosting-private-desk.md](./KICKOFF-hosting-private-desk.md).
-Separate from U7 submission media; does not move the polish gate. **Wasm:** official export **36.29 MiB** fails the
-Pages ~25 MiB per-file cap — hosting assumes R2 for wasm until/unless lab
-[ENG-2026-0025](../../../GameLab/work/ENG-2026-0025-godot-web-wasm-under-25mib/) says Yes (separate Fable session;
-paste GameLab `KICKOFF.md`, not this hosting kickoff).
+**Met 2026-09-12 (Claude Code Fable):** **Hosting — Pages shell + Dockerised Teller Desk** (packaging) —
+[HANDOFF-hosting-private-desk.md](./HANDOFF-hosting-private-desk.md). Desk image, `?desk=`, HOSTING.md, R2 path
+documented. Public Pages deploy remains human.
+
+**Open 2026-09-12 (Claude Code Fable — delegated):** **Hackathon all-in-one compose + `branchzero.app`.** One
+Docker Compose stack: Live teller + Vite/Godot shell + **Caddy** + **Cloudflare Tunnel** — clears the 36.29 MiB
+wasm without Pages. Same-origin `/api`; reuse `Dockerfile.teller`; no `1337` on the tunnel. Pages/R2 and lab
+[ENG-2026-0025](../../../GameLab/work/ENG-2026-0025-godot-web-wasm-under-25mib/) stay parallel.
+[HANDOFF-hosting-hackathon-compose.md](./HANDOFF-hosting-hackathon-compose.md) ·
+[KICKOFF-hosting-hackathon-compose.md](./KICKOFF-hosting-hackathon-compose.md).
 
 **Also open:** U7 ship packaging (below), still gated on the principal's polish re-playtest.
 
@@ -979,7 +979,8 @@ the Name Desk recorded — possibly the one being moved away from); Arc; treasur
 | **Uniswap v4 FX Desk (S1/S1b)** | K7 — **met** 2026-09-08 (§5i; live swap `0xd98efc64…`, re-run on the Live till `0xd1d9cd8e…`); owed: the sponsor feedback form |
 | **Terminal Console + OBSERVER** | Stretch — **met** 2026-09-08 (§5h; local `docs/progress/2026-09-08-terminal-observer.md`) |
 | U7 polish | Principal playtest — **met** 2026-09-07 ([`KICKOFF-U7-polish.md`](./KICKOFF-U7-polish.md); owed: principal re-playtest) |
-| **Hosting — Pages + Docker desk** | **open** 2026-09-12 — `branchzero.app` shell on Pages; Live desk image; runtime desk override; wasm **36.29 MiB** → R2 until [ENG-2026-0025](../../../GameLab/work/ENG-2026-0025-godot-web-wasm-under-25mib/) ([`HANDOFF-hosting-private-desk.md`](./HANDOFF-hosting-private-desk.md)) |
+| **Hosting — Pages + Docker desk** | **met** 2026-09-12 — packaging ([`HANDOFF-hosting-private-desk.md`](./HANDOFF-hosting-private-desk.md)); public Pages deploy still human |
+| **Hackathon all-in-one compose** | **open** 2026-09-12 — Caddy + CF Tunnel + shell + Live desk for `branchzero.app` ([`HANDOFF-hosting-hackathon-compose.md`](./HANDOFF-hosting-hackathon-compose.md)) |
 | **Lab: wasm &lt; 25 MiB** | **open** 2026-09-12 — GameLab ENG-2026-0025 (custom 4.5.2 web template, 3D kept); paste GameLab `KICKOFF.md` |
 | **U7 ship packaging** | G8–G10 — **open** after re-playtest ([`KICKOFF-U7-ship-package.md`](./KICKOFF-U7-ship-package.md)) |
 | U6 Arc + manager role | G7 — **deferred** (revive ARC.md §5b) |
