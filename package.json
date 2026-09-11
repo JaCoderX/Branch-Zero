@@ -20,6 +20,7 @@
     "killtests": "npm -w apps/teller-desk run killtests --",
     "build:web": "npm -w apps/web run build",
     "export:web": "node scripts/export-web.mjs",
+    "publish:game": "node scripts/publish-game.mjs",
     "chain:probe": "npm -w infra run probe",
     "chain:bootstrap": "npm -w infra run bootstrap --",
     "chain:compile": "npm -w infra run compile",

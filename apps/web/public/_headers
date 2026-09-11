@@ -1,0 +1,31 @@
+# Cloudflare Pages response headers for the Branch Zero shell (docs/HOSTING.md section 3).
+#
+# Deliberately NO Cross-Origin-Opener-Policy / Cross-Origin-Embedder-Policy anywhere: the Godot export is
+# single-threaded (no SharedArrayBuffer) and COEP `require-corp` would break the Privy iframe (docs/GODOT.md).
+# Do not add them "for performance".
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+
+# The Godot export, when it is served from this origin (local previews; a build under the per-file cap).
+# On branchzero.app the export lives on an alternate origin (VITE_GAME_BASE_URL) and these rules are inert.
+/game/*.wasm
+  Content-Type: application/wasm
+  Cache-Control: public, max-age=31536000, immutable
+
+/game/*.pck
+  Content-Type: application/octet-stream
+  Cache-Control: public, max-age=31536000, immutable
+
+/game/*.js
+  Cache-Control: public, max-age=31536000, immutable
+
+# Vite emits hashed filenames under /assets - safe to cache forever.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# The shell itself must always be re-checked so a redeploy is picked up.
+/index.html
+  Cache-Control: no-cache

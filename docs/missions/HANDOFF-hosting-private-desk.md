@@ -8,7 +8,7 @@ objective: OBJ-2026-0004
 mission: Ship the front on Cloudflare Pages at branchzero.app; package the Live Teller Desk as one Docker image that runs both as the hosted default and as a player-operated private desk the public shell can be pointed at
 kickoff: docs/missions/KICKOFF-hosting-private-desk.md
 prior: docs/missions/HANDOFF-lane-b-release-opaque.md (met 2026-09-09) · packaging review 2026-09-11 (chat)
-status: open
+status: met (2026-09-12) — public deploy is the principal's human step, HOSTING.md §6
 parallel_to: U7 ship packaging (submission media) stays a separate unit — do not absorb it; polish re-playtest gate unchanged
 ---
 
@@ -183,3 +183,28 @@ treasury funding gate (OWED §1). The principal decides where it runs and when i
 - SSE does not survive the Pages proxy **and** absolute-URL CORS also fails — stop, record evidence, ask
 - `.wasm` exceeds the Pages cap and the alternate-origin path would require a Godot template change — record sizes
   and ask before touching the export template
+
+---
+
+## Outcome (2026-09-12, Claude Code · Fable 5.1)
+
+**Built:** `Dockerfile.teller` + `.dockerignore` + `docker-compose.yml` (`teller-live` default, `teller-dev` under
+`--profile dev` on `127.0.0.1:8788`); desk `HOST` env; `apps/web/src/shell/desk.ts` runtime resolver
+(`?desk=` → `bz.desk` → `VITE_TELLER_DESK_URL` → `/api`, https or loopback-http only, saved, Reset, no fallback) wired
+through the wallet hook, the SSE URL and `githubStar.ts`; desk-debug row + unreachable copy; `VITE_GAME_BASE_URL`
+alternate-origin loader in `main.ts`; `apps/web/public/_headers` (wasm MIME, no COOP/COEP); `scripts/publish-game.mjs`
+(R2, dry-run default); `.node-version`; `docs/HOSTING.md`; ARCHITECTURE §9 / GODOT.md / OWED amendments.
+
+**Verified locally** (details HOSTING.md §7): image has no `.env*` / key fragment; `/healthz` green in the container;
+restart drill with the volume; dev profile loopback-only; production build `?desk=` round-trips incl. invalid
+scheme warning, unreachable-desk naming, Reset; Chrome 153 mixed content https → http://localhost **allowed**;
+cross-origin export load (engine running); `npm run typecheck` clean; `killtests:s2` 6/6 on Live and Dev.
+
+**Decisions:** `/api` = **absolute desk URL + CORS** (the private desk needs it anyway; nothing buffers SSE); export
+on **R2 alternate origin** because `index.wasm` = 36.29 MiB > 25 MiB Pages cap (no template change needed).
+
+**VERIFY / human (OWED §1, HOSTING §6):** Pages project + DNS, Privy Allowed origins, R2 bucket + publish, hosted
+desk secrets + volume, Firefox mixed-content (not installed here), ≥ 60 s authenticated `/events` from the
+production origin (needs Privy OTP), `content-encoding: br` on the deployed wasm. Not touched: lanes, Privy policy
+shapes, ROLE_SET, whitelists, session-signer flow, `apps/game`.
+

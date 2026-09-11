@@ -1,0 +1,57 @@
+# Docker build context for Dockerfile.teller (repo root). The Dockerfile COPYs explicit paths, so this list is
+# belt-and-braces: nothing secret or per-machine can reach a layer even if a COPY line is widened later.
+
+# secrets - never in an image
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.jks
+*.secret
+credentials*.json
+secrets*.json
+
+# per-machine state: the player index is a VOLUME, not a layer
+apps/teller-desk/.data
+**/.data
+
+# laptop-only evidence and agent scratch
+docs/progress
+docs/missions
+.scratch
+.claude
+.cursor
+
+# not the desk's business
+apps/game
+apps/web/**
+!apps/web/package.json
+infra/**
+!infra/package.json
+!infra/deployments
+scripts
+*.md
+!apps/teller-desk/**/*.md
+
+# installs / builds
+**/node_modules
+**/dist
+**/.turbo
+infra/build
+.godot
+
+# vcs / os
+.git
+.gitignore
+.gitattributes
+Thumbs.db
+.DS_Store
+
+# media / binaries
+*.pck
+*.wasm
+*.exe
+*.mp4
+*.mkv
+*.webm

@@ -27,6 +27,7 @@ import {
   useWallets,
 } from '@privy-io/react-auth';
 import { ARC_TESTNET_CHAIN_ID, REMOTE_EVM_CHAIN_ID, SEPOLIA_CHAIN_ID, type PriorityTypedData, type SigningMode } from '@branch-zero/shared';
+import { liveDeskBase, resolveLiveDesk } from '../shell/desk';
 
 export interface Session {
   privyUserId: string;
@@ -119,8 +120,12 @@ export interface DeskTreasury {
   error?: string;
 }
 
-/** One proxy per Teller Desk process — a desk pins its chain at boot, so choosing a mode chooses a desk. */
-const LIVE_TELLER = import.meta.env.VITE_TELLER_DESK_URL || '/api';
+/**
+ * One proxy per Teller Desk process — a desk pins its chain at boot, so choosing a mode chooses a desk.
+ * The Live slot is resolved at runtime (`?desk=` → saved → build env → `/api`, see shell/desk.ts) so an operator
+ * can point the public shell at a private desk; Dev and Arc stay laptop-only proxies.
+ */
+const LIVE_TELLER = liveDeskBase();
 const DEV_TELLER = import.meta.env.VITE_DEV_TELLER_DESK_URL || '/dev-api';
 const ARC_TELLER = import.meta.env.VITE_ARC_TELLER_DESK_URL || '/arc-api';
 
@@ -464,6 +469,8 @@ export function useBranchZeroWallet() {
     mode: modeForChainId(activeChainId),
     desk,
     tellerBase: tellerFor(activeChainId),
+    /** How the Live desk URL was chosen (shell/desk.ts) — the desk-debug panel names it and offers Reset. */
+    deskChoice: resolveLiveDesk(),
     switchMode,
     switchWing,
     getAccessToken,

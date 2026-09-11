@@ -90,6 +90,13 @@ const treasuryPk = treasuryRawPk ? ((treasuryRawPk.startsWith('0x') ? treasuryRa
 
 export const config = {
   port: Number(target === 'remote' ? opt('DEV_PORT', '8788') : target === 'arc' ? opt('ARC_PORT', '8789') : opt('PORT', '8787')),
+  /**
+   * Bind address. `127.0.0.1` on a laptop, where the desk sits behind the Vite proxy and must never be
+   * reachable from the LAN. Inside a container it has to be `0.0.0.0` so Docker's port mapping can reach it;
+   * the container runtime (compose `ports:` / the host's firewall) is then the boundary. Set by the image
+   * (docs/HOSTING.md), never by `.env.example`'s defaults.
+   */
+  host: opt('HOST', '127.0.0.1'),
   chainId,
   target,
   /** `live` is the product default (Sepolia); `dev` is the operator's Remote EVM lab. Arc keeps its own label. */

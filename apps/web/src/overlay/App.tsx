@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { MOCK_MODE, onBridgeTraffic, pushBranchFloatClosed, pushInpcClosed, pushLink, pushStage, pushTerminalClosed, setBranchFloatHost, setInpcHost, setTerminalHost, setWalletAdapter, type PlayerTreasury } from '../bridge/branchZero';
 import { connectDeskEvents, type DeskLink } from '../shell/deskEvents';
+import { describeDeskSource, resetDesk } from '../shell/desk';
 import { focusCanvas } from '../shell/focus';
 import { hasKey as hasInpcKey, subscribe as subscribeInpc } from '../inpc/session';
 import { Inpc } from './Inpc';
@@ -369,7 +370,9 @@ export function App({ engineState }: { engineState: string }) {
       {w.desk && !w.desk.reachable && (
         <div style={{ color: '#ff7b72', marginBottom: 4 }}>
           {live
-            ? 'the Live desk is not answering — start it with `npm run dev:teller`'
+            ? w.deskChoice.override
+              ? `the desk you chose (${w.deskChoice.url}) is not answering — the branch will NOT fall back to the hosted desk. Start your desk, or Reset to default below.`
+              : 'the Live desk is not answering — start it with `npm run dev:teller`'
             : 'the Dev desk is not answering — Developer Mode needs Remote EVM up and `npm run dev:teller:dev`; Live is unaffected'}
         </div>
       )}
@@ -388,8 +391,42 @@ export function App({ engineState }: { engineState: string }) {
         >
           Dev (1337)
         </button>
-        <span style={{ color: '#556' }}>desk {w.tellerBase}</span>
       </div>
+
+      {/*
+        Which desk this browser talks to on the Live wing (shell/desk.ts). The front is common; the desk is the
+        operator's: `?desk=https://…` (or http://localhost) points this shell at a private Teller Desk and the
+        choice is saved for this browser. A chosen desk that is down is named above — never swapped for the
+        hosted one behind the operator's back. Operator surface only; the HUD never shows this.
+      */}
+      <div style={row}>
+        <span style={label}>desk</span>
+        <span style={{ color: live && w.deskChoice.override ? '#e3b341' : '#9aa4b2' }}>
+          <code style={{ color: '#8ab4f8' }}>{w.tellerBase}</code>
+          {live && (
+            <>
+              {' · '}
+              {describeDeskSource(w.deskChoice.source)}
+              {w.deskChoice.override && ' · private desk: its keys, its player index'}
+              {w.deskChoice.override && (
+                <button style={{ ...btn, marginLeft: 8 }} title="Forget the saved desk, drop ?desk= and reload on this build's default desk" onClick={() => resetDesk()}>
+                  Reset to default
+                </button>
+              )}
+            </>
+          )}
+        </span>
+      </div>
+      {live && w.deskChoice.rejected && (
+        <div style={{ color: '#e3b341', marginBottom: 4 }}>
+          ignored <code>?desk={w.deskChoice.rejected}</code> — only <code>https://</code> or <code>http://localhost</code> desks are accepted; nothing changed
+        </div>
+      )}
+      {live && w.deskChoice.override && w.desk?.reachable && w.desk.mode && w.desk.mode !== 'live' && (
+        <div style={{ color: '#e3b341', marginBottom: 4 }}>
+          the chosen desk reports mode <code>{w.desk.mode}</code> — a private desk for this shell should be a Live (Sepolia) desk
+        </div>
+      )}
 
       {/*
         S3 — the ops treasury, operator information only (docs/SEPOLIA-TREASURY.md §5).

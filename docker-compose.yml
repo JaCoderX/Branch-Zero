@@ -1,0 +1,66 @@
+# Branch Zero - Teller Desk (docs/HOSTING.md)
+#
+#   docker compose up -d --build teller-live            # Live desk (Sepolia) on :8787  - hosted default / private desk
+#   docker compose --profile dev up -d --build          # + Dev desk (Remote EVM 1337) on 127.0.0.1:8788 - operator only
+#
+# Secrets come from an env file the OPERATOR owns (git-ignored, never copied into the image). By default that is
+# the repo-root `.env`; set TELLER_ENV_FILE to a desk-only file (e.g. `.env.teller-live`) so the container does
+# not inherit browser/iNPC/lab variables it has no use for. Per-wing key names: docs/SECURITY-AND-KEYS.md 4.1.
+
+services:
+  teller-live:
+    build:
+      context: .
+      dockerfile: Dockerfile.teller
+    image: branch-zero/teller-desk:local
+    container_name: bz-teller-live
+    env_file:
+      - ${TELLER_ENV_FILE:-.env}
+    environment:
+      HOST: 0.0.0.0
+      CHAIN_ID: "11155111"
+      PORT: "8787"
+      # The shell origins allowed to call this desk (CORS + SSE). Add your own shell origin, never `*`.
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://branchzero.app,http://localhost:5173}
+    ports:
+      # Publish on every interface: a hosted desk sits behind the platform's TLS edge; a private desk on a
+      # laptop is reached as http://localhost:8787 by the operator's own browser. Narrow it with
+      # TELLER_LIVE_BIND=127.0.0.1 if the machine has other users on its LAN.
+      - "${TELLER_LIVE_BIND:-0.0.0.0}:8787:8787"
+    volumes:
+      # players-11155111.json, receipts-11155111.json, treasury-11155111.json. Losing this strands accounts.
+      - teller-live-data:/app/apps/teller-desk/.data
+    restart: unless-stopped
+
+  # Developer Mode desk. SAME image, `--dev` -> chain 1337, reads the unprefixed lab keys. Remote EVM is private
+  # lab infrastructure (docs/SEPOLIA-LIVE.md 4.6): this service is bound to the loopback interface and is only
+  # started with `--profile dev`. There is no way to publish it from this file without editing it.
+  teller-dev:
+    profiles: ["dev"]
+    build:
+      context: .
+      dockerfile: Dockerfile.teller
+    image: branch-zero/teller-desk:local
+    container_name: bz-teller-dev
+    command: ["node_modules/.bin/tsx", "apps/teller-desk/src/server.ts", "--dev"]
+    env_file:
+      - ${TELLER_ENV_FILE:-.env}
+    environment:
+      HOST: 0.0.0.0
+      DEV_PORT: "8788"
+      HEALTH_PORT: "8788"
+      # Inside the container 127.0.0.1 is the container itself; the operator's Remote EVM is on the host.
+      # Docker Desktop (Windows/macOS) resolves host.docker.internal natively; on Linux extra_hosts adds it.
+      REMOTE_EVM_RPC_URL: ${REMOTE_EVM_RPC_URL_DOCKER:-http://host.docker.internal:8545}
+      ALLOWED_ORIGINS: ${DEV_ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:4173}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "127.0.0.1:8788:8788"
+    volumes:
+      - teller-dev-data:/app/apps/teller-desk/.data
+    restart: unless-stopped
+
+volumes:
+  teller-live-data:
+  teller-dev-data:

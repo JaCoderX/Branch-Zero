@@ -1,0 +1,58 @@
+# syntax=docker/dockerfile:1
+#
+# Branch Zero - Teller Desk image (docs/HOSTING.md).
+#
+# One image, two ways to run it:
+#   default CMD            -> Live desk (Sepolia 11155111) on :8787   - the hosted default AND an operator's private desk
+#   ... server.ts --dev    -> Dev desk  (Remote EVM 1337)  on :8788   - compose `dev` profile, bound to 127.0.0.1 only
+#
+# Build from the REPO ROOT (npm workspaces):   docker build -f Dockerfile.teller -t branch-zero/teller-desk .
+#
+# What is deliberately NOT in this image: any `.env*` file, `apps/teller-desk/.data/` (the player index is a
+# volume), the Godot project, the shell, docs. Every secret arrives as an environment variable at run time
+# (docs/SECURITY-AND-KEYS.md section 4.1 names them per wing). `docker history` / `docker run --rm <img> find /app`
+# is the proof, not this comment.
+
+ARG NODE_IMAGE=node:22-alpine
+
+# ---- deps: the lockfile-exact install for the desk workspace and the shared package it depends on ----
+FROM ${NODE_IMAGE} AS deps
+WORKDIR /app
+# Every workspace's package.json must be present for `npm ci` to accept the lockfile; only the desk's
+# dependency tree is installed.
+COPY package.json package-lock.json ./
+COPY packages/shared/package.json packages/shared/
+COPY apps/teller-desk/package.json apps/teller-desk/
+COPY apps/web/package.json apps/web/
+COPY infra/package.json infra/
+RUN npm ci -w apps/teller-desk --no-audit --no-fund \
+ && npm cache clean --force
+
+# ---- runtime ----
+FROM ${NODE_IMAGE} AS runtime
+# Containers must bind all interfaces so the port mapping works; compose decides what is published where.
+ENV NODE_ENV=production \
+    HOST=0.0.0.0 \
+    PORT=8787 \
+    DEV_PORT=8788
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/package.json ./package.json
+# Source is run by tsx (same as `npm start`), so the image is the repo's own runtime, not a second build.
+COPY packages/shared ./packages/shared
+COPY apps/teller-desk/package.json ./apps/teller-desk/package.json
+COPY apps/teller-desk/src ./apps/teller-desk/src
+COPY apps/teller-desk/scripts ./apps/teller-desk/scripts
+# Addresses only (public data, committed) - config.ts `deployments()` reads these at boot.
+COPY infra/deployments ./infra/deployments
+# The player index + receipts + treasury ledger live here (store.ts / treasury.ts resolve REPO_ROOT/apps/teller-desk/.data).
+# Mount a volume on it; losing it strands accounts (docs/LOAD-ACCOUNT.md).
+RUN mkdir -p /app/apps/teller-desk/.data && chown -R node:node /app/apps/teller-desk/.data
+USER node
+VOLUME ["/app/apps/teller-desk/.data"]
+EXPOSE 8787 8788
+# /healthz is unauthenticated, never writes, and answers ok:false when the RPC is down - so an unhealthy
+# container really is one that cannot reach its ledger. HEALTH_PORT lets the `--dev` container check :8788.
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD wget -qO- "http://127.0.0.1:${HEALTH_PORT:-${PORT:-8787}}/healthz" | grep -q '"ok":true' || exit 1
+CMD ["node_modules/.bin/tsx", "apps/teller-desk/src/server.ts"]

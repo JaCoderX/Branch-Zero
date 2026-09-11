@@ -12,7 +12,15 @@ import { installBridge, onBridgeTraffic } from './bridge/branchZero';
 import { Providers } from './overlay/Providers';
 import { focusCanvas } from './shell/focus';
 
-const GAME_BASE = '/game/index';
+/**
+ * Where the Godot export lives. Same-origin `/game/` by default (Vite dev + any static host). On Cloudflare Pages
+ * the 36 MiB `index.wasm` is over the 25 MiB per-file cap, so the build points this at an alternate origin
+ * (`VITE_GAME_BASE_URL=https://game.branchzero.app/<version>`, an R2 bucket with CORS) and Pages carries only the
+ * shell (docs/HOSTING.md section 3). Godot's `Engine` accepts an absolute URL as `executable` and derives
+ * `.wasm`, `.pck` and the audio worklets from it, so nothing in the export template changes.
+ */
+const GAME_DIR = String(import.meta.env.VITE_GAME_BASE_URL || '/game').replace(/\/+$/, '');
+const GAME_BASE = `${GAME_DIR}/index`;
 
 installBridge();
 // Godot registering its callback is the reliable "engine is running" signal (Engine.startGame() may not settle).
@@ -73,7 +81,7 @@ async function boot() {
   setState('loading engine…');
   const head = await fetch(`${GAME_BASE}.js`, { method: 'HEAD' }).catch(() => undefined);
   if (!head || !head.ok) {
-    setState('no export found at /game/ — run `npm run export:web` (Godot 4.5.2, Web preset, threads off)');
+    setState(`no export found at ${GAME_DIR}/ — run \`npm run export:web\` (Godot 4.5.2, Web preset, threads off)`);
     return;
   }
   await loadScript(`${GAME_BASE}.js`);

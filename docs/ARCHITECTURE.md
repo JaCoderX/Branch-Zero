@@ -426,6 +426,21 @@ Branch-Zero/
 - **CORS:** Teller Desk allows the Pages origin only; SSE with credentials.
 - **Health:** `/healthz` checks RPCs and broadcaster balances; the elevator says "closed for maintenance" when Arc fails.
 
+**Amendment 2026-09-12 (hosting unit, [HOSTING.md](./HOSTING.md)).** The front is common, the desk is private:
+
+- The shell on `https://branchzero.app` holds no keys. The Godot export (`index.wasm` 36.3 MiB) is over the Pages
+  25 MiB per-file cap and is served from an alternate origin (`game.branchzero.app`, R2) chosen by the shell loader
+  via `VITE_GAME_BASE_URL` — no export-template change.
+- The Teller Desk is **one Docker image** (`Dockerfile.teller`, tsx runtime, `.data` volume, env-only secrets) that
+  runs as the hosted default **and** as an operator's private desk. The `dev` compose profile (`1337`) binds
+  `127.0.0.1` only.
+- The shell resolves the Live desk at **runtime**: `?desk=https://…` → `localStorage['bz.desk']` →
+  `VITE_TELLER_DESK_URL` → `/api` (`apps/web/src/shell/desk.ts`). The desk is reached by absolute URL + CORS
+  (`ALLOWED_ORIGINS`), not through a Pages proxy. A chosen desk that is down is named in the desk-debug panel;
+  there is no automatic fallback to the hosted desk.
+- Limits stated, not hidden: a private desk needs the same Privy app's authorization key to sign silently, and it
+  can only broadcast for accounts *it* opened (broadcaster pinned at `initialize`).
+
 ---
 
 ## 10. Observability (minimal)

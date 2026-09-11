@@ -714,7 +714,7 @@ function fail(reply: { code: (n: number) => { send: (b: unknown) => unknown } },
 // Surface a misconfigured deployments file at boot rather than on the first player.
 deployments();
 
-app.listen({ port: config.port, host: '127.0.0.1' }).then((addr) => {
+app.listen({ port: config.port, host: config.host }).then((addr) => {
   /**
    * Background rebalancing (docs/SEPOLIA-TREASURY.md §5). Live-only, key-only, unref'd: a Dev desk starts
    * nothing, and a Live desk without `SEPOLIA_TREASURY_PK` starts nothing either — the treasury is never a

@@ -7,6 +7,7 @@
  * **new tab** and ask the visitor to tap Star themselves (honest fallback — the bank tab stays).
  */
 import { focusCanvas } from './focus';
+import { liveDeskBase } from './desk';
 
 const TOKEN_KEY = 'bz.github.token';
 const STATE_KEY = 'bz.github.oauth.state';
@@ -39,10 +40,9 @@ function clientId(): string {
   return String(import.meta.env.VITE_GITHUB_CLIENT_ID ?? '').trim();
 }
 
-/** Desk URL for the code→token exchange. Live desk by default; same origin proxy. */
+/** Desk URL for the code→token exchange: the same Live desk the wallet hook uses (shell/desk.ts). */
 function oauthExchangeUrl(): string {
-  const base = String(import.meta.env.VITE_TELLER_DESK_URL || '/api').replace(/\/$/, '');
-  return `${base}/github/oauth`;
+  return `${liveDeskBase()}/github/oauth`;
 }
 
 function openCentered(url: string, name: string, w = 640, h = 740): Window | null {
