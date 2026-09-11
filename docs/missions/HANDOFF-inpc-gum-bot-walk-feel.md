@@ -15,7 +15,7 @@ parallel_to: U7 packaging · do not absorb OpenRouter / phone / navmesh / KayKit
 
 You are a **cold agent**. Prefer this file + the kickoff over chat memory. Freedom on **how**. No freedom on scope.
 
-**Prefer:** **Codex Luna** for product Stage A + land; **GameLab ENG** (Blender author) for Stage B gait.
+**Prefer:** **Codex Luna** for product Stage A + land; **GameLab ENG-2026-0024** (Blender) for Stage B gait — paste lab [`KICKOFF.md`](../../../GameLab/work/ENG-2026-0024-inpc-gum-bot-walk-feel/KICKOFF.md). Do **not** reopen ENG-2026-0022; do **not** use ENG-2026-0023 (unicorn).
 
 **Kickoff (paste):** [`KICKOFF-inpc-gum-bot-walk-feel.md`](./KICKOFF-inpc-gum-bot-walk-feel.md)
 
@@ -62,12 +62,13 @@ Stop and show the principal if Stage A alone already reads OK (unlikely given ~2
 
 ### Stage B — GameLab gait (required for hero-like read)
 
-Open / extend a GameLab ENG (prefer **ENG-2026-0022 follow-up** or mint **ENG-2026-0023** if isolation wants a fresh folder):
+**ENG-2026-0024** — [`GameLab/work/ENG-2026-0024-inpc-gum-bot-walk-feel/`](../../../GameLab/work/ENG-2026-0024-inpc-gum-bot-walk-feel/) · paste lab [`KICKOFF.md`](../../../GameLab/work/ENG-2026-0024-inpc-gum-bot-walk-feel/KICKOFF.md).
 
 - Re-author `GumBot_Walk` (and idle if needed) on the **existing** Gum Bot Rig.
-- Target: contact → swing → contact readable in a 3-frame strip at ~4–6 m camera distance; hip/knee swing in the same ballpark as KayKit bank walk (order-of-magnitude larger than today's ~2°).
+- Target: contact → swing → contact readable in a 3-frame strip at ~4–6 m camera distance; hip/knee swing ≫ today's ~2°.
 - Keep: lod03, bank materials, no root motion, ≤1024², screen UV intact.
 - Proof: Godot 4.5.2 Compatibility windowed strip + `out/gum_bot_bank_walk.glb` + sha256.
+- Isolation copies already in the ENG (`ref/prior_0022_walk.glb` = amplitude baseline to beat).
 
 ### Stage C — product land
 

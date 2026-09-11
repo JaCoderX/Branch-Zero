@@ -54,6 +54,7 @@ const STUCK_SEC := 1.5
 const STUCK_PAUSE_SEC := 2.0
 const FAR_DIST := 7.0
 const TURN := 8.0
+const ANIM_GROUND_EPSILON := 0.05
 
 var _screen_mat: StandardMaterial3D
 var _screen_dormant_tex: Texture2D
@@ -62,6 +63,7 @@ var _anim: AnimationPlayer
 var _player: PhysicsBody3D
 var _follow: Follow = Follow.HOME
 var _walking := false
+var _ground_speed := 0.0
 var _stuck_t := 0.0
 var _pause_t := 0.0
 var _home: Vector3
@@ -170,7 +172,9 @@ func _dress() -> void:
 func _desired_animation() -> String:
 	if _anim == null:
 		return ""
-	var walking := _follow == Follow.FOLLOWING and _walking
+	# `_walking` is the seek hysteresis state, so it can stay true while the mover is settling or paused.
+	# Animation follows measured ground motion instead: a parked companion must not keep the walk clip running.
+	var walking := _follow == Follow.FOLLOWING and _walking and _ground_speed > ANIM_GROUND_EPSILON
 	var names := ["GumBot_Walk", "walk"] if walking else ["GumBot_Idle", "idle"]
 	for clip_name in names:
 		if _anim.has_animation(clip_name):
@@ -182,9 +186,12 @@ func _sync_animation() -> void:
 	if _anim == null:
 		return
 	var desired := _desired_animation()
-	if desired == "" or _anim.current_animation == desired:
+	if desired == "":
 		return
-	_anim.speed_scale = 1.0
+	var walking := desired == "GumBot_Walk" or desired == "walk"
+	_anim.speed_scale = clampf(_ground_speed / PropKit.walk_mps(), 0.5, 2.0) if walking else 1.0
+	if _anim.current_animation == desired:
+		return
 	_anim.play(desired, 0.12)
 
 
@@ -225,6 +232,7 @@ func _player_body() -> PhysicsBody3D:
 func _begin_follow() -> void:
 	_follow = Follow.FOLLOWING
 	_walking = true
+	_ground_speed = 0.0
 	_stuck_t = 0.0
 	_pause_t = 0.0
 	_clear_ignored()
@@ -249,6 +257,7 @@ func _begin_follow() -> void:
 func _stay() -> void:
 	_follow = Follow.STAYING
 	_walking = false
+	_ground_speed = 0.0
 	_clear_ignored()
 	if _mover != null:
 		_mover.velocity = Vector3.ZERO
@@ -259,6 +268,7 @@ func _stay() -> void:
 func _go_home() -> void:
 	_follow = Follow.HOME
 	_walking = false
+	_ground_speed = 0.0
 	_clear_ignored()
 	if _mover != null:
 		_mover.velocity = Vector3.ZERO
@@ -320,6 +330,7 @@ func _face_player(delta: float) -> void:
 func _seek(delta: float) -> void:
 	var p := _player_body()
 	if p == null:
+		_ground_speed = 0.0
 		_stay()
 		return
 	var to_player := p.global_position - global_position
@@ -330,6 +341,7 @@ func _seek(delta: float) -> void:
 		# grinding into whatever stopped us.
 		_pause_t -= delta
 		_settle()
+		_ground_speed = 0.0
 		if _pause_t <= 0.0 and dist > FAR_DIST:
 			_reposition_near(p)
 		return
@@ -339,6 +351,7 @@ func _seek(delta: float) -> void:
 		_walking = false
 	if not _walking:
 		_settle()
+		_ground_speed = 0.0
 		_face_player(delta)
 		return
 	# Rest point: FOLLOW_DIST short of the player, on our side of them.
@@ -347,6 +360,7 @@ func _seek(delta: float) -> void:
 	d.y = 0.0
 	if d.length() < 0.05:
 		_settle()
+		_ground_speed = 0.0
 		return
 	var dir := d.normalized()
 	_mover.velocity.x = dir.x * FOLLOW_SPEED
@@ -356,6 +370,7 @@ func _seek(delta: float) -> void:
 	rotation.y = lerp_angle(rotation.y, atan2(-dir.x, -dir.z), TURN * delta)
 	var real := _mover.get_real_velocity()
 	var ground := Vector2(real.x, real.z).length()
+	_ground_speed = ground
 	_stuck_t = _stuck_t + delta if ground < STUCK_SPEED else 0.0
 	if _stuck_t > STUCK_SEC:
 		_stuck_t = 0.0
