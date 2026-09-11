@@ -14,6 +14,7 @@ extends Node3D
 ## Sockets are three world positions picked from the WORLD-3D east-column pins — far / mid / near — all behind FX
 ## furniture from the customer pad and all ≥ 2 m from anywhere a player can stand (PERSONAL_SPACE re-checks that at
 ## run time and drops a tier when a body is too close). No navmesh, no line-of-sight queries: pick by idle tier only.
+## Every tick the prop yaws so the nose tracks the hero (hidden silhouette and peeks alike) — never a fixed west stare.
 ##
 ## Seeded discovery: the first time the player idles ≥ 3 s while *inside the FX desk zone* the peek is forced to the
 ## mid socket with a longer dwell, so a demo walk that pauses at the desk notices it once. Every later peek follows
@@ -152,6 +153,7 @@ func step(delta: float, active: bool) -> void:
 	alpha = move_toward(alpha, _target_alpha, rate * delta)
 	alpha = clampf(alpha, HIDDEN_ALPHA, PEEK_ALPHA)
 	_apply_alpha()
+	_face_player()   # always track the hero — silhouette and peeks both look at them
 
 
 func _start_peek(dwell: float) -> void:
@@ -189,9 +191,11 @@ func _tier_for(idle: float) -> Array:
 func _place(index: int) -> void:
 	socket = clampi(index, 0, SOCKETS.size() - 1)
 	global_position = SOCKETS[socket]
+	_face_player()
 
 
 ## Yaw the whole prop so the body's nose points at the player (nose = world −x when rotation.y is 0).
+## Called every `step` so the unicorn keeps facing the hero while they idle / orbit, not only at peek start.
 func _face_player() -> void:
 	var p := _player()
 	if p == null or _body == null:
