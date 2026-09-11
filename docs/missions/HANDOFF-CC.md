@@ -114,7 +114,7 @@ Fiat pairs (USD→EUR|ILS) **met 2026-09-09**. **Bidirectional USD↔EUR|ILS + E
 
 **Met 2026-09-11 (Codex Luna):** iNPC skinned walk land — lab ENG-2026-0022 **Yes**; `gum_bot_bank_walk.glb` replaced the product rest-pose mesh and `inpc.gd` drives `GumBot_Walk` / `GumBot_Idle` from follow state — [HANDOFF-inpc-gum-bot-walk.md](./HANDOFF-inpc-gum-bot-walk.md) · [KICKOFF-inpc-gum-bot-walk.md](./KICKOFF-inpc-gum-bot-walk.md).
 
-**Open (parallel):** iNPC walk feel — Follow gait still unreadably small (~2° leg swing; wiring OK); Stage A product nits → GameLab **ENG-2026-0024** → Stage C land — [HANDOFF-inpc-gum-bot-walk-feel.md](./HANDOFF-inpc-gum-bot-walk-feel.md) · [KICKOFF-inpc-gum-bot-walk-feel.md](./KICKOFF-inpc-gum-bot-walk-feel.md) · lab [`ENG-2026-0024`](../../../GameLab/work/ENG-2026-0024-inpc-gum-bot-walk-feel/KICKOFF.md).
+**Met 2026-09-11 (Codex Luna / land):** iNPC walk feel Stage C — ENG-2026-0024 Yes glb (`cfa10162…0f5c`) replaced product walk; Stage A already in tree — [HANDOFF-inpc-gum-bot-walk-feel.md](./HANDOFF-inpc-gum-bot-walk-feel.md). Principal browser Follow smoke still owed.
 
 **Also open:** U7 ship packaging (below), still gated on the principal's polish re-playtest.
 

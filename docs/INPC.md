@@ -122,7 +122,7 @@ Provenance: ENG-0019 fixture → product-owned under `game-knowledge/` (counter 
 | Spot | `INPC_SPOT (3.5, 0, 4.5)` · `INPC_YAW π` (south, beside Ash) | Lobby greeter pair |
 | Interact | Extends `BankTerminal` for near/Space only; not in `terminal` group; mover = `CharacterBody3D` cylinder r 0.58 × 1.40 on layer 1 / mask 1 (solid when parked; ignores player + staff while following) | Correct — zone radius 1.9 still clears the body and travels with it |
 
-**Still optional:** blink / poweron polish, KayKit plinth. **Skinned walk land met 2026-09-11** (clips play; mover still translates). **Open — walk feel:** principal eye still reads a slide; probe shows ~2° leg swing (wiring OK) — Stage B = GameLab [ENG-2026-0024](../../GameLab/work/ENG-2026-0024-inpc-gum-bot-walk-feel/) · [HANDOFF-inpc-gum-bot-walk-feel.md](./missions/HANDOFF-inpc-gum-bot-walk-feel.md). Companion follow Phase 1 met (above). Stills: `tests/inpc_shots.tscn` (windowed) → `docs/progress/captures/inpc-gum-bot/`.
+**Still optional:** blink / poweron polish, KayKit plinth. **Skinned walk land met 2026-09-11.** **Walk feel met 2026-09-11** — ENG-2026-0024 Yes (alternating foot lift + body rock; box silhouette cannot match KayKit hip swing) → Stage C glb `cfa10162…0f5c` — [HANDOFF-inpc-gum-bot-walk-feel.md](./missions/HANDOFF-inpc-gum-bot-walk-feel.md). Companion follow Phase 1 met (above). Stills: `tests/inpc_shots.tscn` (windowed) → `docs/progress/captures/inpc-gum-bot/`.
 
 **Mesh land (met 2026-09-10):** lab Gum Bot bank remap Yes — [HANDOFF-inpc-gum-bot-mesh.md](./missions/HANDOFF-inpc-gum-bot-mesh.md) · [KICKOFF-inpc-gum-bot-mesh.md](./missions/KICKOFF-inpc-gum-bot-mesh.md) (ENG-2026-0021); ship set + CC0 licence in `assets/models/inpc/`, [CREDITS.md](../CREDITS.md) row.
 

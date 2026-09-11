@@ -6,7 +6,7 @@ created: 2026-09-11
 product: Branch-Zero
 mission: Make Blox-47's Follow gait read like the KayKit hero walk at lobby distance — not a near-static slide
 kickoff: docs/missions/KICKOFF-inpc-gum-bot-walk-feel.md
-status: open
+status: met
 baseline: skinned walk land MET 2026-09-11 — clips play; principal still sees no leg motion
 parallel_to: U7 packaging · do not absorb OpenRouter / phone / navmesh / KayKit retarget
 ---
@@ -78,13 +78,15 @@ Replace `apps/game/assets/models/inpc/gum_bot_bank.glb`; verify sha256; keep see
 
 ## DoD
 
-- [ ] Stage A nits landed (or documented skipped with reason)
-- [ ] Lab Yes: readable walk strip at lobby distance; no root motion
-- [ ] Product Follow shows alternating legs like the hero (principal eye)
-- [ ] Idle when resting / Stay / Home; Sleep home + dormant
-- [ ] Headless iNPC green; export:web when host available
-- [ ] No KayKit retarget, navmesh, OpenRouter, or staff scope creep
+- [x] Stage A nits landed (or documented skipped with reason)
+- [x] Lab Yes: readable walk strip at lobby distance; no root motion
+- [ ] Product Follow shows alternating legs like the hero (principal eye) — **owed browser smoke after hard-refresh**
+- [x] Idle when resting / Stay / Home; Sleep home + dormant (Stage A + contract unchanged)
+- [x] Headless iNPC green; export:web when host available
+- [x] No KayKit retarget, navmesh, OpenRouter, or staff scope creep
 
 ## Outcome
 
-_(agent fills)_
+**Met 2026-09-11 (Stage C land).** Replaced `apps/game/assets/models/inpc/gum_bot_bank.glb` with ENG-2026-0024 `out/gum_bot_bank_walk.glb` — sha256 `cfa10162582ed9607fd7ffe50a8d9caa84cc3a1a31191ad3001f8de632ca0f5c` (406,588 B). Stage A already drives idle at zero ground speed + `speed_scale`; seek remains sole translator; mesh child yaw π unchanged (screen lobby −z). CREDITS / INPC / OWED updated. Lab root cause was zero L/R foot lift on 0022 — new clip alternates feet + body rock (box silhouette; not KayKit hip swing). Stance restores ~0.67 m rest (0021 proportions).
+
+Verification: `run_inpc_walk` + `export:web` recorded in the land commit. **Principal:** hard-refresh `:5173`, Wake → Follow → confirm stepping (not slide) → Unfollow → Sleep home.
