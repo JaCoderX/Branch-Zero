@@ -1,7 +1,7 @@
 ﻿---
 title: Owed / follow-up checklist
 created: 2026-09-08
-updated: 2026-09-10
+updated: 2026-09-12
 product: Branch-Zero
 audience: principal + cold agents
 ---
@@ -55,6 +55,7 @@ Related: [HANDOFF-CC.md](./missions/HANDOFF-CC.md) · [DEV-LOOP.md](./DEV-LOOP.m
 - [x] **ENS passbook polish** — omit unclaimed bank-name noise; mirror `bz.tier` onto the passbook (met 2026-09-10, mock + typecheck; Live tier glance is a principal walk) — [HANDOFF-ens-passbook-polish.md](./missions/HANDOFF-ens-passbook-polish.md) · [KICKOFF-ens-passbook-polish.md](./missions/KICKOFF-ens-passbook-polish.md) (**Claude Code**)
 - [x] **Shell splash (early visual)** — branded first-paint while Godot wasm/`.pck` load; hand off to existing front door — [HANDOFF-shell-splash.md](./missions/HANDOFF-shell-splash.md) · [KICKOFF-shell-splash.md](./missions/KICKOFF-shell-splash.md) (**Claude Code**) — **met 2026-09-10** (shell-only: `index.html` plaque + `main.ts` status/bar; hides on `running`/`bridge.ready`; Godot front door untouched; no export needed)
 - [x] **iNPC phone Talk dead** — Talk button not responding after mirror-sync path; keep `inpc.open` → fresh board — [HANDOFF-inpc-phone-talk.md](./missions/HANDOFF-inpc-phone-talk.md) · [KICKOFF-inpc-phone-talk.md](./missions/KICKOFF-inpc-phone-talk.md) (**met 2026-09-10**; normal click restored, open waiter fails fast; mock browser smoke green; Godot headless unavailable here)
+- [ ] **Hosting — Pages shell + Dockerised Teller Desk** — `branchzero.app` on Cloudflare Pages (no keys); Live desk as one Docker image (hosted default **and** operator-run private desk, `.data` volume, env-only secrets, `dev` profile localhost-only); shell runtime `?desk=` override in desk-debug, no silent fallback; `docs/HOSTING.md` with the honest privacy statement — [HANDOFF-hosting-private-desk.md](./missions/HANDOFF-hosting-private-desk.md) · [KICKOFF-hosting-private-desk.md](./missions/KICKOFF-hosting-private-desk.md) (**Claude Code Fable**, delegated 2026-09-12). Human after: DNS attach, Privy Allowed origins, hosted desk secrets + volume
 - [ ] **U7 ship packaging** — [KICKOFF-U7-ship-package.md](./missions/KICKOFF-U7-ship-package.md) · [DEMO-SCRIPT.md](./DEMO-SCRIPT.md) (G8–G10)
 - [x] Optional parallel (separate CC session): **character-style climb** — [HANDOFF-character-style.md](./missions/HANDOFF-character-style.md) · [KICKOFF-character-style.md](./missions/KICKOFF-character-style.md) (met 2026-09-08)
 - [x] Optional parallel (separate session): **character charm** — faces + expressions, proportion, mid-50s wardrobe — [HANDOFF-character-charm.md](./missions/HANDOFF-character-charm.md) · [KICKOFF-character-charm.md](./missions/KICKOFF-character-charm.md) (met 2026-09-08)

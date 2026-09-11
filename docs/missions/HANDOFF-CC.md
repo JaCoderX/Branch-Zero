@@ -3,7 +3,7 @@ type: handoff
 title: Handoff — Claude Code / Fable 5.1
 audience: cold agent
 created: 2026-09-06
-updated: 2026-09-09
+updated: 2026-09-12
 product: Branch-Zero
 objective: OBJ-2026-0004
 first_mission: U7 ship packaging once the polish gate clears (docs/missions/KICKOFF-U7-ship-package.md). Lane B timed Release opaque MET 2026-09-09 — wire #14 released `0x16b519b5…d46b`; root cause Privy `policy_violation` (release rule pinned away by a positional id pin), fixed by name-based `reconcileTxRules` on /session, Load Account and a one-shot heal in Release; see HANDOFF-lane-b-release-opaque. Live OTP walk MET 2026-09-09 (OWED); Load Account via Iris MET 2026-09-08; Sepolia Ops Treasury MET 2026-09-08; KayKit cast ladder MET 2026-09-09; U6 Arc G7 deferred
@@ -115,6 +115,14 @@ Fiat pairs (USD→EUR|ILS) **met 2026-09-09**. **Bidirectional USD↔EUR|ILS + E
 **Met 2026-09-11 (Codex Luna):** iNPC skinned walk land — lab ENG-2026-0022 **Yes**; `gum_bot_bank_walk.glb` replaced the product rest-pose mesh and `inpc.gd` drives `GumBot_Walk` / `GumBot_Idle` from follow state — [HANDOFF-inpc-gum-bot-walk.md](./HANDOFF-inpc-gum-bot-walk.md) · [KICKOFF-inpc-gum-bot-walk.md](./KICKOFF-inpc-gum-bot-walk.md).
 
 **Met 2026-09-11 (Codex Luna / land):** iNPC walk feel Stage C — ENG-2026-0024 Yes glb (`cfa10162…0f5c`) replaced product walk; Stage A already in tree — [HANDOFF-inpc-gum-bot-walk-feel.md](./HANDOFF-inpc-gum-bot-walk-feel.md). Principal browser Follow smoke still owed.
+
+**Open 2026-09-12 (Claude Code Fable — delegated):** **Hosting — Pages shell + Dockerised Teller Desk.** Front on
+Cloudflare Pages at `branchzero.app` (no keys); the Live Teller Desk as one Docker image that runs as the hosted
+default **and** as an operator's private desk; shell gains a runtime `?desk=` / `localStorage` override shown in
+desk-debug (https or localhost only, no silent fallback). Honest limits stay stated: a private desk must share the
+shell's Privy app/signer, and can only stamp accounts it opened or loaded (broadcaster is pinned per account).
+[HANDOFF-hosting-private-desk.md](./HANDOFF-hosting-private-desk.md) · [KICKOFF-hosting-private-desk.md](./KICKOFF-hosting-private-desk.md).
+Separate from U7 submission media; does not move the polish gate.
 
 **Also open:** U7 ship packaging (below), still gated on the principal's polish re-playtest.
 
@@ -968,6 +976,7 @@ the Name Desk recorded — possibly the one being moved away from); Arc; treasur
 | **Uniswap v4 FX Desk (S1/S1b)** | K7 — **met** 2026-09-08 (§5i; live swap `0xd98efc64…`, re-run on the Live till `0xd1d9cd8e…`); owed: the sponsor feedback form |
 | **Terminal Console + OBSERVER** | Stretch — **met** 2026-09-08 (§5h; local `docs/progress/2026-09-08-terminal-observer.md`) |
 | U7 polish | Principal playtest — **met** 2026-09-07 ([`KICKOFF-U7-polish.md`](./KICKOFF-U7-polish.md); owed: principal re-playtest) |
+| **Hosting — Pages + Docker desk** | **open** 2026-09-12 — `branchzero.app` shell on Pages; Live desk image (hosted default + private desk); runtime desk override ([`HANDOFF-hosting-private-desk.md`](./HANDOFF-hosting-private-desk.md)) |
 | **U7 ship packaging** | G8–G10 — **open** after re-playtest ([`KICKOFF-U7-ship-package.md`](./KICKOFF-U7-ship-package.md)) |
 | U6 Arc + manager role | G7 — **deferred** (revive ARC.md §5b) |
 
