@@ -74,6 +74,8 @@ edge fade and a matte, low-contrast procedural brick underlay; thin, non-collidi
 leave ~35 cm of clear masonry before the entrance gap. The entrance gap, revolving door, lighting and interior partners
 board remain unchanged. These are visual credits only, with no click-out.
 
+FX folklore prop (2026-09-11, `scripts/fx_unicorn.gd`, lab ENG-2026-0023): a shy pink Minecraft-style unicorn (Amazing Inc., CC-BY 4.0 — CREDITS row) lives behind Johnny's furniture. It is a soft pink silhouette (alpha 0.10, never invisible) at a far socket in the NE nook (x 13.9, z −4.65); after ≥ 3 s of locomotion / interact idle (camera look does not count) it fades in for a short peek, and longer idle moves it to the staff side behind the counter's south end (x 13.35, z 0.0, head over the 1.1 m counter through the glass) and then behind the printer / screen on the shelf's north half (x 13.35, z −3.95), with dwell capped at 10 s and every socket ≥ 3 m from the customer pad. Any WASD / click walk / interact / open dialogue dissolves it back to the far socket. The first idle ≥ 3 s inside the `FX desk` zone is a seeded discovery peek at the mid socket so a demo walk notices it once. No collider, no dialogue, not staff, not an iNPC, nothing on the FX swap path. Budget: one static 1,964-tri glb, one textured alpha material with the Closest filter, shadows off — the §6 mesh-material ceiling is **43** (45 with the particle pair) since this land, after 42 / 44 for the Gum Bot.
+
 East-column placement pins (north → south): vault partition z = −5.0; expanded FX counter/shelf z ∈ [−4.4, 0.4],
 centre −2.0; SECURITY door z ∈ [1.0, 2.0], centre 1.5; elevator centre z = 5.5, shaft z ∈ [4.0, 7.0].
 The FX assembly is pulled west by 1.2 m, then the counter/shelf/tools another 0.35 m (`FX_DESK_FORWARD`) so the
@@ -159,7 +161,7 @@ Pipeline rules:
 |--------|--------|----------------|
 | Draw calls | ≤ 350 per frame | Static mesh merging per zone; MultiMesh for plants/benches |
 | Triangles | ≤ 400k on screen | Low-poly kits; LODs |
-| Materials | ≤ 40 unique on meshes (≤ 42 with Stage 5 particle billboards) | Shared PropKit palette + ≤ 5 KayKit body albedos; LODs |
+| Materials | ≤ 40 palette / cast materials on meshes; documented textured-prop bumps: 42 (Gum Bot, 2026-09-10), **43** (shy FX unicorn, 2026-09-11) — 45 with the Stage 5 particle billboards | Shared PropKit palette + ≤ 5 KayKit body albedos; LODs |
 | Lights with shadows | 1 (directional) | Omni lights without shadows |
 | Texture memory | ≤ 128 MB | Basis compression, 1k caps |
 | Export size | ≤ 60 MB `.pck` + ~40 MB wasm | Strip unused assets; mono audio at 22 kHz for SFX |

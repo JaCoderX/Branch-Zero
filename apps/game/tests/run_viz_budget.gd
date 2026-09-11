@@ -25,10 +25,12 @@ extends SceneTree
 
 ## 40 for the art pass; +2 since the iNPC Gum Bot land (2026-09-10, ENG-2026-0021): the glb's textured body albedo and
 ## its screen emissive override are the only two non-palette mesh materials in the building.
-const MAX_MATERIALS := 42
+## +1 since the shy FX unicorn land (2026-09-11, ENG-2026-0023): one textured pink albedo with alpha on a static
+## 1,964-tri glb behind Johnny's furniture (scripts/fx_unicorn.gd). Three non-palette mesh materials, no more.
+const MAX_MATERIALS := 43
 ## Stage 5 particles add two billboard mats counted separately from the mesh walk; KayKit's five body albedos
 ## leave mesh ≤ 40 but mesh+particles at 41–42. Keep the mesh ceiling tight; allow the documented particle pair.
-const MAX_MATERIALS_WITH_PARTICLES := 44
+const MAX_MATERIALS_WITH_PARTICLES := 45
 const MAX_TRIS := 400_000
 const MAX_SURFACES := 350
 const MAX_OMNIS := 8          # Compatibility lights ≤ 8 omnis per mesh and the merged interior sees them all
@@ -621,6 +623,41 @@ func _run() -> void:
 		_ok("north wall cut behind the door (WallN_a / WallN_b + lintel)")
 	else:
 		_fail("north wall not cut for the strongroom")
+
+	print("shy FX unicorn (ENG-2026-0023)")
+	# Ambient folklore prop: one static glb, one textured alpha material (the documented +1), Closest filter, no
+	# shadow, no collider, hidden at the soft-alpha floor on its far socket inside the east FX run. Never a terminal,
+	# never an NPC, never on the swap path (docs/missions/HANDOFF-shy-fx-unicorn.md).
+	var unicorn := main.get_node_or_null("FxUnicorn") as Node3D
+	if unicorn == null:
+		_fail("FxUnicorn missing under Main")
+	else:
+		var u_meshes := unicorn.find_children("*", "MeshInstance3D", true, false)
+		var u_mat: StandardMaterial3D = (u_meshes[0] as MeshInstance3D).get_active_material(0) as StandardMaterial3D if u_meshes.size() == 1 else null
+		var u_bad: PackedStringArray = []
+		if u_meshes.size() != 1 or (u_meshes[0] as MeshInstance3D).mesh == null:
+			u_bad.append("%d mesh instances (want the one glb mesh)" % u_meshes.size())
+		if u_mat == null or u_mat.albedo_texture == null or u_mat.transparency != BaseMaterial3D.TRANSPARENCY_ALPHA:
+			u_bad.append("material is not one textured alpha StandardMaterial3D")
+		elif u_mat.texture_filter != BaseMaterial3D.TEXTURE_FILTER_NEAREST:
+			u_bad.append("albedo filter is not Closest")
+		elif u_mat.albedo_color.a < 0.05 or u_mat.albedo_color.a > 0.2:
+			u_bad.append("hidden alpha %.2f outside the soft floor 0.05-0.2" % u_mat.albedo_color.a)
+		if u_meshes.size() == 1 and (u_meshes[0] as MeshInstance3D).cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
+			u_bad.append("casts shadows")
+		if not unicorn.find_children("*", "CollisionObject3D", true, false).is_empty():
+			u_bad.append("has a collider")
+		if unicorn.is_in_group("inpc") or unicorn.is_in_group("npc"):
+			u_bad.append("is registered as staff / iNPC")
+		var up: Vector3 = unicorn.global_position
+		if up.x < 12.5 or up.x > 14.6 or up.z < -4.9 or up.z > 1.6:
+			u_bad.append("far socket %s is outside the east FX run" % str(up))
+		if not FileAccess.file_exists("res://assets/models/fx_unicorn/LICENSE-fx-unicorn.txt"):
+			u_bad.append("LICENSE-fx-unicorn.txt missing (CC-BY 4.0 attribution)")
+		if u_bad.is_empty():
+			_ok("FxUnicorn: one glb mesh, one textured alpha material (Closest), shadowless, no collider, hidden (alpha %.2f) at %s, licence beside the glb" % [u_mat.albedo_color.a, str(up)])
+		else:
+			_fail("FxUnicorn: %s" % "; ".join(u_bad))
 
 	print("\n%s — %d failure(s)" % ["PASS" if failures == 0 else "FAIL", failures])
 	quit(0 if failures == 0 else 1)

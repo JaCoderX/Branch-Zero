@@ -97,6 +97,11 @@ func _ready() -> void:
 	var fx_board := Node3D.new()
 	fx_board.set_script(load("res://scripts/fx_board.gd"))
 	add_child(fx_board)
+	# Ambient FX folklore: the shy pink unicorn behind Johnny's furniture (scripts/fx_unicorn.gd). No collider,
+	# no dialogue, nothing on the swap path - it only reads player idle and GameState.ui_locked.
+	var unicorn := Node3D.new()
+	unicorn.set_script(load("res://scripts/fx_unicorn.gd"))
+	add_child(unicorn)
 
 	var npcs := Node3D.new()
 	npcs.name = "NPCs"

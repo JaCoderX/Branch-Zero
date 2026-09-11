@@ -33,6 +33,8 @@
 
 Related: [PLAN.md](./PLAN.md) § 3 (tier S1) · [REFLECTION.md](./REFLECTION.md) § Sponsor matrix · [BLOXCHAIN-INTEGRATION.md](./BLOXCHAIN-INTEGRATION.md) § 3 (guard config batch) · [HANDOFF-CC.md](./missions/HANDOFF-CC.md) §5i
 
+> Ambient only, not part of the S1 path: since 2026-09-11 a shy pink voxel unicorn (Uniswap folklore, CC-BY Amazing Inc.) peeks from behind Johnny's furniture after a few seconds of standing still — `apps/game/scripts/fx_unicorn.gd`, [HANDOFF-shy-fx-unicorn.md](./missions/HANDOFF-shy-fx-unicorn.md). It never quotes, gates or touches the swap lanes and is not an on-chain anything.
+
 Docs: [Universal Router](https://docs.uniswap.org/contracts/universal-router/overview) · [v4 swap via Universal Router](https://docs.uniswap.org/contracts/v4/quickstart/swap) · [v4 deployments](https://docs.uniswap.org/contracts/v4/deployments) · [Permit2](https://docs.uniswap.org/contracts/permit2/overview) · [v4 Quoter](https://docs.uniswap.org/contracts/v4/reference/periphery/lens/V4Quoter)
 
 ---

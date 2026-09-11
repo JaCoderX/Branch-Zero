@@ -1,0 +1,15 @@
+Low Poly 3D Rainbow Unicorn — Amazing Inc.
+https://amazing-inc.itch.io/rainbow-unicorn
+
+Licence: Creative Commons Attribution 4.0 International (CC-BY 4.0)
+https://creativecommons.org/licenses/by/4.0/
+
+unicorn_pink.glb in this folder is a DERIVATIVE of the pack's UnicornGlasses mesh:
+the stock rainbow colour sheet was remapped to a pink ladder (GameLab ENG-2026-0023,
+scripts/remap_pink.py) and the result was re-exported as glTF 2.0 with the pink sheet
+embedded. Geometry is unchanged. The derivative is offered under the same CC-BY 4.0 terms.
+
+Attribution: "Low Poly 3D Rainbow Unicorn" by Amazing Inc., CC-BY 4.0. Colour remap by D9 Studio.
+Source hashes (sha256):
+  UnicornGlasses.fbx      ff4dd0b79d5e26783dcfafe83afcabf6c48cc9eab1d4a17d04b1066ce4bea2bf
+  unicorn_pink_sheet.png  468d6080e1bc0142fdda29fbf275fef3636a51c8ab7864329eef3d89e890d8a0
