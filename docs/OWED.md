@@ -101,6 +101,7 @@ Related: [HANDOFF-CC.md](./missions/HANDOFF-CC.md) · [DEV-LOOP.md](./DEV-LOOP.m
 
 | When | Item |
 |------|------|
+| 2026-09-11 | iNPC walk feel — ENG-2026-0024 Yes (zero L/R lift was the slide); Stage C glb `cfa10162…` + export:web; REFLECTION lesson filed — [HANDOFF-inpc-gum-bot-walk-feel.md](./missions/HANDOFF-inpc-gum-bot-walk-feel.md) |
 | 2026-09-10 | FX bidirectional + fiat Lane A — USD ↔ EUR \| ILS (`side` buy\|sell, amount in the sold currency); `enableFx` heals a one-way till to seven whitelist rows (approve USD/EUR/ILS · Permit2 · router · transfer EUR/ILS) in one batch `0x5dfe8a35…`; Live swaps `0x272a6a28…` / `0x6c1480b2…` (EUR) · `0x2b0b3c9b…` / `0x509c5d93…` (ILS); Lane A paid 0.5 EUR `0xdb918169…` + 0.5 ILS `0xba3bf13c…`; K7-a…h, `run_fx_walk` green — [HANDOFF-fx-bidirectional.md](./missions/HANDOFF-fx-bidirectional.md) |
 | 2026-09-10 | iNPC Live mirror sync code — phone Talk → `inpc.open` / Ask → `inpc.freshen`; headless walk + web typecheck green; **principal Live smoke still §2** ([INPC.md](./INPC.md)) |
 | 2026-09-10 | Distinct `SEPOLIA_TREASURY_PK` + `SEPOLIA_TREASURY_ALLOW_ROLE_REUSE=off` — registrar-share concession retired ([REFLECTION](./REFLECTION.md) S3); §1 faucet → new address |
