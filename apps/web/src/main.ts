@@ -21,6 +21,30 @@ import { focusCanvas } from './shell/focus';
  */
 const GAME_DIR = String(import.meta.env.VITE_GAME_BASE_URL || '/game').replace(/\/+$/, '');
 const GAME_BASE = `${GAME_DIR}/index`;
+/** From build-web.mjs (index.pck sha prefix). Forces a new URL for hashless Godot assets after each export. */
+const GAME_ASSET_BUST = String(import.meta.env.VITE_GAME_ASSET_BUST || '').trim();
+
+/** Godot loads `/game/index.{js,wasm,pck}` by concatenating `executable + '.ext'` — append `?v=` so redeploys win. */
+function installGameAssetBust(): void {
+  if (!GAME_ASSET_BUST || typeof window.fetch !== 'function') return;
+  const orig = window.fetch.bind(window);
+  window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
+    try {
+      const raw = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      if (raw && /\/game\/index\.(js|wasm|pck)(\?|$)/.test(raw)) {
+        const u = new URL(raw, window.location.origin);
+        if (u.searchParams.get('v') !== GAME_ASSET_BUST) {
+          u.searchParams.set('v', GAME_ASSET_BUST);
+          return orig(u.toString(), init);
+        }
+      }
+    } catch {
+      /* fall through */
+    }
+    return orig(input, init);
+  };
+}
+installGameAssetBust();
 
 installBridge();
 // Godot registering its callback is the reliable "engine is running" signal (Engine.startGame() may not settle).

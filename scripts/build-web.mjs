@@ -10,12 +10,14 @@
  * `npm run export:web:lean` (or `export:web`) before any production build.
  */
 import { spawnSync } from 'node:child_process';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const WASM = path.join(ROOT, 'apps', 'web', 'public', 'game', 'index.wasm');
+const PCK = path.join(ROOT, 'apps', 'web', 'public', 'game', 'index.pck');
 const DIST_GAME = path.join(ROOT, 'apps', 'web', 'dist', 'game');
 
 if (!fs.existsSync(WASM)) {
@@ -32,11 +34,16 @@ const bytes = fs.statSync(WASM).size;
 const mib = (bytes / (1024 * 1024)).toFixed(3);
 console.log(`• Godot export present: index.wasm ${bytes} B (${mib} MiB)`);
 
+// Bust browser/CDN caches of hashless /game/index.{js,wasm,pck} — same URL after every export would
+// otherwise keep an old unicorn (etc.) for up to an hour behind max-age.
+const bust = crypto.createHash('sha256').update(fs.readFileSync(PCK)).digest('hex').slice(0, 12);
+console.log(`• VITE_GAME_ASSET_BUST=${bust} (index.pck sha256 prefix)`);
+
 const r = spawnSync('npm', ['-w', 'apps/web', 'run', 'build'], {
   cwd: ROOT,
   stdio: 'inherit',
   shell: process.platform === 'win32',
-  env: process.env,
+  env: { ...process.env, VITE_GAME_ASSET_BUST: bust },
 });
 if (r.status !== 0) process.exit(r.status ?? 1);
 

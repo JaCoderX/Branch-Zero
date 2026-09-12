@@ -2,6 +2,19 @@
 
 import type { BranchZeroBridge } from '@branch-zero/shared';
 
+interface ImportMetaEnv {
+  readonly VITE_GAME_BASE_URL?: string;
+  /** Short sha of public/game/index.pck — set by scripts/build-web.mjs for cache-busting. */
+  readonly VITE_GAME_ASSET_BUST?: string;
+  readonly VITE_TELLER_DESK_URL?: string;
+  readonly VITE_PRIVY_APP_ID?: string;
+  readonly VITE_PRIVY_SIGNER_ID?: string;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
+
 declare global {
   interface Window {
     BranchZero: BranchZeroBridge;

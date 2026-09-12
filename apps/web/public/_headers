@@ -9,18 +9,18 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
 
-# The Godot export (lean Profile H on Workers). Prefer a shorter cache than /assets/* so a bad
-# shell-only deploy cannot pin HTML-as-JS behind `immutable` for a year — recover with deploy:web.
+# The Godot export (lean Profile H on Workers). Do not long-cache: a redeploy must win over the previous
+# index.pck / wasm within one refresh (unicorn facing, bank wipe recovery). Hashless filenames.
 /game/*.wasm
   Content-Type: application/wasm
-  Cache-Control: public, max-age=3600
+  Cache-Control: no-cache
 
 /game/*.pck
   Content-Type: application/octet-stream
-  Cache-Control: public, max-age=3600
+  Cache-Control: no-cache
 
 /game/*.js
-  Cache-Control: public, max-age=3600
+  Cache-Control: no-cache
 
 # Vite emits hashed filenames under /assets - safe to cache forever.
 /assets/*

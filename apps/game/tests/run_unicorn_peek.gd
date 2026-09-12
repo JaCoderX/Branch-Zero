@@ -88,23 +88,24 @@ func _run() -> void:
 	_check(u.state == st["PEEKING"] and u.socket == 1 and u.seeded and u.peeks == 1, "seeded peek is at the mid socket (socket %d, peeks %d)" % [u.socket, u.peeks])
 	_check(u.alpha > 0.6 and u.alpha <= peek_alpha + 0.001, "faded in to alpha %.2f (≤ %.2f)" % [u.alpha, peek_alpha])
 	_check(absf(u.global_position.x - sockets[1].x) < 0.01 and absf(u.global_position.z - sockets[1].z) < 0.01, "body stands on the mid socket")
-	# the nose faces the customer: rotation.y maps the local −x nose onto the vector to the player
-	var nose := Vector3(-cos(u.rotation.y), 0.0, sin(u.rotation.y))
+	# Face = glb +Z (horn), mapped onto parent −x by MODEL_YAW −π/2; must track the hero.
+	var nose: Vector3 = u.face_dir()
 	var to_player := (Vector3(player.position.x, 0, player.position.z) - Vector3(u.global_position.x, 0, u.global_position.z)).normalized()
 	_check(nose.dot(to_player) > 0.95, "peek faces the player (dot %.2f)" % nose.dot(to_player))
 	# always-face: move the stub while peeking — the nose must track without waiting for a new peek
 	player.position = Vector3(10.8, 0.0, 0.5)
 	_drive(u, 0.3, false)
-	nose = Vector3(-cos(u.rotation.y), 0.0, sin(u.rotation.y))
+	nose = u.face_dir()
 	to_player = (Vector3(player.position.x, 0, player.position.z) - Vector3(u.global_position.x, 0, u.global_position.z)).normalized()
 	_check(nose.dot(to_player) > 0.95, "tracks the hero while peeking (dot %.2f after pad move)" % nose.dot(to_player))
 	player.position = Vector3(10.8, 0.0, -2.0)
 	_drive(u, 4.0, false)
 	_check(u.state == st["HIDDEN"] and u.alpha <= hidden_alpha + 0.001, "seed dwell over: dissolved back to the soft floor")
 	_drive(u, 0.1, false)
-	nose = Vector3(-cos(u.rotation.y), 0.0, sin(u.rotation.y))
+	nose = u.face_dir()
 	to_player = (Vector3(player.position.x, 0, player.position.z) - Vector3(u.global_position.x, 0, u.global_position.z)).normalized()
 	_check(nose.dot(to_player) > 0.95, "hidden silhouette still faces the hero (dot %.2f)" % nose.dot(to_player))
+	_check(is_equal_approx(u.MODEL_YAW, -PI / 2), "MODEL_YAW is −π/2 (horn on +Z maps to parent −x)")
 
 	print("activity dissolves to the far socket")
 	_drive(u, 3.0, false)   # re-peek gap then a tier-0 peek would start... at socket 0 → relocation first

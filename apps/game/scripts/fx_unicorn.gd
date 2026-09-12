@@ -26,9 +26,12 @@ extends Node3D
 
 const GLB := "res://assets/models/fx_unicorn/unicorn_pink.glb"
 const MODEL_SCALE := 0.26            # the pack is ~5.2 units tall → ≈ 1.35 m, horn clearing the 1.1 m counter
-# Body yaw relative to the parent: `_face_player` aims parent local −x at the hero. The glb's nose is local +z
-# (not −z), so −π/2 aligns nose with parent −x. +π/2 left the unicorn facing away from the customer.
+# Body yaw relative to the parent. `_face_player` aims parent local −x at the hero. The glb's head/horn sit on
+# local +Z (not −Z — measured from the mesh AABB / tallest vertex), so −π/2 maps +Z onto parent −x. +π/2 aimed the
+# butt at the customer (2026-09-12 feel report).
 const MODEL_YAW := -PI / 2
+## Local axis that is the unicorn's face after `MODEL_YAW` (horn / sunglasses end). Used by the peek test.
+const FACE_LOCAL := Vector3(0, 0, 1)
 
 const HIDDEN_ALPHA := 0.10           # soft silhouette; the handoff forbids alpha 0
 const PEEK_ALPHA := 0.85             # readable pink, still a little ghostly
@@ -196,7 +199,7 @@ func _place(index: int) -> void:
 	_face_player()
 
 
-## Yaw the whole prop so the body's nose points at the player (nose = world −x when rotation.y is 0).
+## Yaw the whole prop so the body's face (+Z after MODEL_YAW) points at the player.
 ## Called every `step` so the unicorn keeps facing the hero while they idle / orbit, not only at peek start.
 func _face_player() -> void:
 	var p := _player()
@@ -205,8 +208,15 @@ func _face_player() -> void:
 	var to: Vector3 = _flat(p.global_position) - _flat(global_position)
 	if to.length() < 0.5:
 		return
-	# rotating (−1, 0, 0) about y by θ gives (−cos θ, 0, sin θ); solve for the direction `to`
+	# rotating (−1, 0, 0) about y by θ gives (−cos θ, 0, sin θ); MODEL_YAW maps face (+Z) onto that −x
 	rotation.y = atan2(to.z, -to.x)
+
+
+## World-space unit vector of the mesh face (horn end). Peek tests assert this tracks the hero.
+func face_dir() -> Vector3:
+	if _body == null:
+		return Vector3.ZERO
+	return (_body.global_transform.basis * FACE_LOCAL).normalized()
 
 
 func _apply_alpha() -> void:
