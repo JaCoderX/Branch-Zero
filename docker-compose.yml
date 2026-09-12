@@ -1,11 +1,13 @@
-# Branch Zero - Teller Desk (docs/HOSTING.md)
+# Branch Zero - Teller Desk (docs/HOSTING.md §2 / §6)
 #
 #   docker compose up -d --build teller-live            # Live desk (Sepolia) on :8787  - hosted default / private desk
+#   docker compose --profile tunnel up -d --build       # + cloudflared → desk.branchzero.app (TUNNEL_TOKEN in .env)
 #   docker compose --profile dev up -d --build          # + Dev desk (Remote EVM 1337) on 127.0.0.1:8788 - operator only
 #
 # Secrets come from an env file the OPERATOR owns (git-ignored, never copied into the image). By default that is
 # the repo-root `.env`; set TELLER_ENV_FILE to a desk-only file (e.g. `.env.teller-live`) so the container does
 # not inherit browser/iNPC/lab variables it has no use for. Per-wing key names: docs/SECURITY-AND-KEYS.md 4.1.
+# TUNNEL_TOKEN is interpolated from the *project* `.env` (Compose), not from TELLER_ENV_FILE — same as §4.
 
 services:
   teller-live:
@@ -25,11 +27,28 @@ services:
     ports:
       # Publish on every interface: a hosted desk sits behind the platform's TLS edge; a private desk on a
       # laptop is reached as http://localhost:8787 by the operator's own browser. Narrow it with
-      # TELLER_LIVE_BIND=127.0.0.1 if the machine has other users on its LAN.
+      # TELLER_LIVE_BIND=127.0.0.1 if the machine has other users on its LAN (tunnel still reaches the desk
+      # as http://teller-live:8787 on the compose network).
       - "${TELLER_LIVE_BIND:-0.0.0.0}:8787:8787"
     volumes:
       # players-11155111.json, receipts-11155111.json, treasury-11155111.json. Losing this strands accounts.
       - teller-live-data:/app/apps/teller-desk/.data
+    restart: unless-stopped
+
+  # Public door for §3 (Workers front + this desk). Token mode: ingress (desk.branchzero.app ->
+  # http://teller-live:8787) is configured in Zero Trust → Tunnels → Public hostname. The token is a SECRET —
+  # repo-root `.env` or the shell, never a commit (docs/HOSTING.md §6.1). Opt in with `--profile tunnel`.
+  # Do not use this profile with docker-compose.hackathon.yml (that file has its own cloudflared → caddy).
+  cloudflared:
+    profiles: ["tunnel"]
+    image: ${CLOUDFLARED_IMAGE:-cloudflare/cloudflared:2026.9.1}
+    container_name: bz-cloudflared-desk
+    depends_on:
+      - teller-live
+    environment:
+      # cloudflared reads TUNNEL_TOKEN itself; keeping it out of `command:` keeps it out of `docker ps`.
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
+    command: ["tunnel", "--no-autoupdate", "run"]
     restart: unless-stopped
 
   # Developer Mode desk. SAME image, `--dev` -> chain 1337, reads the unprefixed lab keys. Remote EVM is private

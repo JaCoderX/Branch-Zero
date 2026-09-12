@@ -565,7 +565,7 @@ Never add the `dev` profile, Remote EVM or port `1337` to this host. Rotate the 
 | `wrangler.jsonc` | **§3** Workers Static Assets — `assets.directory` = `apps/web/dist`, SPA not-found → `index.html` |
 | `Dockerfile.teller` | desk image (repo-root context) |
 | `.dockerignore` | keeps `.env*`, `.data/`, `docs/progress`, game, shell out of every layer |
-| `docker-compose.yml` | `teller-live` (default) · `teller-dev` (`--profile dev`, loopback) · two named volumes |
+| `docker-compose.yml` | `teller-live` · `cloudflared` (`--profile tunnel` → `desk.branchzero.app`) · `teller-dev` (`--profile dev`) |
 | `docker-compose.hackathon.yml` | **§4** standalone stack: unpublished `teller-live` · `caddy` · `cloudflared` (`--profile tunnel`) |
 | `deploy/caddy/Caddyfile` | **§4** `dist` file server + `/api` reverse proxy (prefix stripped, `flush_interval -1`), wasm MIME, no COOP/COEP |
 | `scripts/build-web-hackathon.mjs` | **§4** `npm run build:web:hackathon` — same-origin `/api` + `/game`, export presence checked |
@@ -608,62 +608,74 @@ TELLER_ENV_FILE=.env.teller-live docker compose up -d --build teller-live
 curl -s http://127.0.0.1:8787/healthz
 ```
 
-5. **TLS** — Cloudflare Tunnel to `desk.branchzero.app` (§6.1), or Caddy on a VPS. Check
+5. **TLS** — Cloudflare Tunnel via Docker (`--profile tunnel`, §6.1). Check
    `https://desk.branchzero.app/healthz` → `ok:true`.
 6. **Front** — lean `/game/` in `dist`, then `npm run deploy:web` (§3.6). Smoke §3.5.
-7. **Taking it down**: `docker compose stop teller-live`. Keep the volume. The shell keeps loading; the panel names
-   the unreachable desk; an operator can `?desk=` their own.
+7. **Taking it down**: `docker compose --profile tunnel down` (or `stop`). Keep the volume. The shell keeps
+   loading; the panel names the unreachable desk; an operator can `?desk=` their own.
 
 Never run the `dev` profile on that host. Rotate the throwaway keys after the event (SECURITY §4).
 
-### 6.1 Cloudflare Tunnel for `desk.branchzero.app` (Pages/Workers front + Docker desk)
+### 6.1 Cloudflare Tunnel for `desk.branchzero.app` (Docker connector)
 
-This is the **§3** path: shell already on Workers & Pages; only the desk needs a public hostname. (The §4
-hackathon compose tunnel points at **Caddy** instead — different hostname table.)
+This is the **§3** path: shell on Workers & Pages; desk published only through **cloudflared in
+`docker-compose.yml`**. (The §4 hackathon stack’s tunnel points at **Caddy** on `branchzero.app` — different
+compose file and hostname table. Do not mix the two.)
 
-1. **Desk up locally** (step 4 above) so something answers on `127.0.0.1:8787`.
-2. Cloudflare dashboard → **Zero Trust** → **Networks** → **Tunnels** → **Create a tunnel** → connector type
-   **Cloudflared**. Name it e.g. `branch-zero-desk`.
-3. **Install connector** — pick your OS. Easiest on the same machine as Docker:
-   - Copy the **install token** Cloudflare shows (long `eyJ…` string).
-   - Or run their one-liner / Windows service installer. Leave the connector **running**.
-4. **Public hostname** on that tunnel:
+#### A. Dashboard (once)
+
+1. Zero Trust → **Networks** → **Tunnels** → **Create a tunnel** → **Cloudflared**.  
+   Name e.g. `branch-zero-desk` (Tunnel ID is fine to record; the **token** is the secret).
+2. Choose **Docker** as the install method. Copy the connector **token** only (the long `eyJ…` / install string).
+   Do **not** paste it into chat, commits, or `TELLER_ENV_FILE`.
+3. **Public hostname** on that tunnel (configure *before* or right after the connector comes up):
 
 | Field | Value |
 |-------|-------|
 | Subdomain | `desk` |
 | Domain | `branchzero.app` |
 | Type | `HTTP` |
-| URL | `localhost:8787` (or `127.0.0.1:8787`) |
+| URL | **`http://teller-live:8787`** |
 
-Save. Cloudflare writes the DNS `CNAME` for `desk.branchzero.app` into the zone — no manual A record, no origin
-cert. Traffic is **outbound-only** from your machine; you do not open inbound 8787 on the router.
+Use the **Compose service name** `teller-live`, not `localhost`. Inside the `cloudflared` container,
+`localhost` is the tunnel container itself; `teller-live` resolves on the default compose network.
 
-5. **Confirm**:
-   ```bash
-   curl -s https://desk.branchzero.app/healthz
-   ```
-   Expect JSON with `"ok":true` and Live wing. From `https://branchzero.app` DevTools, `/healthz` must show
-   `access-control-allow-origin` echoing the Pages origin (CORS from `ALLOWED_ORIGINS`).
-6. **Privy** — Allowed origins already need `https://branchzero.app` (shell). Desk origin is not a Privy login
-   origin.
-7. **SSE** — after OTP, `/events` must stay open ≥ 60 s. Tunnel does not buffer like a misconfigured reverse
-   proxy; if streams die, check desk logs and that you did not put another proxy in front that buffers.
+Cloudflare writes DNS for `desk.branchzero.app`. No inbound router port, no origin certificate.
 
-**Token hygiene:** the connector token is a secret. Do not commit it. Prefer the dashboard-installed service or a
-user env var — not a git-tracked file. For the **§4** all-in-one stack the token is `TUNNEL_TOKEN` in the
-git-ignored repo `.env` and the public hostname points at `caddy:8080` instead (§4.4).
+#### B. Repo env (git-ignored)
 
-**Optional CLI-only connector** (same machine, no Docker profile):
+In the **repo-root** `.env` (Compose interpolates this; leave it out of `.env.teller-live`):
 
 ```bash
-# after: cloudflared tunnel login  +  cloudflared tunnel create branch-zero-desk
-cloudflared tunnel route dns branch-zero-desk desk.branchzero.app
-# config.yml ingress: hostname desk.branchzero.app -> http://127.0.0.1:8787
-cloudflared tunnel run branch-zero-desk
+TUNNEL_TOKEN=eyJ…   # paste the dashboard Docker token here only
+# optional: CLOUDFLARED_IMAGE=cloudflare/cloudflared:2026.9.1
 ```
 
-Dashboard token install is enough for the hackathon; use CLI if you already manage tunnels that way.
+#### C. Up
+
+```bash
+TELLER_ENV_FILE=.env.teller-live docker compose --profile tunnel up -d --build
+docker compose ps
+curl -s http://127.0.0.1:8787/healthz
+curl -s https://desk.branchzero.app/healthz
+```
+
+Expect both healthz JSON with `"ok":true`. `bz-cloudflared-desk` should be **Up**; if it exits immediately,
+`TUNNEL_TOKEN` is missing/empty (fails loudly with *requires the ID or name of the tunnel*).
+
+Optional harden: `TELLER_LIVE_BIND=127.0.0.1` so only loopback (and the compose network) can reach `:8787` on the
+host — the tunnel still uses `http://teller-live:8787`.
+
+#### D. Confirm from the public shell
+
+- Privy Allowed origins += `https://branchzero.app`
+- From `https://branchzero.app/?debug`, desk row should show `https://desk.branchzero.app` reachable + treasury
+- After OTP, `/events` open ≥ 60 s
+
+**Token hygiene:** secret; rotate in Zero Trust if leaked. Never a build arg or image layer.
+
+**Not this path:** OS installer / `cloudflared` on the host with URL `localhost:8787` — works, but we standardize
+on Docker so the desk and connector share one compose lifecycle.
 
 ---
 
@@ -675,7 +687,8 @@ Dashboard token install is enough for the hackathon; use CLI if you already mana
 **Pages + Docker desk (§3) — preferred public URL:**
 
 - [ ] Desk: `.env.teller-live` filled; `ALLOWED_ORIGINS` includes `https://branchzero.app`; volume in place (§2.2)
-- [ ] Desk TLS: Cloudflare Tunnel `desk` → `HTTP localhost:8787` (§6.1); `/healthz` 200
+- [ ] Desk TLS: `TUNNEL_TOKEN` in `.env` + public hostname `desk` → `http://teller-live:8787`;
+      `docker compose --profile tunnel up -d` (§6.1); `/healthz` 200
 - [ ] Workers Builds: build command `npm run build:web`; deploy `npx wrangler deploy`; **Build variables** =
       the three `VITE_*` (§3.1)
 - [ ] Front: on a Godot 4.5.2 host — `npm run export:web:lean` → load `.env.web-live` → `npm run build:web` →

@@ -24,7 +24,8 @@ Related: [HANDOFF-CC.md](./missions/HANDOFF-CC.md) · [DEV-LOOP.md](./DEV-LOOP.m
       ([HOSTING.md §3.6](./HOSTING.md) · [HOSTING.md §7](./HOSTING.md)):
   - [ ] Privy → **Allowed origins** += `https://branchzero.app` (+ `www` / preview hosts) — [PRIVY.md §3](./PRIVY.md)
   - [ ] Desk: `.env.teller-live`; `ALLOWED_ORIGINS` includes the public origin; `docker compose up -d --build teller-live`
-  - [ ] Tunnel: `desk.branchzero.app` → `HTTP localhost:8787` ([HOSTING.md §6.1](./HOSTING.md)); confirm `/healthz`
+  - [ ] Tunnel Docker: public hostname `desk` → `http://teller-live:8787`; `TUNNEL_TOKEN` in repo `.env`;
+        `TELLER_ENV_FILE=.env.teller-live docker compose --profile tunnel up -d --build` ([HOSTING.md §6.1](./HOSTING.md))
   - [ ] CF Builds: command `npm run build:web`; deploy `npx wrangler deploy`; **Build variables** = three `VITE_*`
   - [ ] Front on Godot host: `npm run export:web:lean` → `.env.web-live` → `npm run build:web` → `npm run deploy:web`
         · Domains → `branchzero.app`
