@@ -3,10 +3,11 @@
 **Status 2026-09-12:** two paths, both **built and verified locally**. Public deploy is a **human step**
 (Cloudflare account, DNS, Privy dashboard, secrets, treasury):
 
-- **§2–§3 — Pages shell + Docker desk (preferred for the public URL).** `https://branchzero.app` on Cloudflare
-  Pages (lean Godot export, **23.68 MiB** Profile H — under the per-file cap, same-origin `/game/`). Live desk is a
-  separate Docker service at `https://desk.branchzero.app` (Tunnel or Caddy). Absolute `VITE_TELLER_DESK_URL` + CORS.
-  R2 is **fallback only** if you ship the official 36 MiB template. Runbook §3 + §6; checklist §7.
+- **§2–§3 — Workers & Pages shell + Docker desk (preferred for the public URL).** `https://branchzero.app` on
+  Cloudflare **Workers Static Assets** (dashboard: Workers & Pages; `wrangler.jsonc` + `npx wrangler deploy`). Lean
+  Godot export (**23.68 MiB** Profile H) fits the per-file cap, same-origin `/game/`. Live desk is a separate Docker
+  service at `https://desk.branchzero.app` (Tunnel or Caddy). Absolute `VITE_TELLER_DESK_URL` + CORS. R2 is
+  **fallback only** if you ship the official 36 MiB template. Runbook §3 + §6; checklist §7.
   Packaging: [`missions/HANDOFF-hosting-private-desk.md`](./missions/HANDOFF-hosting-private-desk.md) · lean pin:
   [`missions/HANDOFF-custom-web-template.md`](./missions/HANDOFF-custom-web-template.md).
 - **§4 — all-in-one compose (self-host / offline twin).** One Docker Compose stack: shell + export + Live desk
@@ -188,28 +189,34 @@ Same image, `--dev` → chain `1337`, reads the **unprefixed** lab keys, talks t
 
 ---
 
-## 3. Cloudflare Pages (the shell) — preferred public front
+## 3. Cloudflare Workers & Pages (the shell) — preferred public front
 
-> **Preferred for `https://branchzero.app`.** Lean export (`npm run export:web:lean`, Profile H, 23.68 MiB) fits
-> the Pages per-file cap, so `/game/` is same-origin. The Live desk stays a **separate** Docker deploy
-> (`desk.branchzero.app`). §4 compose remains the self-host twin (no Pages project required).
+> **Preferred for `https://branchzero.app`.** The dashboard umbrella is **Workers & Pages**. The ship shape is
+> **Workers Static Assets**: repo-root [`wrangler.jsonc`](../wrangler.jsonc) points `assets.directory` at
+> `apps/web/dist`; Git Builds default deploy is `npx wrangler deploy` (not a mistake). Lean export
+> (`npm run export:web:lean`, Profile H, 23.68 MiB) fits the per-file cap, so `/game/` is same-origin. The Live
+> desk stays a **separate** Docker deploy (`desk.branchzero.app`). §4 compose remains the self-host twin.
 >
-> **Pages cannot run Godot.** Build the export + Vite `dist` on a Godot 4.5.2 host (or CI that already has the
-> artefacts), then upload `apps/web/dist`. A bare Pages `npm run build:web` without `public/game/` yields a shell
-> with no bank.
+> **Cloudflare cannot run Godot.** `apps/web/public/game/` is git-ignored. First full bank: export on a Godot
+> 4.5.2 host, then `build:web` + `deploy:web`. A Git Build with only `npm run build:web` deploys the shell with
+> **no bank** unless `/game/` is supplied as an artefact (or you use the R2 fallback §3.3).
 
-### 3.1 Project configuration
+### 3.1 Project configuration (Workers Builds)
+
+Create / connect the app under **Workers & Pages** (name `branch-zero` matches `wrangler.jsonc`). Settings → Builds:
 
 | Setting | Value |
 |---------|-------|
-| Framework preset | None (Vite) |
 | Root directory | `/` (repo root — npm workspaces) |
-| Build / deploy | **First ship:** local `export:web:lean` + `build:web` → `npx wrangler pages deploy apps/web/dist` (recommended). Git-connected Pages only if CI can supply `public/game/` (artefact download) — do not expect CF to compile Godot. |
-| Build output directory | `apps/web/dist` |
-| Node version | `22` — `.node-version` at repo root; `engines.node >= 20` |
-| Production branch | `main` (if using Git integration) |
+| Build command | `npm run build:web` |
+| Deploy command | `npx wrangler deploy` (Workers Builds default — keep) |
+| Non-production deploy | `npx wrangler versions upload` (default) |
+| Production branch | `main` |
+| Node | `22` — `.node-version` at repo root; `engines.node >= 20` |
+| Assets | `wrangler.jsonc` → `./apps/web/dist`, `not_found_handling: single-page-application` |
 
-**Build environment variables** (public ids only — never a desk secret; Vite bakes only `VITE_*`).
+**Build variables** (Settings → Builds → **Build variables and secrets** — *not* runtime Variables & Secrets).
+Vite bakes only `VITE_*` at `vite build` time; runtime Worker vars never enter the browser bundle.
 Mirror locally in git-ignored `.env.web-live` (see `.env.example`):
 
 | Variable | Value |
@@ -220,9 +227,12 @@ Mirror locally in git-ignored `.env.web-live` (see `.env.example`):
 | `VITE_GAME_BASE_URL` | **leave unset** for lean same-origin `/game/` · set only for the R2 / official-export fallback (§3.3) |
 | `VITE_GITHUB_CLIENT_ID` | optional |
 | `VITE_SEPOLIA_RPC_URL` | optional (only if the shell build uses it) |
-| `NODE_VERSION` | `22` |
 
-Custom domains: `branchzero.app` (apex) + `www.branchzero.app` → redirect to apex. DNS in the Cloudflare zone.
+**First ship (recommended):** local Godot export + Vite + Wrangler, then attach the custom domain on the same
+Worker. Git Builds after that redeploy the shell on every `main` push; re-run `export:web:lean` on a Godot host
+whenever the bank bytes change (or publish them via a separate artefact step).
+
+Custom domains: Worker → Domains → `branchzero.app` (apex) + `www` redirect if wanted. DNS in the Cloudflare zone.
 
 ### 3.2 `/api` strategy — absolute desk URL + CORS (chosen)
 
@@ -342,30 +352,33 @@ one Lane A pay. In DevTools: `index.wasm` `content-type: application/wasm`, pref
 response headers carry **no** `cross-origin-opener-policy` / `cross-origin-embedder-policy`; desk `/events` stays
 open ≥ 60 s (keep-alive comment every 20 s) and reconnects after a desk restart.
 
-### 3.6 Principal deploy sequence (Pages + desk)
+### 3.6 Principal deploy sequence (Workers & Pages + desk)
 
-1. **Privy** — Allowed origins += `https://branchzero.app` (+ `www` / `*.pages.dev` while testing).
+1. **Privy** — Allowed origins += `https://branchzero.app` (+ `www` / `*.workers.dev` / preview URLs while testing).
 2. **Treasury** — fund + `npm run treasury:topup -- --execute` (OWED §1).
 3. **Desk** — fill `.env.teller-live`; `ALLOWED_ORIGINS=https://branchzero.app,…`;
    `TELLER_ENV_FILE=.env.teller-live docker compose up -d --build teller-live` (or VPS). Put TLS in front:
    Cloudflare Tunnel public hostname `desk.branchzero.app` → `http://127.0.0.1:8787` (or Caddy). Check
    `https://desk.branchzero.app/healthz`.
-4. **Front (Godot host)** — ensure `tools/godot-web-template/*.zip` is present; then:
+4. **Dashboard (once)** — Workers & Pages → `branch-zero` → Settings → Builds:
+   - Build command = `npm run build:web`
+   - Deploy command = `npx wrangler deploy` (leave default)
+   - Put `VITE_PRIVY_APP_ID`, `VITE_PRIVY_SIGNER_ID`, `VITE_TELLER_DESK_URL` under **Build variables**
+     (remove them from runtime Variables if you only set them there earlier)
+5. **Front (Godot host) — first full bank:**
 
 ```bash
 npm run export:web:lean
-```
-
-Load `.env.web-live` into the environment (public `VITE_*` only; `VITE_GAME_BASE_URL` unset), then:
-
-```bash
+# load .env.web-live (public VITE_* only; VITE_GAME_BASE_URL unset)
 npm run build:web
-npx wrangler pages project create branch-zero   # once
-npx wrangler pages deploy apps/web/dist --project-name=branch-zero
+npm run deploy:web
 ```
 
-5. **Domain** — Pages → Custom domains → `branchzero.app`.
-6. **Smoke** — §3.5.
+6. **Domain** — Worker → Domains → `branchzero.app`.
+7. **Smoke** — §3.5.
+
+Later `main` pushes rebuild the shell via Workers Builds. Re-export lean `/game/` on a Godot host whenever the
+bank changes (Git alone never regenerates wasm).
 
 ---
 
@@ -549,6 +562,7 @@ Never add the `dev` profile, Remote EVM or port `1337` to this host. Rotate the 
 
 | Path | Role |
 |------|------|
+| `wrangler.jsonc` | **§3** Workers Static Assets — `assets.directory` = `apps/web/dist`, SPA not-found → `index.html` |
 | `Dockerfile.teller` | desk image (repo-root context) |
 | `.dockerignore` | keeps `.env*`, `.data/`, `docs/progress`, game, shell out of every layer |
 | `docker-compose.yml` | `teller-live` (default) · `teller-dev` (`--profile dev`, loopback) · two named volumes |
@@ -608,8 +622,10 @@ Never run the `dev` profile on that host. Rotate the throwaway keys after the ev
 
 - [ ] Desk: `.env.teller-live` filled; `ALLOWED_ORIGINS` includes `https://branchzero.app`; volume in place (§2.2)
 - [ ] Desk TLS: Tunnel or Caddy → `https://desk.branchzero.app` → desk `:8787` (§3.6 / §6); `/healthz` 200
+- [ ] Workers Builds: build command `npm run build:web`; deploy `npx wrangler deploy`; **Build variables** =
+      the three `VITE_*` (§3.1)
 - [ ] Front: on a Godot 4.5.2 host — `npm run export:web:lean` → load `.env.web-live` → `npm run build:web` →
-      `npx wrangler pages deploy apps/web/dist` (§3.6); custom domain `branchzero.app`
+      `npm run deploy:web` (§3.6); custom domain `branchzero.app`
 - [ ] First smoke (§3.5): splash → Godot → Privy OTP → Lane A; `/events` open ≥ 60 s; no COOP/COEP
 
 **§4 compose twin — only if you skip Pages:**

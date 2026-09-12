@@ -23,6 +23,7 @@ apps/teller-desk/.data/
 node_modules/
 dist/
 .turbo/
+.wrangler/
 
 # godot
 .godot/

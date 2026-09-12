@@ -20,6 +20,7 @@
     "killtests": "npm -w apps/teller-desk run killtests --",
     "build:web": "npm -w apps/web run build",
     "build:web:hackathon": "node scripts/build-web-hackathon.mjs",
+    "deploy:web": "wrangler deploy",
     "export:web": "node scripts/export-web.mjs",
     "export:web:lean": "node scripts/export-web.mjs --lean",
     "publish:game": "node scripts/publish-game.mjs",
@@ -38,5 +39,8 @@
     "treasury:topup": "npm -w apps/teller-desk run treasury:topup --",
     "killtests:treasury": "npm -w apps/teller-desk run killtests:treasury --",
     "fx:pools-fiat": "npm -w infra run fx:pools-fiat --"
+  },
+  "devDependencies": {
+    "wrangler": "4.131.1"
   }
 }

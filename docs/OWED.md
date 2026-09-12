@@ -20,16 +20,16 @@ Related: [HANDOFF-CC.md](./missions/HANDOFF-CC.md) · [DEV-LOOP.md](./DEV-LOOP.m
 - [ ] **Fund the ops treasury** — [Google Cloud Sepolia ETH faucet](https://cloud.google.com/application/web3/faucet/ethereum/sepolia) (0.05 ETH/day) → **`0xa6E8…e58d`** (new distinct `SEPOLIA_TREASURY_PK`; not the old registrar-shared sink)
 - [ ] **`npm run treasury:topup -- --execute`** after the drop — lifts staff to need × 1.25 ([SEPOLIA-TREASURY.md](./SEPOLIA-TREASURY.md) §9)
 - [ ] Optional: Circle USDC on the **new** treasury only if you want hold float ([faucet.circle.com](https://faucet.circle.com/) · Ethereum Sepolia)
-- [ ] **Hosting — Pages + Docker desk (preferred public URL)** — packaging **met**; public deploy is yours
+- [ ] **Hosting — Workers & Pages + Docker desk (preferred public URL)** — packaging **met**; public deploy is yours
       ([HOSTING.md §3.6](./HOSTING.md) · [HOSTING.md §7](./HOSTING.md)):
   - [ ] Privy → **Allowed origins** += `https://branchzero.app` (+ `www` / preview hosts) — [PRIVY.md §3](./PRIVY.md)
-  - [ ] Desk: `.env.teller-live`; `ALLOWED_ORIGINS` includes Pages origin; `docker compose up -d --build teller-live`
+  - [ ] Desk: `.env.teller-live`; `ALLOWED_ORIGINS` includes the public origin; `docker compose up -d --build teller-live`
   - [ ] Tunnel (or Caddy): `desk.branchzero.app` → desk `:8787`; confirm `https://desk.branchzero.app/healthz`
-  - [ ] Front on Godot host: `npm run export:web:lean` → `.env.web-live` (`VITE_TELLER_DESK_URL=https://desk.branchzero.app`,
-        leave `VITE_GAME_BASE_URL` unset) → `npm run build:web` →
-        `npx wrangler pages deploy apps/web/dist --project-name=branch-zero` · custom domain `branchzero.app`
+  - [ ] CF Builds: command `npm run build:web`; deploy `npx wrangler deploy`; **Build variables** = three `VITE_*`
+  - [ ] Front on Godot host: `npm run export:web:lean` → `.env.web-live` → `npm run build:web` → `npm run deploy:web`
+        · Domains → `branchzero.app`
   - [ ] Smoke: splash → Godot → Privy OTP → Lane A; `/events` ≥ 60 s ([HOSTING.md §3.5](./HOSTING.md))
-- [ ] **Hosting — §4 compose twin (optional self-host)** — skip if Pages is live; else [HOSTING.md §4.5](./HOSTING.md)
+- [ ] **Hosting — §4 compose twin (optional self-host)** — skip if Workers front is live; else [HOSTING.md §4.5](./HOSTING.md)
       (`build:web:hackathon` + tunnel to Caddy). Mission: [HANDOFF-hosting-hackathon-compose.md](./missions/HANDOFF-hosting-hackathon-compose.md)
 
 ---

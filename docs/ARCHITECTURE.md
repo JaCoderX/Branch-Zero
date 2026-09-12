@@ -441,13 +441,15 @@ Branch-Zero/
 - Limits stated, not hidden: a private desk needs the same Privy app's authorization key to sign silently, and it
   can only broadcast for accounts *it* opened (broadcaster pinned at `initialize`).
 
-**Amendment 2026-09-12 (lean Pages front, [HOSTING.md §3](./HOSTING.md)).** Preferred public URL:
+**Amendment 2026-09-12 (Workers & Pages front, [HOSTING.md §3](./HOSTING.md)).** Preferred public URL:
 
-- **Cloudflare Pages** serves `apps/web/dist` including same-origin lean `/game/` (`npm run export:web:lean`,
+- **Workers & Pages** serves `apps/web/dist` as **Workers Static Assets** (`wrangler.jsonc`,
+  `npx wrangler deploy` / `npm run deploy:web`). Lean same-origin `/game/` (`npm run export:web:lean`,
   Profile H ≈ 23.68 MiB — under the per-file cap; still no COOP/COEP). Absolute `VITE_TELLER_DESK_URL` points at
-  the Live desk. Pages does **not** run Godot — export + Vite build on a Godot host, then Wrangler upload.
+  the Live desk. Cloudflare does **not** run Godot — export on a Godot host, then Vite build; put `VITE_*` in
+  **Build variables**, not runtime Worker vars.
 - **Live desk** is a separate Docker service (`teller-live`) at `https://desk.branchzero.app` (Tunnel/Caddy), with
-  `ALLOWED_ORIGINS` including the Pages origin. R2/`game.branchzero.app` is only for the official 36 MiB export.
+  `ALLOWED_ORIGINS` including the public origin. R2/`game.branchzero.app` is only for the official 36 MiB export.
 - **§4 compose twin** ([HOSTING.md §4](./HOSTING.md)): optional self-host — Caddy + unpublished desk + optional
   Tunnel, same-origin `/api`. `?desk=` and the no-fallback rule are unchanged by either shape.
 

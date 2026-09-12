@@ -1,0 +1,19 @@
+/**
+ * Cloudflare Workers Static Assets — public shell for branchzero.app.
+ * Dashboard lives under Workers & Pages; Git Builds default deploy is `npx wrangler deploy`.
+ * Docs: docs/HOSTING.md §3 · https://developers.cloudflare.com/workers/static-assets/
+ *
+ * Vite output is apps/web/dist (includes public/_headers and, when exported, public/game/).
+ * Cloudflare cannot run Godot — run `npm run export:web:lean` before build:web for a full bank.
+ */
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "branch-zero",
+  "compatibility_date": "2026-09-12",
+  "assets": {
+    "directory": "./apps/web/dist",
+    "not_found_handling": "single-page-application"
+  },
+  "workers_dev": true,
+  "preview_urls": true
+}
