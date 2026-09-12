@@ -596,10 +596,10 @@ answer on `https://desk.branchzero.app` (or whatever `VITE_TELLER_DESK_URL` is b
    `SEPOLIA_RPC_URL`, `SEPOLIA_DEPLOYER_PK`, `SEPOLIA_BROADCASTER_PK`, `SEPOLIA_MANAGER_PK`,
    `SEPOLIA_RECOVERY_ADDRESS`, `SEPOLIA_TREASURY_PK`, `ENS_REGISTRAR_PK`, `PRIVY_APP_ID`, `PRIVY_APP_SECRET`,
    `PRIVY_AUTHORIZATION_KEY`, `PRIVY_SIGNER_ID`, optional `PRIVY_POLICY_ID`, `GITHUB_OAUTH_*`.
-   Plain env: `CHAIN_ID=11155111`, `PORT=8787`,
+   Plain env in `.env.teller-live`: `CHAIN_ID=11155111`, `PORT=8787`,
    `ALLOWED_ORIGINS=https://branchzero.app,https://www.branchzero.app,http://localhost:5173`.
-   Compose also sets `HOST=0.0.0.0`. If the host shell / repo `.env` exports `ALLOWED_ORIGINS`, that value wins over
-   the file for the `environment:` key — keep it including `https://branchzero.app`.
+   Compose sets `HOST=0.0.0.0` only — **`ALLOWED_ORIGINS` is read from the desk env file**, not overridden by
+   the host `.env` (an old override dropped the public origin and broke CORS).
 3. **Volume** mounted at `/app/apps/teller-desk/.data` **before** the first player. Back it up (§2.2).
 4. **Run** the desk (laptop / VPS):
 

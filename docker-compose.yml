@@ -22,8 +22,8 @@ services:
       HOST: 0.0.0.0
       CHAIN_ID: "11155111"
       PORT: "8787"
-      # The shell origins allowed to call this desk (CORS + SSE). Add your own shell origin, never `*`.
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://branchzero.app,http://localhost:5173}
+      # ALLOWED_ORIGINS comes from env_file (e.g. .env.teller-live). Do not set it here — a host `.env`
+      # ALLOWED_ORIGINS would override the desk file and drop https://branchzero.app (CORS break on the public shell).
     ports:
       # Publish on every interface: a hosted desk sits behind the platform's TLS edge; a private desk on a
       # laptop is reached as http://localhost:8787 by the operator's own browser. Narrow it with
