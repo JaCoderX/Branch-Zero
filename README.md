@@ -12,6 +12,16 @@ For [ETHOnline 2026](https://ethglobal.com/events/ethonline2026) · Start Fresh.
 
 ---
 
+## Gameplay
+
+<p align="center">
+  <video src="docs/media/gameplay/gameplay01.mp4" width="100%" controls muted playsinline>
+    <a href="docs/media/gameplay/gameplay01.mp4">Watch gameplay clip</a>
+  </video>
+</p>
+
+---
+
 ## Screenshots
 
 <p align="center">

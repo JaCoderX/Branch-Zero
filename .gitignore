@@ -69,6 +69,9 @@ docs/progress/
 *.mp4
 *.mkv
 *.webm
+# Exception: public README gameplay clip(s)
+!docs/media/gameplay/
+!docs/media/gameplay/*.mp4
 
 # ENG-2026-0025 custom Godot web export template (7.3 MB binary, pinned by sha256 in tools/godot-web-template/SHA256SUMS)
 tools/godot-web-template/*.zip
