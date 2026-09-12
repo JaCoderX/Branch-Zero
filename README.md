@@ -1,5 +1,9 @@
 # Branch Zero
 
+<p align="center">
+  <img src="docs/media/branding/branch-zero-cover.png" alt="Branch Zero — walkable bank at dusk" width="100%" />
+</p>
+
 **A walkable 3D bank where every desk is a real smart-account operation.**
 
 Built in Godot 4.5 for the browser. You do not click “Confirm” in a wallet pop-up — you talk to a teller. Under the floorboards: [Bloxchain](https://github.com/PracticalParticle/Bloxchain-Protocol) governed accounts via the public **`@bloxchain/sdk`**, Privy session signers, ENSv2 names, and a Uniswap v4 FX desk — live on Sepolia.
@@ -11,19 +15,19 @@ For [ETHOnline 2026](https://ethglobal.com/events/ethonline2026) · Start Fresh.
 ## Screenshots
 
 <p align="center">
-  <img src="docs/media/readme/01_lobby.jpg" width="48%" alt="Lobby with Ash the greeter and the vault" />
-  <img src="docs/media/readme/02_account_opening.jpg" width="48%" alt="Account Opening desk with Iris" />
+  <img src="docs/media/readme/Screenshot%202026-09-12%20185156.jpg" width="48%" alt="Lobby — recent receipts board and vault" />
+  <img src="docs/media/readme/Screenshot%202026-09-12%20185452.jpg" width="48%" alt="Talking with Blox-47 in the lobby" />
 </p>
 <p align="center">
-  <img src="docs/media/readme/03_counter.jpg" width="48%" alt="Teller counter with Eve" />
-  <img src="docs/media/readme/04_vault.jpg" width="48%" alt="Vault antechamber with Bob" />
+  <img src="docs/media/readme/Screenshot%202026-09-12%20185616.jpg" width="48%" alt="Teller counter with Eve" />
+  <img src="docs/media/readme/Screenshot%202026-09-12%20185840.jpg" width="48%" alt="Manager’s office with Mr. Walker — vault clock running" />
 </p>
 <p align="center">
-  <img src="docs/media/readme/05_fx_desk.jpg" width="48%" alt="Johnny at the FX desk" />
-  <img src="docs/media/readme/06_name_desk.jpg" width="48%" alt="Name Desk with Petra — ENSv2 bank names" />
+  <img src="docs/media/readme/Screenshot%202026-09-12%20190006.jpg" width="48%" alt="Johnny at the FX desk — Uniswap v4 board" />
+  <img src="docs/media/readme/Screenshot%202026-09-12%20190248.jpg" width="48%" alt="Back-office terminal — assets view in the Console" />
 </p>
 
-> Fresh desktop MockChain captures (2026-09-10). Live Main runs on Sepolia.
+> Live Sepolia captures (2026-09-12).
 
 ---
 
