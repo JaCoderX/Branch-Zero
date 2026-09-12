@@ -1,41 +1,45 @@
 ---
 type: handoff
-title: Handoff — Pin ENG-0025 Profile F (or E) custom web template for Pages
+title: Handoff — Pin ENG-0025 Profile H custom web template for Pages
 audience: cold agent (Claude Code · Fable 5.1)
 created: 2026-09-12
+updated: 2026-09-12
 product: Branch-Zero
 status: met (2026-09-12) — Profile H pinned; lab Profile F rejected on a missing module
 kickoff: docs/missions/KICKOFF-custom-web-template.md
 lab: GameLab/work/ENG-2026-0025-godot-web-wasm-under-25mib
-parallel_to: hackathon compose (primary public path — do not block on this)
+parallel_to: hackathon compose (valid public path — do not require lean template)
 ---
 
-# Handoff — Custom web template Profile F / E
+# Handoff — Custom web template Profile H
 
-## Lab result (do not re-litigate)
+## Lab → product result (do not re-litigate)
 
-| Profile | wasm | Pages 25 MiB | Pages 25 MB |
-|---------|-----:|:------------:|:-----------:|
-| Official | 36.29 MiB | FAIL | FAIL |
-| **E** (B+noise, size_extra) | **23.26 MiB** | PASS | PASS (−611 KB) |
-| **F** (B+noise+gltf, size_extra) | **23.81 MiB** | PASS | PASS (−29 KB) |
+| Profile | wasm | Pages 25 MiB | Pages 25 MB | Bank |
+|---------|-----:|:------------:|:-----------:|------|
+| Official | 36.29 MiB | FAIL | FAIL | green |
+| E (B+noise, size_extra) | 23.26 MiB | PASS | PASS | would miss Gum Bot Basis textures |
+| F (B+noise+gltf, size_extra) | 23.81 MiB | PASS | PASS (−29 KB) | **Gum Bot magenta** |
+| G (F+basis) | 24.23 MiB | PASS | **FAIL** | green |
+| **H (E+basis) — pinned** | **23.680 MiB** | **PASS** | **PASS (−170 KB)** | **green** |
 
-Pin **F** unless decimal margin is unacceptable → then **E** + prove `.glb` remaps.
-**Keep `optimize=size_extra`.** Template zip sha256 F:
-`5deb1ec46c749bd7e96b9c8065bda6dbc9e281b3bd6488031b4fc2a75463cd1b`
+**Pin Profile H.** Keep `optimize=size_extra`. Template zip sha256:
+`03a443b07e5e3fadc8227c7441e9fdbec1e07fc821fa97bbed94dcd7a20a5c66`
+(`tools/godot-web-template/SHA256SUMS`). Rebuild via `tools/godot-web-template/build-profile-h.ps1`.
 
-## Your job
+Do **not** pin lab F. Use G only if something must parse glTF at runtime (fails decimal MB).
 
-1. Copy `out/profile-f-template.zip` (or rebuild via lab `scripts/build-profile-f.ps1`) into a product-pinned path.
-2. `apps/game/export_presets.cfg` → `custom_template/release`; threads OFF; no COOP/COEP.
-3. `npm run export:web` → measure `index.wasm`.
-4. `?mock=account` walk: Gum Bot, unicorn, KayKit props, FastNoise carpet path — watch console.
-5. HOSTING.md note; OWED tick. Do **not** delay hackathon compose.
+## Job (already done — Outcome below)
+
+1. Pin zip under `tools/godot-web-template/` (gitignored binary; sha256 committed).
+2. `Web-Lean` preset → custom template; threads OFF; no COOP/COEP. Default `Web` unchanged.
+3. `npm run export:web:lean` → measure vs both caps.
+4. `?mock=account` walk green (Gum Bot, KayKit, FastNoise).
+5. HOSTING / GODOT / OWED updated.
 
 ## Stop
 
-Over cap after bank export → keep compose/R2; do not strip more modules without a new ENG.
-
+Over cap after a future engine bump → keep compose/R2 or open a new lab question; do not strip more modules ad hoc.
 
 ---
 

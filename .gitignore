@@ -1,7 +1,13 @@
-﻿# secrets
+﻿# secrets — all .env* stay local (desk-only files included)
 .env
 .env.*
 !.env.example
+# explicit: Live Docker desk env (TELLER_ENV_FILE=.env.teller-live) — never commit
+.env.teller-live
+.env.teller-*
+# explicit: Cloudflare Pages / shell build env mirror (public VITE_* only) — never commit
+.env.web-live
+.env.web-*
 *.pem
 *.key
 *.p12
