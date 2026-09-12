@@ -712,7 +712,7 @@ func _gate_treasury_write(action: String) -> Dictionary:
 	var error := {
 		"code": "TREASURY_SHORT",
 		"message": "the Live ops treasury is short; no write was sent",
-		"bankLine": "The branch is low on ops gas — no slip was sent. Staff are being topped up in the background.",
+		"bankLine": "The branch is low on ops gas — no slip was sent. Drop Sepolia ETH to the bank float address (Help keep the branch open); staff refill in the background once the float has funds.",
 	}
 	if not opened.get("ok", false):
 		error = opened.get("error", error)

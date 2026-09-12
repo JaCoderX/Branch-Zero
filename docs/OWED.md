@@ -17,8 +17,8 @@ Related: [HANDOFF-CC.md](./missions/HANDOFF-CC.md) · [DEV-LOOP.md](./DEV-LOOP.m
 
 ## 1. Human ops (unblocks Live demos)
 
-- [ ] **Fund the ops treasury** — [Google Cloud Sepolia ETH faucet](https://cloud.google.com/application/web3/faucet/ethereum/sepolia) (0.05 ETH/day) → **`0xa6E8…e58d`** (new distinct `SEPOLIA_TREASURY_PK`; not the old registrar-shared sink)
-- [ ] **`npm run treasury:topup -- --execute`** after the drop — lifts staff to need × 1.25 ([SEPOLIA-TREASURY.md](./SEPOLIA-TREASURY.md) §9)
+- [ ] **Fund the ops treasury** — [Google Cloud Sepolia ETH faucet](https://cloud.google.com/application/web3/faucet/ethereum/sepolia) (0.05 ETH/day) → **`0xa6E8…e58d`** (new distinct `SEPOLIA_TREASURY_PK`; not the old registrar-shared sink). Live desk auto-refills staff from this float (`SEPOLIA_TREASURY_AUTO`).
+- [ ] **Optional break-glass** — `npm run treasury:topup -- --execute` if auto is off or you need an immediate fill before a demo ([SEPOLIA-TREASURY.md](./SEPOLIA-TREASURY.md) §5 / §9)
 - [ ] Optional: Circle USDC on the **new** treasury only if you want hold float ([faucet.circle.com](https://faucet.circle.com/) · Ethereum Sepolia)
 - [ ] **Hosting — Workers & Pages + Docker desk (preferred public URL)** — packaging **met**; public deploy is yours
       ([HOSTING.md §3.6](./HOSTING.md) · [HOSTING.md §7](./HOSTING.md)):

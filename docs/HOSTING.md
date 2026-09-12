@@ -356,7 +356,9 @@ open ≥ 60 s (keep-alive comment every 20 s) and reconnects after a desk restar
 ### 3.6 Principal deploy sequence (Workers & Pages + desk)
 
 1. **Privy** — Allowed origins += `https://branchzero.app` (+ `www` / `*.workers.dev` / preview URLs while testing).
-2. **Treasury** — fund + `npm run treasury:topup -- --execute` (OWED §1).
+2. **Treasury** — fund the ops float (Google Sepolia faucet → treasury address). With `SEPOLIA_TREASURY_AUTO=on`
+   the Live desk refills staff on an interval and before Pay / FX / Opening; `npm run treasury:topup -- --execute`
+   remains break-glass (OWED §1).
 3. **Desk** — fill `.env.teller-live`; `ALLOWED_ORIGINS=https://branchzero.app,…`;
    `TELLER_ENV_FILE=.env.teller-live docker compose up -d --build teller-live` (or VPS). Put TLS in front:
    Cloudflare Tunnel public hostname `desk.branchzero.app` → `http://127.0.0.1:8787` (or Caddy). Check

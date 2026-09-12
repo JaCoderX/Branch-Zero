@@ -361,11 +361,15 @@ let lastAttempt = 0;
 const MIN_ATTEMPT_GAP_MS = 60_000;
 
 /**
- * Best-effort top-up before an expensive operation, or on the watcher's tick.
+ * Best-effort top-up before an expensive Live write, or on the watcher's tick.
+ *
+ * Call sites (non-fatal): Account Opening (`pre-cloneBlox`), Lane A pay, FX enable/swap, Priority submit,
+ * ENS mint/setText, practice faucet. Players never trigger this directly — the desk does, so a hosted bank
+ * does not need `npm run treasury:topup` between demos while the float still holds ETH.
  *
  * Never throws and never blocks the caller's real work: a Dev desk has no treasury, a Live desk may have an
- * empty one, and neither is a reason to refuse to open an account. The pre-flight that *does* fail loudly is
- * the one in `lanes/provision.ts` — `cloneBlox` still refuses to send undersized gas.
+ * empty one, and neither is a reason to refuse the lane. Loud failures stay in the lane (clone gas floor,
+ * `FX_TELLER_DRY`, etc.).
  */
 export async function maybeTopUp(reason: string, log?: (o: Record<string, unknown>, msg: string) => void): Promise<TopUpResult | undefined> {
   if (config.target !== 'sepolia' || !config.treasury.auto || !treasuryAddress) return undefined;
@@ -376,7 +380,15 @@ export async function maybeTopUp(reason: string, log?: (o: Record<string, unknow
     if (result.sends.length) {
       log?.({ sends: result.sends.map((s) => ({ role: s.role, to: s.to, eth: s.amountEth, hash: s.hash })), reason }, 'treasury topped up staff wallets');
     } else if (result.refused?.code === 'TREASURY_SHORT') {
-      log?.({ reason, need: fmtEth(result.plan.requiredWei), held: fmtEth(result.snapshot.ethWei) }, `treasury is short: ${result.refused.message}`);
+      log?.(
+        { reason, need: fmtEth(result.plan.requiredWei), held: fmtEth(result.snapshot.ethWei), address: result.snapshot.address },
+        `treasury float empty/short — human faucet then auto/CLI will refill staff: ${result.refused.message}`,
+      );
+    } else if (result.plan.lines.some((l) => l.balanceWei < l.needWei)) {
+      log?.(
+        { reason, shortfalls: result.plan.lines.filter((l) => l.balanceWei < l.needWei).map((l) => l.role) },
+        'treasury plan left staff below need (capped, skipped, or already mid-flight)',
+      );
     }
     return result;
   } catch (e) {

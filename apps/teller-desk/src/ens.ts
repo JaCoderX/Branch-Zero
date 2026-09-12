@@ -31,6 +31,7 @@ import { normalize } from 'viem/ens';
 import { sepolia, type StageEvent } from '@branch-zero/shared';
 import { config, REPO_ROOT } from './config.ts';
 import { emitStage, patchPlayer, type Player } from './store.ts';
+import { maybeTopUp } from './treasury.ts';
 
 const ETH_REGISTRAR_ABI = parseAbi([
   'function isAvailable(string label) view returns (bool)',
@@ -314,6 +315,7 @@ function ensStage(player: Player, jobId: string) {
 /** Mint one customer subname and point its addr(60) at the player's AccountBlox. */
 export async function mint(player: Player, labelInput: unknown, jobId: string): Promise<EnsClaim & { txHashes: Hex[]; tier: string; account: Address; owner: Address }> {
   if (!player.account) throw Object.assign(new Error('Open an AccountBlox before claiming a name'), { statusCode: 400, code: 'NO_ACCOUNT' });
+  await maybeTopUp('pre-ens-mint');
   const { client: c, wallet: w, address: registrar, deployment: d } = ensWallet();
   const label = labelOf(labelInput);
   const name = normalize(`${label}.${d.parentName}`);
@@ -356,6 +358,7 @@ export async function mint(player: Player, labelInput: unknown, jobId: string): 
 }
 
 export async function setText(player: Player, nameInput: unknown, keyInput: unknown, valueInput: unknown, jobId: string) {
+  await maybeTopUp('pre-ens-set-text');
   const { client: c, wallet: w, address: registrar, deployment: d } = ensWallet();
   const name = nameOf(nameInput || player.ensName, d);
   if (String(keyInput ?? '') !== 'bz.tier' || !['Silver', 'Gold'].includes(String(valueInput ?? ''))) {

@@ -107,13 +107,13 @@ Faucets ──► SEPOLIA_TREASURY_PK
 |---------|------------|----------|
 | `npm -w infra run funding:sepolia` | Show treasury + staff; shortfalls; suggested top-ups with ×1.25 | **yes** — treasury section first (ETH / Circle USDC / practice), then each role vs `need` / `target`. Privy-free, read-only |
 | `npm run treasury:topup` | Read-only plan + optional `--execute` send from treasury | **yes** — dry run by default; `--execute`, `--partial`, `--json`, `--practice`. Exit 2 on a named blocker |
-| Live Teller Desk (background) | Before expensive ops / periodic: if staff below need, top up | **yes** — `maybeTopUp('pre-cloneBlox')` before a clone, plus an unref'd interval watcher (`SEPOLIA_TREASURY_INTERVAL_SEC`, default 900 s). Both Live-only, key-only, rate-limited, and non-fatal |
+| Live Teller Desk (background) | Before expensive Live writes / periodic: if staff below need, top up | **yes** — `maybeTopUp` before Account Opening (`pre-cloneBlox`), Lane A pay, FX enable/swap, Priority submit, ENS mint/setText, practice faucet, and manager recall; plus an unref'd interval watcher (`SEPOLIA_TREASURY_INTERVAL_SEC`, default **120 s**). Live-only, key-only, rate-limited (≥60 s), and non-fatal. Players never call this — a hosted bank does not need `npm run treasury:topup` between demos while the float holds ETH |
 | Desk debug | Balances: treasury ETH/USDC + each staff role; never expose private keys | **yes** — a `treasury` block on `/healthz` (cached 15 s) rendered as an operator row in the desk-debug panel. Absent on Eve |
 | `npm run killtests:treasury` | — | **added** — T1–T7 read-only invariants (margin, role separation, lab-key refusal, two USDCs, caps, Live-only, no key leakage) |
 
 **Nothing writes from `/healthz`.** It is unauthenticated, so an endpoint that moved money would be a
-gas-drain vector wearing a health check. Health *reports*; the three writers are the CLI, the pre-`cloneBlox`
-hook and the interval watcher.
+gas-drain vector wearing a health check. Health *reports*; money moves from the CLI, the Live write
+pre-flight hooks above, and the interval watcher.
 
 **Dev wing (1337):** out of scope — lab genesis already funds Ganache accounts. Treasury is **Live / Sepolia only**.
 

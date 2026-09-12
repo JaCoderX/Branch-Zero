@@ -23,6 +23,7 @@ import { erc20Abi } from '@branch-zero/shared';
 import { broadcaster, broadcasterAddress, chain, metaTxDuration, publicClient } from '../chain.ts';
 import { config, deployments } from '../config.ts';
 import { signMetaTx, type AuditSink } from '../signing/privySigner.ts';
+import { maybeTopUp } from '../treasury.ts';
 import { emitStage, type Player } from '../store.ts';
 import { receiptFee } from '../fees.ts';
 import { FX_PAIRS, fxDeployment } from './fx.ts';
@@ -97,6 +98,8 @@ export interface PayResult {
 export async function pay(player: Player, to: Address, amount: string, jobId: string, audit?: AuditSink, token: PayToken = payTokenOf(undefined)): Promise<PayResult> {
   const account = player.account;
   if (!account) throw Object.assign(new Error('No account opened for this player'), { code: 'NO_ACCOUNT' });
+  // Live: broadcaster pays outer gas — top staff from the ops float before we burn a dry teller.
+  await maybeTopUp('pre-pay');
   const { token: usd } = deployments();
 
   const stage = (s: 'signing' | 'broadcasting' | 'mined' | 'failed', bankLine: string, extra: Record<string, unknown> = {}) =>

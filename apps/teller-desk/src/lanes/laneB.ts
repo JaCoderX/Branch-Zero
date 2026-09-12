@@ -38,6 +38,7 @@ import { config, deployments } from '../config.ts';
 import { ownerWalletClient, type TxAuditSink } from '../signing/privySigner.ts';
 import { emitStage, hasSubscribers, type Player } from '../store.ts';
 import { receiptFee } from '../fees.ts';
+import { maybeTopUp } from '../treasury.ts';
 import { ensureTxPolicy, fundOwnerGas } from './provision.ts';
 
 /**
@@ -442,6 +443,10 @@ async function decide(player: Player, txId: bigint, actor: Actor, kind: 'approve
   }
 
   const { gc, from } = actor === 'manager' ? asManager(account) : { gc: asOwner(player, account, txAudit), from: player.ownerAddress };
+
+  if (actor === 'manager') {
+    await maybeTopUp('pre-manager-cancel');
+  }
 
   // Owner-paid path: viem reserves gas×maxFeePerGas up front. Half of SEPOLIA_OWNER_GAS_ETH (~0.0015) is
   // not enough when maxFee spikes — top to the full target before Release/Recall, and pin a quiet Sepolia fee.

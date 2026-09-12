@@ -27,6 +27,7 @@ import { EIP712_DOMAIN_TYPE, META_TX_DOMAIN_NAME, META_TX_PRIMARY_TYPE, META_TX_
 import { broadcaster, chain, manager, managerAddress, metaTxDuration, publicClient } from '../chain.ts';
 import { config, deployments } from '../config.ts';
 import { emitStage, type Player } from '../store.ts';
+import { maybeTopUp } from '../treasury.ts';
 import { receiptFee } from '../fees.ts';
 import { explainRevert, readWire, RECORD_FAILED_BANK_LINE, statusName } from './laneB.ts';
 
@@ -197,6 +198,7 @@ export async function preparePriority(player: Player, txId: bigint, jobId: strin
 
 /** Step 2 — the player's signature is back; the manager submits the meta-approve. Completes before the clock. */
 export async function submitPriority(player: Player, priorityId: string, signature: Hex, jobId: string): Promise<PriorityResult> {
+  await maybeTopUp('pre-priority');
   const p = prepared.get(priorityId);
   if (!p || p.privyUserId !== player.privyUserId) throw err(`no priority payload ${priorityId} waiting for this player (expired, used, or never prepared)`, 'PRIORITY_EXPIRED', 410);
   const desk = requirePriorityDesk();

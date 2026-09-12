@@ -95,6 +95,7 @@ import { config, REPO_ROOT } from '../config.ts';
 import { ensureTypedDataRule, pinPolicyToAccount } from '../privy.ts';
 import { signMetaTx, type AuditSink } from '../signing/privySigner.ts';
 import { emitStage, patchPlayer, type Player } from '../store.ts';
+import { maybeTopUp } from '../treasury.ts';
 import { explainRevert } from './laneB.ts';
 import { BROADCASTER_ROLE, OWNER_ROLE } from './provision.ts';
 
@@ -745,6 +746,7 @@ function whitelistOf(d: FxDeployment): FxWhitelistRow[] {
  * proves only that the meta-transaction was delivered. `ownerSignedBatch` now reads the effect back instead.
  */
 export async function enableFx(player: Player, jobId: string, audit?: AuditSink): Promise<FxEnableResult> {
+  await maybeTopUp('pre-fx-enable');
   const d = fxDeployment();
   const { publicClient, chain, broadcaster } = fxClients();
   const till = await tillFor(player, true, jobId);
@@ -1119,6 +1121,7 @@ export interface FxSwapResult {
  * is refused (`FX_PAIR` / `FX_SIDE`) — the player agreed to *that* trade, not its mirror.
  */
 export async function swap(player: Player, quoteId: string | undefined, amount: string | undefined, jobId: string, audit?: AuditSink, pair?: unknown, side?: unknown): Promise<FxSwapResult> {
+  await maybeTopUp('pre-fx-swap');
   const d = fxDeployment();
   const { publicClient } = fxClients();
   const till = await tillFor(player);

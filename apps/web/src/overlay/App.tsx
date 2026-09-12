@@ -479,7 +479,7 @@ export function App({ engineState }: { engineState: string }) {
               ))}
               {treasury.treasuryShort && (
                 <div style={{ color: '#e3b341', marginTop: 2 }}>
-                  faucet {treasury.requiredEth} ETH to the address above (a human claims it), then `npm run treasury:topup -- --execute`
+                  faucet {treasury.requiredEth} ETH to the address above (a human claims it); the Live desk auto-refills staff on an interval and before Pay / FX / Opening. CLI: `npm run treasury:topup -- --execute`
                 </div>
               )}
               {(treasury.recent ?? []).length > 0 && (

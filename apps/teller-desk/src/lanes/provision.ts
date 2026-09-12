@@ -433,6 +433,8 @@ export async function faucetAccount(account: Address): Promise<{ balance: string
     throw Object.assign(new Error('the practice faucet is only available on the Main wing'), { statusCode: 400, code: 'FAUCET_OFF' });
   }
 
+  await maybeTopUp('pre-faucet');
+
   const { token } = d();
   const target = parseUnits(config.openingBalance, token.decimals);
   const balanceOf = async (owner: Address) =>

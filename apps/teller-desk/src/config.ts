@@ -187,7 +187,9 @@ export const config = {
      */
     auto: opt('SEPOLIA_TREASURY_AUTO', 'on').toLowerCase() !== 'off' && Boolean(treasuryPk),
     /** How often the background watcher may look, in seconds. Each look is still cap- and ledger-bound. */
-    intervalSec: Number(opt('SEPOLIA_TREASURY_INTERVAL_SEC', '900')),
+    // Hosted Live burns broadcaster gas on every Pay / FX tick; 15 min left the teller dry mid-walk.
+    // 120 s keeps auto ahead of a demo without hammering RPC (maybeTopUp still enforces a 60 s floor).
+    intervalSec: Number(opt('SEPOLIA_TREASURY_INTERVAL_SEC', '120')),
     /** Largest single transfer, and the largest total in a rolling hour, in ETH (docs/SEPOLIA-TREASURY.md §6). */
     maxPerTxEth: opt('SEPOLIA_TREASURY_MAX_TX_ETH', TREASURY_CAP_DEFAULTS.perTxEth),
     maxPerHourEth: opt('SEPOLIA_TREASURY_MAX_HOUR_ETH', TREASURY_CAP_DEFAULTS.perHourEth),

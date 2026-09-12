@@ -107,8 +107,8 @@ ARC_RPC_URL=
 MAX_TX_GAS=16777216           # 2^24 — the RPC gascap public providers use; cloneBlox needs ~16.65M
 SEPOLIA_TREASURY_PK=          # Live ops float — faucet destination; never staff roles
 SEPOLIA_TREASURY_ADDRESS=     # read-only alternative: watch a treasury this process cannot spend
-SEPOLIA_TREASURY_AUTO=on      # background top-ups (pre-cloneBlox + interval); off = CLI only
-SEPOLIA_TREASURY_INTERVAL_SEC=900
+SEPOLIA_TREASURY_AUTO=on      # background top-ups (Live write pre-flights + interval); off = CLI only
+SEPOLIA_TREASURY_INTERVAL_SEC=120
 SEPOLIA_TREASURY_NEED_DEPLOYER_ETH=0.048     # target = need x 1.25; margin fixed by the principal
 SEPOLIA_TREASURY_NEED_BROADCASTER_ETH=0.012
 SEPOLIA_TREASURY_NEED_MANAGER_ETH=0.008
