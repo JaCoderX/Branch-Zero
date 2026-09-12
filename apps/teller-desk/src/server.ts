@@ -36,7 +36,9 @@ app.addHook('onSend', async (req, reply) => {
   const origin = req.headers.origin;
   if (origin && config.allowedOrigins.includes(origin)) {
     reply.header('Access-Control-Allow-Origin', origin);
-    reply.header('Access-Control-Allow-Headers', 'content-type, authorization');
+    // Must include x-bz-owner: authenticated POSTs (e.g. /session) send it, so the browser preflights
+    // and blocks with "Failed to fetch" if this header is omitted (cross-origin Pages → desk).
+    reply.header('Access-Control-Allow-Headers', 'content-type, authorization, x-bz-owner');
     reply.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   }
 });
