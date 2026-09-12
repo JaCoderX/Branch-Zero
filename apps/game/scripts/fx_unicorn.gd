@@ -26,7 +26,9 @@ extends Node3D
 
 const GLB := "res://assets/models/fx_unicorn/unicorn_pink.glb"
 const MODEL_SCALE := 0.26            # the pack is ~5.2 units tall → ≈ 1.35 m, horn clearing the 1.1 m counter
-const MODEL_YAW := PI / 2            # the glb's nose points local −z; +π/2 turns it west, toward the customer pad
+# Body yaw relative to the parent: `_face_player` aims parent local −x at the hero. The glb's nose is local +z
+# (not −z), so −π/2 aligns nose with parent −x. +π/2 left the unicorn facing away from the customer.
+const MODEL_YAW := -PI / 2
 
 const HIDDEN_ALPHA := 0.10           # soft silhouette; the handoff forbids alpha 0
 const PEEK_ALPHA := 0.85             # readable pink, still a little ghostly
