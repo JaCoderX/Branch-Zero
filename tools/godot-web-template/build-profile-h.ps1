@@ -22,6 +22,23 @@ param(
 $sdk = Join-Path $Root 'emsdk'
 $src = Join-Path $Root 'godot-src'
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
+# Same commit as apps/game/.godot-version → Godot_v4.5.2-stable (tag 4.5.2-stable).
+$ExpectedCommit = '6ce3de25aa58466e14ef354703ba8d9791a417da'
+
+if (-not (Test-Path (Join-Path $src '.git'))) {
+  throw "godot-src missing or not a git clone: $src — clone tag 4.5.2-stable first (see script header)."
+}
+$head = (git -C $src rev-parse HEAD 2>$null).Trim()
+if ($head -ne $ExpectedCommit) {
+  throw @"
+godot-src HEAD is not the pinned 4.5.2-stable commit.
+  want $ExpectedCommit
+  got  $head
+  path $src
+Rebuild with: git clone --depth 1 --branch 4.5.2-stable https://github.com/godotengine/godot.git <Root>\godot-src
+"@
+}
+Write-Output "godot-src HEAD $head (4.5.2-stable pin OK)"
 
 # emsdk_env.ps1 prints its banner to stderr, which PowerShell 5.1 turns into a terminating
 # NativeCommandError. Set the environment directly instead of sourcing it.

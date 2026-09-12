@@ -122,5 +122,6 @@ zip cannot quietly ship.
 ## On an engine bump
 
 This artefact is tied to `4.5.2-stable`. A different editor version must not use it — Godot refuses mismatched
-templates. Rebuild, re-measure the wasm against both caps, re-pin the sha in `SHA256SUMS` and in
-`scripts/export-web.mjs`, and re-walk `?mock=account`.
+templates. Rebuild (`build-profile-h.ps1` asserts commit `6ce3de25a…`), re-measure the wasm against both caps,
+re-pin the sha in `SHA256SUMS` only (`export-web.mjs` reads it), and re-walk `?mock=account`.
+`npm run export:web:lean` exits non-zero if the resulting `index.wasm` fails either cap reading.

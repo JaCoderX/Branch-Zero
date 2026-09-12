@@ -65,7 +65,8 @@ progressive_web_app/enabled=false
 `export_presets.cfg` holds a second preset, **`Web-Lean`**, identical except for
 `custom_template/release` → the pinned lean template under `tools/godot-web-template/`
 ([HOSTING.md §3.3](./HOSTING.md)). Threads stay OFF in both; `custom_template/debug` is empty in both, so a
-debug export always uses the official template.
+debug export always uses the official template. `Web-Lean` is **`runnable=false`** — one-click export
+stays on `Web`; pick lean only via `npm run export:web:lean`.
 
 Command line export (CI):
 
@@ -74,8 +75,9 @@ godot --headless --path apps/game --export-release "Web" ../web/public/game/inde
 ```
 
 Prefer the npm scripts — `npm run export:web` (official) and `npm run export:web:lean` (pinned template).
-`export:web:lean` verifies the template's sha256 before exporting and prints the resulting `index.wasm`
-against both readings of the Pages cap. `Web-Lean` stores its template path **relative to `apps/game`**, so it
+`export:web:lean` verifies the template's sha256 from `SHA256SUMS` before exporting, prints the resulting
+`index.wasm` against both readings of the Pages cap, and **exits non-zero** if either reading fails.
+`Web-Lean` stores its template path **relative to `apps/game`**, so it
 only resolves when Godot's working directory is that folder — which is what the script guarantees.
 
 ---

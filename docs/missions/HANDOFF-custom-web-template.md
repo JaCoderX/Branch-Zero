@@ -122,7 +122,6 @@ Profile F's failure was confirmed side-by-side against the official template fro
 
 ### Owed to the lab
 
-ENG-2026-0025's `INVENTORY-branch-zero-modules.md` and `findings.md` recommend F/E without `basis_universal`,
-and its "what this does not show" list does not mention the module. Profiles G and H were built in this repo
-(flags and script committed under `tools/godot-web-template/`) and are **not** in the lab tree. Someone should
-fold the correction back into the ENG: **`basis_universal` is hard for Branch Zero; `gltf` is the soft one.**
+~~ENG-2026-0025's inventory still recommended F without `basis_universal`.~~ **Folded back 2026-09-12:**
+lab `INVENTORY-branch-zero-modules.md`, findings § *Product pin correction*, `handoff.md` outcome, and
+`measured-sizes.txt` now state **`basis_universal` is hard; `gltf` is soft; pin H not F**.

@@ -31,12 +31,23 @@ const PRESET = LEAN ? 'Web-Lean' : 'Web';
 
 // ENG-2026-0025 Profile H — the artefact the "Web-Lean" preset pins. Rebuild recipe + sha in
 // tools/godot-web-template/README.md; the path here must match export_presets.cfg [preset.1.options].
-const LEAN_TEMPLATE = path.join(ROOT, 'tools', 'godot-web-template', 'godot-4.5.2-stable-web-nothreads-lean-h.zip');
-const LEAN_SHA256 = '03a443b07e5e3fadc8227c7441e9fdbec1e07fc821fa97bbed94dcd7a20a5c66';
+const LEAN_DIR = path.join(ROOT, 'tools', 'godot-web-template');
+const LEAN_TEMPLATE = path.join(LEAN_DIR, 'godot-4.5.2-stable-web-nothreads-lean-h.zip');
+const LEAN_SUMS = path.join(LEAN_DIR, 'SHA256SUMS');
 
 // Cloudflare Pages per-file cap, both readings (HOSTING.md §3.3).
 const CAP_MIB = 26_214_400;
 const CAP_MB = 25_000_000;
+
+/** Single source of truth: tools/godot-web-template/SHA256SUMS (gnu `sha256sum` format). */
+function readLeanSha256(sumsPath, fileName) {
+  const text = fs.readFileSync(sumsPath, 'utf8');
+  for (const line of text.split(/\r?\n/)) {
+    const m = line.match(/^([0-9a-f]{64})\s+\*?(\S+)\s*$/i);
+    if (m && m[2] === fileName) return m[1].toLowerCase();
+  }
+  throw new Error(`no sha256 for ${fileName} in ${sumsPath}`);
+}
 
 function candidates() {
   const list = [];
@@ -89,9 +100,16 @@ if (LEAN) {
     );
     process.exit(1);
   }
+  let want;
+  try {
+    want = readLeanSha256(LEAN_SUMS, path.basename(LEAN_TEMPLATE));
+  } catch (e) {
+    console.error(String(e?.message || e));
+    process.exit(1);
+  }
   const got = crypto.createHash('sha256').update(fs.readFileSync(LEAN_TEMPLATE)).digest('hex');
-  if (got !== LEAN_SHA256) {
-    console.error(`Lean template sha256 mismatch\n  want ${LEAN_SHA256}\n  got  ${got}\n${LEAN_TEMPLATE}`);
+  if (got !== want) {
+    console.error(`Lean template sha256 mismatch\n  want ${want}\n  got  ${got}\n${LEAN_TEMPLATE}`);
     process.exit(1);
   }
   console.log(`lean   ${path.relative(ROOT, LEAN_TEMPLATE)}\n       sha256 ${got} (ENG-2026-0025 Profile H)`);
@@ -122,11 +140,22 @@ console.log(`\nexported to apps/web/public/game/ (preset ${PRESET}):\n  ${files.
 const wasm = path.join(OUT_DIR, 'index.wasm');
 if (fs.existsSync(wasm)) {
   const b = fs.statSync(wasm).size;
-  const verdict = (cap) => (b < cap ? `PASS (-${(cap - b).toLocaleString()})` : `FAIL (+${(b - cap).toLocaleString()})`);
+  const passMib = b < CAP_MIB;
+  const passMb = b < CAP_MB;
+  const verdict = (ok, cap) => (ok ? `PASS (-${(cap - b).toLocaleString()})` : `FAIL (+${(b - cap).toLocaleString()})`);
   console.log(
     `\nindex.wasm  ${b.toLocaleString()} B  ${(b / 1024 / 1024).toFixed(3)} MiB` +
-      `\n  < 25 MiB (${CAP_MIB.toLocaleString()})  ${verdict(CAP_MIB)}` +
-      `\n  < 25 MB  (${CAP_MB.toLocaleString()})  ${verdict(CAP_MB)}`,
+      `\n  < 25 MiB (${CAP_MIB.toLocaleString()})  ${verdict(passMib, CAP_MIB)}` +
+      `\n  < 25 MB  (${CAP_MB.toLocaleString()})  ${verdict(passMb, CAP_MB)}`,
   );
+  // Lean's only job is clearing Pages — refuse a green exit if either reading fails.
+  // Official `export:web` is expected over cap (R2 / compose path); print only.
+  if (LEAN && (!passMib || !passMb)) {
+    console.error(
+      'Lean export is over the Pages per-file cap. Refuse to treat this as green — ' +
+        'rebuild Profile H (or G) and re-pin tools/godot-web-template/SHA256SUMS.',
+    );
+    process.exit(1);
+  }
 }
 console.log('\nServe: npm run dev:web  →  http://localhost:5173  (the Vite index.html is the shell; Godot\'s index.html is unused)');

@@ -281,7 +281,8 @@ So §3 has two shapes now:
 
 **Which cap is real:** Cloudflare documents the Pages per-file limit as **25 MiB**. Profile H clears the
 decimal reading too, so the question does not have to be settled to ship. If it ever does matter, the numbers
-above are the ones to re-check — and `npm run export:web:lean` prints both verdicts on every export.
+above are the ones to re-check — and `npm run export:web:lean` prints both verdicts on every export and
+**exits non-zero** if either fails.
 
 #### R2 alternate origin (the official-export path)
 
