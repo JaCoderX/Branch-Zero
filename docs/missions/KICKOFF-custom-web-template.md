@@ -9,6 +9,12 @@ lab: GameLab/work/ENG-2026-0025-godot-web-wasm-under-25mib
 
 # Kickoff prompt — Custom web template Profile F / E (bank proof)
 
+> **Done 2026-09-12 — do not re-run this as written.** Profile F fails the bank: it drops `basis_universal`,
+> which the Gum Bot needs. The pin is **Profile H** (E + `basis_universal`, 23.680 MiB, clears both cap
+> readings) via `npm run export:web:lean`. See the Outcome in
+> [`HANDOFF-custom-web-template.md`](./HANDOFF-custom-web-template.md) and
+> [`tools/godot-web-template/README.md`](../../tools/godot-web-template/README.md).
+
 Paste into a **new** session. Prefer **Fable 5.1**. Lab measure for Profiles E/F is **done**
 ([GameLab ENG-2026-0025](../../../GameLab/work/ENG-2026-0025-godot-web-wasm-under-25mib/) `measured-sizes.txt`).
 

@@ -13,9 +13,9 @@ Related: [ARCHITECTURE.md](./ARCHITECTURE.md) § 2 and § 5 · [WORLD-3D-ENVIRON
 | Godot | **4.5.x stable** (GDScript only) | C# is not supported for Web export in Godot 4; GDScript keeps one language in the game |
 | Renderer | **Compatibility** (WebGL 2) | Forward+ / Mobile are not available on Web |
 | Threads | **Disabled** (single-threaded export) | Threaded export requires COOP/COEP headers which break Privy's iframe and most third-party embeds |
-| Export template | Official 4.5.x web template | — |
+| Export template | Official 4.5.x web template by default; **`npm run export:web:lean`** uses the pinned lean custom template (`Web-Lean` preset, [`tools/godot-web-template/`](../tools/godot-web-template/README.md)) | Same 4.5.2 commit as the editor, threads still OFF, 3D and Compatibility intact; about 40 unused engine modules removed puts `index.wasm` at **23.68 MiB** instead of 36.29 MiB, under the Pages per-file cap. Opt-in — the default `Web` preset pins no custom template |
 | Shell | Vite + React (`apps/web`) hosting the exported `.html/.js/.wasm/.pck` under `/game/` | Custom HTML gives us control of the overlay and headers |
-| Hosting | Shell on Cloudflare Pages; the export itself on an **alternate origin** (R2 `game.branchzero.app`, `VITE_GAME_BASE_URL`) because `index.wasm` is 36.3 MiB raw and Pages caps files at 25 MiB — measured 2026-09-12, see [HOSTING.md §3.3](./HOSTING.md). For the hackathon the export is served **same-origin** from the all-in-one compose stack instead — Caddy, no per-file cap, [HOSTING.md §4](./HOSTING.md). `.wasm` served `application/wasm`, brotli/gzip at the edge | Judges load it from a link; the loader in `apps/web/src/main.ts` takes an absolute `executable`, so the export template is untouched |
+| Hosting | Shell on Cloudflare Pages. With `export:web:lean` the export is small enough to ship same-origin under `/game/`; with the official template it needs an **alternate origin** (R2 `game.branchzero.app`, `VITE_GAME_BASE_URL`) because `index.wasm` is 36.3 MiB raw and Pages caps files at 25 MiB — measured 2026-09-12, see [HOSTING.md §3.3](./HOSTING.md). For the hackathon the export is served **same-origin** from the all-in-one compose stack instead — Caddy, no per-file cap, [HOSTING.md §4](./HOSTING.md). `.wasm` served `application/wasm`, brotli/gzip at the edge | Judges load it from a link; the loader in `apps/web/src/main.ts` takes an absolute `executable`, so the export template is untouched |
 | Node | 20 LTS for the shell and Teller Desk | — |
 
 ---
@@ -62,11 +62,21 @@ html/experimental_virtual_keyboard=false
 progressive_web_app/enabled=false
 ```
 
+`export_presets.cfg` holds a second preset, **`Web-Lean`**, identical except for
+`custom_template/release` → the pinned lean template under `tools/godot-web-template/`
+([HOSTING.md §3.3](./HOSTING.md)). Threads stay OFF in both; `custom_template/debug` is empty in both, so a
+debug export always uses the official template.
+
 Command line export (CI):
 
 ```bash
 godot --headless --path apps/game --export-release "Web" ../web/public/game/index.html
 ```
+
+Prefer the npm scripts — `npm run export:web` (official) and `npm run export:web:lean` (pinned template).
+`export:web:lean` verifies the template's sha256 before exporting and prints the resulting `index.wasm`
+against both readings of the Pages cap. `Web-Lean` stores its template path **relative to `apps/game`**, so it
+only resolves when Godot's working directory is that folder — which is what the script guarantees.
 
 ---
 

@@ -21,6 +21,7 @@
     "build:web": "npm -w apps/web run build",
     "build:web:hackathon": "node scripts/build-web-hackathon.mjs",
     "export:web": "node scripts/export-web.mjs",
+    "export:web:lean": "node scripts/export-web.mjs --lean",
     "publish:game": "node scripts/publish-game.mjs",
     "chain:probe": "npm -w infra run probe",
     "chain:bootstrap": "npm -w infra run bootstrap --",

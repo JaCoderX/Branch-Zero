@@ -4,11 +4,12 @@
 **human step** (Cloudflare account, DNS, Privy dashboard, secrets):
 
 - **§4 — hackathon all-in-one (use this for the event).** One Docker Compose stack: shell + Godot export + Live
-  desk behind Caddy, on `https://branchzero.app` through a Cloudflare Tunnel. One origin, one URL, and no 25 MiB
-  per-file gate on the 36.3 MiB `index.wasm`. Runbook §4.5, checklist §7. Mission:
+  desk behind Caddy, on `https://branchzero.app` through a Cloudflare Tunnel. One origin, one URL, and no
+  per-file gate on `index.wasm` at all. Runbook §4.5, checklist §7. Mission:
   [`missions/HANDOFF-hosting-hackathon-compose.md`](./missions/HANDOFF-hosting-hackathon-compose.md).
-- **§2–§3 — Pages shell + R2 export + a separately hosted desk.** The scalable CDN twin: split hosting, a
-  per-export publish step, absolute desk URL + CORS. **Parallel / later** — not needed for the event, not deleted.
+- **§2–§3 — Pages shell + a separately hosted desk.** The scalable CDN twin: split hosting, absolute desk URL
+  + CORS. **Parallel / later** — not needed for the event, not deleted. Since 2026-09-12 the export fits on Pages
+  itself (`npm run export:web:lean`, 23.68 MiB — §3.3), so R2 is now the fallback, not a requirement.
   Runbook §6. Mission:
   [`missions/HANDOFF-hosting-private-desk.md`](./missions/HANDOFF-hosting-private-desk.md).
 
@@ -26,7 +27,7 @@ origins, signer) · [GODOT.md](./GODOT.md) (single-thread export, no COOP/COEP) 
 | Piece | Where it runs | Holds | Who runs it |
 |-------|---------------|-------|-------------|
 | **Shell** — Vite + React + Godot export loader | `https://branchzero.app` (Cloudflare Pages) | **no keys**; public ids only (`VITE_PRIVY_APP_ID`, `VITE_PRIVY_SIGNER_ID`, `VITE_GITHUB_CLIENT_ID`) | principal, once |
-| **Godot export** — `index.wasm` / `.pck` / `.js` | `https://game.branchzero.app/<version>/` (R2, alternate origin — §3.3) | public game bytes | principal, per export |
+| **Godot export** — `index.wasm` / `.pck` / `.js` | same-origin `/game/` on Pages with the lean export, or `https://game.branchzero.app/<version>/` (R2) with the official one — §3.3 | public game bytes | principal, per export |
 | **Teller Desk** — Fastify, Privy signer, broadcaster, lanes, SSE | **one Docker image** — hosted default *and* any operator's private desk | Privy authorization key, broadcaster / deployer / manager / registrar / treasury keys, the player index | principal (hosted) **or** an operator (private) |
 
 The front is common. The desk is private. If the hosted desk goes away (cost, privacy, end of event), an operator
@@ -191,8 +192,11 @@ Same image, `--dev` → chain `1337`, reads the **unprefixed** lab keys, talks t
 ## 3. Cloudflare Pages (the shell)
 
 > **Parallel / later.** This is the scalable CDN twin, kept whole and still true — but for the hackathon use
-> §4 instead: it needs no Cloudflare Pages project, no R2 bucket and no per-export publish, because the 36.3 MiB
-> `index.wasm` never leaves the operator's own origin. Nothing here blocks §4 and §4 does not replace it.
+> §4 instead: it needs no Cloudflare Pages project and no per-export publish, because the `index.wasm` never
+> leaves the operator's own origin. Nothing here blocks §4 and §4 does not replace it.
+>
+> **2026-09-12:** §3.3 no longer needs R2 either — `npm run export:web:lean` puts `index.wasm` at 23.68 MiB,
+> under the Pages per-file cap, so `/game/` can be a same-origin Pages asset. R2 is kept as the fallback.
 
 ### 3.1 Project configuration
 
@@ -240,9 +244,9 @@ A Pages Function proxy (`functions/api/[[path]].ts` → `fetch(hostedDesk + path
 same-origin hosted path; it is **not** written, and **VERIFY** SSE ≥ 60 s through it before relying on it.
 No `_redirects` file is needed: the shell is a single `index.html` with no client routes.
 
-### 3.3 Export artefact strategy — R2 alternate origin (required by size)
+### 3.3 Export artefact strategy — two exports, two answers
 
-Measured 2026-09-12 (`npm run export:web`, Godot 4.5.2, release, threads off):
+Measured 2026-09-12 (`npm run export:web`, Godot 4.5.2, release, threads off) — the **official** template:
 
 | File | Bytes | MiB | Pages 25 MiB per-file cap |
 |------|-------|-----|---------------------------|
@@ -251,7 +255,37 @@ Measured 2026-09-12 (`npm run export:web`, Godot 4.5.2, release, threads off):
 | `index.js` | 305,185 | 0.29 | ok |
 | worklets, `index.html`, `index.png` | < 25 KB | — | ok |
 
-The engine binary cannot be a Pages asset, so the export lives on an **R2 bucket with a custom domain**
+**`npm run export:web:lean` clears the cap** (2026-09-12). It uses the `Web-Lean` preset and the pinned custom
+template in [`tools/godot-web-template/`](../tools/godot-web-template/README.md) — Godot 4.5.2-stable at the
+same commit as the editor, threads still OFF, still GL Compatibility, `disable_3d` never used, no COOP/COEP:
+
+| Export | `index.wasm` | MiB | < 25 MiB (`26,214,400`) | < 25 MB (`25,000,000`) |
+|--------|-------------:|----:|-------------------------|------------------------|
+| `export:web` (official) | 38,047,590 | 36.285 | FAIL +11,833,190 | FAIL +13,047,590 |
+| **`export:web:lean` (Profile H)** | **24,830,340** | **23.680** | **PASS −1,384,060** | **PASS −169,660** |
+
+`index.pck` is 7,273,428 B either way — the wasm is the engine, the pck is the game, and neither moves the
+other. The saving is ~40 removed engine modules, not compiler flags; the module list, the two Branch Zero
+assets that pin `noise` and `basis_universal`, and the rebuild script live in the tools README. The lean wasm
+also compresses smaller: gzip −9 **7,178,649 B**, brotli q11 **5,121,360 B** (official: 9,241,949 / 6,499,670)
+— a 21% faster first load on any host, §4 included.
+
+So §3 has two shapes now:
+
+- **Lean export, same-origin `/game/` on Pages.** Run `npm run export:web:lean`, leave `VITE_GAME_BASE_URL`
+  unset, and ship `apps/web/public/game/` in the Pages build. No R2 bucket, no CORS policy, no per-export
+  publish step, no `game.branchzero.app` DNS. `_headers` (§3.4) already sets the wasm MIME. This is the
+  recommended §3 shape.
+- **Official export, R2 alternate origin.** The original path, kept whole below and still correct. Use it if
+  the lean template is unavailable on the build machine, or if a future export crosses the cap again.
+
+**Which cap is real:** Cloudflare documents the Pages per-file limit as **25 MiB**. Profile H clears the
+decimal reading too, so the question does not have to be settled to ship. If it ever does matter, the numbers
+above are the ones to re-check — and `npm run export:web:lean` prints both verdicts on every export.
+
+#### R2 alternate origin (the official-export path)
+
+The official engine binary cannot be a Pages asset, so that export lives on an **R2 bucket with a custom domain**
 (`game.branchzero.app`), versioned by content hash, and the shell loads it cross-origin. Nothing in the Godot
 export template changes: `apps/web/src/main.ts` passes `executable: <VITE_GAME_BASE_URL>/index` to Godot's
 `Engine`, which derives `.wasm`, `.pck` and the audio worklets from it.
@@ -288,7 +322,8 @@ deployed `index.wasm` (7.05 MB brotli was the U4 measurement). Keep `apps/web/pu
 build does not need it when `VITE_GAME_BASE_URL` is set (the shell's `HEAD` probe goes to the alternate origin).
 
 If a future export drops under 25 MiB, same-origin `/game/` on Pages works unchanged (`_headers` already sets
-the wasm MIME) — just unset `VITE_GAME_BASE_URL` and ship the export in the build.
+the wasm MIME) — just unset `VITE_GAME_BASE_URL` and ship the export in the build. **`export:web:lean` is
+exactly that case** (23.68 MiB, measured above), which is why it is the recommended §3 shape.
 
 ### 3.4 `_headers`
 
@@ -500,6 +535,9 @@ Never add the `dev` profile, Remote EVM or port `1337` to this host. Rotate the 
 | `apps/web/src/main.ts` | `VITE_GAME_BASE_URL` alternate-origin loader |
 | `apps/web/public/_headers` | Pages headers (wasm MIME, no COOP/COEP) |
 | `scripts/publish-game.mjs` | R2 upload helper, dry-run by default |
+| `tools/godot-web-template/` | **§3.3** pinned lean web export template (git-ignored zip + `SHA256SUMS` + rebuild script + why each module is kept) |
+| `apps/game/export_presets.cfg` | `Web` (official template) and `Web-Lean` (`custom_template/release` → the pinned zip); threads OFF in both |
+| `scripts/export-web.mjs` | `npm run export:web` / `export:web:lean`; verifies the pinned sha256 and prints the wasm against both cap readings |
 | `.node-version` | `22` for Pages |
 | `apps/teller-desk/src/config.ts` | `HOST` bind env (default `127.0.0.1`) |
 
@@ -611,3 +649,39 @@ Never run the `dev` profile on that host. Rotate the throwaway keys after the ev
 - Chrome 153 mixed content: https → `http://localhost:8787` and `http://127.0.0.1:8787` allowed.
 - Alternate-origin export on `:8090` → engine running from `:4174`.
 - `npm run typecheck` clean; `killtests:s2` 6/6 PASS on Live and 6/6 PASS on Dev (`--dev`).
+
+### 8.3 Lean web export template (§3.3)
+
+Measured on this laptop, 2026-09-12, Godot `v4.5.2.stable` editor (`6ce3de25a`), `?mock=account` in Chrome
+through Vite `:5173`. The `index.wasm` byte counts are the export's, not a lab cube's, and they match the
+GameLab measurement exactly — the wasm is the engine and is independent of the `.pck` (7,273,428 B throughout).
+
+| Template | Engine banner | `index.wasm` | MiB | < 25 MiB | < 25 MB | Bank walk |
+|----------|---------------|-------------:|----:|:--------:|:-------:|-----------|
+| official 4.5.2 | `stable.official.6ce3de25a`, Emscripten 4.0.10 | 38,047,590 | 36.285 | FAIL | FAIL | green (reference) |
+| ENG-0025 Profile F | `stable.custom_build.6ce3de25a`, Emscripten 4.0.11 | 24,970,716 | 23.814 | PASS | PASS | **Gum Bot untextured** |
+| Profile G (F + basis) | same | 25,411,218 | 24.234 | PASS | **FAIL** +411,218 | green |
+| **Profile H — pinned** | same | **24,830,340** | **23.680** | **PASS** −1,384,060 | **PASS** −169,660 | **green** |
+
+- **Profile F is not shippable as-is.** The bank export logs
+  `ERROR: Parameter "Image::basis_universal_unpacker_ptr" is null.` twice and the Gum Bot renders magenta
+  instead of yellow/black: `assets/models/inpc/gum_bot_bank.glb` is the one asset importing with
+  `gltf/embedded_image_handling=2`, so the runtime needs the `basis_universal` transcoder. The lab inventory
+  did not scan for that. Side-by-side confirmed against the official template from the same camera position.
+- **`gltf` is the module that can go, not `basis_universal`.** All 70 `.glb` are edit-time imports carrying a
+  `.remap` to `.scn`, so `load("res://….glb")` never touches the runtime parser. Profile H (no `gltf`)
+  rendered the KayKit cast, the furniture, the vault door and the Gum Bot, and `FxUnicorn._dress()`'s
+  `load()` of `unicorn_pink.glb` raised neither of its `push_warning` paths.
+- **Walk:** splash → *Enter the branch* → mock account HUD (`0xMOCK…ACC7`, `test.branchzero.eth`, Silver,
+  500 USDC) → `&demo=walk` circuit across the lobby to the couches and Ines's dialogue. FastNoise terrazzo
+  floor, Cinzel/Inter text, ledger and partner boards, vault door and clock all drew. **Zero Godot console
+  errors or warnings** across the run; the only console errors are `/api/healthz` 500s because no Live desk
+  was running, which `?mock=account` does not need.
+- `Build configuration: Emscripten 4.0.11, single-threaded, no GDExtension support.` — threads OFF held, and
+  no COOP/COEP header was served by Vite.
+- **Not covered:** the unicorn's *peek* animation, the vault / counter / FX desks further along the circuit,
+  and any performance comparison against the official template (`size_extra` is documented to cost run-time
+  speed). The Browser pane was hidden, which stalls the canvas between frames, so the circuit was stepped
+  rather than watched end to end.
+- Default path unbroken: `npm run export:web` still produces the official 38,047,590 B wasm after the preset
+  change, so §4's `build:web:hackathon` is unaffected.
