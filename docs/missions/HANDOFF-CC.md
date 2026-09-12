@@ -117,18 +117,17 @@ Fiat pairs (USD→EUR|ILS) **met 2026-09-09**. **Bidirectional USD↔EUR|ILS + E
 **Met 2026-09-11 (Codex Luna / land):** iNPC walk feel Stage C — ENG-2026-0024 Yes glb (`cfa10162…0f5c`) replaced product walk; Stage A already in tree — [HANDOFF-inpc-gum-bot-walk-feel.md](./HANDOFF-inpc-gum-bot-walk-feel.md). Principal browser Follow smoke still owed.
 
 **Met 2026-09-12 (Claude Code Fable):** **Hosting — Pages shell + Dockerised Teller Desk** (packaging) —
-[HANDOFF-hosting-private-desk.md](./HANDOFF-hosting-private-desk.md). Desk image, `?desk=`, HOSTING.md, R2 path
-documented. Public Pages deploy remains human.
+[HANDOFF-hosting-private-desk.md](./HANDOFF-hosting-private-desk.md). Desk image, `?desk=`, HOSTING.md.
+**Preferred public URL (docs flip 2026-09-12):** Pages + lean `/game/` + `desk.branchzero.app` —
+[HOSTING.md §3.6](../HOSTING.md). Public deploy remains human (Wrangler upload; Pages cannot run Godot).
 
-**Met 2026-09-12 (Claude Code · Opus 5):** **Hackathon all-in-one compose + `branchzero.app`.** One standalone
-Docker Compose stack — `docker-compose.hackathon.yml`: unpublished Live teller + `apps/web/dist` (shell **and**
-the 36.29 MiB export) behind **Caddy** on one origin, **Cloudflare Tunnel** in a `tunnel` profile. Same-origin
-`/api` (`npm run build:web:hackathon`); prefix strip, wasm MIME, no COOP/COEP, SSE proven unbuffered for 65 s;
-no `1337` service at all. Tunnel + Privy origins + treasury + public smoke are the principal’s (OWED §1,
-[HOSTING.md §4](../HOSTING.md)). Pages/R2 and lab
-[ENG-2026-0025](../../../GameLab/work/ENG-2026-0025-godot-web-wasm-under-25mib/) stay parallel.
-[HANDOFF-hosting-hackathon-compose.md](./HANDOFF-hosting-hackathon-compose.md) ·
-[KICKOFF-hosting-hackathon-compose.md](./KICKOFF-hosting-hackathon-compose.md).
+**Met 2026-09-12 (Claude Code · Opus 5):** **Hackathon all-in-one compose** (self-host twin). Standalone
+`docker-compose.hackathon.yml`: unpublished Live teller + `apps/web/dist` behind **Caddy**, Tunnel profile.
+Same-origin `/api`; SSE unbuffered. Optional when skipping Pages — [HOSTING.md §4](../HOSTING.md).
+[HANDOFF-hosting-hackathon-compose.md](./HANDOFF-hosting-hackathon-compose.md).
+
+**Met 2026-09-12:** Lean web template Profile H pin (`export:web:lean`, 23.68 MiB) — Pages per-file cap PASS —
+[HANDOFF-custom-web-template.md](./HANDOFF-custom-web-template.md).
 
 **Also open:** U7 ship packaging (below), still gated on the principal's polish re-playtest.
 
@@ -982,9 +981,9 @@ the Name Desk recorded — possibly the one being moved away from); Arc; treasur
 | **Uniswap v4 FX Desk (S1/S1b)** | K7 — **met** 2026-09-08 (§5i; live swap `0xd98efc64…`, re-run on the Live till `0xd1d9cd8e…`); owed: the sponsor feedback form |
 | **Terminal Console + OBSERVER** | Stretch — **met** 2026-09-08 (§5h; local `docs/progress/2026-09-08-terminal-observer.md`) |
 | U7 polish | Principal playtest — **met** 2026-09-07 ([`KICKOFF-U7-polish.md`](./KICKOFF-U7-polish.md); owed: principal re-playtest) |
-| **Hosting — Pages + Docker desk** | **met** 2026-09-12 — packaging ([`HANDOFF-hosting-private-desk.md`](./HANDOFF-hosting-private-desk.md)); public Pages deploy still human |
-| **Hackathon all-in-one compose** | **open** 2026-09-12 — Caddy + CF Tunnel + shell + Live desk for `branchzero.app` ([`HANDOFF-hosting-hackathon-compose.md`](./HANDOFF-hosting-hackathon-compose.md)) |
-| **Lab: wasm &lt; 25 MiB** | **open** 2026-09-12 — GameLab ENG-2026-0025 (custom 4.5.2 web template, 3D kept); paste GameLab `KICKOFF.md` |
+| **Hosting — Pages + Docker desk** | **met** packaging 2026-09-12; **preferred public URL** lean Pages + `desk.*` ([HOSTING.md §3.6](../HOSTING.md)); deploy still human |
+| **Hackathon all-in-one compose** | **met** 2026-09-12 — self-host twin ([`HANDOFF-hosting-hackathon-compose.md`](./HANDOFF-hosting-hackathon-compose.md)) |
+| **Lab: wasm &lt; 25 MiB** | **met** 2026-09-12 — Profile H pin / `export:web:lean` ([`HANDOFF-custom-web-template.md`](./HANDOFF-custom-web-template.md)) |
 | **U7 ship packaging** | G8–G10 — **open** after re-playtest ([`KICKOFF-U7-ship-package.md`](./KICKOFF-U7-ship-package.md)) |
 | U6 Arc + manager role | G7 — **deferred** (revive ARC.md §5b) |
 

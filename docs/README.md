@@ -65,7 +65,7 @@ Then open the topic doc that matches the surface you are changing.
 | Doc | Use when |
 |-----|----------|
 | [SEPOLIA-LIVE.md](./SEPOLIA-LIVE.md) | Live Main = Sepolia; Remote EVM = Developer Mode |
-| [HOSTING.md](./HOSTING.md) | Dockerised Teller Desk + shell: hackathon all-in-one (Caddy + CF Tunnel) preferred for the event; Pages/R2 twin parallel; private desk via `?desk=` |
+| [HOSTING.md](./HOSTING.md) | Pages + lean `/game/` + Docker desk (`desk.branchzero.app`) preferred public URL; §4 compose self-host twin; private desk via `?desk=` |
 | [REMOTE-EVM.md](./REMOTE-EVM.md) | Lab chain `1337` |
 | [SEPOLIA-TREASURY.md](./SEPOLIA-TREASURY.md) | Ops treasury, staff top-ups |
 | [LOAD-ACCOUNT.md](./LOAD-ACCOUNT.md) | Iris loads an owned AccountBlox by address |

@@ -1,20 +1,19 @@
 # Hosting — the common front and the private desk
 
-**Status 2026-09-12:** two paths, both **built and verified locally**, and in both the public deploy itself is a
-**human step** (Cloudflare account, DNS, Privy dashboard, secrets):
+**Status 2026-09-12:** two paths, both **built and verified locally**. Public deploy is a **human step**
+(Cloudflare account, DNS, Privy dashboard, secrets, treasury):
 
-- **§4 — hackathon all-in-one (use this for the event).** One Docker Compose stack: shell + Godot export + Live
-  desk behind Caddy, on `https://branchzero.app` through a Cloudflare Tunnel. One origin, one URL, and no
-  per-file gate on `index.wasm` at all. Runbook §4.5, checklist §7. Mission:
-  [`missions/HANDOFF-hosting-hackathon-compose.md`](./missions/HANDOFF-hosting-hackathon-compose.md).
-- **§2–§3 — Pages shell + a separately hosted desk.** The scalable CDN twin: split hosting, absolute desk URL
-  + CORS. **Parallel / later** — not needed for the event, not deleted. Since 2026-09-12 the export fits on Pages
-  itself (`npm run export:web:lean`, 23.68 MiB — §3.3), so R2 is now the fallback, not a requirement.
-  Runbook §6. Mission:
-  [`missions/HANDOFF-hosting-private-desk.md`](./missions/HANDOFF-hosting-private-desk.md).
+- **§2–§3 — Pages shell + Docker desk (preferred for the public URL).** `https://branchzero.app` on Cloudflare
+  Pages (lean Godot export, **23.68 MiB** Profile H — under the per-file cap, same-origin `/game/`). Live desk is a
+  separate Docker service at `https://desk.branchzero.app` (Tunnel or Caddy). Absolute `VITE_TELLER_DESK_URL` + CORS.
+  R2 is **fallback only** if you ship the official 36 MiB template. Runbook §3 + §6; checklist §7.
+  Packaging: [`missions/HANDOFF-hosting-private-desk.md`](./missions/HANDOFF-hosting-private-desk.md) · lean pin:
+  [`missions/HANDOFF-custom-web-template.md`](./missions/HANDOFF-custom-web-template.md).
+- **§4 — all-in-one compose (self-host / offline twin).** One Docker Compose stack: shell + export + Live desk
+  behind Caddy, optional Cloudflare Tunnel. Same privacy story; one origin `/api`. Use when you do not want Pages.
+  Runbook §4.5. Mission: [`missions/HANDOFF-hosting-hackathon-compose.md`](./missions/HANDOFF-hosting-hackathon-compose.md).
 
-§2 (run a desk in Docker) and §2.3 (`?desk=`) apply to both, and are how an operator keeps their own drawer
-under their own desk whichever way the front is served.
+§2 (run a desk in Docker) and §2.3 (`?desk=`) apply to both.
 
 Cross-refs: [ARCHITECTURE.md §9](./ARCHITECTURE.md) · [SECURITY-AND-KEYS.md §4.1](./SECURITY-AND-KEYS.md) (per-wing
 key names) · [SEPOLIA-LIVE.md §4.6](./SEPOLIA-LIVE.md) (never expose `1337`) · [PRIVY.md §3](./PRIVY.md) (Allowed
@@ -34,10 +33,10 @@ The front is common. The desk is private. If the hosted desk goes away (cost, pr
 runs the same image on their own machine and points the public shell at it with `?desk=` (§2.3). The branch front
 stays open; the drawer moves under their own desk.
 
-That table is the **§3 split-hosting** shape. In the **§4 hackathon** shape the three rows collapse onto one origin:
-Caddy serves the shell *and* the export from `apps/web/dist`, and the desk answers on the same origin under `/api`,
-reached only across the compose network. Who holds what is unchanged — shell no keys, desk all of them — and so is
-`?desk=`: the hackathon build's default is simply same-origin `/api` instead of an absolute desk URL.
+That table is the **§3 Pages + desk** shape (preferred public URL). In the **§4 compose** shape the three rows
+collapse onto one origin: Caddy serves the shell *and* the export from `apps/web/dist`, and the desk answers under
+`/api` across the compose network. Who holds what is unchanged — shell no keys, desk all of them — and so is
+`?desk=`: the compose build's default is same-origin `/api` instead of an absolute desk URL.
 
 ### 1.1 Honest privacy statement
 
@@ -189,14 +188,15 @@ Same image, `--dev` → chain `1337`, reads the **unprefixed** lab keys, talks t
 
 ---
 
-## 3. Cloudflare Pages (the shell)
+## 3. Cloudflare Pages (the shell) — preferred public front
 
-> **Parallel / later.** This is the scalable CDN twin, kept whole and still true — but for the hackathon use
-> §4 instead: it needs no Cloudflare Pages project and no per-export publish, because the `index.wasm` never
-> leaves the operator's own origin. Nothing here blocks §4 and §4 does not replace it.
+> **Preferred for `https://branchzero.app`.** Lean export (`npm run export:web:lean`, Profile H, 23.68 MiB) fits
+> the Pages per-file cap, so `/game/` is same-origin. The Live desk stays a **separate** Docker deploy
+> (`desk.branchzero.app`). §4 compose remains the self-host twin (no Pages project required).
 >
-> **2026-09-12:** §3.3 no longer needs R2 either — `npm run export:web:lean` puts `index.wasm` at 23.68 MiB,
-> under the Pages per-file cap, so `/game/` can be a same-origin Pages asset. R2 is kept as the fallback.
+> **Pages cannot run Godot.** Build the export + Vite `dist` on a Godot 4.5.2 host (or CI that already has the
+> artefacts), then upload `apps/web/dist`. A bare Pages `npm run build:web` without `public/game/` yields a shell
+> with no bank.
 
 ### 3.1 Project configuration
 
@@ -204,24 +204,25 @@ Same image, `--dev` → chain `1337`, reads the **unprefixed** lab keys, talks t
 |---------|-------|
 | Framework preset | None (Vite) |
 | Root directory | `/` (repo root — npm workspaces) |
-| Build command | `npm run build:web` |
+| Build / deploy | **First ship:** local `export:web:lean` + `build:web` → `npx wrangler pages deploy apps/web/dist` (recommended). Git-connected Pages only if CI can supply `public/game/` (artefact download) — do not expect CF to compile Godot. |
 | Build output directory | `apps/web/dist` |
-| Node version | `22` — `.node-version` at repo root (Pages honours it); `engines.node >= 20` |
-| Production branch | `main` |
+| Node version | `22` — `.node-version` at repo root; `engines.node >= 20` |
+| Production branch | `main` (if using Git integration) |
 
-**Build environment variables** (public ids only — never a desk secret; Vite bakes only `VITE_*`):
+**Build environment variables** (public ids only — never a desk secret; Vite bakes only `VITE_*`).
+Mirror locally in git-ignored `.env.web-live` (see `.env.example`):
 
 | Variable | Value |
 |----------|-------|
 | `VITE_PRIVY_APP_ID` | the Privy app id |
 | `VITE_PRIVY_SIGNER_ID` | the key-quorum / signer id |
-| `VITE_TELLER_DESK_URL` | `https://desk.branchzero.app` — the hosted default desk (absolute, §3.2) |
-| `VITE_GAME_BASE_URL` | `https://game.branchzero.app/<version>` — from `scripts/publish-game.mjs` (§3.3) |
+| `VITE_TELLER_DESK_URL` | `https://desk.branchzero.app` — absolute Live desk URL (§3.2) |
+| `VITE_GAME_BASE_URL` | **leave unset** for lean same-origin `/game/` · set only for the R2 / official-export fallback (§3.3) |
 | `VITE_GITHUB_CLIENT_ID` | optional |
-| `NODE_VERSION` | `22` (belt and braces with `.node-version`) |
+| `VITE_SEPOLIA_RPC_URL` | optional (only if the shell build uses it) |
+| `NODE_VERSION` | `22` |
 
-Custom domains: `branchzero.app` (apex) + `www.branchzero.app` → redirect to apex (Pages "custom domains" +
-a Bulk Redirect or a `_redirects` line if `www` is wanted). DNS lives in the principal's Cloudflare zone.
+Custom domains: `branchzero.app` (apex) + `www.branchzero.app` → redirect to apex. DNS in the Cloudflare zone.
 
 ### 3.2 `/api` strategy — absolute desk URL + CORS (chosen)
 
@@ -335,21 +336,44 @@ iframe (GODOT.md). Do not add them.
 
 ### 3.5 What to look at on the first Pages preview (principal)
 
-Splash → Godot title (from `game.branchzero.app`) → `?debug` panel shows `desk https://desk.branchzero.app · this
-build's default desk` and the treasury block (proves CORS) → Privy OTP → one Lane A pay. In DevTools: `index.wasm`
-`content-type: application/wasm`, `content-encoding: br`; response headers carry **no**
-`cross-origin-opener-policy` / `cross-origin-embedder-policy`; `/events` stays open ≥ 60 s (keep-alive comment every
-20 s) and reconnects after `docker compose restart teller-live`.
+Splash → Godot title from **same-origin** `/game/` (lean export) → `?debug` panel shows
+`desk https://desk.branchzero.app · this build's default desk` and the treasury block (proves CORS) → Privy OTP →
+one Lane A pay. In DevTools: `index.wasm` `content-type: application/wasm`, preferably `content-encoding: br`;
+response headers carry **no** `cross-origin-opener-policy` / `cross-origin-embedder-policy`; desk `/events` stays
+open ≥ 60 s (keep-alive comment every 20 s) and reconnects after a desk restart.
+
+### 3.6 Principal deploy sequence (Pages + desk)
+
+1. **Privy** — Allowed origins += `https://branchzero.app` (+ `www` / `*.pages.dev` while testing).
+2. **Treasury** — fund + `npm run treasury:topup -- --execute` (OWED §1).
+3. **Desk** — fill `.env.teller-live`; `ALLOWED_ORIGINS=https://branchzero.app,…`;
+   `TELLER_ENV_FILE=.env.teller-live docker compose up -d --build teller-live` (or VPS). Put TLS in front:
+   Cloudflare Tunnel public hostname `desk.branchzero.app` → `http://127.0.0.1:8787` (or Caddy). Check
+   `https://desk.branchzero.app/healthz`.
+4. **Front (Godot host)** — ensure `tools/godot-web-template/*.zip` is present; then:
+
+```bash
+npm run export:web:lean
+```
+
+Load `.env.web-live` into the environment (public `VITE_*` only; `VITE_GAME_BASE_URL` unset), then:
+
+```bash
+npm run build:web
+npx wrangler pages project create branch-zero   # once
+npx wrangler pages deploy apps/web/dist --project-name=branch-zero
+```
+
+5. **Domain** — Pages → Custom domains → `branchzero.app`.
+6. **Smoke** — §3.5.
 
 ---
 
-## 4. Hackathon all-in-one — one compose, one URL (recommended for the event)
+## 4. All-in-one compose — self-host twin (optional)
 
-The path in §3 splits the product across three hosts (Pages, R2, a desk platform) and needs a Cloudflare account,
-a bucket and a per-export publish step before a judge can click anything. This one does not: **one Docker Compose
-stack** holds the shell, the 36.3 MiB Godot export and the Live Teller Desk behind **Caddy**, and **Cloudflare
-Tunnel** puts it on `https://branchzero.app`. No 25 MiB per-file cap, because nothing is uploaded to Pages — the
-export is served from the same origin as the shell.
+The path in §3 splits shell and desk across Pages + a desk host. This one does not: **one Docker Compose stack**
+holds the shell, the Godot export and the Live Teller Desk behind **Caddy**, and **Cloudflare Tunnel** can put it
+on `https://branchzero.app`. No Pages project; official or lean export both work (no per-file upload gate).
 
 ```text
 Internet ──> Cloudflare (TLS, DNS) ──> Tunnel ──> cloudflared ──┐  (compose network; nothing published)
@@ -578,24 +602,24 @@ Never run the `dev` profile on that host. Rotate the throwaway keys after the ev
 ## 7. OWED — human steps (mirrored in OWED §1)
 
 - [ ] Privy dashboard → **Allowed origins** += `https://branchzero.app` (and `https://www.branchzero.app` if used)
-
-**Hackathon path (§4) — the event list:**
-
-- [ ] Cloudflare Tunnel created + public hostname `branchzero.app` → `HTTP caddy:8080` (§4.4); `TUNNEL_TOKEN` in the
-      git-ignored `.env`
-- [ ] `npm run export:web` → `npm run build:web:hackathon` on the host that has Godot 4.5.x (§4.2)
-- [ ] Desk env file filled (§2.2) with `ALLOWED_ORIGINS=https://branchzero.app`; volume in place
-- [ ] First public smoke through the tunnel (§4.5 step 6): `/api/healthz`, splash → Godot → Privy OTP → Lane A,
-      `/events` open ≥ 60 s from the public origin
-
-**Pages/R2 twin (§3) — parallel, after the event if wanted:**
-
-- [ ] Cloudflare Pages project (§3.1) with the build env; custom domain `branchzero.app` (+ `www` redirect); DNS
-- [ ] R2 bucket `branch-zero-game` + custom domain `game.branchzero.app` + CORS policy (§3.3); run
-      `node scripts/publish-game.mjs --execute`; set `VITE_GAME_BASE_URL`
-- [ ] Hosted desk: platform, secrets, volume, `ALLOWED_ORIGINS`, `desk.branchzero.app` TLS (§6)
 - [ ] Treasury funded and staff wallets at need (OWED §1)
-- [ ] First Pages preview walk (§3.5), including the ≥ 60 s `/events` stream and Firefox mixed-content note (§2.3)
+
+**Pages + Docker desk (§3) — preferred public URL:**
+
+- [ ] Desk: `.env.teller-live` filled; `ALLOWED_ORIGINS` includes `https://branchzero.app`; volume in place (§2.2)
+- [ ] Desk TLS: Tunnel or Caddy → `https://desk.branchzero.app` → desk `:8787` (§3.6 / §6); `/healthz` 200
+- [ ] Front: on a Godot 4.5.2 host — `npm run export:web:lean` → load `.env.web-live` → `npm run build:web` →
+      `npx wrangler pages deploy apps/web/dist` (§3.6); custom domain `branchzero.app`
+- [ ] First smoke (§3.5): splash → Godot → Privy OTP → Lane A; `/events` open ≥ 60 s; no COOP/COEP
+
+**§4 compose twin — only if you skip Pages:**
+
+- [ ] Tunnel `branchzero.app` → `HTTP caddy:8080`; `TUNNEL_TOKEN`; `export:web` + `build:web:hackathon`;
+      `docker compose -f docker-compose.hackathon.yml --profile tunnel up -d --build` (§4.5)
+
+**R2 fallback — only if shipping the official 36 MiB export:**
+
+- [ ] R2 + `game.branchzero.app` + `VITE_GAME_BASE_URL` (§3.3)
 
 ---
 

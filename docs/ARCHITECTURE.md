@@ -441,19 +441,15 @@ Branch-Zero/
 - Limits stated, not hidden: a private desk needs the same Privy app's authorization key to sign silently, and it
   can only broadcast for accounts *it* opened (broadcaster pinned at `initialize`).
 
-**Amendment 2026-09-12 (hackathon hosting, [HOSTING.md §4](./HOSTING.md)).** For the event the deployment above
-collapses into **one Docker Compose stack** on the operator’s own host — `docker-compose.hackathon.yml`:
+**Amendment 2026-09-12 (lean Pages front, [HOSTING.md §3](./HOSTING.md)).** Preferred public URL:
 
-- **Caddy** is the single origin: `file_server` over `apps/web/dist` (shell **and** the 36.3 MiB Godot export,
-  `application/wasm`, still no COOP/COEP) plus `reverse_proxy /api/* → teller-live:8787` with the prefix stripped
-  exactly as `vite.config.ts` does it, and `flush_interval -1` so SSE is not buffered.
-- **Cloudflare Tunnel** (`cloudflared`, token from env) publishes that origin as `https://branchzero.app`. TLS and
-  DNS are Cloudflare’s; the stack opens no inbound port — Caddy is published on loopback for the operator only.
-- The desk is **unpublished**: no host port, reachable only across the compose network. Remote EVM `1337` has no
-  service in that file at all. Secrets (desk keys, tunnel token) stay environment-only; the shell bakes `VITE_*`
-  public ids and a same-origin `/api` default, and the Godot export is a bind-mounted host build, not a layer.
-- Pages + R2 (the amendment above) remains the **parallel** CDN twin, not a prerequisite; `?desk=` and the
-  no-fallback rule are unchanged by either shape.
+- **Cloudflare Pages** serves `apps/web/dist` including same-origin lean `/game/` (`npm run export:web:lean`,
+  Profile H ≈ 23.68 MiB — under the per-file cap; still no COOP/COEP). Absolute `VITE_TELLER_DESK_URL` points at
+  the Live desk. Pages does **not** run Godot — export + Vite build on a Godot host, then Wrangler upload.
+- **Live desk** is a separate Docker service (`teller-live`) at `https://desk.branchzero.app` (Tunnel/Caddy), with
+  `ALLOWED_ORIGINS` including the Pages origin. R2/`game.branchzero.app` is only for the official 36 MiB export.
+- **§4 compose twin** ([HOSTING.md §4](./HOSTING.md)): optional self-host — Caddy + unpublished desk + optional
+  Tunnel, same-origin `/api`. `?desk=` and the no-fallback rule are unchanged by either shape.
 
 ---
 
