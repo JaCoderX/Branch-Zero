@@ -18,7 +18,7 @@
     "dev:web": "npm -w apps/web run dev",
     "dev:teller": "npm -w apps/teller-desk run dev",
     "killtests": "npm -w apps/teller-desk run killtests --",
-    "build:web": "npm -w apps/web run build",
+    "build:web": "node scripts/build-web.mjs",
     "build:web:hackathon": "node scripts/build-web-hackathon.mjs",
     "deploy:web": "wrangler deploy",
     "export:web": "node scripts/export-web.mjs",

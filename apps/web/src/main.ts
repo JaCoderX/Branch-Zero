@@ -77,14 +77,46 @@ function loadScript(src: string): Promise<void> {
   });
 }
 
+/**
+ * Fetch the engine script with cache-busting semantics and reject HTML (SPA fallback from a
+ * shell-only Workers deploy). Avoids HEAD — some edges stall HEAD on large /game assets, which
+ * left the splash on "loading engine…" forever.
+ */
+async function loadEngineScript(src: string): Promise<void> {
+  const res = await fetch(src, { cache: 'no-cache' });
+  if (!res.ok) {
+    throw new Error(`no export found at ${GAME_DIR}/ — run \`npm run export:web:lean\` (Godot 4.5.2, Web-Lean)`);
+  }
+  const ct = (res.headers.get('content-type') || '').toLowerCase();
+  if (ct.includes('text/html')) {
+    throw new Error(
+      `got HTML instead of the engine at ${GAME_DIR}/index.js — a shell-only deploy wiped /game/; run export:web:lean + deploy:web`,
+    );
+  }
+  const text = await res.text();
+  if (/^\s*<!doctype html/i.test(text) || /^\s*<html/i.test(text)) {
+    throw new Error(
+      `got HTML instead of the engine at ${GAME_DIR}/index.js — a shell-only deploy wiped /game/; run export:web:lean + deploy:web`,
+    );
+  }
+  const blob = new Blob([text], { type: 'text/javascript' });
+  const url = URL.createObjectURL(blob);
+  try {
+    await loadScript(url);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 async function boot() {
   setState('loading engine…');
-  const head = await fetch(`${GAME_BASE}.js`, { method: 'HEAD' }).catch(() => undefined);
-  if (!head || !head.ok) {
-    setState(`no export found at ${GAME_DIR}/ — run \`npm run export:web\` (Godot 4.5.2, Web preset, threads off)`);
+  try {
+    await loadEngineScript(`${GAME_BASE}.js`);
+  } catch (e) {
+    setState((e as Error).message);
+    console.error(e);
     return;
   }
-  await loadScript(`${GAME_BASE}.js`);
   if (!window.Engine) {
     setState('engine script loaded but window.Engine missing');
     return;

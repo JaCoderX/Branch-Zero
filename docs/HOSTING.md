@@ -208,8 +208,8 @@ Create / connect the app under **Workers & Pages** (name `branch-zero` matches `
 | Setting | Value |
 |---------|-------|
 | Root directory | `/` (repo root — npm workspaces) |
-| Build command | `npm run build:web` |
-| Deploy command | `npx wrangler deploy` (Workers Builds default — keep) |
+| Build command | `npm run build:web` (fails closed if `public/game/` missing — no splash-only deploys) |
+| Deploy command | `npx wrangler deploy` (Workers Builds default — keep) **or pause Git Builds** and use local `npm run deploy:web` only |
 | Non-production deploy | `npx wrangler versions upload` (default) |
 | Production branch | `main` |
 | Node | `22` — `.node-version` at repo root; `engines.node >= 20` |
@@ -228,9 +228,10 @@ Mirror locally in git-ignored `.env.web-live` (see `.env.example`):
 | `VITE_GITHUB_CLIENT_ID` | optional |
 | `VITE_SEPOLIA_RPC_URL` | optional (only if the shell build uses it) |
 
-**First ship (recommended):** local Godot export + Vite + Wrangler, then attach the custom domain on the same
-Worker. Git Builds after that redeploy the shell on every `main` push; re-run `export:web:lean` on a Godot host
-whenever the bank bytes change (or publish them via a separate artefact step).
+**Git Builds warning:** a clean clone has no `public/game/` (git-ignored). `npm run build:web` now **exits 1**
+in that case so Workers Builds cannot replace a good bank with an endless splash. Preferred ship remains local
+`export:web:lean` → `build:web` → `deploy:web`. In the dashboard you can also **pause automatic deployments**
+(Settings → Builds) and only deploy from the Godot host.
 
 Custom domains: Worker → Domains → `branchzero.app` (apex) + `www` redirect if wanted. DNS in the Cloudflare zone.
 

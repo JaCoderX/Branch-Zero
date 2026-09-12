@@ -9,18 +9,18 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
 
-# The Godot export, when it is served from this origin (local previews; a build under the per-file cap).
-# On branchzero.app the export lives on an alternate origin (VITE_GAME_BASE_URL) and these rules are inert.
+# The Godot export (lean Profile H on Workers). Prefer a shorter cache than /assets/* so a bad
+# shell-only deploy cannot pin HTML-as-JS behind `immutable` for a year — recover with deploy:web.
 /game/*.wasm
   Content-Type: application/wasm
-  Cache-Control: public, max-age=31536000, immutable
+  Cache-Control: public, max-age=3600
 
 /game/*.pck
   Content-Type: application/octet-stream
-  Cache-Control: public, max-age=31536000, immutable
+  Cache-Control: public, max-age=3600
 
 /game/*.js
-  Cache-Control: public, max-age=31536000, immutable
+  Cache-Control: public, max-age=3600
 
 # Vite emits hashed filenames under /assets - safe to cache forever.
 /assets/*
