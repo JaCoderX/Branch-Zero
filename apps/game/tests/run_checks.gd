@@ -759,7 +759,8 @@ func _check_player_menu() -> void:
 	print("Player menu strings")
 	var strings := _load("res://dialogue/strings.json")
 	var bad: PackedStringArray = []
-	var keys := ["menu_brand", "menu_tagline", "menu_enter", "menu_controls", "menu_about", "menu_about_text", "menu_back",
+	var keys := ["menu_brand", "menu_tagline", "menu_enter", "menu_controls", "menu_about", "menu_about_text", "menu_about_watch",
+		"menu_feedback", "menu_link_working", "menu_link_popup", "menu_link_failed", "menu_back",
 		"menu_star_game", "menu_star_protocol",
 		"pause_title", "pause_resume", "pause_controls", "pause_sound_on", "pause_sound_off", "pause_leave", "pause_leave_ask",
 		"pause_leave_yes", "pause_leave_no"]

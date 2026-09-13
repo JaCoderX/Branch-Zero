@@ -90,6 +90,12 @@ func call_method(method: String, args: Dictionary) -> Dictionary:
 			# Front-door CTA — mock always "stars" so title walks stay offline.
 			var repo := str(args.get("repo", ""))
 			return _ok({"starred": true, "already": false, "via": "api", "repo": repo, "mock": true})
+		"openUrl":
+			# Desktop / no shell — open locally. Web + ?mock goes through the real bridge (SHELL_METHODS).
+			var open_url := str(args.get("url", ""))
+			if open_url != "":
+				OS.shell_open(open_url)
+			return _ok({"opened": true, "url": open_url, "mock": true})
 		"getSession":
 			return _ok(_session())
 		"login":

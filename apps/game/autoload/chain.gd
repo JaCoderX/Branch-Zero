@@ -16,10 +16,14 @@ signal ready_changed()
 
 const TIMEOUT_SEC := 15.0
 
-## Shell-only surfaces (the iNPC overlay, docs/INPC.md). They read no chain and sign nothing, so MockChain has nothing
-## to stand in for: when a real shell is present they go to it even under `?mock` — which is how a mock walk with a
-## pending wire drives the real Wake / chat / Sleep panel. Without a shell (desktop) the mock refuses them honestly.
-const SHELL_METHODS := ["openInpc", "inpcSnapshot", "inpcStatus", "sleepInpc", "treasuryStatus", "openBranchFloat"]
+## Shell-only surfaces. They read no chain and sign nothing, so MockChain has nothing to stand in for:
+## when a real shell is present they go to it even under `?mock`. Without a shell (desktop) the mock answers
+## (or refuses) honestly. Includes front-door tabs (`openUrl` / `starGithub`) so mock walks still open new tabs.
+const SHELL_METHODS := [
+	"openInpc", "inpcSnapshot", "inpcStatus", "sleepInpc",
+	"treasuryStatus", "openBranchFloat",
+	"openUrl", "starGithub",
+]
 
 var is_web: bool = false
 var bridge_ready: bool = false

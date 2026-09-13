@@ -48,8 +48,52 @@ import { hasKey as hasInpcKey, isFollowing as isInpcFollowing, wipe as wipeInpcS
  * are the shell's; Godot hands over a player-safe snapshot and mirrors one bit (awake) back. `s2.2` before it:
  * front-door GitHub stars — `starGithub` opens a small OAuth popup (or a repo popup when the OAuth app is not
  * configured), stamps `PUT /user/starred/{owner}/{repo}`, and returns without navigating the Godot shell away.
+ * `openUrl` — allowlisted external tabs from the front door (ETHGlobal showcase, X feedback) without leaving the bank.
  */
 export const BRIDGE_VERSION = 's2.4';
+
+/** Hosts the front door may open in a new tab (showcase + feedback). No arbitrary browse. */
+const OPEN_URL_HOSTS = new Set(['ethglobal.com', 'www.ethglobal.com', 'x.com', 'twitter.com', 'www.twitter.com']);
+
+/**
+ * Open an allowlisted https URL in a new tab. Kept synchronous so canvas clicks still count as a user gesture
+ * (async `dispatch` → `window.open` is often blocked).
+ */
+function openAllowlistedUrl(args: Record<string, unknown>): { opened: true; url: string } {
+  const raw = String(args.url ?? '').trim();
+  if (!raw) throw bridgeError('BAD_ARGS', 'url required', 'Which page should we open?');
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    throw bridgeError('BAD_ARGS', 'invalid url', 'That link does not look right.');
+  }
+  if (parsed.protocol !== 'https:') {
+    throw bridgeError('BAD_ARGS', 'https only', 'The branch only opens https links.');
+  }
+  if (!OPEN_URL_HOSTS.has(parsed.hostname.toLowerCase())) {
+    throw bridgeError('BAD_ARGS', 'host not allowed', 'That site is not on the front-door list.');
+  }
+  const href = parsed.toString();
+  // Do not pass `noopener` in window.open features — that makes the return value null (same lesson as githubStar).
+  let tab: Window | null = null;
+  try {
+    tab = window.open(href, '_blank');
+  } catch {
+    tab = null;
+  }
+  if (!tab) {
+    const a = document.createElement('a');
+    a.href = href;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+  return { opened: true, url: href };
+}
 
 /**
  * Where the bank computer points. `/accounts` is the Console screen that matters: it is where the player imports
@@ -760,6 +804,19 @@ const handlers: Record<string, Handler> = {
       focusCanvas();
     }
   },
+
+  /**
+   * Front-door / About CTAs: open an allowlisted https URL in a new tab; keep the bank mounted.
+   * Used for the ETHGlobal showcase demo and the X feedback post.
+   * Prefer the sync path in `request()` — this handler is the fallback for `bridge.call`.
+   */
+  async openUrl(args) {
+    try {
+      return openAllowlistedUrl(args);
+    } finally {
+      focusCanvas();
+    }
+  },
 };
 
 function bridgeError(code: BridgeError['code'], message: string, bankLine?: string): BridgeError {
@@ -805,6 +862,22 @@ export function installBridge(): BranchZeroBridge {
         return;
       }
       emit({ type: 'request', id, method, args });
+      // openUrl must run synchronously — async dispatch loses the canvas click gesture and browsers block the tab.
+      if (method === 'openUrl') {
+        try {
+          const result = openAllowlistedUrl(args);
+          const res: BridgeResponse = { type: 'response', id, ok: true, result };
+          emit(res);
+          godotCallback?.(JSON.stringify(res));
+        } catch (e) {
+          const res: BridgeResponse = { type: 'response', id, ok: false, error: toError(e) };
+          emit(res);
+          godotCallback?.(JSON.stringify(res));
+        } finally {
+          focusCanvas();
+        }
+        return;
+      }
       void dispatch(method, args)
         .then((result) => ({ type: 'response', id, ok: true, result }) as BridgeResponse)
         .catch((e) => ({ type: 'response', id, ok: false, error: toError(e) }) as BridgeResponse)

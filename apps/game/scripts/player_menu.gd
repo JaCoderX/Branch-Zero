@@ -26,6 +26,8 @@ const CREAM := Color(0.95, 0.93, 0.88)
 const INK := Color(0.05, 0.06, 0.09, 0.94)
 const MUTED := Color(0.72, 0.76, 0.80)
 const CARD_WIDTH := 460.0
+const URL_SHOWCASE := "https://ethglobal.com/showcase/branch-zero-iuo33"
+const URL_FEEDBACK := "https://x.com/JaCoderX/status/2099034869925892342?s=20"
 
 var mode: int = Mode.NONE
 var _page := ""                 # "" · "controls" · "about" · "leave"
@@ -237,6 +239,10 @@ func _render() -> void:
 		stars.add_child(_button(str(s.get("menu_star_game", "★ Star the game")), func() -> void: _star_repo("JaCoderX/Branch-Zero")))
 		stars.add_child(_button(str(s.get("menu_star_protocol", "★ Star the protocol")), func() -> void: _star_repo("PracticalParticle/Bloxchain-Protocol")))
 		_title_box.add_child(stars)
+		var feedback_row := HBoxContainer.new()
+		feedback_row.alignment = BoxContainer.ALIGNMENT_CENTER
+		feedback_row.add_child(_button(str(s.get("menu_feedback", "Leave feedback")), func() -> void: _open_external(URL_FEEDBACK)))
+		_title_box.add_child(feedback_row)
 		_title_box.add_child(_text(str(s.get("menu_hint_enter", "Enter ↵")), 13, MUTED, BankFonts.ui(), HORIZONTAL_ALIGNMENT_CENTER))
 		enter.grab_focus.call_deferred()
 	elif _card.visible:
@@ -251,6 +257,7 @@ func _render() -> void:
 				_card_box.add_child(_text(str(s.get("menu_about", "About the branch")), 22, BRASS, BankFonts.plaque()))
 				_card_box.add_child(_text(str(s.get("menu_about_text", "")), 16, CREAM, BankFonts.ui(), HORIZONTAL_ALIGNMENT_LEFT, true))
 				_card_box.add_child(_spacer(4))
+				_card_box.add_child(_button(str(s.get("menu_about_watch", "Watch the demo")), func() -> void: _open_external(URL_SHOWCASE)))
 				_card_box.add_child(_button(str(s.get("menu_back", "Back")), func() -> void: _open_page("")))
 			"leave":
 				_card_box.add_child(_text(str(s.get("pause_leave", "Leave for today")), 22, BRASS, BankFonts.plaque()))
@@ -301,6 +308,18 @@ func _star_repo(repo: String) -> void:
 		return
 	var err: Dictionary = r.get("error", {})
 	var line := str(err.get("bankLine", err.get("message", GameState.strings.get("menu_star_failed", "GitHub would not take the star just now."))))
+	GameState.toast.emit(line, "error")
+
+
+## Allowlisted https tab (showcase / X feedback). Shell `openUrl`; canvas stays put.
+func _open_external(url: String) -> void:
+	GameState.toast.emit(str(GameState.strings.get("menu_link_working", "Opening…")), "info")
+	var r: Dictionary = await Chain.call_async("openUrl", {"url": url}, 30.0)
+	if r.get("ok", false):
+		GameState.toast.emit(str(GameState.strings.get("menu_link_popup", "Opened in a new tab — when you are done, come back to the bank.")), "info")
+		return
+	var err: Dictionary = r.get("error", {})
+	var line := str(err.get("bankLine", err.get("message", GameState.strings.get("menu_link_failed", "Could not open that link just now."))))
 	GameState.toast.emit(line, "error")
 
 

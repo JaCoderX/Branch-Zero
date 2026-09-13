@@ -103,6 +103,8 @@ export type BridgeMethod =
   | 'setMode'
   // Front-door GitHub ★ CTAs — OAuth popup + API star, or repo popup fallback
   | 'starGithub'
+  // Front-door / About — allowlisted https tabs (ETHGlobal showcase, X feedback)
+  | 'openUrl'
   // Live-only player ops float — read-only `/healthz` slice + Copy/faucet panel
   | 'treasuryStatus'
   | 'openBranchFloat';
